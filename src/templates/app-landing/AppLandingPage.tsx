@@ -57,7 +57,9 @@ export function AppLandingPage({ title, tagline, heroImage, content, themeColor 
             case "custom":
               return (
                 <section key={index} className="py-16 px-6 max-w-4xl mx-auto">
-                  <div dangerouslySetInnerHTML={{ __html: section.data?.html || "" }} />
+                  <div className="prose prose-lg max-w-none whitespace-pre-wrap text-gray-600">
+                    {section.data?.text || section.data?.html || ""}
+                  </div>
                 </section>
               );
             default:
