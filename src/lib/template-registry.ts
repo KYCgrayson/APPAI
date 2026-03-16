@@ -264,6 +264,27 @@ export const SECTION_DEFS: SectionDef[] = [
       { name: "text", type: "markdown", required: true, description: "Content text in Markdown format" },
     ],
   },
+  {
+    type: "action",
+    name: "Action Buttons",
+    description: "Interactive buttons that send HTTP requests to custom URLs. Use for webhooks, API triggers, admin tools, or test panels. Each button displays the response after execution.",
+    fields: [
+      { name: "heading", type: "string", required: false, description: "Section heading" },
+      { name: "description", type: "string", required: false, description: "Description text" },
+      {
+        name: "items", type: "array", required: true, description: "List of action buttons",
+        items: [
+          { name: "label", type: "string", required: true, description: "Button text" },
+          { name: "url", type: "url", required: true, description: "Target URL to send request to" },
+          { name: "method", type: "string", required: false, description: "HTTP method (default: 'POST')" },
+          { name: "headers", type: "object", required: false, description: "Custom HTTP headers (e.g. Authorization)" },
+          { name: "body", type: "object", required: false, description: "JSON request body" },
+          { name: "confirmText", type: "string", required: false, description: "Confirmation dialog text (skipped if empty)" },
+          { name: "style", type: "string", required: false, description: "'primary' (filled), 'secondary' (outlined), or 'danger' (red)" },
+        ],
+      },
+    ],
+  },
 ];
 
 // --- Presets (template shortcuts) ---

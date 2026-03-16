@@ -15,6 +15,7 @@ import { ContactSection } from "../sections/ContactSection";
 import { CtaSection } from "../sections/CtaSection";
 import { LinksSection } from "../sections/LinksSection";
 import { AboutSection } from "../sections/AboutSection";
+import { ActionSection } from "../sections/ActionSection";
 
 interface PageData {
   template: string;
@@ -65,6 +66,8 @@ function renderSection(section: any, index: number, themeColor: string) {
       return <LinksSection {...props} />;
     case "about":
       return <AboutSection {...props} />;
+    case "action":
+      return <ActionSection {...props} />;
     default:
       return null;
   }

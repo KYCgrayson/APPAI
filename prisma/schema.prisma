@@ -127,6 +127,17 @@ model HostedPage {
   updatedAt DateTime @updatedAt
 }
 
+model DeviceCode {
+  id             String   @id @default(cuid())
+  deviceCode     String   @unique
+  userCode       String
+  status         String   @default("pending") // pending | complete | expired
+  apiKey         String?
+  organizationId String?
+  expires        DateTime
+  createdAt      DateTime @default(now())
+}
+
 model App {
   id             String       @id @default(cuid())
   organizationId String
