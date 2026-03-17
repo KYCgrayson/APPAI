@@ -590,13 +590,21 @@ If not specified, sections alternate between white and light gray automatically.
 
 ### Logo Best Practices
 
-The `logo` field in the hero section is used in multiple places:
-- Hero section (displayed as 64x64px with rounded corners)
-- Sticky header (32x32px with rounded corners)
+Place the logo URL in the **hero section's `logo` field**. This is the single source used everywhere:
+- Hero section (64x64px, rounded corners)
+- Sticky header (32x32px, rounded corners)
 - Browser favicon/tab icon
 - Breadcrumb navigation on sub-pages
+- App listing card on `/apps` directory
 
-Use a **square image** (512x512px recommended, PNG with transparency) for best results across all placements.
+```json
+{ "type": "hero", "order": 1, "data": {
+    "logo": "https://example.com/logo.png",
+    "headline": "My App"
+}}
+```
+
+Use a **square image** (512x512px recommended, PNG with transparency). Upload local files via `POST /api/v1/upload` first.
 
 ## Important Rules
 
