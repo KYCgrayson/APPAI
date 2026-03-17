@@ -4,6 +4,13 @@ import { validateApiKey } from "@/lib/api-auth";
 import { createPageSchema } from "@/lib/validations/page";
 import { sanitizeContent } from "@/lib/sanitize";
 
+function extractLogoFromContent(content: any, heroImage?: string | null): string | null {
+  if (content?.logo) return content.logo;
+  const heroSection = content?.sections?.find((s: any) => s.type === "hero");
+  if (heroSection?.data?.logo) return heroSection.data.logo;
+  return heroImage || null;
+}
+
 function mapTemplateToCategory(template: string): string {
   const map: Record<string, string> = {
     APP_LANDING: "PRODUCTIVITY",
@@ -113,7 +120,7 @@ export async function POST(request: NextRequest) {
           description: page.tagline || page.title,
           category: appCategory || mapTemplateToCategory(data.template),
           hostedPageSlug: page.slug,
-          logoUrl: page.heroImage,
+          logoUrl: extractLogoFromContent(pageData.content, page.heroImage),
           isApproved: true,
         },
       });
