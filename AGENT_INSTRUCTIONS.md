@@ -463,12 +463,47 @@ Icons: brain, zap, shield, star, heart, globe, lock, rocket, code, chart (or any
 ```
 Button styles: `primary` (filled with theme color), `secondary` (outlined), `danger` (red). Each button sends a request to the specified URL and displays the response.
 
+## Page Layout Features
+
+Every hosted page automatically gets:
+
+- **Sticky header** — project logo (rounded), project name, Privacy/Terms links, Download button (if download section exists)
+- **Footer** — links to Privacy Policy and Terms of Service, "Hosted on AppAI" branding
+- **Breadcrumb navigation** — on Privacy and Terms sub-pages (e.g. "MedLogAI / Privacy Policy")
+- **Dynamic favicon** — uses the project logo from the hero section `logo` field
+- **Alternating section backgrounds** — odd sections get a light gray background (`#f9fafb`) for visual rhythm
+
+### Section Background Color
+
+Any section can have a custom background color by adding `backgroundColor` to its data:
+
+```json
+{ "type": "features", "order": 2, "data": {
+    "backgroundColor": "#f0f9ff",
+    "items": [...]
+}}
+```
+
+If not specified, sections alternate between white and light gray automatically.
+
+### Logo Best Practices
+
+The `logo` field in the hero section is used in multiple places:
+- Hero section (displayed as 64x64px with rounded corners)
+- Sticky header (32x32px with rounded corners)
+- Browser favicon/tab icon
+- Breadcrumb navigation on sub-pages
+
+Use a **square image** (512x512px recommended, PNG with transparency) for best results across all placements.
+
 ## Important Rules
 
 - `slug`: lowercase alphanumeric with hyphens only (e.g. `my-cool-app`)
-- `themeColor`: hex format (e.g. `#6366F1`)
+- `themeColor`: hex format (e.g. `#6366F1`) — used for CTA buttons, download button, and accent colors
 - Free plan limit: 3 pages maximum
 - Privacy policy and terms of service use Markdown
 - Sections render in `order` sequence (1, 2, 3...)
 - You can combine ANY sections in ANY order
 - Always include `privacyPolicy` and `termsOfService` — they are required for App Store / Play Store submissions
+- The hero section `logo` field is highly recommended — it powers the header, favicon, and breadcrumb
+- Upload local images via `POST /api/v1/upload` before referencing them in page content
