@@ -1,3 +1,5 @@
+import { sanitizeUrl } from "@/lib/sanitize";
+
 interface Props {
   data: {
     items: Array<{
@@ -36,7 +38,7 @@ export function TestimonialsSection({ data, themeColor }: Props) {
               <div className="flex items-center gap-3">
                 {item.avatar ? (
                   <img
-                    src={item.avatar}
+                    src={sanitizeUrl(item.avatar)}
                     alt={item.name}
                     className="w-10 h-10 rounded-full object-cover"
                   />

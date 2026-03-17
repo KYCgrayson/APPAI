@@ -1,3 +1,5 @@
+import { sanitizeUrl } from "@/lib/sanitize";
+
 interface Props {
   data: {
     appStoreUrl?: string;
@@ -19,7 +21,7 @@ export function DownloadSection({ data, themeColor }: Props) {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           {data.appStoreUrl && (
             <a
-              href={data.appStoreUrl}
+              href={sanitizeUrl(data.appStoreUrl)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-3 bg-black text-white px-8 py-4 rounded-xl hover:bg-gray-800 transition-colors"
@@ -35,7 +37,7 @@ export function DownloadSection({ data, themeColor }: Props) {
           )}
           {data.playStoreUrl && (
             <a
-              href={data.playStoreUrl}
+              href={sanitizeUrl(data.playStoreUrl)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-3 bg-black text-white px-8 py-4 rounded-xl hover:bg-gray-800 transition-colors"

@@ -1,3 +1,5 @@
+import { sanitizeUrl } from "@/lib/sanitize";
+
 interface Props {
   title: string;
   tagline?: string;
@@ -15,7 +17,7 @@ export function LinkInBioPage({ title, tagline, heroImage, content, themeColor }
         {/* Avatar */}
         {heroImage ? (
           <img
-            src={heroImage}
+            src={sanitizeUrl(heroImage)}
             alt={title}
             className="w-24 h-24 rounded-full mx-auto mb-4 object-cover shadow-lg"
           />
@@ -36,7 +38,7 @@ export function LinkInBioPage({ title, tagline, heroImage, content, themeColor }
           {links.map((link: any, i: number) => (
             <a
               key={i}
-              href={link.url}
+              href={sanitizeUrl(link.url)}
               target="_blank"
               rel="noopener noreferrer"
               className="block w-full py-4 px-6 rounded-xl font-medium text-center transition-all hover:scale-[1.02] hover:shadow-md"

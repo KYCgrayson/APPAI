@@ -1,3 +1,5 @@
+import { sanitizeUrl } from "@/lib/sanitize";
+
 interface Props {
   data: {
     url: string;
@@ -25,7 +27,8 @@ function getVimeoEmbedUrl(url: string): string {
 }
 
 export function VideoSection({ data, themeColor }: Props) {
-  const type = getVideoType(data.url);
+  const safeUrl = sanitizeUrl(data.url);
+  const type = getVideoType(safeUrl);
 
   return (
     <section className="py-20 px-6">
@@ -35,7 +38,7 @@ export function VideoSection({ data, themeColor }: Props) {
             <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
               <iframe
                 className="absolute inset-0 w-full h-full"
-                src={getYouTubeEmbedUrl(data.url)}
+                src={getYouTubeEmbedUrl(safeUrl)}
                 title="Video"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
@@ -46,7 +49,7 @@ export function VideoSection({ data, themeColor }: Props) {
             <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
               <iframe
                 className="absolute inset-0 w-full h-full"
-                src={getVimeoEmbedUrl(data.url)}
+                src={getVimeoEmbedUrl(safeUrl)}
                 title="Video"
                 allow="autoplay; fullscreen; picture-in-picture"
                 allowFullScreen
@@ -55,11 +58,11 @@ export function VideoSection({ data, themeColor }: Props) {
           )}
           {type === "video" && (
             <video className="w-full" controls>
-              <source src={data.url} />
+              <source src={safeUrl} />
             </video>
           )}
           {type === "gif" && (
-            <img src={data.url} alt={data.caption || "Animation"} className="w-full" />
+            <img src={safeUrl} alt={data.caption || "Animation"} className="w-full" />
           )}
         </div>
         {data.caption && (

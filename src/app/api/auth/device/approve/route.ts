@@ -3,9 +3,47 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { generateApiKey } from "@/lib/api-auth";
 import { normalizeUserCode } from "@/lib/device-auth";
+import { encrypt } from "@/lib/encryption";
+
+function isOriginAllowed(request: NextRequest): boolean {
+  const origin = request.headers.get("origin");
+  const referer = request.headers.get("referer");
+  const allowedHost = process.env.NEXTAUTH_URL || "https://appai.info";
+
+  // Parse the allowed origin from NEXTAUTH_URL
+  let allowedOrigin: string;
+  try {
+    allowedOrigin = new URL(allowedHost).origin;
+  } catch {
+    allowedOrigin = allowedHost;
+  }
+
+  if (origin) {
+    return origin === allowedOrigin;
+  }
+
+  if (referer) {
+    try {
+      return new URL(referer).origin === allowedOrigin;
+    } catch {
+      return false;
+    }
+  }
+
+  // No Origin or Referer header — reject the request
+  return false;
+}
 
 export async function POST(request: NextRequest) {
   try {
+    // CSRF protection: verify Origin/Referer header
+    if (!isOriginAllowed(request)) {
+      return NextResponse.json(
+        { error: "Forbidden: invalid origin" },
+        { status: 403 }
+      );
+    }
+
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -62,12 +100,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Mark device code as authorized with the key
+    // Mark device code as authorized with the encrypted key
+    const encryptedKey = encrypt(key);
     await db.deviceCode.update({
       where: { id: record.id },
       data: {
         status: "authorized",
-        apiKey: key,
+        apiKey: encryptedKey,
         organizationId: user.organizationId,
       },
     });

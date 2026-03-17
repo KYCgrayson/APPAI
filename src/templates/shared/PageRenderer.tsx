@@ -123,7 +123,7 @@ export function PageRenderer({ page }: { page: PageData }) {
 
   return (
     <div className="min-h-screen bg-white">
-      {page.customCss && <style>{page.customCss}</style>}
+      {/* customCss is rendered in the parent page.tsx; do not duplicate here */}
 
       {sortedSections.map((section: any, index: number) =>
         renderSection(section, index, themeColor)

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { decrypt } from "@/lib/encryption";
 
 // RFC 8628 §3.5: Device Access Token Response
 // All errors return HTTP 400 with standard error codes
@@ -85,13 +86,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (record.status === "authorized" && record.apiKey && record.organizationId) {
-      const { apiKey, organizationId } = record;
+      const { organizationId } = record;
 
-      // Mark as consumed — plaintext key should not persist
-      await db.deviceCode.update({
-        where: { id: record.id },
-        data: { status: "consumed", apiKey: null },
-      });
+      // Decrypt the API key and delete the entire row — no trace left in DB
+      const apiKey = decrypt(record.apiKey);
+      await db.deviceCode.delete({ where: { id: record.id } });
 
       return NextResponse.json({
         status: "complete",

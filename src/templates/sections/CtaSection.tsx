@@ -1,3 +1,5 @@
+import { sanitizeUrl } from "@/lib/sanitize";
+
 interface Props {
   data: {
     headline: string;
@@ -19,7 +21,7 @@ export function CtaSection({ data, themeColor }: Props) {
           <p className="text-lg text-white/80 mb-8">{data.subheadline}</p>
         )}
         <a
-          href={data.buttonUrl}
+          href={sanitizeUrl(data.buttonUrl)}
           className="inline-block px-8 py-4 rounded-full bg-white font-semibold text-lg transition-transform hover:scale-105"
           style={{ color: themeColor }}
         >

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomInt } from "crypto";
 import { z } from "zod/v4";
 import { db } from "@/lib/db";
 
@@ -12,8 +13,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { email } = registerSchema.parse(body);
 
-    // Generate 6-digit code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate 6-digit code using cryptographically secure RNG
+    const code = randomInt(100000, 999999).toString();
     const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Delete any existing pending code for this email

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
 import { updatePageSchema } from "@/lib/validations/page";
+import { sanitizeContent } from "@/lib/sanitize";
 
 // GET /api/v1/pages/:slug
 export async function GET(
@@ -46,6 +47,11 @@ export async function PUT(
   try {
     const body = await request.json();
     const data = updatePageSchema.parse(body);
+
+    // Sanitize content before saving: strip HTML tags and validate URLs
+    if (data.content) {
+      data.content = sanitizeContent(data.content) as Record<string, any>;
+    }
 
     const updated = await db.hostedPage.update({
       where: { id: page.id },

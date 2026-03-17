@@ -15,6 +15,15 @@ export async function POST() {
       where: { expiresAt: { lt: new Date() } },
     });
 
+    // Clean up stale authorized codes where CLI never polled (encrypted key lingers)
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+    await db.deviceCode.deleteMany({
+      where: {
+        status: "authorized",
+        createdAt: { lt: thirtyMinutesAgo },
+      },
+    });
+
     await db.deviceCode.create({
       data: {
         deviceCode,

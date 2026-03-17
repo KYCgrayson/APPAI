@@ -18,7 +18,21 @@ export const createPageSchema = z.object({
   metaTitle: z.string().max(200).optional(),
   metaDescription: z.string().max(500).optional(),
   ogImage: z.string().url().optional(),
-  customCss: z.string().optional(),
+  customCss: z
+    .string()
+    .optional()
+    .refine(
+      (val) => {
+        if (!val) return true;
+        const dangerous = /<\/style>/i.test(val)
+          || /<script/i.test(val)
+          || /javascript\s*:/i.test(val)
+          || /expression\s*\(/i.test(val)
+          || /url\s*\(\s*['"]?\s*javascript/i.test(val);
+        return !dangerous;
+      },
+      { message: "Custom CSS contains disallowed patterns" }
+    ),
   themeColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   isPublished: z.boolean().default(false),
   // Optional: override auto-detected category for the App listing

@@ -1,3 +1,5 @@
+import { sanitizeUrl } from "@/lib/sanitize";
+
 interface Props {
   data: {
     items: Array<{
@@ -34,7 +36,7 @@ export function TeamSection({ data, themeColor }: Props) {
             <div key={i} className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow text-center border border-gray-100">
               {item.photo ? (
                 <img
-                  src={item.photo}
+                  src={sanitizeUrl(item.photo)}
                   alt={item.name}
                   className="w-24 h-24 rounded-full object-cover mx-auto mb-4"
                 />

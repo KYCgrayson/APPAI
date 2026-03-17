@@ -1,42 +1,71 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
 
+const patchSchema = z.object({
+  pageId: z.string(),
+  action: z.enum(["publish", "unpublish"]),
+});
+
+const deleteSchema = z.object({
+  pageId: z.string(),
+  slug: z.string().optional(),
+});
+
 export async function PATCH(request: NextRequest) {
-  const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  try {
+    const admin = await requireAdmin();
+    if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { pageId, action } = await request.json();
+    const body = await request.json();
+    const { pageId, action } = patchSchema.parse(body);
 
-  const updates: Record<string, any> = {
-    publish: { isPublished: true },
-    unpublish: { isPublished: false },
-  };
+    const updates: Record<string, any> = {
+      publish: { isPublished: true },
+      unpublish: { isPublished: false },
+    };
 
-  if (!updates[action]) {
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+    await db.hostedPage.update({
+      where: { id: pageId },
+      data: updates[action],
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Validation failed", details: error.issues },
+        { status: 400 }
+      );
+    }
+    throw error;
   }
-
-  await db.hostedPage.update({
-    where: { id: pageId },
-    data: updates[action],
-  });
-
-  return NextResponse.json({ success: true });
 }
 
 export async function DELETE(request: NextRequest) {
-  const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  try {
+    const admin = await requireAdmin();
+    if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { pageId, slug } = await request.json();
+    const body = await request.json();
+    const { pageId, slug } = deleteSchema.parse(body);
 
-  // Also delete linked app if exists
-  if (slug) {
-    await db.app.deleteMany({ where: { hostedPageSlug: slug } });
+    // Also delete linked app if exists
+    if (slug) {
+      await db.app.deleteMany({ where: { hostedPageSlug: slug } });
+    }
+
+    await db.hostedPage.delete({ where: { id: pageId } });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Validation failed", details: error.issues },
+        { status: 400 }
+      );
+    }
+    throw error;
   }
-
-  await db.hostedPage.delete({ where: { id: pageId } });
-
-  return NextResponse.json({ success: true });
 }

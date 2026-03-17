@@ -1,3 +1,5 @@
+import { sanitizeUrl } from "@/lib/sanitize";
+
 interface Props {
   data: {
     email?: string;
@@ -58,7 +60,7 @@ export function ContactSection({ data, themeColor }: Props) {
           {data.formUrl && (
             <div className="pt-4">
               <a
-                href={data.formUrl}
+                href={sanitizeUrl(data.formUrl)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-block px-8 py-3 rounded-full text-white font-semibold transition-transform hover:scale-105"

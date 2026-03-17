@@ -34,7 +34,7 @@ export default async function HostedPage({ params }: Props) {
 
   return (
     <>
-      {page.customCss && <style dangerouslySetInnerHTML={{ __html: page.customCss }} />}
+      {page.customCss && <style>{page.customCss}</style>}
       <PageRenderer page={page} />
     </>
   );

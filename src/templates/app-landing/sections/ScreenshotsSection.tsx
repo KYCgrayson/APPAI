@@ -1,3 +1,5 @@
+import { sanitizeUrl } from "@/lib/sanitize";
+
 interface Props {
   data: {
     images?: string[];
@@ -19,7 +21,7 @@ export function ScreenshotsSection({ data, themeColor }: Props) {
           {images.map((url, i) => (
             <div key={i} className="flex-shrink-0 snap-center">
               <img
-                src={url}
+                src={sanitizeUrl(url)}
                 alt={`Screenshot ${i + 1}`}
                 className="rounded-2xl shadow-lg h-[500px] w-auto object-cover"
               />

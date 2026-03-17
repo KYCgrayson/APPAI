@@ -1,3 +1,5 @@
+import { sanitizeUrl } from "@/lib/sanitize";
+
 interface Props {
   data: {
     items: Array<{
@@ -20,7 +22,7 @@ export function LinksSection({ data, themeColor }: Props) {
         {items.map((item, i) => (
           <a
             key={i}
-            href={item.url}
+            href={sanitizeUrl(item.url)}
             target="_blank"
             rel="noopener noreferrer"
             className="block w-full text-center px-6 py-4 rounded-full font-semibold text-lg transition-transform hover:scale-105"

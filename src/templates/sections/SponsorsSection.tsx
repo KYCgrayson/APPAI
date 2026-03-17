@@ -1,3 +1,5 @@
+import { sanitizeUrl } from "@/lib/sanitize";
+
 interface Props {
   data: {
     items: Array<{
@@ -23,14 +25,14 @@ export function SponsorsSection({ data, themeColor }: Props) {
           {items.map((item, i) => {
             const content = (
               <img
-                src={item.logo}
+                src={sanitizeUrl(item.logo)}
                 alt={item.name}
                 className="max-h-16 w-auto mx-auto grayscale hover:grayscale-0 transition-all opacity-70 hover:opacity-100"
               />
             );
 
             return item.url ? (
-              <a key={i} href={item.url} target="_blank" rel="noopener noreferrer">
+              <a key={i} href={sanitizeUrl(item.url)} target="_blank" rel="noopener noreferrer">
                 {content}
               </a>
             ) : (

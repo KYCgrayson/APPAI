@@ -1,3 +1,5 @@
+import { sanitizeUrl } from "@/lib/sanitize";
+
 interface Props {
   data: {
     items: Array<{
@@ -57,7 +59,7 @@ export function PricingSection({ data, themeColor }: Props) {
               </ul>
               {item.ctaText && (
                 <a
-                  href={item.ctaUrl || "#"}
+                  href={sanitizeUrl(item.ctaUrl || "#")}
                   className="block text-center px-6 py-3 rounded-full font-semibold transition-transform hover:scale-105"
                   style={
                     item.highlighted

@@ -1,3 +1,5 @@
+import { sanitizeUrl } from "@/lib/sanitize";
+
 interface Props {
   data: {
     items: Array<{
@@ -24,11 +26,11 @@ export function GallerySection({ data, themeColor }: Props) {
             <div key={i} className="break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               {item.type === "video" ? (
                 <video className="w-full" controls>
-                  <source src={item.url} />
+                  <source src={sanitizeUrl(item.url)} />
                 </video>
               ) : (
                 <img
-                  src={item.url}
+                  src={sanitizeUrl(item.url)}
                   alt={item.caption || `Gallery item ${i + 1}`}
                   className="w-full"
                 />

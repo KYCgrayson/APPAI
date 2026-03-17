@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
 import { createPageSchema } from "@/lib/validations/page";
+import { sanitizeContent } from "@/lib/sanitize";
 
 function mapTemplateToCategory(template: string): string {
   const map: Record<string, string> = {
@@ -41,6 +42,9 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
+
+    // Sanitize content before saving: strip HTML tags and validate URLs
+    data.content = sanitizeContent(data.content) as Record<string, any>;
 
     const { category: appCategory, ...pageData } = data;
 

@@ -1,26 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
 
+const patchSchema = z.object({
+  userId: z.string(),
+  role: z.enum(["USER", "ADMIN"]),
+});
+
 export async function PATCH(request: NextRequest) {
-  const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  try {
+    const admin = await requireAdmin();
+    if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { userId, role } = await request.json();
+    const body = await request.json();
+    const { userId, role } = patchSchema.parse(body);
 
-  if (!["USER", "ADMIN"].includes(role)) {
-    return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+    // Prevent removing your own admin role
+    if (userId === admin.id && role !== "ADMIN") {
+      return NextResponse.json({ error: "Cannot remove your own admin role" }, { status: 400 });
+    }
+
+    await db.user.update({
+      where: { id: userId },
+      data: { role },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Validation failed", details: error.issues },
+        { status: 400 }
+      );
+    }
+    throw error;
   }
-
-  // Prevent removing your own admin role
-  if (userId === admin.id && role !== "ADMIN") {
-    return NextResponse.json({ error: "Cannot remove your own admin role" }, { status: 400 });
-  }
-
-  await db.user.update({
-    where: { id: userId },
-    data: { role },
-  });
-
-  return NextResponse.json({ success: true });
 }

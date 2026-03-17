@@ -1,3 +1,5 @@
+import { sanitizeUrl } from "@/lib/sanitize";
+
 interface Props {
   title: string;
   tagline?: string;
@@ -39,7 +41,7 @@ export function CompanyProfilePage({ title, tagline, content, themeColor }: Prop
                 <div key={i} className="bg-white rounded-2xl p-8 text-center shadow-sm">
                   {member.photo ? (
                     <img
-                      src={member.photo}
+                      src={sanitizeUrl(member.photo)}
                       alt={member.name}
                       className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
                     />
@@ -84,7 +86,7 @@ export function CompanyProfilePage({ title, tagline, content, themeColor }: Prop
             {Object.entries(content.socialLinks).map(([platform, url]) => (
               <a
                 key={platform}
-                href={url as string}
+                href={sanitizeUrl(url as string)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-500 hover:text-gray-800 capitalize"

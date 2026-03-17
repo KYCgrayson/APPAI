@@ -1,6 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import {
+  sanitizeUrl,
+  sanitizeActionHeaders,
+  isActionUrlSafe,
+  extractDomain,
+} from "@/lib/sanitize";
 
 interface ActionItem {
   label: string;
@@ -25,18 +31,32 @@ function ActionButton({ item, themeColor }: { item: ActionItem; themeColor: stri
   const [state, setState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [result, setResult] = useState<string>("");
 
+  const safeUrl = sanitizeUrl(item.url);
+  const urlSafe = isActionUrlSafe(item.url);
+  const domain = extractDomain(item.url);
+  const safeHeaders = sanitizeActionHeaders(item.headers);
+
   async function handleClick() {
-    if (item.confirmText && !window.confirm(item.confirmText)) return;
+    if (!urlSafe) {
+      setState("error");
+      setResult("This action URL has been blocked for security reasons.");
+      return;
+    }
+
+    const confirmMessage =
+      item.confirmText ||
+      `This action will send a ${item.method || "POST"} request to ${domain}. Continue?`;
+    if (!window.confirm(confirmMessage)) return;
 
     setState("loading");
     setResult("");
 
     try {
-      const res = await fetch(item.url, {
+      const res = await fetch(safeUrl, {
         method: item.method || "POST",
         headers: {
           "Content-Type": "application/json",
-          ...item.headers,
+          ...safeHeaders,
         },
         body: item.body ? JSON.stringify(item.body) : undefined,
       });
@@ -67,13 +87,32 @@ function ActionButton({ item, themeColor }: { item: ActionItem; themeColor: stri
 
   return (
     <div className="flex flex-col gap-2">
+      {/* Security warning banner */}
+      <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+        <span>&#9888;</span>
+        <span>
+          This button will send a {item.method || "POST"} request to{" "}
+          <strong>{domain}</strong>
+        </span>
+        {!urlSafe && (
+          <span className="ml-auto text-red-600 font-semibold">BLOCKED</span>
+        )}
+      </div>
       <button
         onClick={handleClick}
-        disabled={state === "loading"}
-        className={`${baseClass} ${state === "loading" ? "opacity-50 cursor-wait" : "hover:opacity-80"}`}
+        disabled={state === "loading" || !urlSafe}
+        className={`${baseClass} ${
+          state === "loading" || !urlSafe
+            ? "opacity-50 cursor-not-allowed"
+            : "hover:opacity-80"
+        }`}
         style={buttonStyle}
       >
-        {state === "loading" ? "Executing..." : item.label}
+        {!urlSafe
+          ? "Action Blocked"
+          : state === "loading"
+            ? "Executing..."
+            : item.label}
       </button>
       {result && (
         <pre
