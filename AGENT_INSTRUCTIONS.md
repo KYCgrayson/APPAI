@@ -265,55 +265,104 @@ curl -X POST https://appai.info/api/v1/pages \
 }
 ```
 
-### Updating an existing page
+### Managing pages (CRUD)
 
-**PATCH** (recommended) — partial update, only sent fields are changed:
+**All endpoints use slug (not id) in the URL.** Always use `https://appai.info` (no www).
+
+#### List all your pages
 ```bash
-# Only changes title — content, tagline, etc. remain unchanged
+curl -s https://appai.info/api/v1/pages \
+  -H "Authorization: Bearer API_KEY"
+```
+
+#### Get a single page
+```bash
+curl -s https://appai.info/api/v1/pages/my-app \
+  -H "Authorization: Bearer API_KEY"
+```
+
+#### Update a page — PATCH (recommended)
+
+PATCH does a **true partial update with deep merge**:
+- Only fields you send are changed; other fields stay untouched
+- Content sections are **merged by `order`** — you can update one section without losing others
+- If you add a section with a new `order`, it gets appended
+- If you update a section with an existing `order`, only the changed `data` fields are merged
+
+```bash
+# Update only the title
 curl -X PATCH https://appai.info/api/v1/pages/my-app \
   -H "Authorization: Bearer API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"title": "New Title"}'
+
+# Update one section (other sections remain unchanged)
+curl -X PATCH https://appai.info/api/v1/pages/my-app \
+  -H "Authorization: Bearer API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content": {"sections": [{"type": "hero", "order": 1, "data": {"headline": "Updated!"}}]}}'
+
+# Add a new section (existing sections are preserved)
+curl -X PATCH https://appai.info/api/v1/pages/my-app \
+  -H "Authorization: Bearer API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content": {"sections": [{"type": "faq", "order": 5, "data": {"items": [...]}}]}}'
 ```
 
-**PUT** — full replace, all sent fields are overwritten:
+#### Update a page — PUT (full replace)
+
+PUT **replaces all sent fields entirely**. Use this when you want to overwrite everything:
 ```bash
 curl -X PUT https://appai.info/api/v1/pages/my-app \
   -H "Authorization: Bearer API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"title": "New Title", "content": {"sections": [...]}, "tagline": "..."}'
+  -d '{"title": "New Title", "content": {"sections": [... ALL sections ...]}, "tagline": "..."}'
 ```
 
-**To update content/sections safely:**
-1. `GET` the current page first
-2. Modify the sections array
-3. Send back the full `content` object via PATCH or PUT
+#### Create or update — POST with upsert
 
+If the slug already exists and you want to overwrite it, add `?upsert=true`:
 ```bash
-# WARNING: sending content with only one section will remove all others.
-# Always include the complete sections array when updating content.
+curl -X POST "https://appai.info/api/v1/pages?upsert=true" \
+  -H "Authorization: Bearer API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"slug": "my-app", "title": "My App", ...}'
 ```
+Without `?upsert=true`, POST returns `409 Slug already taken` with a hint to use PATCH.
 
-**Immutable fields:** `slug`, `id`, `organizationId` — these are silently ignored if sent.
-
-**DELETE** a page:
+#### Delete a page
 ```bash
 curl -X DELETE https://appai.info/api/v1/pages/my-app \
   -H "Authorization: Bearer API_KEY"
 ```
 This also removes the linked app listing.
 
-**GET** a single page:
-```bash
-curl -s https://appai.info/api/v1/pages/my-app \
-  -H "Authorization: Bearer API_KEY"
+#### Immutable fields
+
+These fields **cannot** be updated via PUT or PATCH. Sending them returns `400`:
+`slug`, `id`, `organizationId`, `createdAt`, `updatedAt`
+
+To change a slug, delete the page and create a new one.
+
+#### Error responses
+
+All errors return structured JSON that agents can parse:
+```json
+{
+  "error": "Human-readable error message",
+  "hint": "Suggested fix (when applicable)",
+  "details": ["Validation details (when applicable)"]
+}
 ```
 
-**GET** all your pages:
-```bash
-curl -s https://appai.info/api/v1/pages \
-  -H "Authorization: Bearer API_KEY"
-```
+| Status | Meaning |
+|--------|---------|
+| 400 | Validation error or immutable field sent |
+| 401 | Missing or invalid API key |
+| 403 | Plan limit reached or ownership mismatch |
+| 404 | Page not found in your organization |
+| 409 | Slug already taken (use PATCH or ?upsert=true) |
+| 500 | Server error (message includes details) |
 
 ### Step 7: Verify and show results
 

@@ -28,8 +28,52 @@ export async function POST(request: NextRequest) {
 
     // Check slug availability
     const existing = await db.hostedPage.findUnique({ where: { slug: data.slug } });
-    if (existing) {
-      return NextResponse.json({ error: "Slug already taken" }, { status: 409 });
+    const upsert = request.nextUrl.searchParams.get("upsert") === "true";
+
+    if (existing && !upsert) {
+      return NextResponse.json(
+        {
+          error: "Slug already taken",
+          hint: "Use PATCH /api/v1/pages/" + data.slug + " to update, or add ?upsert=true to this POST to overwrite.",
+          existing_slug: data.slug,
+        },
+        { status: 409 }
+      );
+    }
+
+    // Upsert: update existing page instead of creating
+    if (existing && upsert) {
+      // Verify ownership
+      if (existing.organizationId !== authResult.organizationId) {
+        return NextResponse.json({ error: "Slug belongs to another organization" }, { status: 403 });
+      }
+
+      data.content = sanitizeContent(data.content) as Record<string, any>;
+      const { category: appCategory, ...pageData } = data;
+
+      const updated = await db.hostedPage.update({
+        where: { id: existing.id },
+        data: {
+          ...pageData,
+          content: pageData.content as any,
+          slug: undefined, // don't update slug
+        },
+      });
+
+      // Update linked App
+      const app = await db.app.findUnique({ where: { hostedPageSlug: data.slug } });
+      if (app) {
+        await db.app.update({
+          where: { id: app.id },
+          data: {
+            name: updated.title,
+            tagline: updated.tagline || updated.title,
+            ...(appCategory ? { category: appCategory } : {}),
+          },
+        });
+      }
+
+      return NextResponse.json(updated, { status: 200 });
     }
 
     // Check plan limits
@@ -80,7 +124,8 @@ export async function POST(request: NextRequest) {
     if (error.name === "ZodError") {
       return NextResponse.json({ error: "Validation failed", details: error.errors }, { status: 400 });
     }
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("POST page error:", error);
+    return NextResponse.json({ error: `Failed to create page: ${error.message || "Unknown error"}` }, { status: 500 });
   }
 }
 
