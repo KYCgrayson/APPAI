@@ -20,6 +20,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <link rel="icon" href="/appai.png" />
+        <link rel="apple-touch-icon" href="/appai.png" />
         <link rel="alternate" type="text/plain" href="/spec" title="AI Agent Spec" />
         <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM Info" />
         <script

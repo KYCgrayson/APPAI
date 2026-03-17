@@ -30,7 +30,8 @@ export default async function AppDetailPage({ params }: Props) {
     <div className="min-h-screen bg-white">
       <header className="border-b">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-4">
-          <Link href="/" className="text-xl font-bold">
+          <Link href="/" className="text-xl font-bold flex items-center gap-2">
+            <img src="/appai.png" alt="AppAI" className="w-7 h-7 rounded" />
             AppAI
           </Link>
           <span className="text-gray-300">/</span>
