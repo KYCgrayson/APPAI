@@ -267,34 +267,52 @@ curl -X POST https://appai.info/api/v1/pages \
 
 ### Updating an existing page
 
-Use `PUT` or `PATCH` to update a page. **Both replace fields entirely** — they do not deep-merge.
-
-To update safely:
-1. First `GET` the current page to retrieve existing content
-2. Modify only the fields you need
-3. Send the complete updated object back
-
+**PATCH** (recommended) — partial update, only sent fields are changed:
 ```bash
-# 1. Get current page
-CURRENT=$(curl -s https://appai.info/api/v1/pages/my-app \
-  -H "Authorization: Bearer API_KEY")
-
-# 2. Modify and send back (include ALL sections, not just new ones)
-curl -X PUT https://appai.info/api/v1/pages/my-app \
-  -H "Authorization: Bearer API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "title": "Updated Title", "content": { "sections": [... ALL sections ...] } }'
-```
-
-**WARNING:** If you send `content` with only one section, all other sections will be removed. Always include the full sections array when updating content.
-
-You can update individual top-level fields without affecting others:
-```bash
-# This only changes the title — content, tagline, etc. remain unchanged
+# Only changes title — content, tagline, etc. remain unchanged
 curl -X PATCH https://appai.info/api/v1/pages/my-app \
   -H "Authorization: Bearer API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{ "title": "New Title" }'
+  -d '{"title": "New Title"}'
+```
+
+**PUT** — full replace, all sent fields are overwritten:
+```bash
+curl -X PUT https://appai.info/api/v1/pages/my-app \
+  -H "Authorization: Bearer API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "New Title", "content": {"sections": [...]}, "tagline": "..."}'
+```
+
+**To update content/sections safely:**
+1. `GET` the current page first
+2. Modify the sections array
+3. Send back the full `content` object via PATCH or PUT
+
+```bash
+# WARNING: sending content with only one section will remove all others.
+# Always include the complete sections array when updating content.
+```
+
+**Immutable fields:** `slug`, `id`, `organizationId` — these are silently ignored if sent.
+
+**DELETE** a page:
+```bash
+curl -X DELETE https://appai.info/api/v1/pages/my-app \
+  -H "Authorization: Bearer API_KEY"
+```
+This also removes the linked app listing.
+
+**GET** a single page:
+```bash
+curl -s https://appai.info/api/v1/pages/my-app \
+  -H "Authorization: Bearer API_KEY"
+```
+
+**GET** all your pages:
+```bash
+curl -s https://appai.info/api/v1/pages \
+  -H "Authorization: Bearer API_KEY"
 ```
 
 ### Step 7: Verify and show results
