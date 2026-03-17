@@ -265,6 +265,38 @@ curl -X POST https://appai.info/api/v1/pages \
 }
 ```
 
+### Updating an existing page
+
+Use `PUT` or `PATCH` to update a page. **Both replace fields entirely** — they do not deep-merge.
+
+To update safely:
+1. First `GET` the current page to retrieve existing content
+2. Modify only the fields you need
+3. Send the complete updated object back
+
+```bash
+# 1. Get current page
+CURRENT=$(curl -s https://appai.info/api/v1/pages/my-app \
+  -H "Authorization: Bearer API_KEY")
+
+# 2. Modify and send back (include ALL sections, not just new ones)
+curl -X PUT https://appai.info/api/v1/pages/my-app \
+  -H "Authorization: Bearer API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "title": "Updated Title", "content": { "sections": [... ALL sections ...] } }'
+```
+
+**WARNING:** If you send `content` with only one section, all other sections will be removed. Always include the full sections array when updating content.
+
+You can update individual top-level fields without affecting others:
+```bash
+# This only changes the title — content, tagline, etc. remain unchanged
+curl -X PATCH https://appai.info/api/v1/pages/my-app \
+  -H "Authorization: Bearer API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "title": "New Title" }'
+```
+
 ### Step 7: Verify and show results
 
 After successful creation, tell the user:
