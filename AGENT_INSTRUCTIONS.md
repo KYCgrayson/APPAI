@@ -566,7 +566,10 @@ Button styles: `primary` (filled with theme color), `secondary` (outlined), `dan
 
 Every hosted page automatically gets:
 
-- **Sticky header** — project logo (rounded), project name, Privacy/Terms links, Download button (if download section exists)
+- **Sticky header** (auto-generated on every page):
+  - Left: project logo (from hero section `logo` field) + project title
+  - Right: Privacy link (if `privacyPolicy` exists) + Terms link (if `termsOfService` exists) + **Download button** (if a `download` section exists with `appStoreUrl` or `playStoreUrl`)
+  - **IMPORTANT:** To show a Download button in the header, you MUST add a `download` section. Putting an App Store URL in the hero `ctaUrl` will NOT show a Download button in the header.
 - **Footer** — links to Privacy Policy and Terms of Service, "Hosted on AppAI" branding
 - **Breadcrumb navigation** — on Privacy and Terms sub-pages (e.g. "MedLogAI / Privacy Policy")
 - **Dynamic favicon** — uses the project logo from the hero section `logo` field
