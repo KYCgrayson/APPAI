@@ -24,18 +24,27 @@ start "VERIFICATION_URI_COMPLETE"     # Windows
 
 4. Tell the user: **"I've opened a browser window for you. Please sign in with Google to authorize me. Once you see 'Authorized!', come back here."**
 
-5. Poll for the token (respect the `interval` from step 2, default 5 seconds):
+5. **Immediately start polling** for the token. Do NOT wait for the user to tell you they're done. Poll automatically every 5 seconds in a loop:
 ```bash
-curl -s -X POST https://appai.info/api/v1/auth/token \
-  -H "Content-Type: application/json" \
-  -d '{"device_code": "DEVICE_CODE"}'
+# Poll in a loop — do NOT wait for user confirmation
+while true; do
+  RESPONSE=$(curl -s -X POST https://appai.info/api/v1/auth/token \
+    -H "Content-Type: application/json" \
+    -d '{"device_code": "DEVICE_CODE"}')
+  echo "$RESPONSE"
+  # Check if complete
+  echo "$RESPONSE" | grep -q '"status":"complete"' && break
+  echo "$RESPONSE" | grep -q '"expired_token"' && break
+  sleep 5
+done
 ```
 
-6. Handle polling responses:
-   - `{"error": "authorization_pending"}` → keep polling
-   - `{"error": "slow_down", "interval": N}` → increase polling interval to N seconds
-   - `{"error": "expired_token"}` → device code expired, restart from step 1
+6. Handle the final response:
    - `{"status": "complete", "api_key": "..."}` → save the `api_key`, you're authenticated!
+   - `{"error": "expired_token"}` → device code expired, restart from step 1
+   - `{"error": "slow_down", "interval": N}` → increase sleep to N seconds and continue polling
+
+**IMPORTANT:** You MUST poll automatically in a loop. Do NOT stop and ask the user "have you completed authorization?" — just keep polling until you get a result.
 
 **If the device flow is unavailable**, fall back to asking:
 > Do you have an AppAI API key? It looks like `appai_sk_xxxxxxxx`.
