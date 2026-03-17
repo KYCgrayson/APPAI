@@ -11,13 +11,15 @@ export default async function DashboardLayout({
   const session = await auth();
   if (!session) redirect("/login");
 
+  const isAdmin = (session as any).role === "ADMIN";
+
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white border-b px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="text-xl font-bold">
-              AIGA
+              AppAI
             </Link>
             <div className="flex gap-4">
               <Link
@@ -38,6 +40,14 @@ export default async function DashboardLayout({
               >
                 API Keys
               </Link>
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className="text-sm text-red-600 hover:text-red-800 font-medium"
+                >
+                  Admin
+                </Link>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-4">

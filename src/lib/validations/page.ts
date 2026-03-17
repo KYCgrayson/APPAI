@@ -21,6 +21,10 @@ export const createPageSchema = z.object({
   customCss: z.string().optional(),
   themeColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   isPublished: z.boolean().default(false),
+  // Optional: override auto-detected category for the App listing
+  category: z
+    .enum(["WRITING", "CODING", "DESIGN", "AUTOMATION", "PRODUCTIVITY", "SOCIAL", "FINANCE", "HEALTH", "EDUCATION", "OTHER"])
+    .optional(),
 });
 
 export const updatePageSchema = createPageSchema.partial();

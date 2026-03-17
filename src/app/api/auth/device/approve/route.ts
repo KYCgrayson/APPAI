@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { generateApiKey, hashApiKey } from "@/lib/api-auth";
+import { generateApiKey } from "@/lib/api-auth";
+import { normalizeUserCode } from "@/lib/device-auth";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,14 +16,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "userCode is required" }, { status: 400 });
     }
 
-    // Find the pending device code
-    const record = await db.deviceCode.findFirst({
+    const normalized = normalizeUserCode(userCode);
+
+    // Find all pending, non-expired device codes and match by normalized code
+    const pendingCodes = await db.deviceCode.findMany({
       where: {
-        userCode,
         status: "pending",
-        expires: { gt: new Date() },
+        expiresAt: { gt: new Date() },
       },
     });
+
+    const record = pendingCodes.find(
+      (r) => normalizeUserCode(r.userCode) === normalized
+    );
 
     if (!record) {
       return NextResponse.json(
@@ -44,23 +50,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate API key
+    // Generate API key for the agent
     const { key, hash, prefix } = generateApiKey();
 
     await db.apiKey.create({
       data: {
         keyHash: hash,
         keyPrefix: prefix,
-        name: `Device Auth (${userCode})`,
+        name: `Agent (Device Auth ${record.userCode})`,
         organizationId: user.organizationId,
       },
     });
 
-    // Update device code with result
+    // Mark device code as authorized with the key
     await db.deviceCode.update({
       where: { id: record.id },
       data: {
-        status: "complete",
+        status: "authorized",
         apiKey: key,
         organizationId: user.organizationId,
       },

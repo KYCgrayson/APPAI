@@ -3,9 +3,19 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { db } from "@/lib/db";
 
-export default async function AppsPage() {
+export default async function AppsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string }>;
+}) {
+  const { category } = await searchParams;
+  const activeCategory = category || "ALL";
+
   const apps = await db.app.findMany({
-    where: { isApproved: true },
+    where: {
+      isApproved: true,
+      ...(activeCategory !== "ALL" ? { category: activeCategory } : {}),
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -19,7 +29,7 @@ export default async function AppsPage() {
       <header className="border-b">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="text-xl font-bold">
-            AIGA
+            AppAI
           </Link>
           <Link
             href="/dashboard"
@@ -35,19 +45,28 @@ export default async function AppsPage() {
 
         <div className="flex gap-2 flex-wrap mb-8">
           {categories.map((cat) => (
-            <span
+            <Link
               key={cat}
-              className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer"
+              href={cat === "ALL" ? "/apps" : `/apps?category=${cat}`}
+              className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                activeCategory === cat
+                  ? "bg-black text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
             >
               {cat}
-            </span>
+            </Link>
           ))}
         </div>
 
         {apps.length === 0 ? (
           <div className="text-center py-20">
             <h2 className="text-xl font-semibold mb-2">No apps yet</h2>
-            <p className="text-gray-600">Be the first to submit your app!</p>
+            <p className="text-gray-600">
+              {activeCategory !== "ALL"
+                ? `No apps found in ${activeCategory}. Try another category.`
+                : "Be the first to submit your app!"}
+            </p>
           </div>
         ) : (
           <div className="grid md:grid-cols-3 gap-6">

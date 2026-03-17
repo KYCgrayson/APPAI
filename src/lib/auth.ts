@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "./db";
+import { isAdminEmail } from "./admin";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(db),
@@ -15,20 +16,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async session({ session, user }) {
       if (session.user) {
         session.user.id = user.id;
-        // Attach organizationId to session
         const dbUser = await db.user.findUnique({
           where: { id: user.id },
-          select: { organizationId: true },
+          select: { organizationId: true, role: true },
         });
         (session as any).organizationId = dbUser?.organizationId ?? null;
+        (session as any).role = dbUser?.role ?? "USER";
       }
       return session;
     },
   },
   events: {
     async createUser({ user }) {
-      // Auto-create Organization when user signs up
       if (user.id && user.email) {
+        // Auto-create Organization when user signs up
         const slug = user.email.split("@")[0].toLowerCase().replace(/[^a-z0-9-]/g, "-");
         const org = await db.organization.create({
           data: {
@@ -37,9 +38,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             email: user.email,
           },
         });
+        // Auto-promote admin emails
+        const role = isAdminEmail(user.email) ? "ADMIN" : "USER";
         await db.user.update({
           where: { id: user.id },
-          data: { organizationId: org.id },
+          data: { organizationId: org.id, role },
         });
       }
     },

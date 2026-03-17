@@ -115,7 +115,7 @@ export function PageRenderer({ page }: { page: PageData }) {
           />
         )}
         <footer className="py-8 text-center text-sm text-gray-400 border-t">
-          Hosted on AIGA
+          Hosted on AppAI
         </footer>
       </div>
     );
@@ -130,7 +130,7 @@ export function PageRenderer({ page }: { page: PageData }) {
       )}
 
       <footer className="py-8 text-center text-sm text-gray-400 border-t">
-        Hosted on AIGA
+        Hosted on AppAI
       </footer>
     </div>
   );

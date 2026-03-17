@@ -1,12 +1,10 @@
-# AIGA — AI Generative Application
+# AppAI — AI Generative Application
 
 A free AI App hosting platform. Get a professional landing page with privacy policy and terms of service in 30 seconds — powered by AI agents.
 
-一個免費的 AI 應用託管平台。讓 AI Agent 自動幫你建立專業的 Landing Page、Privacy Policy 和 Terms of Service，30 秒上線。
+## What is AppAI?
 
-## What is AIGA?
-
-AIGA lets AI agents (Claude, GPT, Codex, etc.) create and host landing pages for your apps — no web hosting knowledge needed. Just give your agent an API key, and it handles everything.
+AppAI lets AI agents (Claude, GPT, Codex, etc.) create and host landing pages for your apps — no web hosting knowledge needed. Just give your agent an API key, and it handles everything.
 
 **Perfect for:**
 - iOS / Android app developers who need a landing page + privacy policy for App Store / Play Store submission
@@ -17,8 +15,8 @@ AIGA lets AI agents (Claude, GPT, Codex, etc.) create and host landing pages for
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/anthropics/aiga.git
-cd aiga
+git clone https://github.com/anthropics/appai.git
+cd appai
 npm install
 
 # 2. Set up environment
@@ -56,7 +54,7 @@ Every page is built from **sections** — modular building blocks you can freely
 
 ```bash
 curl -X POST https://your-domain.com/api/v1/pages \
-  -H "Authorization: Bearer aiga_sk_your_key_here" \
+  -H "Authorization: Bearer appai_sk_your_key_here" \
   -H "Content-Type: application/json" \
   -d '{
     "slug": "my-cool-app",

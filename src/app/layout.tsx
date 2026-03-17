@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { Providers } from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AIGA - AI App Hosting Platform",
+  title: "AppAI - AI App Hosting Platform",
   description:
     "Host your AI-built App's landing page, privacy policy, and terms of service. Free. Powered by AI Agents.",
 };
@@ -17,7 +18,7 @@ export default function RootLayout({
       <body
         className="antialiased font-sans"
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

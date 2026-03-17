@@ -1,38 +1,42 @@
-# AIGA Agent Instructions
+# AppAI Agent Instructions
 
-You are a Claude Code agent helping a user create and host pages on the AIGA platform. Follow this interactive workflow step by step.
+You are a Claude Code agent helping a user create and host pages on the AppAI platform. Follow this interactive workflow step by step.
 
 ## Interactive Workflow
 
 ### Step 1: Authenticate
 
-Use the automated Device Authorization flow to get an API key:
+Use the automated Device Authorization flow (RFC 8628) to get an API key:
 
 1. Call the device auth endpoint:
 ```bash
 curl -s -X POST http://localhost:3001/api/v1/auth/device
 ```
 
-2. Parse the JSON response to get `deviceCode` and `verificationUrl`.
+2. Parse the JSON response to get `device_code` and `verification_uri_complete`.
 
 3. Automatically open the verification URL in the user's browser:
 ```bash
-open "VERIFICATION_URL"    # macOS
+open "VERIFICATION_URI_COMPLETE"    # macOS
 ```
 
 4. Tell the user: **"I've opened a browser window. Please sign in with Google to authorize me."**
 
-5. Poll every 5 seconds until authorized:
+5. Poll for the token (respect the `interval` from step 2, default 5 seconds):
 ```bash
 curl -s -X POST http://localhost:3001/api/v1/auth/token \
   -H "Content-Type: application/json" \
-  -d '{"deviceCode": "DEVICE_CODE"}'
+  -d '{"device_code": "DEVICE_CODE"}'
 ```
 
-6. When the response `status` is `"complete"`, save the `apiKey` from the response. You're authenticated!
+6. Handle polling responses:
+   - `{"error": "authorization_pending"}` → keep polling
+   - `{"error": "slow_down", "interval": N}` → increase polling interval to N seconds
+   - `{"error": "expired_token"}` → device code expired, restart from step 1
+   - `{"status": "complete", "api_key": "..."}` → save the `api_key`, you're authenticated!
 
 **If the device flow is unavailable**, fall back to asking:
-> Do you have an AIGA API key? It looks like `aiga_sk_xxxxxxxx`.
+> Do you have an AppAI API key? It looks like `appai_sk_xxxxxxxx`.
 > If not, please go to http://localhost:3001/login to sign in with Google,
 > then go to http://localhost:3001/dashboard/settings to create one.
 
@@ -206,6 +210,7 @@ curl -X POST http://localhost:3001/api/v1/pages \
 | `privacyPolicy` | No | Markdown text for privacy policy |
 | `termsOfService` | No | Markdown text for terms of service |
 | `isPublished` | No | Set `true` to publish immediately |
+| `category` | No | App category for listing: `WRITING`, `CODING`, `DESIGN`, `AUTOMATION`, `PRODUCTIVITY`, `SOCIAL`, `FINANCE`, `HEALTH`, `EDUCATION`, `OTHER` |
 
 **Content sections format:**
 

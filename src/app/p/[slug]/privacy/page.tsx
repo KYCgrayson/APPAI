@@ -35,7 +35,7 @@ export default async function PrivacyPage({ params }: Props) {
         </div>
       </div>
       <footer className="py-8 text-center text-sm text-gray-400 border-t">
-        Hosted on AIGA
+        Hosted on AppAI
       </footer>
     </div>
   );

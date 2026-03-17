@@ -3,6 +3,17 @@ import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
 import { createPageSchema } from "@/lib/validations/page";
 
+function mapTemplateToCategory(template: string): string {
+  const map: Record<string, string> = {
+    APP_LANDING: "PRODUCTIVITY",
+    COMPANY_PROFILE: "OTHER",
+    PRODUCT_SHOWCASE: "OTHER",
+    PORTFOLIO: "DESIGN",
+    LINK_IN_BIO: "SOCIAL",
+  };
+  return map[template] || "OTHER";
+}
+
 // POST /api/v1/pages - Create a new hosted page
 export async function POST(request: NextRequest) {
   const authResult = await validateApiKey(request.headers.get("authorization"));
@@ -31,13 +42,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { category: appCategory, ...pageData } = data;
+
     const page = await db.hostedPage.create({
       data: {
-        ...data,
-        content: data.content as any,
+        ...pageData,
+        content: pageData.content as any,
         organizationId: authResult.organizationId,
       },
     });
+
+    // Auto-create a corresponding App record so the page appears in listings
+    const existingApp = await db.app.findUnique({
+      where: { hostedPageSlug: page.slug },
+    });
+    if (!existingApp) {
+      await db.app.create({
+        data: {
+          organizationId: authResult.organizationId,
+          name: page.title,
+          tagline: page.tagline || page.title,
+          description: page.tagline || page.title,
+          category: appCategory || mapTemplateToCategory(data.template),
+          hostedPageSlug: page.slug,
+          logoUrl: page.heroImage,
+          isApproved: true,
+        },
+      });
+    }
 
     return NextResponse.json(page, { status: 201 });
   } catch (error: any) {

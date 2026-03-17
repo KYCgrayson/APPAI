@@ -53,7 +53,7 @@ export function LinkInBioPage({ title, tagline, heroImage, content, themeColor }
         </div>
 
         <footer className="mt-12 text-sm text-gray-400">
-          Hosted on AIGA
+          Hosted on AppAI
         </footer>
       </div>
     </div>

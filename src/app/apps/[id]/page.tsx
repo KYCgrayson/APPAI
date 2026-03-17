@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!app) return {};
 
   return {
-    title: `${app.name} - AIGA`,
+    title: `${app.name} - AppAI`,
     description: app.tagline,
   };
 }
@@ -31,7 +31,7 @@ export default async function AppDetailPage({ params }: Props) {
       <header className="border-b">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-4">
           <Link href="/" className="text-xl font-bold">
-            AIGA
+            AppAI
           </Link>
           <span className="text-gray-300">/</span>
           <Link href="/apps" className="text-sm text-gray-600 hover:text-black">

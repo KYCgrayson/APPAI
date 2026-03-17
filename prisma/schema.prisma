@@ -16,6 +16,7 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
+  role          String    @default("USER") // USER | ADMIN
 
   accounts Account[]
   sessions Session[]
@@ -127,14 +128,17 @@ model HostedPage {
   updatedAt DateTime @updatedAt
 }
 
+// RFC 8628 OAuth Device Authorization Grant
 model DeviceCode {
   id             String   @id @default(cuid())
-  deviceCode     String   @unique
-  userCode       String
-  status         String   @default("pending") // pending | complete | expired
-  apiKey         String?
+  deviceCode     String   @unique   // High-entropy (256-bit), used by CLI to poll
+  userCode       String             // Short code "WDJB-MJHT", shown to user
+  status         String   @default("pending") // pending | authorized | denied | expired | consumed
+  apiKey         String?            // Plaintext key, cleared after consumed
   organizationId String?
-  expires        DateTime
+  interval       Int      @default(5) // Polling interval in seconds, increases on slow_down
+  lastPolledAt   DateTime?          // Server-side rate limiting for polling
+  expiresAt      DateTime
   createdAt      DateTime @default(now())
 }
 

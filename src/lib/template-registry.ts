@@ -1,5 +1,5 @@
 // ============================================================
-// AIGA Template Registry
+// AppAI Template Registry
 // Defines all available sections (building blocks) and presets
 // ============================================================
 

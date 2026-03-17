@@ -24,7 +24,7 @@ export default async function HomePage() {
       <header className="border-b">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="text-xl font-bold">
-            AIGA
+            AppAI
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/apps" className="text-sm text-gray-600 hover:text-black">
@@ -93,7 +93,7 @@ export default async function HomePage() {
               </div>
               <h3 className="font-semibold mb-2">Tell your AI Agent</h3>
               <p className="text-gray-600 text-sm">
-                Give your Claude, GPT, or Codex the API key and say &quot;create my app page on AIGA&quot;.
+                Give your Claude, GPT, or Codex the API key and say &quot;create my app page on AppAI&quot;.
               </p>
             </div>
             <div className="text-center">
@@ -102,7 +102,7 @@ export default async function HomePage() {
               </div>
               <h3 className="font-semibold mb-2">You&apos;re live</h3>
               <p className="text-gray-600 text-sm">
-                Your landing page, privacy policy, and terms are hosted at aiga.tw/p/your-app.
+                Your landing page, privacy policy, and terms are hosted at appai.info/p/your-app.
               </p>
             </div>
           </div>
@@ -147,7 +147,7 @@ export default async function HomePage() {
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl font-bold mb-4">Ready to launch?</h2>
           <p className="text-gray-600 mb-8">
-            Join AIGA and give your AI-built app the web presence it deserves.
+            Join AppAI and give your AI-built app the web presence it deserves.
           </p>
           <Link
             href="/dashboard"
@@ -161,7 +161,7 @@ export default async function HomePage() {
       {/* Footer */}
       <footer className="border-t py-8 px-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between text-sm text-gray-500">
-          <div>AIGA - AI App Hosting Platform</div>
+          <div>AppAI - AI App Hosting Platform</div>
           <div className="flex gap-4">
             <Link href="/apps" className="hover:text-black">
               Browse

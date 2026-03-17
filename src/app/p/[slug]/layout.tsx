@@ -3,6 +3,6 @@ export default function HostedPageLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // No AIGA header/footer — this looks like the user's own site
+  // No AppAI header/footer — this looks like the user's own site
   return <>{children}</>;
 }

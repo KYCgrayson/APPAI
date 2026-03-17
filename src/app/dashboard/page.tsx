@@ -64,12 +64,12 @@ export default async function DashboardPage() {
             2. Give the key to your AI Agent (Claude, GPT, Codex...)
           </li>
           <li>
-            3. Tell your AI: &quot;Help me create a landing page on AIGA&quot;
+            3. Tell your AI: &quot;Help me create a landing page on AppAI&quot;
           </li>
           <li>
             4. Your page will be live at{" "}
             <code className="bg-gray-100 px-2 py-1 rounded text-sm">
-              aiga.tw/p/your-app-name
+              appai.info/p/your-app-name
             </code>
           </li>
         </ol>

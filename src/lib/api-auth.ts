@@ -40,8 +40,8 @@ export async function validateApiKey(authHeader: string | null) {
 export function generateApiKey(): { key: string; hash: string; prefix: string } {
   const { randomBytes } = require("crypto");
   const raw = randomBytes(32).toString("hex");
-  const key = `aiga_sk_${raw}`;
+  const key = `appai_sk_${raw}`;
   const hash = hashApiKey(key);
-  const prefix = `aiga_sk_${raw.slice(0, 8)}...`;
+  const prefix = `appai_sk_${raw.slice(0, 8)}...`;
   return { key, hash, prefix };
 }
