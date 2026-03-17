@@ -10,7 +10,7 @@ Use the automated Device Authorization flow (RFC 8628) to get an API key:
 
 1. Call the device auth endpoint:
 ```bash
-curl -s -X POST http://localhost:3001/api/v1/auth/device
+curl -s -X POST https://appai.info/api/v1/auth/device
 ```
 
 2. Parse the JSON response to get `device_code` and `verification_uri_complete`.
@@ -24,7 +24,7 @@ open "VERIFICATION_URI_COMPLETE"    # macOS
 
 5. Poll for the token (respect the `interval` from step 2, default 5 seconds):
 ```bash
-curl -s -X POST http://localhost:3001/api/v1/auth/token \
+curl -s -X POST https://appai.info/api/v1/auth/token \
   -H "Content-Type: application/json" \
   -d '{"device_code": "DEVICE_CODE"}'
 ```
@@ -37,8 +37,8 @@ curl -s -X POST http://localhost:3001/api/v1/auth/token \
 
 **If the device flow is unavailable**, fall back to asking:
 > Do you have an AppAI API key? It looks like `appai_sk_xxxxxxxx`.
-> If not, please go to http://localhost:3001/login to sign in with Google,
-> then go to http://localhost:3001/dashboard/settings to create one.
+> If not, please go to https://appai.info/login to sign in with Google,
+> then go to https://appai.info/dashboard/settings to create one.
 
 **Do NOT proceed until you have the API key.**
 
@@ -47,8 +47,8 @@ curl -s -X POST http://localhost:3001/api/v1/auth/token \
 Run these two commands to learn what's available:
 
 ```bash
-curl -s http://localhost:3001/api/v1/presets
-curl -s http://localhost:3001/api/v1/sections
+curl -s https://appai.info/api/v1/presets
+curl -s https://appai.info/api/v1/sections
 ```
 
 ### Step 3: Ask the user what they want to build
@@ -192,7 +192,7 @@ Replace all `[PLACEHOLDERS]` with the user's actual information.
 Construct the JSON payload and create the page:
 
 ```bash
-curl -X POST http://localhost:3001/api/v1/pages \
+curl -X POST https://appai.info/api/v1/pages \
   -H "Authorization: Bearer USER_API_KEY_HERE" \
   -H "Content-Type: application/json" \
   -d 'YOUR_JSON_PAYLOAD'
@@ -230,14 +230,14 @@ curl -X POST http://localhost:3001/api/v1/pages \
 After successful creation, tell the user:
 
 > Your pages are now live:
-> - Landing page: http://localhost:3001/p/YOUR_SLUG
-> - Privacy policy: http://localhost:3001/p/YOUR_SLUG/privacy
-> - Terms of service: http://localhost:3001/p/YOUR_SLUG/terms
+> - Landing page: https://appai.info/p/YOUR_SLUG
+> - Privacy policy: https://appai.info/p/YOUR_SLUG/privacy
+> - Terms of service: https://appai.info/p/YOUR_SLUG/terms
 
 Then use `curl` to verify the pages return HTTP 200:
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/p/YOUR_SLUG
+curl -s -o /dev/null -w "%{http_code}" https://appai.info/p/YOUR_SLUG
 ```
 
 ---

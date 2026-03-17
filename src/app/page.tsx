@@ -109,6 +109,32 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* For AI Agents */}
+      <section className="py-20 px-6">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-4">For AI Agents</h2>
+          <p className="text-center text-gray-600 mb-10">
+            Tell your AI agent to read the spec and it will handle everything automatically.
+          </p>
+          <div className="bg-gray-900 text-gray-100 rounded-2xl p-8 font-mono text-sm overflow-x-auto">
+            <div className="text-gray-400 mb-3"># Give this to your AI agent (Claude, GPT, Codex, Cursor...)</div>
+            <div className="mb-4">
+              <span className="text-green-400">$</span> curl -s https://appai.info/spec
+            </div>
+            <div className="text-gray-400 mb-3"># Or point it to the GitHub spec directly</div>
+            <div>
+              <span className="text-green-400">$</span> curl -s https://raw.githubusercontent.com/KYCgrayson/APPAI/main/AGENT_INSTRUCTIONS.md
+            </div>
+          </div>
+          <p className="text-center text-gray-500 text-sm mt-6">
+            The spec tells your AI how to authenticate, what data to collect, and how to create your page.{" "}
+            <a href="/spec" className="text-blue-600 hover:underline">Read the full spec</a>
+            {" | "}
+            <a href="https://github.com/KYCgrayson/APPAI" target="_blank" className="text-blue-600 hover:underline">View on GitHub</a>
+          </p>
+        </div>
+      </section>
+
       {/* Featured Apps */}
       {featuredApps.length > 0 && (
         <section className="py-20 px-6">
@@ -166,6 +192,12 @@ export default async function HomePage() {
             <Link href="/apps" className="hover:text-black">
               Browse
             </Link>
+            <Link href="/spec" className="hover:text-black">
+              Agent Spec
+            </Link>
+            <a href="https://github.com/KYCgrayson/APPAI" target="_blank" className="hover:text-black">
+              GitHub
+            </a>
             <Link href="/dashboard" className="hover:text-black">
               Dashboard
             </Link>
