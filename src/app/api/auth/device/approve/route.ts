@@ -10,15 +10,11 @@ function isOriginAllowed(request: NextRequest): boolean {
   const referer = request.headers.get("referer");
   const nextAuthUrl = process.env.NEXTAUTH_URL || "https://appai.info";
 
-  // Build list of allowed origins
+  // Allow the configured NEXTAUTH_URL origin (production or local dev)
   const allowedOrigins = new Set<string>();
   try {
     allowedOrigins.add(new URL(nextAuthUrl).origin);
   } catch {}
-  // Always allow the production domain and common variants
-  allowedOrigins.add("https://appai.info");
-  allowedOrigins.add("http://localhost:3000");
-  allowedOrigins.add("http://localhost:3001");
 
   if (origin) {
     return allowedOrigins.has(origin);
