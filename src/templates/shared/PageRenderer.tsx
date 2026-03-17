@@ -102,6 +102,55 @@ function PageFooter({ slug, hasPrivacy, hasTerms }: { slug: string; hasPrivacy: 
   );
 }
 
+function PageHeader({ page, themeColor }: { page: PageData; themeColor: string }) {
+  // Extract logo from content
+  const logo = page.content?.logo
+    || page.content?.sections?.find((s: any) => s.type === "hero")?.data?.logo
+    || page.heroImage;
+
+  // Extract download URLs
+  const downloadSection = page.content?.sections?.find((s: any) => s.type === "download");
+  const appStoreUrl = downloadSection?.data?.appStoreUrl || page.content?.appStoreUrl;
+  const playStoreUrl = downloadSection?.data?.playStoreUrl || page.content?.playStoreUrl;
+  const hasDownload = appStoreUrl || playStoreUrl;
+
+  return (
+    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b">
+      <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+        <a href={`/p/${page.slug}`} className="flex items-center gap-3">
+          {logo && (
+            <img src={logo} alt={page.title} className="w-8 h-8 rounded-lg object-cover" />
+          )}
+          <span className="font-semibold text-lg">{page.title}</span>
+        </a>
+        <div className="flex items-center gap-4">
+          {page.privacyPolicy && (
+            <a href={`/p/${page.slug}/privacy`} className="text-sm text-gray-500 hover:text-gray-900 hidden sm:inline">
+              Privacy
+            </a>
+          )}
+          {page.termsOfService && (
+            <a href={`/p/${page.slug}/terms`} className="text-sm text-gray-500 hover:text-gray-900 hidden sm:inline">
+              Terms
+            </a>
+          )}
+          {hasDownload && (
+            <a
+              href={appStoreUrl || playStoreUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-white px-4 py-1.5 rounded-full font-medium"
+              style={{ backgroundColor: themeColor }}
+            >
+              Download
+            </a>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
+
 export function PageRenderer({ page }: { page: PageData }) {
   const themeColor = page.themeColor || "#000000";
   const sections = page.content?.sections || [];
@@ -113,6 +162,7 @@ export function PageRenderer({ page }: { page: PageData }) {
   if (sortedSections.length === 0) {
     return (
       <div className="min-h-screen bg-white">
+        <PageHeader page={page} themeColor={themeColor} />
         <HeroSection
           data={{
             headline: page.title,
@@ -150,6 +200,7 @@ export function PageRenderer({ page }: { page: PageData }) {
 
   return (
     <div className="min-h-screen bg-white">
+      <PageHeader page={page} themeColor={themeColor} />
       {/* customCss is rendered in the parent page.tsx; do not duplicate here */}
 
       {sortedSections.map((section: any, index: number) =>

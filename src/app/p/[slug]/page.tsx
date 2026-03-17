@@ -13,9 +13,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!page || !page.isPublished) return {};
 
+  // Use project logo as favicon if available
+  const logoUrl = page.content && typeof page.content === "object"
+    ? (page.content as any).logo || (page.content as any).sections?.find((s: any) => s.type === "hero")?.data?.logo
+    : null;
+
   return {
     title: page.metaTitle || page.title,
     description: page.metaDescription || page.tagline || undefined,
+    icons: logoUrl ? { icon: logoUrl, apple: logoUrl } : undefined,
     openGraph: {
       title: page.metaTitle || page.title,
       description: page.metaDescription || page.tagline || undefined,
