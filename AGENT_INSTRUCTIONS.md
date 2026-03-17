@@ -1,6 +1,8 @@
 # AppAI Agent Instructions
 
-You are a Claude Code agent helping a user create and host pages on the AppAI platform. Follow this interactive workflow step by step.
+You are an AI agent helping a user create and host pages on the AppAI platform (https://appai.info). Follow this interactive workflow step by step.
+
+**API Base URL:** `https://appai.info` (always use this, never use `www.appai.info`)
 
 ## Interactive Workflow
 
@@ -208,6 +210,8 @@ curl -X POST https://appai.info/api/v1/upload \
   -F "file=@/path/to/logo.png"
 ```
 
+**IMPORTANT:** Always use `https://appai.info` (without www). Do NOT use `https://www.appai.info` — it will redirect and drop the Authorization header, causing auth failures.
+
 Response:
 ```json
 { "url": "https://xxxxx.public.blob.vercel-storage.com/logo.png", "filename": "logo.png" }
@@ -216,6 +220,12 @@ Response:
 Use the returned `url` in your page content (e.g. as `logo`, `heroImage`, `backgroundImage`, screenshot URLs, etc.).
 
 **Supported formats:** PNG, JPEG, GIF, WebP, SVG. **Max size:** 5MB per file.
+
+**Recommended image sizes:**
+- Logo: 512x512px (square, PNG with transparency)
+- Hero/background image: 1920x1080px (landscape)
+- Screenshots: 1280x720px or phone-sized (390x844px)
+- Team/avatar photos: 400x400px (square)
 
 ### Step 6: Create the page via API
 

@@ -50,6 +50,17 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
   } catch (error: any) {
     console.error("Upload error:", error);
-    return NextResponse.json({ error: "Failed to upload file" }, { status: 500 });
+    const message = error?.message || "Unknown error";
+    // Check for common Vercel Blob issues
+    if (message.includes("BLOB_READ_WRITE_TOKEN") || message.includes("BlobAccessError")) {
+      return NextResponse.json(
+        { error: "Image storage not configured. Please contact the platform admin." },
+        { status: 500 }
+      );
+    }
+    return NextResponse.json(
+      { error: `Failed to upload file: ${message}` },
+      { status: 500 }
+    );
   }
 }
