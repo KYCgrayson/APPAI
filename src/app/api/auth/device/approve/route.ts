@@ -8,23 +8,25 @@ import { encrypt } from "@/lib/encryption";
 function isOriginAllowed(request: NextRequest): boolean {
   const origin = request.headers.get("origin");
   const referer = request.headers.get("referer");
-  const allowedHost = process.env.NEXTAUTH_URL || "https://appai.info";
+  const nextAuthUrl = process.env.NEXTAUTH_URL || "https://appai.info";
 
-  // Parse the allowed origin from NEXTAUTH_URL
-  let allowedOrigin: string;
+  // Build list of allowed origins
+  const allowedOrigins = new Set<string>();
   try {
-    allowedOrigin = new URL(allowedHost).origin;
-  } catch {
-    allowedOrigin = allowedHost;
-  }
+    allowedOrigins.add(new URL(nextAuthUrl).origin);
+  } catch {}
+  // Always allow the production domain and common variants
+  allowedOrigins.add("https://appai.info");
+  allowedOrigins.add("http://localhost:3000");
+  allowedOrigins.add("http://localhost:3001");
 
   if (origin) {
-    return origin === allowedOrigin;
+    return allowedOrigins.has(origin);
   }
 
   if (referer) {
     try {
-      return new URL(referer).origin === allowedOrigin;
+      return allowedOrigins.has(new URL(referer).origin);
     } catch {
       return false;
     }
