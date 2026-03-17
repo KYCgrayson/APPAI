@@ -1,10 +1,9 @@
 # AppAI — Free Hosting for AI-Built Apps
 
-> **AI Agents: Read the full spec at [`AGENT_INSTRUCTIONS.md`](./AGENT_INSTRUCTIONS.md) to get started automatically.**
+> **AI Agents: Read the full spec to get started automatically.**
 >
-> Or fetch it directly:
 > ```
-> curl -s https://raw.githubusercontent.com/KYCgrayson/APPAI/main/AGENT_INSTRUCTIONS.md
+> curl -s https://appai.info/spec
 > ```
 
 ---
@@ -32,13 +31,13 @@ Your AI Agent:
   4. Done — your page is live at appai.info/p/your-app
 ```
 
-The entire flow is automated. Your AI agent reads the [Agent Instructions](./AGENT_INSTRUCTIONS.md) and knows exactly what to do.
+The entire flow is automated. Your AI agent reads the [Agent Spec](https://appai.info/spec) and knows exactly what to do.
 
 ## For AI Agents
 
 ### Quick Start
 
-1. **Authenticate** using the [Device Authorization Flow (RFC 8628)](./AGENT_INSTRUCTIONS.md#step-1-authenticate):
+1. **Authenticate** using the [Device Authorization Flow (RFC 8628)](https://appai.info/spec):
    ```bash
    curl -s -X POST https://appai.info/api/v1/auth/device
    ```
@@ -59,7 +58,7 @@ The entire flow is automated. Your AI agent reads the [Agent Instructions](./AGE
 
 4. **Live at**: `appai.info/p/my-app`, `appai.info/p/my-app/privacy`, `appai.info/p/my-app/terms`
 
-See [AGENT_INSTRUCTIONS.md](./AGENT_INSTRUCTIONS.md) for the complete interactive workflow, all section types, and data formats.
+See the [full Agent Spec](https://appai.info/spec) for the complete interactive workflow, all section types, and data formats.
 
 ### API Reference
 
