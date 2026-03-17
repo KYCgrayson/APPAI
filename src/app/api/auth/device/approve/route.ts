@@ -10,25 +10,25 @@ function isOriginAllowed(request: NextRequest): boolean {
   const referer = request.headers.get("referer");
   const nextAuthUrl = process.env.NEXTAUTH_URL || "https://appai.info";
 
-  // Allow the configured NEXTAUTH_URL origin (production or local dev)
-  const allowedOrigins = new Set<string>();
+  // Extract allowed hostname from NEXTAUTH_URL
+  let allowedHostname: string;
   try {
-    allowedOrigins.add(new URL(nextAuthUrl).origin);
-  } catch {}
-
-  if (origin) {
-    return allowedOrigins.has(origin);
+    allowedHostname = new URL(nextAuthUrl).hostname.replace(/^www\./, "");
+  } catch {
+    allowedHostname = "appai.info";
   }
 
-  if (referer) {
+  function hostnameMatches(url: string): boolean {
     try {
-      return allowedOrigins.has(new URL(referer).origin);
+      const hostname = new URL(url).hostname.replace(/^www\./, "");
+      return hostname === allowedHostname;
     } catch {
       return false;
     }
   }
 
-  // No Origin or Referer header — reject the request
+  if (origin) return hostnameMatches(origin);
+  if (referer) return hostnameMatches(referer);
   return false;
 }
 
