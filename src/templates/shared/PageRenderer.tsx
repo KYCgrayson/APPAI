@@ -31,49 +31,81 @@ interface PageData {
 }
 
 // Maps section type string to its React component
+// Each section supports optional backgroundColor and alternating bg for visual rhythm
 function renderSection(section: any, index: number, themeColor: string) {
-  const props = { key: index, data: section.data, themeColor };
+  const props = { data: section.data, themeColor };
+  const bg = section.data?.backgroundColor || (index % 2 === 1 ? "#f9fafb" : undefined);
 
+  let content;
   switch (section.type) {
     case "hero":
-      return <HeroSection {...props} />;
+      content = <HeroSection {...props} />;
+      break;
     case "video":
-      return <VideoSection {...props} />;
+      content = <VideoSection {...props} />;
+      break;
     case "features":
-      return <FeaturesSection {...props} />;
+      content = <FeaturesSection {...props} />;
+      break;
     case "screenshots":
-      return <ScreenshotsSection {...props} />;
+      content = <ScreenshotsSection {...props} />;
+      break;
     case "download":
-      return <DownloadSection {...props} />;
+      content = <DownloadSection {...props} />;
+      break;
     case "pricing":
-      return <PricingSection {...props} />;
+      content = <PricingSection {...props} />;
+      break;
     case "testimonials":
-      return <TestimonialsSection {...props} />;
+      content = <TestimonialsSection {...props} />;
+      break;
     case "faq":
-      return <FaqSection {...props} />;
+      content = <FaqSection {...props} />;
+      break;
     case "gallery":
-      return <GallerySection {...props} />;
+      content = <GallerySection {...props} />;
+      break;
     case "team":
-      return <TeamSection {...props} />;
+      content = <TeamSection {...props} />;
+      break;
     case "schedule":
-      return <ScheduleSection {...props} />;
+      content = <ScheduleSection {...props} />;
+      break;
     case "sponsors":
-      return <SponsorsSection {...props} />;
+      content = <SponsorsSection {...props} />;
+      break;
     case "stats":
-      return <StatsSection {...props} />;
+      content = <StatsSection {...props} />;
+      break;
     case "contact":
-      return <ContactSection {...props} />;
+      content = <ContactSection {...props} />;
+      break;
     case "cta":
-      return <CtaSection {...props} />;
+      // CTA already has its own background color
+      return <CtaSection key={index} {...props} />;
     case "links":
-      return <LinksSection {...props} />;
+      content = <LinksSection {...props} />;
+      break;
     case "about":
-      return <AboutSection {...props} />;
+      content = <AboutSection {...props} />;
+      break;
     case "action":
-      return <ActionSection {...props} />;
+      content = <ActionSection {...props} />;
+      break;
     default:
       return null;
   }
+
+  // Hero section handles its own background
+  if (section.type === "hero") {
+    return <div key={index}>{content}</div>;
+  }
+
+  return (
+    <div key={index} style={bg ? { backgroundColor: bg } : undefined}>
+      {content}
+    </div>
+  );
 }
 
 function PageFooter({ slug, hasPrivacy, hasTerms }: { slug: string; hasPrivacy: boolean; hasTerms: boolean }) {
@@ -161,8 +193,7 @@ export function PageRenderer({ page }: { page: PageData }) {
   // If no sections defined, render a simple default based on available fields
   if (sortedSections.length === 0) {
     return (
-      <div className="min-h-screen bg-white">
-        <PageHeader page={page} themeColor={themeColor} />
+      <div>
         <HeroSection
           data={{
             headline: page.title,
@@ -193,21 +224,15 @@ export function PageRenderer({ page }: { page: PageData }) {
             themeColor={themeColor}
           />
         )}
-        <PageFooter slug={page.slug} hasPrivacy={!!page.privacyPolicy} hasTerms={!!page.termsOfService} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <PageHeader page={page} themeColor={themeColor} />
-      {/* customCss is rendered in the parent page.tsx; do not duplicate here */}
-
+    <div>
       {sortedSections.map((section: any, index: number) =>
         renderSection(section, index, themeColor)
       )}
-
-      <PageFooter slug={page.slug} hasPrivacy={!!page.privacyPolicy} hasTerms={!!page.termsOfService} />
     </div>
   );
 }

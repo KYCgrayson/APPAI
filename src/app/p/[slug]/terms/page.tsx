@@ -31,36 +31,19 @@ export default async function TermsPage({ params }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="max-w-3xl mx-auto py-16 px-6">
       {/* Breadcrumb */}
-      <nav className="border-b">
-        <div className="max-w-3xl mx-auto px-6 py-3 flex items-center gap-2 text-sm text-gray-500">
-          <a href={`/p/${slug}`} className="hover:text-gray-900 flex items-center gap-1.5">
-            {(() => {
-              const logo = page.content && typeof page.content === "object"
-                ? (page.content as any).logo || (page.content as any).sections?.find((s: any) => s.type === "hero")?.data?.logo
-                : null;
-              return logo ? <img src={logo} alt="" className="w-5 h-5 rounded object-cover" /> : null;
-            })()}
-            {page.title}
-          </a>
-          <span className="text-gray-300">/</span>
-          <span className="text-gray-900">Terms of Service</span>
-        </div>
+      <nav className="flex items-center gap-2 text-sm text-gray-500 mb-8">
+        <a href={`/p/${slug}`} className="hover:text-gray-900">{page.title}</a>
+        <span className="text-gray-300">/</span>
+        <span className="text-gray-900">Terms of Service</span>
       </nav>
 
-      <div className="max-w-3xl mx-auto py-16 px-6">
-        <h1 className="text-3xl font-bold mb-2">Terms of Service</h1>
-        <p className="text-gray-500 mb-8">{page.title}</p>
-        <div className="prose prose-lg max-w-none whitespace-pre-wrap text-gray-700">
-          {page.termsOfService}
-        </div>
+      <h1 className="text-3xl font-bold mb-2">Terms of Service</h1>
+      <p className="text-gray-500 mb-8">{page.title}</p>
+      <div className="prose prose-lg max-w-none whitespace-pre-wrap text-gray-700">
+        {page.termsOfService}
       </div>
-      <footer className="py-8 text-center text-sm text-gray-400 border-t">
-        <a href="https://appai.info" target="_blank" rel="noopener noreferrer" className="hover:text-gray-600">
-          Hosted on AppAI
-        </a>
-      </footer>
     </div>
   );
 }

@@ -40,7 +40,7 @@ export function HeroSection({ data, themeColor }: Props) {
       )}
       <div className="relative z-10 max-w-3xl">
         {data.logo && (
-          <img src={sanitizeUrl(data.logo)} alt="Logo" className="h-12 mx-auto mb-6" />
+          <img src={sanitizeUrl(data.logo)} alt="Logo" className="h-16 w-16 mx-auto mb-6 rounded-2xl object-cover" />
         )}
         <h1
           className="text-5xl md:text-7xl font-bold mb-6"
