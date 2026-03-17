@@ -73,6 +73,7 @@ See the [full Agent Spec](https://appai.info/spec) for the complete interactive 
 | `PUT` | `/api/v1/pages/:slug` | Bearer | Update a page |
 | `DELETE` | `/api/v1/pages/:slug` | Bearer | Delete a page |
 | `POST` | `/api/v1/pages/:slug/publish` | Bearer | Publish a page |
+| `POST` | `/api/v1/upload` | Bearer | Upload an image (returns public URL) |
 | `POST` | `/api/v1/apps` | Bearer | Submit an app |
 
 ## Available Page Sections

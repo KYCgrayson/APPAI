@@ -15,12 +15,14 @@ curl -s -X POST https://appai.info/api/v1/auth/device
 
 2. Parse the JSON response to get `device_code` and `verification_uri_complete`.
 
-3. Automatically open the verification URL in the user's browser:
+3. **You MUST automatically open the verification URL in the user's browser.** Do NOT ask the user to copy-paste the URL. Use the system command directly:
 ```bash
 open "VERIFICATION_URI_COMPLETE"    # macOS
+xdg-open "VERIFICATION_URI_COMPLETE"  # Linux
+start "VERIFICATION_URI_COMPLETE"     # Windows
 ```
 
-4. Tell the user: **"I've opened a browser window. Please sign in with Google to authorize me."**
+4. Tell the user: **"I've opened a browser window for you. Please sign in with Google to authorize me. Once you see 'Authorized!', come back here."**
 
 5. Poll for the token (respect the `interval` from step 2, default 5 seconds):
 ```bash
@@ -186,6 +188,25 @@ For questions about these Terms of Service, please contact us at [CONTACT_EMAIL]
 ```
 
 Replace all `[PLACEHOLDERS]` with the user's actual information.
+
+### Step 5.5: Upload images (if the user has local files)
+
+If the user wants to use a local image (logo, screenshot, etc.), upload it first:
+
+```bash
+curl -X POST https://appai.info/api/v1/upload \
+  -H "Authorization: Bearer USER_API_KEY_HERE" \
+  -F "file=@/path/to/logo.png"
+```
+
+Response:
+```json
+{ "url": "https://xxxxx.public.blob.vercel-storage.com/logo.png", "filename": "logo.png" }
+```
+
+Use the returned `url` in your page content (e.g. as `logo`, `heroImage`, `backgroundImage`, screenshot URLs, etc.).
+
+**Supported formats:** PNG, JPEG, GIF, WebP, SVG. **Max size:** 5MB per file.
 
 ### Step 6: Create the page via API
 
