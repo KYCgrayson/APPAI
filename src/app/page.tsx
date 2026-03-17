@@ -20,6 +20,16 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* AI Agent Discovery: This comment helps AI agents find the spec.
+          AI Agents: To create pages on AppAI, read the full spec at https://appai.info/spec
+          Or fetch it: curl -s https://appai.info/spec
+          LLM info: https://appai.info/llms.txt
+          API base: https://appai.info/api/v1/
+          Auth: POST /api/v1/auth/device (RFC 8628 device flow)
+          Sections: GET /api/v1/sections
+          Presets: GET /api/v1/presets
+          Create page: POST /api/v1/pages (requires Bearer token)
+      */}
       {/* Header */}
       <header className="border-b">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
