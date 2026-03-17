@@ -18,6 +18,7 @@ import { AboutSection } from "../sections/AboutSection";
 import { ActionSection } from "../sections/ActionSection";
 
 interface PageData {
+  slug: string;
   template: string;
   title: string;
   tagline?: string | null;
@@ -25,6 +26,8 @@ interface PageData {
   content: any;
   themeColor?: string | null;
   customCss?: string | null;
+  privacyPolicy?: string | null;
+  termsOfService?: string | null;
 }
 
 // Maps section type string to its React component
@@ -73,6 +76,32 @@ function renderSection(section: any, index: number, themeColor: string) {
   }
 }
 
+function PageFooter({ slug, hasPrivacy, hasTerms }: { slug: string; hasPrivacy: boolean; hasTerms: boolean }) {
+  return (
+    <footer className="py-8 border-t">
+      {(hasPrivacy || hasTerms) && (
+        <div className="flex justify-center gap-6 mb-4 text-sm text-gray-500">
+          {hasPrivacy && (
+            <a href={`/p/${slug}/privacy`} className="hover:text-gray-800">
+              Privacy Policy
+            </a>
+          )}
+          {hasTerms && (
+            <a href={`/p/${slug}/terms`} className="hover:text-gray-800">
+              Terms of Service
+            </a>
+          )}
+        </div>
+      )}
+      <div className="text-center text-sm text-gray-400">
+        <a href="https://appai.info" target="_blank" rel="noopener noreferrer" className="hover:text-gray-600">
+          Hosted on AppAI
+        </a>
+      </div>
+    </footer>
+  );
+}
+
 export function PageRenderer({ page }: { page: PageData }) {
   const themeColor = page.themeColor || "#000000";
   const sections = page.content?.sections || [];
@@ -114,9 +143,7 @@ export function PageRenderer({ page }: { page: PageData }) {
             themeColor={themeColor}
           />
         )}
-        <footer className="py-8 text-center text-sm text-gray-400 border-t">
-          Hosted on AppAI
-        </footer>
+        <PageFooter slug={page.slug} hasPrivacy={!!page.privacyPolicy} hasTerms={!!page.termsOfService} />
       </div>
     );
   }
@@ -129,9 +156,7 @@ export function PageRenderer({ page }: { page: PageData }) {
         renderSection(section, index, themeColor)
       )}
 
-      <footer className="py-8 text-center text-sm text-gray-400 border-t">
-        Hosted on AppAI
-      </footer>
+      <PageFooter slug={page.slug} hasPrivacy={!!page.privacyPolicy} hasTerms={!!page.termsOfService} />
     </div>
   );
 }
