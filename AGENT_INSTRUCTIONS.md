@@ -320,12 +320,14 @@ curl -X POST "https://appai.info/api/v1/pages/my-app/set-default?locale=en" \
 ```
 
 **What happens automatically:**
+- **Browser language detection**: When a user visits `/p/my-app` (no locale suffix), the system checks their browser's `Accept-Language` header. If the browser prefers Japanese and a Japanese version exists, the user is automatically redirected to `/p/my-app/ja`. If the user manually clicks a language in the switcher, a cookie (`appai_locale`) is set so auto-detection won't override their choice.
 - A language switcher appears in the header when multiple locales exist
 - `hreflang` tags are added for SEO (search engines serve the right language)
 - JSON-LD structured data includes `inLanguage`
 - Sitemap includes all locale variants with alternates
 - `<div lang="ja">` is set correctly for the browser
 - RTL direction is set automatically for Arabic/Hebrew
+- Search engine crawlers (no `Accept-Language` header) always see the default locale version
 
 **Supported locales:** `en`, `ja`, `zh-CN`, `zh-TW`, `ko`, `es`, `fr`, `de`, `pt`, `pt-BR`, `it`, `nl`, `ru`, `ar`, `hi`, `th`, `vi`, `id`, `ms`, `tr`, and any valid BCP 47 code.
 

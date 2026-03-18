@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { parsePageSegments, buildPagePath } from "@/lib/parse-page-segments";
+import { LocaleLink } from "./LocaleLink";
 
 interface Props {
   params: Promise<{ segments: string[] }>;
@@ -101,13 +102,13 @@ export default async function HostedPageLayout({ params, children }: Props) {
             {variants.length > 1 && (
               <div className="flex items-center gap-1 text-sm">
                 {variants.map((v) => (
-                  <a
+                  <LocaleLink
                     key={v.locale}
                     href={buildPagePath(slug, v.locale, null, v.isDefault)}
-                    className={`px-2 py-0.5 rounded ${v.locale === locale ? "bg-gray-100 font-medium text-gray-900" : "text-gray-500 hover:text-gray-900"}`}
-                  >
-                    {localeLabels[v.locale] || v.locale.toUpperCase()}
-                  </a>
+                    locale={v.locale}
+                    isActive={v.locale === locale}
+                    label={localeLabels[v.locale] || v.locale.toUpperCase()}
+                  />
                 ))}
               </div>
             )}

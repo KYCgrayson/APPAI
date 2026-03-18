@@ -1,4 +1,5 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { PageRenderer } from "@/templates/shared/PageRenderer";
 import { parsePageSegments, buildPagePath } from "@/lib/parse-page-segments";
@@ -6,6 +7,40 @@ import type { Metadata } from "next";
 
 interface Props {
   params: Promise<{ segments: string[] }>;
+}
+
+/**
+ * Parse Accept-Language header and return ordered locale preferences.
+ * e.g. "ja,en-US;q=0.9,en;q=0.8" → ["ja", "en-US", "en"]
+ */
+function parseAcceptLanguage(header: string | null): string[] {
+  if (!header) return [];
+  return header
+    .split(",")
+    .map((part) => {
+      const [locale, q] = part.trim().split(";q=");
+      return { locale: locale.trim(), quality: q ? parseFloat(q) : 1 };
+    })
+    .sort((a, b) => b.quality - a.quality)
+    .map((item) => item.locale);
+}
+
+/**
+ * Match browser language preferences against available locales.
+ * Tries exact match first (e.g. "zh-CN"), then base language (e.g. "zh" → "zh-CN").
+ */
+function matchLocale(preferred: string[], available: string[]): string | null {
+  for (const pref of preferred) {
+    // Exact match
+    if (available.includes(pref)) return pref;
+    // Base language match: "en-US" → try "en"
+    const base = pref.split("-")[0];
+    if (available.includes(base)) return base;
+    // Reverse: browser sends "zh", we have "zh-CN"
+    const regionMatch = available.find((a) => a.startsWith(base + "-"));
+    if (regionMatch) return regionMatch;
+  }
+  return null;
 }
 
 function extractLogo(page: any): string | null {
@@ -104,6 +139,38 @@ export default async function HostedPage({ params }: Props) {
   if (!parsed) notFound();
 
   const { slug, locale: explicitLocale, subpage } = parsed;
+
+  // Auto-detect language: when no locale in URL, check browser preference
+  // Skip if: user explicitly chose a language (cookie), or visiting a subpage
+  if (!explicitLocale && !subpage) {
+    const headersList = await headers();
+    const cookieHeader = headersList.get("cookie") || "";
+    const hasLocalePreference = cookieHeader.includes("appai_locale=");
+
+    if (!hasLocalePreference) {
+      const acceptLang = headersList.get("accept-language");
+      const preferred = parseAcceptLanguage(acceptLang);
+
+      if (preferred.length > 0) {
+        const variants = await db.hostedPage.findMany({
+          where: { slug, isPublished: true },
+          select: { locale: true, isDefault: true },
+        });
+
+        if (variants.length > 1) {
+          const available = variants.map((v) => v.locale);
+          const matched = matchLocale(preferred, available);
+          const defaultLocale = variants.find((v) => v.isDefault)?.locale || variants[0]?.locale;
+
+          // Only redirect if matched locale differs from default
+          if (matched && matched !== defaultLocale) {
+            redirect(buildPagePath(slug, matched, null, false));
+          }
+        }
+      }
+    }
+  }
+
   const page = await resolvePage(slug, explicitLocale);
   if (!page) notFound();
 
