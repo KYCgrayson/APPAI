@@ -1,3 +1,5 @@
+[English](./README.md) | [简体中文](./README.zh-CN.md) | [日本語](./README.ja.md)
+
 # AppAI — Free Hosting for AI-Built Apps
 
 > **AI Agents: Read the full spec to get started automatically.**
@@ -70,11 +72,22 @@ See the [full Agent Spec](https://appai.info/spec) for the complete interactive 
 | `GET` | `/api/v1/presets` | None | List preset templates |
 | `POST` | `/api/v1/pages` | Bearer | Create a page |
 | `GET` | `/api/v1/pages` | Bearer | List your pages |
-| `PUT` | `/api/v1/pages/:slug` | Bearer | Update a page |
+| `GET` | `/api/v1/pages/:slug` | Bearer | Get a page |
+| `PUT` | `/api/v1/pages/:slug` | Bearer | Full update a page |
+| `PATCH` | `/api/v1/pages/:slug` | Bearer | Partial update a page |
 | `DELETE` | `/api/v1/pages/:slug` | Bearer | Delete a page |
 | `POST` | `/api/v1/pages/:slug/publish` | Bearer | Publish a page |
+| `POST` | `/api/v1/pages/:slug/unpublish` | Bearer | Unpublish a page |
+| `POST` | `/api/v1/pages/:slug/set-default` | Bearer | Set default locale (`?locale=ja`) |
 | `POST` | `/api/v1/upload` | Bearer | Upload an image (returns public URL) |
 | `POST` | `/api/v1/apps` | Bearer | Submit an app |
+| `GET` | `/api/v1/apps` | Bearer | List apps |
+| `GET` | `/api/v1/apps/:id` | Bearer | Get an app |
+| `PUT` | `/api/v1/apps/:id` | Bearer | Update an app |
+| `DELETE` | `/api/v1/apps/:id` | Bearer | Delete an app |
+| `POST` | `/api/v1/keys` | Session | Create an API key |
+| `GET` | `/api/v1/keys` | Session | List API keys |
+| `DELETE` | `/api/v1/keys` | Session | Revoke an API key |
 
 ## Available Page Sections
 

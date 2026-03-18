@@ -7,13 +7,14 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
+  const locale = request.nextUrl.searchParams.get("locale") || "en";
   const authResult = await validateApiKey(request.headers.get("authorization"));
   if (!authResult) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const page = await db.hostedPage.findFirst({
-    where: { slug, organizationId: authResult.organizationId },
+    where: { slug, locale, organizationId: authResult.organizationId },
   });
   if (!page) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

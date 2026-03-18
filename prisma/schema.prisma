@@ -101,7 +101,9 @@ model ApiKey {
 
 model HostedPage {
   id             String       @id @default(cuid())
-  slug           String       @unique
+  slug           String
+  locale         String       @default("en") // BCP 47: "en", "ja", "zh-CN", "ko", etc.
+  isDefault      Boolean      @default(false) // Only one locale per slug should be true
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -126,6 +128,8 @@ model HostedPage {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([slug, locale])
 }
 
 // RFC 8628 OAuth Device Authorization Grant

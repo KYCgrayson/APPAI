@@ -1,0 +1,168 @@
+import { db } from "@/lib/db";
+import { parsePageSegments, buildPagePath } from "@/lib/parse-page-segments";
+
+interface Props {
+  params: Promise<{ segments: string[] }>;
+  children: React.ReactNode;
+}
+
+export default async function HostedPageLayout({ params, children }: Props) {
+  const { segments } = await params;
+  const parsed = parsePageSegments(segments);
+  if (!parsed) return <>{children}</>;
+
+  const { slug, locale: explicitLocale } = parsed;
+
+  // Resolve locale: explicit from URL, or find the default for this slug
+  let page;
+  if (explicitLocale) {
+    page = await db.hostedPage.findFirst({
+      where: { slug, locale: explicitLocale, isPublished: true },
+      select: {
+        slug: true,
+        locale: true,
+        isDefault: true,
+        title: true,
+        content: true,
+        themeColor: true,
+        heroImage: true,
+        privacyPolicy: true,
+        termsOfService: true,
+        isPublished: true,
+      },
+    });
+  } else {
+    // No locale in URL — find the default, fallback to first available
+    page = await db.hostedPage.findFirst({
+      where: { slug, isPublished: true },
+      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+      select: {
+        slug: true,
+        locale: true,
+        isDefault: true,
+        title: true,
+        content: true,
+        themeColor: true,
+        heroImage: true,
+        privacyPolicy: true,
+        termsOfService: true,
+        isPublished: true,
+      },
+    });
+  }
+
+  if (!page) {
+    return <>{children}</>;
+  }
+
+  const locale = page.locale;
+
+  // Find all locale variants for the language switcher
+  const variants = await db.hostedPage.findMany({
+    where: { slug, isPublished: true },
+    select: { locale: true, isDefault: true },
+    orderBy: [{ isDefault: "desc" }, { locale: "asc" }],
+  });
+
+  const themeColor = page.themeColor || "#000000";
+  const content = page.content as any;
+
+  // Extract logo
+  const logo = content?.logo
+    || content?.sections?.find((s: any) => s.type === "hero")?.data?.logo
+    || page.heroImage;
+
+  // Extract download URLs
+  const downloadSection = content?.sections?.find((s: any) => s.type === "download");
+  const appStoreUrl = downloadSection?.data?.appStoreUrl || content?.appStoreUrl;
+  const playStoreUrl = downloadSection?.data?.playStoreUrl || content?.playStoreUrl;
+  const hasDownload = appStoreUrl || playStoreUrl;
+
+  const localeLabels: Record<string, string> = {
+    en: "EN", ja: "日本語", "zh-CN": "简中", "zh-TW": "繁中", ko: "한국어",
+    es: "ES", fr: "FR", de: "DE", pt: "PT", "pt-BR": "PT-BR",
+    it: "IT", nl: "NL", ru: "RU", ar: "عربي", hi: "हिंदी",
+    th: "ไทย", vi: "VI", id: "ID", ms: "MS", tr: "TR",
+  };
+
+  return (
+    <div lang={locale} dir={locale === "ar" || locale === "he" ? "rtl" : "ltr"} className="min-h-screen bg-white flex flex-col">
+      {/* Sticky Header */}
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b">
+        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+          <a href={buildPagePath(slug, locale, null, page.isDefault)} className="flex items-center gap-3">
+            {logo && (
+              <img src={logo} alt={page.title} className="w-8 h-8 rounded-xl object-cover" />
+            )}
+            <span className="font-semibold text-lg">{page.title}</span>
+          </a>
+          <div className="flex items-center gap-4">
+            {/* Language Switcher */}
+            {variants.length > 1 && (
+              <div className="flex items-center gap-1 text-sm">
+                {variants.map((v) => (
+                  <a
+                    key={v.locale}
+                    href={buildPagePath(slug, v.locale, null, v.isDefault)}
+                    className={`px-2 py-0.5 rounded ${v.locale === locale ? "bg-gray-100 font-medium text-gray-900" : "text-gray-500 hover:text-gray-900"}`}
+                  >
+                    {localeLabels[v.locale] || v.locale.toUpperCase()}
+                  </a>
+                ))}
+              </div>
+            )}
+            {page.privacyPolicy && (
+              <a href={buildPagePath(slug, locale, "privacy", page.isDefault)} className="text-sm text-gray-500 hover:text-gray-900 hidden sm:inline">
+                Privacy
+              </a>
+            )}
+            {page.termsOfService && (
+              <a href={buildPagePath(slug, locale, "terms", page.isDefault)} className="text-sm text-gray-500 hover:text-gray-900 hidden sm:inline">
+                Terms
+              </a>
+            )}
+            {hasDownload && (
+              <a
+                href={appStoreUrl || playStoreUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-white px-4 py-1.5 rounded-full font-medium"
+                style={{ backgroundColor: themeColor }}
+              >
+                Download
+              </a>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Page Content */}
+      <main className="flex-1">
+        {children}
+      </main>
+
+      {/* Footer */}
+      <footer className="py-8 border-t">
+        {(page.privacyPolicy || page.termsOfService) && (
+          <div className="flex justify-center gap-6 mb-4 text-sm text-gray-500">
+            {page.privacyPolicy && (
+              <a href={buildPagePath(slug, locale, "privacy", page.isDefault)} className="hover:text-gray-800">
+                Privacy Policy
+              </a>
+            )}
+            {page.termsOfService && (
+              <a href={buildPagePath(slug, locale, "terms", page.isDefault)} className="hover:text-gray-800">
+                Terms of Service
+              </a>
+            )}
+          </div>
+        )}
+        <div className="text-center text-sm text-gray-400">
+          <a href="https://appai.info" target="_blank" rel="noopener noreferrer" className="hover:text-gray-600">
+            Hosted on AppAI
+          </a>
+        </div>
+      </footer>
+    </div>
+  );
+}

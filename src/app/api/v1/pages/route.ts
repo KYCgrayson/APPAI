@@ -32,17 +32,21 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const data = createPageSchema.parse(body);
+    const locale = data.locale || "en";
 
-    // Check slug availability
-    const existing = await db.hostedPage.findUnique({ where: { slug: data.slug } });
+    // Check slug+locale availability
+    const existing = await db.hostedPage.findUnique({
+      where: { slug_locale: { slug: data.slug, locale } },
+    });
     const upsert = request.nextUrl.searchParams.get("upsert") === "true";
 
     if (existing && !upsert) {
       return NextResponse.json(
         {
-          error: "Slug already taken",
-          hint: "Use PATCH /api/v1/pages/" + data.slug + " to update, or add ?upsert=true to this POST to overwrite.",
+          error: `Slug "${data.slug}" already taken for locale "${locale}"`,
+          hint: `Use PATCH /api/v1/pages/${data.slug}?locale=${locale} to update, or add ?upsert=true to this POST to overwrite.`,
           existing_slug: data.slug,
+          existing_locale: locale,
         },
         { status: 409 }
       );
@@ -56,7 +60,7 @@ export async function POST(request: NextRequest) {
       }
 
       data.content = sanitizeContent(data.content) as Record<string, any>;
-      const { category: appCategory, ...pageData } = data;
+      const { category: appCategory, locale: _locale, ...pageData } = data;
 
       const updated = await db.hostedPage.update({
         where: { id: existing.id },
@@ -67,63 +71,80 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Update linked App
-      const app = await db.app.findUnique({ where: { hostedPageSlug: data.slug } });
-      if (app) {
-        await db.app.update({
-          where: { id: app.id },
-          data: {
-            name: updated.title,
-            tagline: updated.tagline || updated.title,
-            ...(appCategory ? { category: appCategory } : {}),
-          },
-        });
+      // Update linked App (only from default locale)
+      if (existing.isDefault) {
+        const app = await db.app.findUnique({ where: { hostedPageSlug: data.slug } });
+        if (app) {
+          await db.app.update({
+            where: { id: app.id },
+            data: {
+              name: updated.title,
+              tagline: updated.tagline || updated.title,
+              ...(appCategory ? { category: appCategory } : {}),
+            },
+          });
+        }
       }
 
       return NextResponse.json(updated, { status: 200 });
     }
 
-    // Check plan limits
-    const pageCount = await db.hostedPage.count({
+    // Check plan limits — count distinct slugs, not locale variants
+    const slugCount = await db.hostedPage.groupBy({
+      by: ["slug"],
       where: { organizationId: authResult.organizationId },
     });
-    if (authResult.organization.plan === "FREE" && pageCount >= 3) {
-      return NextResponse.json(
-        { error: "Free plan limit: max 3 pages. Upgrade to Pro." },
-        { status: 403 }
-      );
+    if (authResult.organization.plan === "FREE" && slugCount.length >= 3) {
+      // Allow locale variants of existing slugs
+      const existingSlugs = slugCount.map((g) => g.slug);
+      if (!existingSlugs.includes(data.slug)) {
+        return NextResponse.json(
+          { error: "Free plan limit: max 3 pages (locale variants are free). Upgrade to Pro." },
+          { status: 403 }
+        );
+      }
     }
 
     // Sanitize content before saving: strip HTML tags and validate URLs
     data.content = sanitizeContent(data.content) as Record<string, any>;
 
-    const { category: appCategory, ...pageData } = data;
+    const { category: appCategory, locale: _locale, ...pageData } = data;
+
+    // First locale variant for this slug becomes the default
+    const existingVariants = await db.hostedPage.count({
+      where: { slug: data.slug },
+    });
+    const shouldBeDefault = existingVariants === 0;
 
     const page = await db.hostedPage.create({
       data: {
         ...pageData,
+        locale,
+        isDefault: shouldBeDefault,
         content: pageData.content as any,
         organizationId: authResult.organizationId,
       },
     });
 
-    // Auto-create a corresponding App record so the page appears in listings
-    const existingApp = await db.app.findUnique({
-      where: { hostedPageSlug: page.slug },
-    });
-    if (!existingApp) {
-      await db.app.create({
-        data: {
-          organizationId: authResult.organizationId,
-          name: page.title,
-          tagline: page.tagline || page.title,
-          description: page.tagline || page.title,
-          category: appCategory || mapTemplateToCategory(data.template),
-          hostedPageSlug: page.slug,
-          logoUrl: extractLogoFromContent(pageData.content, page.heroImage),
-          isApproved: true,
-        },
+    // Auto-create a corresponding App record (only for default locale)
+    if (shouldBeDefault) {
+      const existingApp = await db.app.findUnique({
+        where: { hostedPageSlug: page.slug },
       });
+      if (!existingApp) {
+        await db.app.create({
+          data: {
+            organizationId: authResult.organizationId,
+            name: page.title,
+            tagline: page.tagline || page.title,
+            description: page.tagline || page.title,
+            category: appCategory || mapTemplateToCategory(data.template),
+            hostedPageSlug: page.slug,
+            logoUrl: extractLogoFromContent(pageData.content, page.heroImage),
+            isApproved: true,
+          },
+        });
+      }
     }
 
     return NextResponse.json(page, { status: 201 });
@@ -143,8 +164,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const locale = request.nextUrl.searchParams.get("locale");
+
   const pages = await db.hostedPage.findMany({
-    where: { organizationId: authResult.organizationId },
+    where: {
+      organizationId: authResult.organizationId,
+      ...(locale ? { locale } : {}),
+    },
     orderBy: { createdAt: "desc" },
   });
 

@@ -1,11 +1,32 @@
 import { z } from "zod";
 
+export const SUPPORTED_LOCALES = [
+  "en", "zh-CN", "zh-TW", "ja", "ko",
+  "es", "fr", "de", "pt", "pt-BR",
+  "it", "nl", "ru", "ar", "hi",
+  "th", "vi", "id", "ms", "tr",
+  "pl", "uk", "sv", "da", "fi",
+  "nb", "cs", "el", "he", "ro",
+] as const;
+
+export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
+
+/** Validate a BCP 47 locale string */
+export function isValidLocale(locale: string): boolean {
+  return /^[a-z]{2}(-[A-Z]{2})?$/.test(locale);
+}
+
 export const createPageSchema = z.object({
   slug: z
     .string()
     .min(2)
     .max(100)
     .regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens"),
+  locale: z
+    .string()
+    .regex(/^[a-z]{2}(-[A-Z]{2})?$/, "Must be a BCP 47 locale code (e.g. 'en', 'ja', 'zh-CN')")
+    .default("en")
+    .optional(),
   template: z
     .enum(["APP_LANDING", "COMPANY_PROFILE", "PRODUCT_SHOWCASE", "PORTFOLIO", "LINK_IN_BIO"])
     .default("APP_LANDING"),

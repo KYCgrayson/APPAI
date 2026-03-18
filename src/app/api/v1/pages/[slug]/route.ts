@@ -5,7 +5,7 @@ import { updatePageSchema } from "@/lib/validations/page";
 import { sanitizeContent } from "@/lib/sanitize";
 
 // Fields that cannot be changed via PUT/PATCH
-const IMMUTABLE_FIELDS = ["slug", "id", "organizationId", "createdAt", "updatedAt"];
+const IMMUTABLE_FIELDS = ["slug", "locale", "id", "organizationId", "createdAt", "updatedAt"];
 
 /**
  * Check for immutable fields in the request body.
@@ -78,23 +78,38 @@ function errorResponse(message: string, status: number, details?: any) {
   );
 }
 
+/** Extract locale from query params, default to "en" */
+function getLocale(request: NextRequest): string {
+  return request.nextUrl.searchParams.get("locale") || "en";
+}
+
 // GET /api/v1/pages/:slug
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
+  const locale = getLocale(request);
   const authResult = await validateApiKey(request.headers.get("authorization"));
   if (!authResult) {
     return errorResponse("Unauthorized. Provide a valid API key in the Authorization header: Bearer appai_sk_...", 401);
   }
 
+  // If ?variants=true, return all locale variants for this slug
+  if (request.nextUrl.searchParams.get("variants") === "true") {
+    const variants = await db.hostedPage.findMany({
+      where: { slug, organizationId: authResult.organizationId },
+      orderBy: { locale: "asc" },
+    });
+    return NextResponse.json(variants);
+  }
+
   const page = await db.hostedPage.findFirst({
-    where: { slug, organizationId: authResult.organizationId },
+    where: { slug, locale, organizationId: authResult.organizationId },
   });
 
   if (!page) {
-    return errorResponse(`Page "${slug}" not found in your organization`, 404);
+    return errorResponse(`Page "${slug}" (locale: ${locale}) not found in your organization`, 404);
   }
 
   return NextResponse.json(page);
@@ -106,16 +121,17 @@ export async function PUT(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
+  const locale = getLocale(request);
   const authResult = await validateApiKey(request.headers.get("authorization"));
   if (!authResult) {
     return errorResponse("Unauthorized. Provide a valid API key in the Authorization header: Bearer appai_sk_...", 401);
   }
 
   const page = await db.hostedPage.findFirst({
-    where: { slug, organizationId: authResult.organizationId },
+    where: { slug, locale, organizationId: authResult.organizationId },
   });
   if (!page) {
-    return errorResponse(`Page "${slug}" not found in your organization`, 404);
+    return errorResponse(`Page "${slug}" (locale: ${locale}) not found in your organization`, 404);
   }
 
   try {
@@ -126,8 +142,8 @@ export async function PUT(
     if (immutableError) return immutableError;
 
     const parsed = updatePageSchema.parse(body);
-    // Strip category (it's for App listing, not HostedPage)
-    const { category, ...data } = parsed as any;
+    // Strip category and locale (they're not HostedPage columns to update)
+    const { category, locale: _locale, ...data } = parsed as any;
 
     if (data.content) {
       data.content = sanitizeContent(data.content);
@@ -138,8 +154,8 @@ export async function PUT(
       data: { ...data, content: data.content as any },
     });
 
-    // Update linked App if title or tagline changed
-    if (data.title || data.tagline || category) {
+    // Update linked App if title or tagline changed (only from default locale)
+    if (page.isDefault && (data.title || data.tagline || category)) {
       const app = await db.app.findUnique({ where: { hostedPageSlug: slug } });
       if (app) {
         await db.app.update({
@@ -169,16 +185,17 @@ export async function PATCH(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
+  const locale = getLocale(request);
   const authResult = await validateApiKey(request.headers.get("authorization"));
   if (!authResult) {
     return errorResponse("Unauthorized. Provide a valid API key in the Authorization header: Bearer appai_sk_...", 401);
   }
 
   const page = await db.hostedPage.findFirst({
-    where: { slug, organizationId: authResult.organizationId },
+    where: { slug, locale, organizationId: authResult.organizationId },
   });
   if (!page) {
-    return errorResponse(`Page "${slug}" not found in your organization`, 404);
+    return errorResponse(`Page "${slug}" (locale: ${locale}) not found in your organization`, 404);
   }
 
   try {
@@ -189,7 +206,7 @@ export async function PATCH(
     if (immutableError) return immutableError;
 
     const parsed = updatePageSchema.parse(body);
-    const { category, ...fields } = parsed as any;
+    const { category, locale: _locale, ...fields } = parsed as any;
 
     // Build update: only include fields that were explicitly sent in the body
     const updateData: Record<string, any> = {};
@@ -211,8 +228,8 @@ export async function PATCH(
       data: updateData,
     });
 
-    // Update linked App if relevant fields changed
-    if (updateData.title || updateData.tagline || category) {
+    // Update linked App if relevant fields changed (only from default locale)
+    if (locale === "en" && (updateData.title || updateData.tagline || category)) {
       const app = await db.app.findUnique({ where: { hostedPageSlug: slug } });
       if (app) {
         await db.app.update({
@@ -242,21 +259,29 @@ export async function DELETE(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
+  const locale = getLocale(request);
   const authResult = await validateApiKey(request.headers.get("authorization"));
   if (!authResult) {
     return errorResponse("Unauthorized. Provide a valid API key in the Authorization header: Bearer appai_sk_...", 401);
   }
 
   const page = await db.hostedPage.findFirst({
-    where: { slug, organizationId: authResult.organizationId },
+    where: { slug, locale, organizationId: authResult.organizationId },
   });
   if (!page) {
-    return errorResponse(`Page "${slug}" not found in your organization`, 404);
+    return errorResponse(`Page "${slug}" (locale: ${locale}) not found in your organization`, 404);
   }
 
-  // Delete linked app and page
-  await db.app.deleteMany({ where: { hostedPageSlug: slug } });
   await db.hostedPage.delete({ where: { id: page.id } });
 
-  return NextResponse.json({ message: `Page "${slug}" and its app listing have been deleted` });
+  // Only delete the App listing if no more locale variants exist
+  const remaining = await db.hostedPage.count({ where: { slug } });
+  if (remaining === 0) {
+    await db.app.deleteMany({ where: { hostedPageSlug: slug } });
+  }
+
+  return NextResponse.json({
+    message: `Page "${slug}" (locale: ${locale}) has been deleted`,
+    remaining_variants: remaining,
+  });
 }

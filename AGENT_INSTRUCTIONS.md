@@ -243,12 +243,13 @@ curl -X POST https://appai.info/api/v1/pages \
 | Field | Required | Description |
 |-------|----------|-------------|
 | `slug` | Yes | URL-safe identifier (lowercase, hyphens only, e.g. `my-cool-app`) |
-| `title` | Yes | Page title |
-| `tagline` | No | Short description |
+| `locale` | No | BCP 47 locale code (default: `en`). Use this to create multi-language versions of the same page (e.g. `ja`, `zh-CN`, `ko`) |
+| `title` | Yes | Page title (in the target language) |
+| `tagline` | No | Short description (in the target language) |
 | `themeColor` | No | Hex color (e.g. `#6366F1`) |
-| `content` | Yes | Object with `sections` array |
-| `privacyPolicy` | No | Markdown text for privacy policy |
-| `termsOfService` | No | Markdown text for terms of service |
+| `content` | Yes | Object with `sections` array (in the target language) |
+| `privacyPolicy` | No | Markdown text for privacy policy (in the target language) |
+| `termsOfService` | No | Markdown text for terms of service (in the target language) |
 | `isPublished` | No | Set `true` to publish immediately |
 | `category` | No | App category for listing: `WRITING`, `CODING`, `DESIGN`, `AUTOMATION`, `PRODUCTIVITY`, `SOCIAL`, `FINANCE`, `HEALTH`, `EDUCATION`, `OTHER` |
 
@@ -265,9 +266,99 @@ curl -X POST https://appai.info/api/v1/pages \
 }
 ```
 
+### Step 6.5: Create multi-language versions (optional)
+
+If the user wants their page in multiple languages, create additional locale variants using the same slug with a different `locale`:
+
+```bash
+# Create Japanese version
+curl -X POST https://appai.info/api/v1/pages \
+  -H "Authorization: Bearer USER_API_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{"slug": "my-app", "locale": "ja", "title": "マイアプリ", "tagline": "素晴らしいアプリ", "content": {...}, "isPublished": true}'
+
+# Create Simplified Chinese version
+curl -X POST https://appai.info/api/v1/pages \
+  -H "Authorization: Bearer USER_API_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{"slug": "my-app", "locale": "zh-CN", "title": "我的应用", "tagline": "一款很棒的应用", "content": {...}, "isPublished": true}'
+```
+
+**Multi-language URL structure:**
+- `appai.info/p/my-app` — default language (whichever locale is marked as default)
+- `appai.info/p/my-app/ja` — Japanese (if not the default)
+- `appai.info/p/my-app/zh-CN` — Simplified Chinese (if not the default)
+- `appai.info/p/my-app/ja/privacy` — Japanese privacy policy
+
+**How the default language works:**
+- The **first locale you create** for a slug automatically becomes the default
+- The default locale is shown at `/p/my-app` (no language suffix in the URL)
+- Non-default locales are shown at `/p/my-app/ja`, `/p/my-app/zh-CN`, etc.
+- You can change the default at any time with `POST /api/v1/pages/:slug/set-default?locale=ja`
+- **Ask the user what their primary language is** — create that locale first so it becomes the default
+
+**Example: Japanese developer creating a page**
+```bash
+# Step 1: Create the Japanese version first (becomes default automatically)
+curl -X POST https://appai.info/api/v1/pages \
+  -H "Authorization: Bearer API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"slug": "my-app", "locale": "ja", "title": "マイアプリ", ...}'
+# → appai.info/p/my-app shows Japanese (it's the default)
+
+# Step 2: Add English translation
+curl -X POST https://appai.info/api/v1/pages \
+  -H "Authorization: Bearer API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"slug": "my-app", "locale": "en", "title": "My App", ...}'
+# → appai.info/p/my-app/en shows English
+
+# Optional: Change default to English later
+curl -X POST "https://appai.info/api/v1/pages/my-app/set-default?locale=en" \
+  -H "Authorization: Bearer API_KEY"
+# → Now appai.info/p/my-app shows English, appai.info/p/my-app/ja shows Japanese
+```
+
+**What happens automatically:**
+- A language switcher appears in the header when multiple locales exist
+- `hreflang` tags are added for SEO (search engines serve the right language)
+- JSON-LD structured data includes `inLanguage`
+- Sitemap includes all locale variants with alternates
+- `<div lang="ja">` is set correctly for the browser
+- RTL direction is set automatically for Arabic/Hebrew
+
+**Supported locales:** `en`, `ja`, `zh-CN`, `zh-TW`, `ko`, `es`, `fr`, `de`, `pt`, `pt-BR`, `it`, `nl`, `ru`, `ar`, `hi`, `th`, `vi`, `id`, `ms`, `tr`, and any valid BCP 47 code.
+
+**Locale variants do NOT count against your plan limit.** You get 3 pages (slugs) on the free plan, each with unlimited language versions.
+
+**To manage locale variants via API**, add `?locale=xx` to any endpoint:
+```bash
+# Get Japanese version
+curl -s https://appai.info/api/v1/pages/my-app?locale=ja \
+  -H "Authorization: Bearer API_KEY"
+
+# List all locale variants
+curl -s https://appai.info/api/v1/pages/my-app?variants=true \
+  -H "Authorization: Bearer API_KEY"
+
+# Update Japanese version
+curl -X PATCH https://appai.info/api/v1/pages/my-app?locale=ja \
+  -H "Authorization: Bearer API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "新しいタイトル"}'
+
+# Delete only the Japanese version
+curl -X DELETE https://appai.info/api/v1/pages/my-app?locale=ja \
+  -H "Authorization: Bearer API_KEY"
+
+# Change the default locale
+curl -X POST "https://appai.info/api/v1/pages/my-app/set-default?locale=en" \
+  -H "Authorization: Bearer API_KEY"
+```
+
 ### Managing pages (CRUD)
 
-**All endpoints use slug (not id) in the URL.** Always use `https://appai.info` (no www).
+**All endpoints use slug (not id) in the URL.** Always use `https://appai.info` (no www). Add `?locale=xx` to target a specific language version (defaults to `en`).
 
 #### List all your pages
 ```bash
@@ -340,9 +431,9 @@ This also removes the linked app listing.
 #### Immutable fields
 
 These fields **cannot** be updated via PUT or PATCH. Sending them returns `400`:
-`slug`, `id`, `organizationId`, `createdAt`, `updatedAt`
+`slug`, `locale`, `id`, `organizationId`, `createdAt`, `updatedAt`
 
-To change a slug, delete the page and create a new one.
+To change a slug or locale, delete the page and create a new one.
 
 #### Error responses
 
@@ -372,6 +463,10 @@ After successful creation, tell the user:
 > - Landing page: https://appai.info/p/YOUR_SLUG
 > - Privacy policy: https://appai.info/p/YOUR_SLUG/privacy
 > - Terms of service: https://appai.info/p/YOUR_SLUG/terms
+
+If locale variants were created, also show them:
+> - Japanese: https://appai.info/p/YOUR_SLUG/ja
+> - Chinese: https://appai.info/p/YOUR_SLUG/zh-CN
 
 Then use `curl` to verify the pages return HTTP 200:
 
@@ -568,7 +663,7 @@ Every hosted page automatically gets:
 
 - **Sticky header** (auto-generated on every page):
   - Left: project logo (from hero section `logo` field) + project title
-  - Right: Privacy link (if `privacyPolicy` exists) + Terms link (if `termsOfService` exists) + **Download button** (if a `download` section exists with `appStoreUrl` or `playStoreUrl`)
+  - Right: **Language switcher** (if multiple locales exist) + Privacy link (if `privacyPolicy` exists) + Terms link (if `termsOfService` exists) + **Download button** (if a `download` section exists with `appStoreUrl` or `playStoreUrl`)
   - **IMPORTANT:** To show a Download button in the header, you MUST add a `download` section. Putting an App Store URL in the hero `ctaUrl` will NOT show a Download button in the header.
 - **Footer** — links to Privacy Policy and Terms of Service, "Hosted on AppAI" branding
 - **Breadcrumb navigation** — on Privacy and Terms sub-pages (e.g. "MedLogAI / Privacy Policy")
@@ -609,8 +704,9 @@ Use a **square image** (512x512px recommended, PNG with transparency). Upload lo
 ## Important Rules
 
 - `slug`: lowercase alphanumeric with hyphens only (e.g. `my-cool-app`)
+- `locale`: BCP 47 format (e.g. `en`, `ja`, `zh-CN`) — defaults to `en`
 - `themeColor`: hex format (e.g. `#6366F1`) — used for CTA buttons, download button, and accent colors
-- Free plan limit: 3 pages maximum
+- Free plan limit: 3 pages (slugs) maximum — locale variants are free
 - Privacy policy and terms of service use Markdown
 - Sections render in `order` sequence (1, 2, 3...)
 - You can combine ANY sections in ANY order
