@@ -35,6 +35,9 @@ yarn-error.log*
 .env.local
 .env.production
 
+# docs (internal planning documents)
+/docs
+
 # vercel
 .vercel
 

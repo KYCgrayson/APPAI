@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // In development, return the code for easy testing
-    if (process.env.NODE_ENV !== "production") {
+    // In local development only, return the code for easy testing
+    if (process.env.NODE_ENV === "development") {
       return NextResponse.json({
         message: "Verification code sent to your email",
         code,
