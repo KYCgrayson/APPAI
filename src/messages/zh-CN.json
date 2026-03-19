@@ -1,0 +1,68 @@
+{
+  "common": {
+    "browseApps": "浏览应用",
+    "dashboard": "控制面板",
+    "footerTagline": "AppAI - AI 应用托管平台",
+    "agentSpec": "Agent 规范",
+    "github": "GitHub",
+    "browse": "浏览"
+  },
+  "home": {
+    "heroTitle1": "您的 AI 应用值得",
+    "heroTitle2": "拥有一个网络之家",
+    "heroDescription": "用 AI 构建了应用？免费获取落地页、隐私政策和服务条款，无需域名。让您的 AI Agent 在 30 秒内完成设置。",
+    "getStarted": "免费开始",
+    "pagesHosted": "已托管 {count} 个页面，持续增长中",
+    "howItWorks": "使用方法",
+    "step1Title": "注册并获取 API 密钥",
+    "step1Desc": "使用 Google 登录，在控制面板中生成 API 密钥。",
+    "step2Title": "告诉您的 AI Agent",
+    "step2Desc": "将 API 密钥提供给您的 Claude、GPT 或 Codex，然后说「在 AppAI 上创建我的应用页面」。",
+    "step3Title": "上线完成",
+    "step3Desc": "您的落地页、隐私政策和服务条款已托管在 appai.info/p/your-app。",
+    "forAgents": "专为 AI Agent 打造",
+    "forAgentsDesc": "让您的 AI Agent 阅读规范，它将自动处理一切。",
+    "codeComment1": "# 将此内容提供给您的 AI Agent（Claude、GPT、Codex、Cursor……）",
+    "codeComment2": "# 或者直接将其指向 GitHub 上的规范",
+    "specNote": "该规范告诉您的 AI 如何进行身份验证、需要收集哪些数据以及如何创建页面。",
+    "readSpec": "阅读完整规范",
+    "viewGithub": "在 GitHub 上查看",
+    "featuredApps": "精选应用",
+    "recentlyAdded": "最近添加",
+    "viewAll": "查看全部",
+    "readyToLaunch": "准备好上线了吗？",
+    "ctaDescription": "加入 AppAI，让您用 AI 构建的应用拥有它应有的网络展示。"
+  },
+  "apps": {
+    "title": "浏览应用",
+    "noAppsTitle": "暂无应用",
+    "noAppsCategory": "在 {category} 中未找到应用，请尝试其他分类。",
+    "noAppsDefault": "成为第一个提交应用的人！"
+  },
+  "appDetail": {
+    "apps": "应用",
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "website": "网站",
+    "screenshots": "截图",
+    "viewHostedPage": "查看托管的落地页"
+  },
+  "login": {
+    "signInDescription": "登录以管理您的应用页面",
+    "signInGoogle": "使用 Google 登录",
+    "termsNotice": "登录即表示您同意我们的服务条款"
+  },
+  "deviceAuth": {
+    "invalidLink": "无效链接",
+    "missingCode": "缺少设备代码。请使用 Agent 提供的链接。",
+    "authorizeDevice": "授权设备",
+    "confirmationCode": "确认码",
+    "loading": "加载中……",
+    "signInPrompt": "登录以授权您的 AI Agent。",
+    "signInGoogle": "使用 Google 登录",
+    "authorizing": "授权中……",
+    "authorized": "已授权！",
+    "authorizedMessage": "您可以关闭此窗口。您的 Agent 已成功连接。",
+    "error": "错误"
+  }
+}

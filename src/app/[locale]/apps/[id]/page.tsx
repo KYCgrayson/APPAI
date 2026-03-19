@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { db } from "@/lib/db";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { PlatformHeader } from "@/components/PlatformHeader";
 import type { Metadata } from "next";
 
 interface Props {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; locale: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -20,6 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function AppDetailPage({ params }: Props) {
   const { id } = await params;
+  const t = await getTranslations("appDetail");
   const app = await db.app.findUnique({ where: { id } });
 
   if (!app || !app.isApproved) {
@@ -31,12 +34,12 @@ export default async function AppDetailPage({ params }: Props) {
       <header className="border-b">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-4">
           <Link href="/" className="text-xl font-bold flex items-center gap-2">
-            <img src="/appai.png" alt="AppAI" className="w-7 h-7 rounded" />
+            <img src="/appai-logo2.png" alt="AppAI" className="w-7 h-7 rounded" />
             AppAI
           </Link>
           <span className="text-gray-300">/</span>
           <Link href="/apps" className="text-sm text-gray-600 hover:text-black">
-            Apps
+            {t("apps")}
           </Link>
         </div>
       </header>
@@ -82,7 +85,7 @@ export default async function AppDetailPage({ params }: Props) {
               rel="noopener noreferrer"
               className="bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800"
             >
-              App Store
+              {t("appStore")}
             </a>
           )}
           {app.androidUrl && (
@@ -92,7 +95,7 @@ export default async function AppDetailPage({ params }: Props) {
               rel="noopener noreferrer"
               className="bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800"
             >
-              Google Play
+              {t("googlePlay")}
             </a>
           )}
           {app.url && (
@@ -102,7 +105,7 @@ export default async function AppDetailPage({ params }: Props) {
               rel="noopener noreferrer"
               className="border-2 px-6 py-3 rounded-xl hover:bg-gray-50"
             >
-              Website
+              {t("website")}
             </a>
           )}
         </div>
@@ -115,7 +118,7 @@ export default async function AppDetailPage({ params }: Props) {
         {/* Screenshots */}
         {app.screenshots.length > 0 && (
           <div className="mt-12">
-            <h2 className="text-xl font-semibold mb-4">Screenshots</h2>
+            <h2 className="text-xl font-semibold mb-4">{t("screenshots")}</h2>
             <div className="flex gap-4 overflow-x-auto pb-4">
               {app.screenshots.map((url, i) => (
                 <img
@@ -132,12 +135,12 @@ export default async function AppDetailPage({ params }: Props) {
         {/* Link to hosted page */}
         {app.hostedPageSlug && (
           <div className="mt-8 p-4 bg-gray-50 rounded-xl">
-            <Link
+            <a
               href={`/p/${app.hostedPageSlug}`}
               className="text-blue-600 hover:underline"
             >
-              View hosted landing page
-            </Link>
+              {t("viewHostedPage")}
+            </a>
           </div>
         )}
       </div>

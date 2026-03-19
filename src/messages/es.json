@@ -1,0 +1,68 @@
+{
+  "common": {
+    "browseApps": "Explorar apps",
+    "dashboard": "Panel de control",
+    "footerTagline": "AppAI - Plataforma de alojamiento de apps de IA",
+    "agentSpec": "Especificación del agente",
+    "github": "GitHub",
+    "browse": "Explorar"
+  },
+  "home": {
+    "heroTitle1": "Tu app de IA merece",
+    "heroTitle2": "un hogar en la web",
+    "heroDescription": "¿Creaste una app con IA? Obtén una página de inicio, política de privacidad y términos de servicio gratis. Sin necesidad de dominio. Deja que tu agente de IA lo configure en 30 segundos.",
+    "getStarted": "Comenzar gratis",
+    "pagesHosted": "{count} páginas alojadas y contando",
+    "howItWorks": "Cómo funciona",
+    "step1Title": "Regístrate y obtén una clave API",
+    "step1Desc": "Inicia sesión con Google y genera una clave API en tu panel de control.",
+    "step2Title": "Dile a tu agente de IA",
+    "step2Desc": "Dale a tu Claude, GPT o Codex la clave API y di «crea mi página de app en AppAI».",
+    "step3Title": "Ya estás en línea",
+    "step3Desc": "Tu página de inicio, política de privacidad y términos de servicio están alojados en appai.info/p/tu-app.",
+    "forAgents": "Para agentes de IA",
+    "forAgentsDesc": "Dile a tu agente de IA que lea la especificación y se encargará de todo automáticamente.",
+    "codeComment1": "# Dale esto a tu agente de IA (Claude, GPT, Codex, Cursor...)",
+    "codeComment2": "# O dirígelo directamente a la especificación en GitHub",
+    "specNote": "La especificación le indica a tu IA cómo autenticarse, qué datos recopilar y cómo crear tu página.",
+    "readSpec": "Leer la especificación completa",
+    "viewGithub": "Ver en GitHub",
+    "featuredApps": "Apps destacadas",
+    "recentlyAdded": "Añadidas recientemente",
+    "viewAll": "Ver todas",
+    "readyToLaunch": "¿Listo para lanzar?",
+    "ctaDescription": "Únete a AppAI y dale a tu app creada con IA la presencia web que merece."
+  },
+  "apps": {
+    "title": "Explorar apps",
+    "noAppsTitle": "Aún no hay apps",
+    "noAppsCategory": "No se encontraron apps en {category}. Prueba otra categoría.",
+    "noAppsDefault": "¡Sé el primero en enviar tu app!"
+  },
+  "appDetail": {
+    "apps": "Apps",
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "website": "Sitio web",
+    "screenshots": "Capturas de pantalla",
+    "viewHostedPage": "Ver página de inicio alojada"
+  },
+  "login": {
+    "signInDescription": "Inicia sesión para gestionar tus páginas de app",
+    "signInGoogle": "Iniciar sesión con Google",
+    "termsNotice": "Al iniciar sesión, aceptas nuestros términos de servicio"
+  },
+  "deviceAuth": {
+    "invalidLink": "Enlace inválido",
+    "missingCode": "Falta el código del dispositivo. Usa el enlace proporcionado por tu agente.",
+    "authorizeDevice": "Autorizar dispositivo",
+    "confirmationCode": "Código de confirmación",
+    "loading": "Cargando...",
+    "signInPrompt": "Inicia sesión para autorizar a tu agente de IA.",
+    "signInGoogle": "Iniciar sesión con Google",
+    "authorizing": "Autorizando...",
+    "authorized": "¡Autorizado!",
+    "authorizedMessage": "Puedes cerrar esta ventana. Tu agente ya está conectado.",
+    "error": "Error"
+  }
+}

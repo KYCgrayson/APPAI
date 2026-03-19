@@ -1,0 +1,68 @@
+{
+  "common": {
+    "browseApps": "ऐप्स ब्राउज़ करें",
+    "dashboard": "डैशबोर्ड",
+    "footerTagline": "AppAI - AI ऐप होस्टिंग प्लेटफ़ॉर्म",
+    "agentSpec": "एजेंट स्पेक",
+    "github": "GitHub",
+    "browse": "ब्राउज़ करें"
+  },
+  "home": {
+    "heroTitle1": "आपकी AI ऐप को मिलना चाहिए",
+    "heroTitle2": "वेब पर एक घर",
+    "heroDescription": "AI से ऐप बनाई? मुफ़्त लैंडिंग पेज, गोपनीयता नीति और सेवा की शर्तें पाएं। किसी डोमेन की ज़रूरत नहीं। अपने AI एजेंट को 30 सेकंड में सब सेट अप करने दें।",
+    "getStarted": "मुफ़्त में शुरू करें",
+    "pagesHosted": "{count} पेज होस्ट किए गए और बढ़ रहे हैं",
+    "howItWorks": "यह कैसे काम करता है",
+    "step1Title": "साइन अप करें और API कुंजी पाएं",
+    "step1Desc": "Google से साइन इन करें और अपने डैशबोर्ड में API कुंजी जनरेट करें।",
+    "step2Title": "अपने AI एजेंट को बताएं",
+    "step2Desc": "अपने Claude, GPT या Codex को API कुंजी दें और कहें \"AppAI पर मेरा ऐप पेज बनाओ\"।",
+    "step3Title": "आप लाइव हैं",
+    "step3Desc": "आपका लैंडिंग पेज, गोपनीयता नीति और शर्तें appai.info/p/your-app पर होस्ट हैं।",
+    "forAgents": "AI एजेंटों के लिए",
+    "forAgentsDesc": "अपने AI एजेंट को स्पेक पढ़ने के लिए कहें और वह सब कुछ अपने आप संभाल लेगा।",
+    "codeComment1": "# यह अपने AI एजेंट को दें (Claude, GPT, Codex, Cursor...)",
+    "codeComment2": "# या इसे सीधे GitHub स्पेक पर भेजें",
+    "specNote": "स्पेक आपकी AI को बताता है कि कैसे प्रमाणित करें, कौन सा डेटा एकत्र करें और आपका पेज कैसे बनाएं।",
+    "readSpec": "पूरी स्पेक पढ़ें",
+    "viewGithub": "GitHub पर देखें",
+    "featuredApps": "चुनिंदा ऐप्स",
+    "recentlyAdded": "हाल ही में जोड़े गए",
+    "viewAll": "सभी देखें",
+    "readyToLaunch": "लॉन्च के लिए तैयार?",
+    "ctaDescription": "AppAI से जुड़ें और अपनी AI से बनी ऐप को वह वेब उपस्थिति दें जिसकी वह हकदार है।"
+  },
+  "apps": {
+    "title": "ऐप्स ब्राउज़ करें",
+    "noAppsTitle": "अभी कोई ऐप नहीं",
+    "noAppsCategory": "{category} में कोई ऐप नहीं मिला। कोई और श्रेणी आज़माएं।",
+    "noAppsDefault": "अपनी ऐप सबमिट करने वाले पहले व्यक्ति बनें!"
+  },
+  "appDetail": {
+    "apps": "ऐप्स",
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "website": "वेबसाइट",
+    "screenshots": "स्क्रीनशॉट",
+    "viewHostedPage": "होस्ट किया गया लैंडिंग पेज देखें"
+  },
+  "login": {
+    "signInDescription": "अपने ऐप पेज प्रबंधित करने के लिए साइन इन करें",
+    "signInGoogle": "Google से साइन इन करें",
+    "termsNotice": "साइन इन करके, आप हमारी सेवा की शर्तों से सहमत होते हैं"
+  },
+  "deviceAuth": {
+    "invalidLink": "अमान्य लिंक",
+    "missingCode": "डिवाइस कोड गायब है। कृपया अपने एजेंट द्वारा दिए गए लिंक का उपयोग करें।",
+    "authorizeDevice": "डिवाइस अधिकृत करें",
+    "confirmationCode": "पुष्टि कोड",
+    "loading": "लोड हो रहा है...",
+    "signInPrompt": "अपने AI एजेंट को अधिकृत करने के लिए साइन इन करें।",
+    "signInGoogle": "Google से साइन इन करें",
+    "authorizing": "अधिकृत किया जा रहा है...",
+    "authorized": "अधिकृत!",
+    "authorizedMessage": "आप इस विंडो को बंद कर सकते हैं। आपका एजेंट अब कनेक्ट हो गया है।",
+    "error": "त्रुटि"
+  }
+}

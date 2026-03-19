@@ -1,0 +1,68 @@
+{
+  "common": {
+    "browseApps": "Apps durchsuchen",
+    "dashboard": "Dashboard",
+    "footerTagline": "AppAI - KI-App-Hosting-Plattform",
+    "agentSpec": "Agent-Spezifikation",
+    "github": "GitHub",
+    "browse": "Durchsuchen"
+  },
+  "home": {
+    "heroTitle1": "Deine KI-App verdient",
+    "heroTitle2": "ein Zuhause im Web",
+    "heroDescription": "Eine App mit KI erstellt? Erhalte eine kostenlose Landingpage, Datenschutzrichtlinie und Nutzungsbedingungen. Keine Domain nötig. Lass deinen KI-Agenten es in 30 Sekunden einrichten.",
+    "getStarted": "Kostenlos starten",
+    "pagesHosted": "{count} Seiten gehostet und es werden mehr",
+    "howItWorks": "So funktioniert es",
+    "step1Title": "Registrieren & API-Schlüssel erhalten",
+    "step1Desc": "Melde dich mit Google an und generiere einen API-Schlüssel in deinem Dashboard.",
+    "step2Title": "Sag es deinem KI-Agenten",
+    "step2Desc": "Gib deinem Claude, GPT oder Codex den API-Schlüssel und sage 'erstelle meine App-Seite auf AppAI'.",
+    "step3Title": "Du bist online",
+    "step3Desc": "Deine Landingpage, Datenschutzrichtlinie und Nutzungsbedingungen sind unter appai.info/p/deine-app gehostet.",
+    "forAgents": "Für KI-Agenten",
+    "forAgentsDesc": "Sag deinem KI-Agenten, er soll die Spezifikation lesen, und er erledigt alles automatisch.",
+    "codeComment1": "# Gib dies deinem KI-Agenten (Claude, GPT, Codex, Cursor...)",
+    "codeComment2": "# Oder verweise ihn direkt auf die GitHub-Spezifikation",
+    "specNote": "Die Spezifikation erklärt deiner KI, wie sie sich authentifiziert, welche Daten sie sammeln soll und wie sie deine Seite erstellt.",
+    "readSpec": "Vollständige Spezifikation lesen",
+    "viewGithub": "Auf GitHub ansehen",
+    "featuredApps": "Empfohlene Apps",
+    "recentlyAdded": "Kürzlich hinzugefügt",
+    "viewAll": "Alle ansehen",
+    "readyToLaunch": "Bereit zum Start?",
+    "ctaDescription": "Tritt AppAI bei und gib deiner KI-erstellten App die Webpräsenz, die sie verdient."
+  },
+  "apps": {
+    "title": "Apps durchsuchen",
+    "noAppsTitle": "Noch keine Apps",
+    "noAppsCategory": "Keine Apps in {category} gefunden. Versuche eine andere Kategorie.",
+    "noAppsDefault": "Sei der Erste, der seine App einreicht!"
+  },
+  "appDetail": {
+    "apps": "Apps",
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "website": "Webseite",
+    "screenshots": "Screenshots",
+    "viewHostedPage": "Gehostete Landingpage ansehen"
+  },
+  "login": {
+    "signInDescription": "Melde dich an, um deine App-Seiten zu verwalten",
+    "signInGoogle": "Mit Google anmelden",
+    "termsNotice": "Durch die Anmeldung stimmst du unseren Nutzungsbedingungen zu"
+  },
+  "deviceAuth": {
+    "invalidLink": "Ungültiger Link",
+    "missingCode": "Gerätecode fehlt. Bitte verwende den von deinem Agenten bereitgestellten Link.",
+    "authorizeDevice": "Gerät autorisieren",
+    "confirmationCode": "Bestätigungscode",
+    "loading": "Wird geladen...",
+    "signInPrompt": "Melde dich an, um deinen KI-Agenten zu autorisieren.",
+    "signInGoogle": "Mit Google anmelden",
+    "authorizing": "Autorisierung läuft...",
+    "authorized": "Autorisiert!",
+    "authorizedMessage": "Du kannst dieses Fenster schließen. Dein Agent ist jetzt verbunden.",
+    "error": "Fehler"
+  }
+}

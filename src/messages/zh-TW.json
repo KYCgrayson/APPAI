@@ -1,0 +1,68 @@
+{
+  "common": {
+    "browseApps": "瀏覽應用程式",
+    "dashboard": "控制台",
+    "footerTagline": "AppAI - AI 應用程式託管平台",
+    "agentSpec": "Agent 規格",
+    "github": "GitHub",
+    "browse": "瀏覽"
+  },
+  "home": {
+    "heroTitle1": "您的 AI 應用程式值得",
+    "heroTitle2": "擁有一個網路上的家",
+    "heroDescription": "用 AI 打造了應用程式？免費取得登陸頁面、隱私權政策和服務條款。不需要網域。讓您的 AI Agent 在 30 秒內完成設定。",
+    "getStarted": "免費開始使用",
+    "pagesHosted": "已託管 {count} 個頁面，持續增加中",
+    "howItWorks": "運作方式",
+    "step1Title": "註冊並取得 API 金鑰",
+    "step1Desc": "使用 Google 登入，在控制台中產生 API 金鑰。",
+    "step2Title": "告訴您的 AI Agent",
+    "step2Desc": "將 API 金鑰提供給您的 Claude、GPT 或 Codex，並說「在 AppAI 上建立我的應用程式頁面」。",
+    "step3Title": "上線完成",
+    "step3Desc": "您的登陸頁面、隱私權政策和服務條款已託管於 appai.info/p/your-app。",
+    "forAgents": "專為 AI Agent 打造",
+    "forAgentsDesc": "告訴您的 AI Agent 閱讀規格，它會自動處理所有事項。",
+    "codeComment1": "# 將此提供給您的 AI Agent（Claude、GPT、Codex、Cursor...）",
+    "codeComment2": "# 或直接將其指向 GitHub 規格",
+    "specNote": "規格會告訴您的 AI 如何進行驗證、需要收集哪些資料，以及如何建立您的頁面。",
+    "readSpec": "閱讀完整規格",
+    "viewGithub": "在 GitHub 上檢視",
+    "featuredApps": "精選應用程式",
+    "recentlyAdded": "最近新增",
+    "viewAll": "檢視全部",
+    "readyToLaunch": "準備好上線了嗎？",
+    "ctaDescription": "加入 AppAI，讓您用 AI 打造的應用程式擁有它應得的網路形象。"
+  },
+  "apps": {
+    "title": "瀏覽應用程式",
+    "noAppsTitle": "尚無應用程式",
+    "noAppsCategory": "在 {category} 中找不到應用程式。請嘗試其他分類。",
+    "noAppsDefault": "成為第一個提交應用程式的人！"
+  },
+  "appDetail": {
+    "apps": "應用程式",
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "website": "網站",
+    "screenshots": "螢幕截圖",
+    "viewHostedPage": "檢視託管的登陸頁面"
+  },
+  "login": {
+    "signInDescription": "登入以管理您的應用程式頁面",
+    "signInGoogle": "使用 Google 登入",
+    "termsNotice": "登入即表示您同意我們的服務條款"
+  },
+  "deviceAuth": {
+    "invalidLink": "無效的連結",
+    "missingCode": "缺少裝置代碼。請使用您的 Agent 提供的連結。",
+    "authorizeDevice": "授權裝置",
+    "confirmationCode": "確認碼",
+    "loading": "載入中...",
+    "signInPrompt": "登入以授權您的 AI Agent。",
+    "signInGoogle": "使用 Google 登入",
+    "authorizing": "授權中...",
+    "authorized": "已授權！",
+    "authorizedMessage": "您可以關閉此視窗。您的 Agent 已成功連線。",
+    "error": "錯誤"
+  }
+}

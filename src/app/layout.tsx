@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getLocale } from "next-intl/server";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -12,16 +13,18 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <head>
-        <link rel="icon" href="/appai.png" />
-        <link rel="apple-touch-icon" href="/appai.png" />
+        <link rel="icon" href="/appai-logo2.png" />
+        <link rel="apple-touch-icon" href="/appai-logo2.png" />
         <link rel="alternate" type="text/plain" href="/spec" title="AI Agent Spec" />
         <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM Info" />
         <script

@@ -1,4 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import createIntlMiddleware from "next-intl/middleware";
+import { routing } from "@/i18n/routing";
+
+// ---------------------------------------------------------------------------
+// next-intl middleware for locale detection + redirect
+// ---------------------------------------------------------------------------
+
+const intlMiddleware = createIntlMiddleware(routing);
 
 // ---------------------------------------------------------------------------
 // In-memory rate limiter (per-IP, sliding window style with fixed buckets)
@@ -31,11 +39,8 @@ function cleanup() {
 // ---------------------------------------------------------------------------
 
 interface RateLimitRule {
-  /** Matching function for the route */
   match: (pathname: string, method: string) => boolean;
-  /** Maximum requests allowed in the window */
   limit: number;
-  /** Window size in milliseconds */
   windowMs: number;
 }
 
@@ -85,22 +90,15 @@ function resolveRule(
   return rules.find((r) => r.match(pathname, method));
 }
 
-// ---------------------------------------------------------------------------
-// Middleware
-// ---------------------------------------------------------------------------
-
-export function middleware(request: NextRequest) {
+function handleRateLimit(request: NextRequest): NextResponse | null {
   cleanup();
 
   const { pathname } = request.nextUrl;
   const method = request.method;
 
   const rule = resolveRule(pathname, method);
-  if (!rule) {
-    return NextResponse.next();
-  }
+  if (!rule) return null;
 
-  // Identify client by IP
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     (request as any).ip ??
@@ -111,9 +109,8 @@ export function middleware(request: NextRequest) {
   const entry = rateLimitMap.get(key);
 
   if (!entry || now > entry.resetTime) {
-    // First request in a new window
     rateLimitMap.set(key, { count: 1, resetTime: now + rule.windowMs });
-    return NextResponse.next();
+    return null;
   }
 
   if (entry.count >= rule.limit) {
@@ -130,10 +127,40 @@ export function middleware(request: NextRequest) {
   }
 
   entry.count += 1;
-  return NextResponse.next();
+  return null;
 }
 
-// Only run middleware on API routes
+// ---------------------------------------------------------------------------
+// Combined middleware
+// ---------------------------------------------------------------------------
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Rate limiting for API routes
+  if (pathname.startsWith("/api/")) {
+    const rateLimitResponse = handleRateLimit(request);
+    return rateLimitResponse || NextResponse.next();
+  }
+
+  // Skip i18n for non-public routes
+  if (
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/p/") ||
+    pathname.startsWith("/spec") ||
+    pathname.startsWith("/llms")
+  ) {
+    return NextResponse.next();
+  }
+
+  // i18n locale detection + redirect for public pages
+  return intlMiddleware(request);
+}
+
 export const config = {
-  matcher: ["/api/:path*"],
+  matcher: [
+    // Match all paths except static files and _next
+    "/((?!_next|.*\\..*).*)",
+  ],
 };

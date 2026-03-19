@@ -1,0 +1,68 @@
+{
+  "common": {
+    "browseApps": "Browse Apps",
+    "dashboard": "Dashboard",
+    "footerTagline": "AppAI - AI App Hosting Platform",
+    "agentSpec": "Agent Spec",
+    "github": "GitHub",
+    "browse": "Browse"
+  },
+  "home": {
+    "heroTitle1": "Your AI App deserves",
+    "heroTitle2": "a home on the web",
+    "heroDescription": "Built an app with AI? Get a free landing page, privacy policy, and terms of service. No domain needed. Let your AI Agent set it up in 30 seconds.",
+    "getStarted": "Get Started Free",
+    "pagesHosted": "{count} pages hosted and counting",
+    "howItWorks": "How it works",
+    "step1Title": "Sign up & get API key",
+    "step1Desc": "Sign in with Google, generate an API key in your dashboard.",
+    "step2Title": "Tell your AI Agent",
+    "step2Desc": "Give your Claude, GPT, or Codex the API key and say \"create my app page on AppAI\".",
+    "step3Title": "You're live",
+    "step3Desc": "Your landing page, privacy policy, and terms are hosted at appai.info/p/your-app.",
+    "forAgents": "For AI Agents",
+    "forAgentsDesc": "Tell your AI agent to read the spec and it will handle everything automatically.",
+    "codeComment1": "# Give this to your AI agent (Claude, GPT, Codex, Cursor...)",
+    "codeComment2": "# Or point it to the GitHub spec directly",
+    "specNote": "The spec tells your AI how to authenticate, what data to collect, and how to create your page.",
+    "readSpec": "Read the full spec",
+    "viewGithub": "View on GitHub",
+    "featuredApps": "Featured Apps",
+    "recentlyAdded": "Recently Added",
+    "viewAll": "View all",
+    "readyToLaunch": "Ready to launch?",
+    "ctaDescription": "Join AppAI and give your AI-built app the web presence it deserves."
+  },
+  "apps": {
+    "title": "Browse Apps",
+    "noAppsTitle": "No apps yet",
+    "noAppsCategory": "No apps found in {category}. Try another category.",
+    "noAppsDefault": "Be the first to submit your app!"
+  },
+  "appDetail": {
+    "apps": "Apps",
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "website": "Website",
+    "screenshots": "Screenshots",
+    "viewHostedPage": "View hosted landing page"
+  },
+  "login": {
+    "signInDescription": "Sign in to manage your App pages",
+    "signInGoogle": "Sign in with Google",
+    "termsNotice": "By signing in, you agree to our Terms of Service"
+  },
+  "deviceAuth": {
+    "invalidLink": "Invalid Link",
+    "missingCode": "Missing device code. Please use the link provided by your agent.",
+    "authorizeDevice": "Authorize Device",
+    "confirmationCode": "Confirmation Code",
+    "loading": "Loading...",
+    "signInPrompt": "Sign in to authorize your AI agent.",
+    "signInGoogle": "Sign in with Google",
+    "authorizing": "Authorizing...",
+    "authorized": "Authorized!",
+    "authorizedMessage": "You can close this window. Your agent is now connected.",
+    "error": "Error"
+  }
+}

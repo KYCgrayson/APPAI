@@ -17,7 +17,7 @@ export default async function AdminLayout({
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/admin" className="text-xl font-bold flex items-center gap-2">
-              <img src="/appai.png" alt="AppAI" className="w-7 h-7 rounded" />
+              <img src="/appai-logo2.png" alt="AppAI" className="w-7 h-7 rounded" />
               AppAI <span className="text-xs font-normal bg-white/20 px-2 py-0.5 rounded ml-1">Admin</span>
             </Link>
             <div className="flex gap-4">

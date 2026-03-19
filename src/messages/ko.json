@@ -1,0 +1,68 @@
+{
+  "common": {
+    "browseApps": "앱 둘러보기",
+    "dashboard": "대시보드",
+    "footerTagline": "AppAI - AI 앱 호스팅 플랫폼",
+    "agentSpec": "에이전트 스펙",
+    "github": "GitHub",
+    "browse": "둘러보기"
+  },
+  "home": {
+    "heroTitle1": "당신의 AI 앱은",
+    "heroTitle2": "웹에서 빛나야 합니다",
+    "heroDescription": "AI로 앱을 만드셨나요? 무료 랜딩 페이지, 개인정보 처리방침, 이용약관을 받으세요. 도메인이 필요 없습니다. AI 에이전트가 30초 만에 설정해 드립니다.",
+    "getStarted": "무료로 시작하기",
+    "pagesHosted": "{count}개의 페이지가 호스팅되었으며 계속 증가 중",
+    "howItWorks": "이용 방법",
+    "step1Title": "가입 및 API 키 발급",
+    "step1Desc": "Google로 로그인하고 대시보드에서 API 키를 생성하세요.",
+    "step2Title": "AI 에이전트에게 알려주세요",
+    "step2Desc": "Claude, GPT 또는 Codex에 API 키를 제공하고 \"AppAI에 내 앱 페이지를 만들어 줘\"라고 말하세요.",
+    "step3Title": "라이브 완료",
+    "step3Desc": "랜딩 페이지, 개인정보 처리방침, 이용약관이 appai.info/p/your-app에 호스팅됩니다.",
+    "forAgents": "AI 에이전트용",
+    "forAgentsDesc": "AI 에이전트에게 스펙을 읽으라고 하면 모든 것을 자동으로 처리합니다.",
+    "codeComment1": "# AI 에이전트에게 이것을 제공하세요 (Claude, GPT, Codex, Cursor...)",
+    "codeComment2": "# 또는 GitHub 스펙을 직접 가리키세요",
+    "specNote": "스펙은 AI에게 인증 방법, 수집할 데이터, 페이지 생성 방법을 알려줍니다.",
+    "readSpec": "전체 스펙 읽기",
+    "viewGithub": "GitHub에서 보기",
+    "featuredApps": "추천 앱",
+    "recentlyAdded": "최근 추가됨",
+    "viewAll": "전체 보기",
+    "readyToLaunch": "출시할 준비가 되셨나요?",
+    "ctaDescription": "AppAI에 가입하고 AI로 만든 앱에 걸맞은 웹 존재감을 부여하세요."
+  },
+  "apps": {
+    "title": "앱 둘러보기",
+    "noAppsTitle": "아직 앱이 없습니다",
+    "noAppsCategory": "{category}에서 앱을 찾을 수 없습니다. 다른 카테고리를 시도해 보세요.",
+    "noAppsDefault": "첫 번째로 앱을 제출해 보세요!"
+  },
+  "appDetail": {
+    "apps": "앱",
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "website": "웹사이트",
+    "screenshots": "스크린샷",
+    "viewHostedPage": "호스팅된 랜딩 페이지 보기"
+  },
+  "login": {
+    "signInDescription": "앱 페이지를 관리하려면 로그인하세요",
+    "signInGoogle": "Google로 로그인",
+    "termsNotice": "로그인하면 이용약관에 동의하는 것으로 간주됩니다"
+  },
+  "deviceAuth": {
+    "invalidLink": "유효하지 않은 링크",
+    "missingCode": "디바이스 코드가 없습니다. 에이전트가 제공한 링크를 사용해 주세요.",
+    "authorizeDevice": "디바이스 인증",
+    "confirmationCode": "확인 코드",
+    "loading": "로딩 중...",
+    "signInPrompt": "AI 에이전트를 인증하려면 로그인하세요.",
+    "signInGoogle": "Google로 로그인",
+    "authorizing": "인증 중...",
+    "authorized": "인증 완료!",
+    "authorizedMessage": "이 창을 닫으셔도 됩니다. 에이전트가 연결되었습니다.",
+    "error": "오류"
+  }
+}

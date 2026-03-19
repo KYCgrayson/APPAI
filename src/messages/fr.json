@@ -1,0 +1,68 @@
+{
+  "common": {
+    "browseApps": "Parcourir les apps",
+    "dashboard": "Tableau de bord",
+    "footerTagline": "AppAI - Plateforme d'hébergement d'apps IA",
+    "agentSpec": "Spécification Agent",
+    "github": "GitHub",
+    "browse": "Parcourir"
+  },
+  "home": {
+    "heroTitle1": "Votre app IA mérite",
+    "heroTitle2": "une place sur le web",
+    "heroDescription": "Vous avez créé une app avec l'IA ? Obtenez gratuitement une page d'accueil, une politique de confidentialité et des conditions d'utilisation. Pas de domaine nécessaire. Laissez votre agent IA tout configurer en 30 secondes.",
+    "getStarted": "Commencer gratuitement",
+    "pagesHosted": "{count} pages hébergées et ça continue",
+    "howItWorks": "Comment ça marche",
+    "step1Title": "Inscrivez-vous et obtenez une clé API",
+    "step1Desc": "Connectez-vous avec Google et générez une clé API dans votre tableau de bord.",
+    "step2Title": "Informez votre agent IA",
+    "step2Desc": "Donnez à votre Claude, GPT ou Codex la clé API et dites « crée ma page d'app sur AppAI ».",
+    "step3Title": "Vous êtes en ligne",
+    "step3Desc": "Votre page d'accueil, politique de confidentialité et conditions d'utilisation sont hébergées sur appai.info/p/votre-app.",
+    "forAgents": "Pour les agents IA",
+    "forAgentsDesc": "Dites à votre agent IA de lire la spécification et il s'occupera de tout automatiquement.",
+    "codeComment1": "# Donnez ceci à votre agent IA (Claude, GPT, Codex, Cursor...)",
+    "codeComment2": "# Ou dirigez-le directement vers la spécification GitHub",
+    "specNote": "La spécification indique à votre IA comment s'authentifier, quelles données collecter et comment créer votre page.",
+    "readSpec": "Lire la spécification complète",
+    "viewGithub": "Voir sur GitHub",
+    "featuredApps": "Apps en vedette",
+    "recentlyAdded": "Ajoutées récemment",
+    "viewAll": "Tout voir",
+    "readyToLaunch": "Prêt à vous lancer ?",
+    "ctaDescription": "Rejoignez AppAI et offrez à votre app créée par IA la présence web qu'elle mérite."
+  },
+  "apps": {
+    "title": "Parcourir les apps",
+    "noAppsTitle": "Aucune app pour le moment",
+    "noAppsCategory": "Aucune app trouvée dans {category}. Essayez une autre catégorie.",
+    "noAppsDefault": "Soyez le premier à soumettre votre app !"
+  },
+  "appDetail": {
+    "apps": "Apps",
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "website": "Site web",
+    "screenshots": "Captures d'écran",
+    "viewHostedPage": "Voir la page d'accueil hébergée"
+  },
+  "login": {
+    "signInDescription": "Connectez-vous pour gérer vos pages d'app",
+    "signInGoogle": "Se connecter avec Google",
+    "termsNotice": "En vous connectant, vous acceptez nos conditions d'utilisation"
+  },
+  "deviceAuth": {
+    "invalidLink": "Lien invalide",
+    "missingCode": "Code d'appareil manquant. Veuillez utiliser le lien fourni par votre agent.",
+    "authorizeDevice": "Autoriser l'appareil",
+    "confirmationCode": "Code de confirmation",
+    "loading": "Chargement...",
+    "signInPrompt": "Connectez-vous pour autoriser votre agent IA.",
+    "signInGoogle": "Se connecter avec Google",
+    "authorizing": "Autorisation en cours...",
+    "authorized": "Autorisé !",
+    "authorizedMessage": "Vous pouvez fermer cette fenêtre. Votre agent est maintenant connecté.",
+    "error": "Erreur"
+  }
+}

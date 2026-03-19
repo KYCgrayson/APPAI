@@ -1,17 +1,20 @@
 import { signIn } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { getTranslations } from "next-intl/server";
 
 export default async function LoginPage() {
   const session = await auth();
   if (session) redirect("/dashboard");
 
+  const t = await getTranslations("login");
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
-        <img src="/appai.png" alt="AppAI" className="w-16 h-16 rounded-xl mx-auto mb-4" />
+        <img src="/appai-logo2.png" alt="AppAI" className="w-16 h-16 rounded-xl mx-auto mb-4" />
         <h1 className="text-3xl font-bold mb-2">AppAI</h1>
-        <p className="text-gray-600 mb-8">Sign in to manage your App pages</p>
+        <p className="text-gray-600 mb-8">{t("signInDescription")}</p>
 
         <form
           action={async () => {
@@ -41,12 +44,12 @@ export default async function LoginPage() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            Sign in with Google
+            {t("signInGoogle")}
           </button>
         </form>
 
         <p className="mt-6 text-sm text-gray-400">
-          By signing in, you agree to our Terms of Service
+          {t("termsNotice")}
         </p>
       </div>
     </div>

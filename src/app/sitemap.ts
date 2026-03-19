@@ -1,16 +1,34 @@
 import type { MetadataRoute } from "next";
 import { db } from "@/lib/db";
 import { buildPagePath } from "@/lib/parse-page-segments";
+import { locales } from "@/i18n/routing";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
 
-  // Static pages
-  const staticPages: MetadataRoute.Sitemap = [
-    { url: baseUrl, lastModified: new Date(), changeFrequency: "daily", priority: 1 },
-    { url: `${baseUrl}/apps`, lastModified: new Date(), changeFrequency: "daily", priority: 0.8 },
-    { url: `${baseUrl}/login`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
+  // Static pages with locale alternates
+  const staticPaths = [
+    { path: "", changeFrequency: "daily" as const, priority: 1 },
+    { path: "/apps", changeFrequency: "daily" as const, priority: 0.8 },
+    { path: "/login", changeFrequency: "monthly" as const, priority: 0.3 },
   ];
+
+  const staticPages: MetadataRoute.Sitemap = staticPaths.map((page) => {
+    const languages: Record<string, string> = {};
+    for (const locale of locales) {
+      const prefix = locale === "en" ? "" : `/${locale}`;
+      languages[locale] = `${baseUrl}${prefix}${page.path}`;
+    }
+    languages["x-default"] = `${baseUrl}${page.path}`;
+
+    return {
+      url: `${baseUrl}${page.path}`,
+      lastModified: new Date(),
+      changeFrequency: page.changeFrequency,
+      priority: page.priority,
+      alternates: { languages },
+    };
+  });
 
   // Published hosted pages (all locales)
   const pages = await db.hostedPage.findMany({
@@ -67,7 +85,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return entries;
   });
 
-  // Approved apps
+  // Approved apps (with locale alternates)
   const apps = await db.app.findMany({
     where: { isApproved: true },
     select: { id: true, updatedAt: true, hostedPageSlug: true },
@@ -75,12 +93,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const appEntries: MetadataRoute.Sitemap = apps
     .filter((app) => !app.hostedPageSlug)
-    .map((app) => ({
-      url: `${baseUrl}/apps/${app.id}`,
-      lastModified: app.updatedAt,
-      changeFrequency: "weekly" as const,
-      priority: 0.6,
-    }));
+    .map((app) => {
+      const languages: Record<string, string> = {};
+      for (const locale of locales) {
+        const prefix = locale === "en" ? "" : `/${locale}`;
+        languages[locale] = `${baseUrl}${prefix}/apps/${app.id}`;
+      }
+      languages["x-default"] = `${baseUrl}/apps/${app.id}`;
+
+      return {
+        url: `${baseUrl}/apps/${app.id}`,
+        lastModified: app.updatedAt,
+        changeFrequency: "weekly" as const,
+        priority: 0.6,
+        alternates: { languages },
+      };
+    });
 
   return [...staticPages, ...pageEntries, ...appEntries];
 }

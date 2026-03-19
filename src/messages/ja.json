@@ -1,0 +1,68 @@
+{
+  "common": {
+    "browseApps": "アプリを探す",
+    "dashboard": "ダッシュボード",
+    "footerTagline": "AppAI - AIアプリホスティングプラットフォーム",
+    "agentSpec": "エージェント仕様",
+    "github": "GitHub",
+    "browse": "探す"
+  },
+  "home": {
+    "heroTitle1": "あなたのAIアプリにふさわしい",
+    "heroTitle2": "ウェブ上の居場所を",
+    "heroDescription": "AIでアプリを作りましたか？無料のランディングページ、プライバシーポリシー、利用規約を取得できます。ドメイン不要。AIエージェントに30秒でセットアップさせましょう。",
+    "getStarted": "無料で始める",
+    "pagesHosted": "{count} ページがホスティング中（増加中）",
+    "howItWorks": "使い方",
+    "step1Title": "登録してAPIキーを取得",
+    "step1Desc": "Googleでサインインし、ダッシュボードでAPIキーを生成します。",
+    "step2Title": "AIエージェントに伝える",
+    "step2Desc": "Claude、GPT、またはCodexにAPIキーを渡し、「AppAIでアプリページを作成して」と伝えてください。",
+    "step3Title": "公開完了",
+    "step3Desc": "ランディングページ、プライバシーポリシー、利用規約がappai.info/p/your-appでホスティングされます。",
+    "forAgents": "AIエージェント向け",
+    "forAgentsDesc": "AIエージェントに仕様を読ませれば、すべて自動で処理します。",
+    "codeComment1": "# これをAIエージェントに渡してください（Claude、GPT、Codex、Cursor...）",
+    "codeComment2": "# またはGitHubの仕様に直接アクセスさせてください",
+    "specNote": "この仕様は、認証方法、収集するデータ、ページの作成方法をAIに伝えます。",
+    "readSpec": "仕様の全文を読む",
+    "viewGithub": "GitHubで見る",
+    "featuredApps": "注目のアプリ",
+    "recentlyAdded": "最近追加されたアプリ",
+    "viewAll": "すべて見る",
+    "readyToLaunch": "公開の準備はできましたか？",
+    "ctaDescription": "AppAIに参加して、AIで作ったアプリにふさわしいウェブプレゼンスを提供しましょう。"
+  },
+  "apps": {
+    "title": "アプリを探す",
+    "noAppsTitle": "アプリはまだありません",
+    "noAppsCategory": "{category} にアプリが見つかりませんでした。他のカテゴリをお試しください。",
+    "noAppsDefault": "最初のアプリを投稿しましょう！"
+  },
+  "appDetail": {
+    "apps": "アプリ",
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "website": "ウェブサイト",
+    "screenshots": "スクリーンショット",
+    "viewHostedPage": "ホスティングされたランディングページを見る"
+  },
+  "login": {
+    "signInDescription": "サインインしてアプリページを管理する",
+    "signInGoogle": "Googleでサインイン",
+    "termsNotice": "サインインすることで、利用規約に同意したものとみなされます"
+  },
+  "deviceAuth": {
+    "invalidLink": "無効なリンク",
+    "missingCode": "デバイスコードがありません。エージェントから提供されたリンクを使用してください。",
+    "authorizeDevice": "デバイスを認証",
+    "confirmationCode": "確認コード",
+    "loading": "読み込み中...",
+    "signInPrompt": "サインインしてAIエージェントを認証してください。",
+    "signInGoogle": "Googleでサインイン",
+    "authorizing": "認証中...",
+    "authorized": "認証完了！",
+    "authorizedMessage": "このウィンドウを閉じて構いません。エージェントが接続されました。",
+    "error": "エラー"
+  }
+}

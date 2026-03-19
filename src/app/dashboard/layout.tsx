@@ -19,7 +19,7 @@ export default async function DashboardLayout({
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="text-xl font-bold flex items-center gap-2">
-              <img src="/appai.png" alt="AppAI" className="w-7 h-7 rounded" />
+              <img src="/appai-logo2.png" alt="AppAI" className="w-7 h-7 rounded" />
               AppAI
             </Link>
             <div className="flex gap-4">

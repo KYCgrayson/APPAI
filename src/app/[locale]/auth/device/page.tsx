@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 import { useEffect, useState, Suspense } from "react";
+import { useTranslations } from "next-intl";
 
 function DeviceAuthContent() {
   const searchParams = useSearchParams();
@@ -10,11 +11,12 @@ function DeviceAuthContent() {
   const { data: session, status: sessionStatus } = useSession();
   const [state, setState] = useState<"loading" | "needLogin" | "approving" | "done" | "error">("loading");
   const [error, setError] = useState("");
+  const t = useTranslations("deviceAuth");
 
   useEffect(() => {
     if (!code) {
       setState("error");
-      setError("Missing device code. Please use the link provided by your agent.");
+      setError(t("missingCode"));
       return;
     }
 
@@ -60,8 +62,8 @@ function DeviceAuthContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Invalid Link</h1>
-          <p className="text-gray-600">Missing device code. Please use the link provided by your agent.</p>
+          <h1 className="text-2xl font-bold text-red-600 mb-4">{t("invalidLink")}</h1>
+          <p className="text-gray-600">{t("missingCode")}</p>
         </div>
       </div>
     );
@@ -70,21 +72,21 @@ function DeviceAuthContent() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
-        <h1 className="text-2xl font-bold mb-6">Authorize Device</h1>
+        <h1 className="text-2xl font-bold mb-6">{t("authorizeDevice")}</h1>
 
         <div className="mb-6 p-4 bg-gray-100 rounded-lg">
-          <p className="text-sm text-gray-500 mb-2">Confirmation Code</p>
+          <p className="text-sm text-gray-500 mb-2">{t("confirmationCode")}</p>
           <p className="text-3xl font-mono font-bold tracking-wider">{code}</p>
         </div>
 
         {state === "loading" && (
-          <p className="text-gray-500">Loading...</p>
+          <p className="text-gray-500">{t("loading")}</p>
         )}
 
         {state === "needLogin" && (
           <>
             <p className="text-gray-600 mb-4">
-              Sign in to authorize your AI agent.
+              {t("signInPrompt")}
             </p>
             <button
               onClick={handleSignIn}
@@ -96,7 +98,7 @@ function DeviceAuthContent() {
                 <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                 <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
-              Sign in with Google
+              {t("signInGoogle")}
             </button>
           </>
         )}
@@ -104,21 +106,21 @@ function DeviceAuthContent() {
         {state === "approving" && (
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-4 border-gray-200 border-t-black rounded-full animate-spin" />
-            <p className="text-gray-500">Authorizing...</p>
+            <p className="text-gray-500">{t("authorizing")}</p>
           </div>
         )}
 
         {state === "done" && (
           <div className="text-center">
             <div className="text-4xl mb-4">&#10003;</div>
-            <h2 className="text-xl font-semibold text-green-600 mb-2">Authorized!</h2>
-            <p className="text-gray-600">You can close this window. Your agent is now connected.</p>
+            <h2 className="text-xl font-semibold text-green-600 mb-2">{t("authorized")}</h2>
+            <p className="text-gray-600">{t("authorizedMessage")}</p>
           </div>
         )}
 
         {state === "error" && (
           <div className="text-center">
-            <h2 className="text-xl font-semibold text-red-600 mb-2">Error</h2>
+            <h2 className="text-xl font-semibold text-red-600 mb-2">{t("error")}</h2>
             <p className="text-gray-600">{error}</p>
           </div>
         )}
