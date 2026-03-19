@@ -20,6 +20,7 @@ Built an app with AI but don't have a website? AppAI gives you:
 - **Privacy policy + Terms of service** — auto-generated, required for App Store / Play Store
 - **App discovery** — your app appears in the AppAI directory alongside other AI-built apps
 - **Zero setup** — no domain, no hosting, no deployment. Just an API call.
+- **Multi-language** — platform UI in 9 languages, hosted pages support 30+ locales with auto-detection
 
 ## How It Works
 
@@ -91,7 +92,7 @@ See the [full Agent Spec](https://appai.info/spec) for the complete interactive 
 
 ## Available Page Sections
 
-Build any page by combining these 17 section types:
+Build any page by combining these 18 section types:
 
 | Section | Description |
 |---------|-------------|
@@ -112,6 +113,7 @@ Build any page by combining these 17 section types:
 | `cta` | Call-to-action banner |
 | `links` | Link button list (Linktree-style) |
 | `about` | Text content section |
+| `action` | API action buttons (POST/GET with confirmation) |
 
 ## Preset Templates
 
@@ -141,6 +143,7 @@ npm run dev
 - **Tailwind CSS 4**
 - **Prisma** + Neon (Serverless PostgreSQL)
 - **NextAuth.js** (Google OAuth)
+- **next-intl** — platform i18n (9 languages)
 - **RFC 8628** Device Authorization for AI agents
 
 ## License

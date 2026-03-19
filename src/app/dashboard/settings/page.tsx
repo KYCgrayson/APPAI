@@ -11,6 +11,43 @@ interface ApiKeyInfo {
   createdAt: string;
 }
 
+function CopyButton({ text, label }: { text: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      className={`inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg transition-colors ${
+        copied
+          ? "bg-green-100 text-green-700"
+          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+      }`}
+    >
+      {copied ? (
+        <>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          Copied!
+        </>
+      ) : (
+        <>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          {label || "Copy"}
+        </>
+      )}
+    </button>
+  );
+}
+
 export default function SettingsPage() {
   const [keys, setKeys] = useState<ApiKeyInfo[]>([]);
   const [newKey, setNewKey] = useState<string | null>(null);
@@ -79,21 +116,21 @@ export default function SettingsPage() {
         </div>
 
         {newKey && (
-          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-sm font-semibold text-green-800 mb-2">
-              Save this key now! It won&apos;t be shown again.
-            </p>
-            <code className="block bg-white p-3 rounded text-sm break-all border">
-              {newKey}
-            </code>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(newKey);
-              }}
-              className="mt-2 text-sm text-green-700 hover:underline"
-            >
-              Copy to clipboard
-            </button>
+          <div className="mt-4 p-4 bg-green-50 border-2 border-green-300 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm font-semibold text-green-800">
+                Save this key now! It won&apos;t be shown again.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 bg-white p-3 rounded-lg border">
+              <code className="flex-1 text-sm break-all font-mono select-all">
+                {newKey}
+              </code>
+              <CopyButton text={newKey} label="Copy Key" />
+            </div>
           </div>
         )}
       </div>
@@ -112,9 +149,11 @@ export default function SettingsPage() {
               >
                 <div>
                   <div className="font-medium">{key.name}</div>
-                  <div className="text-sm text-gray-500">
-                    <code>{key.keyPrefix}</code>
-                    {" · "}
+                  <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                    <code className="bg-gray-50 px-2 py-0.5 rounded font-mono">{key.keyPrefix}••••••</code>
+                    <CopyButton text={key.keyPrefix} label="Copy Prefix" />
+                  </div>
+                  <div className="text-xs text-gray-400 mt-1">
                     Created {new Date(key.createdAt).toLocaleDateString()}
                     {key.lastUsedAt &&
                       ` · Last used ${new Date(key.lastUsedAt).toLocaleDateString()}`}
@@ -141,6 +180,9 @@ export default function SettingsPage() {
                 </div>
               </div>
             ))}
+            <p className="text-xs text-gray-400 mt-2">
+              For security, full API keys are only shown once at creation. If you lost your key, revoke it and generate a new one.
+            </p>
           </div>
         )}
       </div>
