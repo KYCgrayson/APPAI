@@ -66,22 +66,45 @@ curl -s https://appai.info/api/v1/sections
 
 ### Step 3: Ask the user what they want to build
 
-Show them the available presets and ask them to pick one or describe what they want:
+**IMPORTANT: You MUST show the user all available templates and wait for their choice before proceeding. Do NOT skip this step or pick a template for them.**
 
-> I can help you create a hosted page. Here are the preset templates:
+Present the templates with live preview links so the user can see what each one looks like:
+
+> I can help you create a hosted page on AppAI. Here are the 6 preset templates — click the preview links to see live examples:
 >
-> 1. **App Landing Page** — for iOS/Android apps (hero, video, features, screenshots, download buttons, testimonials, FAQ, CTA)
-> 2. **SaaS Landing Page** — for web tools & APIs (hero, video, features, pricing, testimonials, FAQ, CTA)
-> 3. **Personal Profile** — personal branding (hero, about, stats, contact, links)
-> 4. **Link in Bio** — social media links (hero, link buttons)
-> 5. **Portfolio** — creative work showcase (hero, about, gallery, testimonials, contact)
-> 6. **Event Page** — conferences & meetups (hero, about, video, schedule, speakers, tickets, sponsors, FAQ, CTA)
+> 1. **App Landing Page** — for iOS/Android apps
+>    Features: hero, video, features, screenshots, download buttons, testimonials, FAQ, CTA
+>    Preview: https://appai.info/p/demo-app-landing
+>
+> 2. **SaaS Landing Page** — for web tools & APIs
+>    Features: hero, video, features, pricing, testimonials, FAQ, CTA
+>    Preview: https://appai.info/p/demo-saas
+>
+> 3. **Personal Profile** — personal branding
+>    Features: hero, about, stats, contact, links
+>    Preview: https://appai.info/p/demo-profile
+>
+> 4. **Link in Bio** — social media links (like Linktree)
+>    Features: hero, link buttons
+>    Preview: https://appai.info/p/demo-links
+>
+> 5. **Portfolio** — creative work showcase
+>    Features: hero, about, gallery, testimonials, contact
+>    Preview: https://appai.info/p/demo-portfolio
+>
+> 6. **Event Page** — conferences & meetups
+>    Features: hero, about, video, schedule, speakers, tickets, sponsors, FAQ, CTA
+>    Preview: https://appai.info/p/demo-event
 >
 > Which one fits your needs? Or describe what you want and I'll pick the right sections.
 
+**You MUST wait for the user to respond before creating any page. Do NOT assume a template.**
+
 ### Step 4: Gather content from the user
 
-Based on their choice, ask for the specific content. For example, if they chose "App Landing Page", ask:
+**Based on the user's choice**, ask for the specific content. Do NOT create a page until you have confirmed all details with the user.
+
+For example, if they chose "App Landing Page", ask:
 
 > Great! I need the following information:
 >
