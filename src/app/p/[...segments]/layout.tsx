@@ -86,8 +86,30 @@ export default async function HostedPageLayout({ params, children }: Props) {
     th: "ไทย", vi: "VI", id: "ID", ms: "MS", tr: "TR",
   };
 
+  const isDemo = slug.startsWith("demo-");
+
   return (
     <div lang={locale} dir={locale === "ar" || locale === "he" ? "rtl" : "ltr"} className="min-h-screen bg-white flex flex-col">
+      {/* Demo Ribbon */}
+      {isDemo && (
+        <div className="fixed top-0 left-0 z-[100] overflow-hidden pointer-events-none" style={{ width: 150, height: 150 }}>
+          <div
+            className="absolute text-white text-xs font-bold uppercase tracking-wider text-center"
+            style={{
+              width: 200,
+              top: 28,
+              left: -50,
+              transform: "rotate(-45deg)",
+              backgroundColor: "#EF4444",
+              padding: "6px 0",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+            }}
+          >
+            Demo
+          </div>
+        </div>
+      )}
+
       {/* Sticky Header */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b">
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
