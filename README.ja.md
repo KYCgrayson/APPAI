@@ -117,14 +117,15 @@ AI Agent：
 
 ## プリセットテンプレート
 
-| プリセット | 用途 | 含まれるセクション |
-|-----------|------|-------------------|
-| `app-landing` | iOS/Android アプリ | hero, video, features, screenshots, download, testimonials, faq, cta |
-| `saas-landing` | SaaS / Web ツール | hero, video, features, pricing, testimonials, faq, cta |
-| `profile` | パーソナルブランディング | hero, about, stats, contact, links |
-| `link-in-bio` | SNS | hero, links |
-| `portfolio` | クリエイティブ作品 | hero, about, gallery, testimonials, contact |
-| `event` | カンファレンス | hero, about, video, schedule, team, pricing, sponsors, faq, cta |
+| App Landing | SaaS Landing | パーソナルプロフィール |
+|:-----------:|:------------:|:--------------------:|
+| [![App Landing](docs/screenshots/previews/demo-app-landing.png)](https://appai.info/p/demo-app-landing) | [![SaaS Landing](docs/screenshots/previews/demo-saas.png)](https://appai.info/p/demo-saas) | [![Profile](docs/screenshots/previews/demo-profile.png)](https://appai.info/p/demo-profile) |
+| iOS/Android アプリ | SaaS / Web ツール | パーソナルブランディング |
+
+| Link in Bio | ポートフォリオ | イベントページ |
+|:-----------:|:-------------:|:--------------:|
+| [![Link in Bio](docs/screenshots/previews/demo-links.png)](https://appai.info/p/demo-links) | [![Portfolio](docs/screenshots/previews/demo-portfolio.png)](https://appai.info/p/demo-portfolio) | [![Event](docs/screenshots/previews/demo-event.png)](https://appai.info/p/demo-event) |
+| SNS リンク | クリエイティブ作品 | カンファレンス |
 
 ## セルフホスティング
 

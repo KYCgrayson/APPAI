@@ -117,14 +117,15 @@
 
 ## 预设模板
 
-| 预设 | 适用场景 | 包含区块 |
-|------|----------|----------|
-| `app-landing` | iOS/Android 应用 | hero, video, features, screenshots, download, testimonials, faq, cta |
-| `saas-landing` | SaaS / Web 工具 | hero, video, features, pricing, testimonials, faq, cta |
-| `profile` | 个人品牌 | hero, about, stats, contact, links |
-| `link-in-bio` | 社交媒体 | hero, links |
-| `portfolio` | 创意作品 | hero, about, gallery, testimonials, contact |
-| `event` | 会议活动 | hero, about, video, schedule, team, pricing, sponsors, faq, cta |
+| App Landing | SaaS Landing | 个人简介 |
+|:-----------:|:------------:|:--------:|
+| [![App Landing](docs/screenshots/previews/demo-app-landing.png)](https://appai.info/p/demo-app-landing) | [![SaaS Landing](docs/screenshots/previews/demo-saas.png)](https://appai.info/p/demo-saas) | [![Profile](docs/screenshots/previews/demo-profile.png)](https://appai.info/p/demo-profile) |
+| iOS/Android 应用 | SaaS / Web 工具 | 个人品牌 |
+
+| Link in Bio | 作品集 | 活动页面 |
+|:-----------:|:------:|:--------:|
+| [![Link in Bio](docs/screenshots/previews/demo-links.png)](https://appai.info/p/demo-links) | [![Portfolio](docs/screenshots/previews/demo-portfolio.png)](https://appai.info/p/demo-portfolio) | [![Event](docs/screenshots/previews/demo-event.png)](https://appai.info/p/demo-event) |
+| 社交媒体链接 | 创意作品展示 | 会议活动 |
 
 ## 自行部署
 

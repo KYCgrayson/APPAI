@@ -117,14 +117,15 @@ Build any page by combining these 18 section types:
 
 ## Preset Templates
 
-| Preset | Best For | Sections |
-|--------|----------|----------|
-| `app-landing` | iOS/Android apps | hero, video, features, screenshots, download, testimonials, faq, cta |
-| `saas-landing` | SaaS / Web tools | hero, video, features, pricing, testimonials, faq, cta |
-| `profile` | Personal branding | hero, about, stats, contact, links |
-| `link-in-bio` | Social media | hero, links |
-| `portfolio` | Creative work | hero, about, gallery, testimonials, contact |
-| `event` | Conferences | hero, about, video, schedule, team, pricing, sponsors, faq, cta |
+| App Landing | SaaS Landing | Personal Profile |
+|:-----------:|:------------:|:----------------:|
+| [![App Landing](docs/screenshots/previews/demo-app-landing.png)](https://appai.info/p/demo-app-landing) | [![SaaS Landing](docs/screenshots/previews/demo-saas.png)](https://appai.info/p/demo-saas) | [![Personal Profile](docs/screenshots/previews/demo-profile.png)](https://appai.info/p/demo-profile) |
+| iOS/Android apps | SaaS / Web tools | Personal branding |
+
+| Link in Bio | Portfolio | Event Page |
+|:-----------:|:---------:|:----------:|
+| [![Link in Bio](docs/screenshots/previews/demo-links.png)](https://appai.info/p/demo-links) | [![Portfolio](docs/screenshots/previews/demo-portfolio.png)](https://appai.info/p/demo-portfolio) | [![Event Page](docs/screenshots/previews/demo-event.png)](https://appai.info/p/demo-event) |
+| Social media links | Creative work showcase | Conferences & meetups |
 
 ## Self-Hosting
 
