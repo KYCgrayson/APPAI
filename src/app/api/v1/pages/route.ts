@@ -90,18 +90,26 @@ export async function POST(request: NextRequest) {
     }
 
     // Check plan limits — count distinct slugs, not locale variants
-    const slugCount = await db.hostedPage.groupBy({
-      by: ["slug"],
-      where: { organizationId: authResult.organizationId },
+    // Admin organizations bypass plan limits
+    const isAdmin = await db.user.findFirst({
+      where: { organizationId: authResult.organizationId, role: "ADMIN" },
+      select: { id: true },
     });
-    if (authResult.organization.plan === "FREE" && slugCount.length >= 3) {
-      // Allow locale variants of existing slugs
-      const existingSlugs = slugCount.map((g) => g.slug);
-      if (!existingSlugs.includes(data.slug)) {
-        return NextResponse.json(
-          { error: "Free plan limit: max 3 pages (locale variants are free). Upgrade to Pro." },
-          { status: 403 }
-        );
+
+    if (!isAdmin) {
+      const slugCount = await db.hostedPage.groupBy({
+        by: ["slug"],
+        where: { organizationId: authResult.organizationId },
+      });
+      if (authResult.organization.plan === "FREE" && slugCount.length >= 3) {
+        // Allow locale variants of existing slugs
+        const existingSlugs = slugCount.map((g) => g.slug);
+        if (!existingSlugs.includes(data.slug)) {
+          return NextResponse.json(
+            { error: "Free plan limit: max 3 pages (locale variants are free). Upgrade to Pro." },
+            { status: 403 }
+          );
+        }
       }
     }
 
