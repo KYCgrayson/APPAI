@@ -35,8 +35,9 @@ yarn-error.log*
 .env.local
 .env.production
 
-# docs (internal planning documents)
-/docs
+# docs (internal planning documents, but allow screenshots)
+/docs/*
+!/docs/screenshots
 
 # vercel
 .vercel
