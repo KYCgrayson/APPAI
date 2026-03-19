@@ -117,15 +117,46 @@ AI Agent：
 
 ## プリセットテンプレート
 
-| App Landing | SaaS Landing | パーソナルプロフィール |
-|:-----------:|:------------:|:--------------------:|
-| [![App Landing](docs/screenshots/previews/demo-app-landing.png)](https://appai.info/p/demo-app-landing) | [![SaaS Landing](docs/screenshots/previews/demo-saas.png)](https://appai.info/p/demo-saas) | [![Profile](docs/screenshots/previews/demo-profile.png)](https://appai.info/p/demo-profile) |
-| iOS/Android アプリ | SaaS / Web ツール | パーソナルブランディング |
+プレビューをクリックしてライブデモをご覧ください：
 
-| Link in Bio | ポートフォリオ | イベントページ |
-|:-----------:|:-------------:|:--------------:|
-| [![Link in Bio](docs/screenshots/previews/demo-links.png)](https://appai.info/p/demo-links) | [![Portfolio](docs/screenshots/previews/demo-portfolio.png)](https://appai.info/p/demo-portfolio) | [![Event](docs/screenshots/previews/demo-event.png)](https://appai.info/p/demo-event) |
-| SNS リンク | クリエイティブ作品 | カンファレンス |
+<table>
+<tr>
+<td width="50%" align="center">
+<a href="https://appai.info/p/demo-app-landing"><strong>App Landing Page</strong></a><br>
+iOS/Android アプリ向け<br><br>
+<a href="https://appai.info/p/demo-app-landing"><img src="docs/screenshots/previews/demo-app-landing.png" alt="App Landing Page" width="100%"></a>
+</td>
+<td width="50%" align="center">
+<a href="https://appai.info/p/demo-saas"><strong>SaaS Landing Page</strong></a><br>
+Web ツール・API 向け<br><br>
+<a href="https://appai.info/p/demo-saas"><img src="docs/screenshots/previews/demo-saas.png" alt="SaaS Landing Page" width="100%"></a>
+</td>
+</tr>
+<tr>
+<td width="50%" align="center">
+<a href="https://appai.info/p/demo-profile"><strong>パーソナルプロフィール</strong></a><br>
+パーソナルブランディング<br><br>
+<a href="https://appai.info/p/demo-profile"><img src="docs/screenshots/previews/demo-profile.png" alt="Personal Profile" width="100%"></a>
+</td>
+<td width="50%" align="center">
+<a href="https://appai.info/p/demo-links"><strong>Link in Bio</strong></a><br>
+SNS リンク<br><br>
+<a href="https://appai.info/p/demo-links"><img src="docs/screenshots/previews/demo-links.png" alt="Link in Bio" width="100%"></a>
+</td>
+</tr>
+<tr>
+<td width="50%" align="center">
+<a href="https://appai.info/p/demo-portfolio"><strong>ポートフォリオ</strong></a><br>
+クリエイティブ作品<br><br>
+<a href="https://appai.info/p/demo-portfolio"><img src="docs/screenshots/previews/demo-portfolio.png" alt="Portfolio" width="100%"></a>
+</td>
+<td width="50%" align="center">
+<a href="https://appai.info/p/demo-event"><strong>イベントページ</strong></a><br>
+カンファレンス・ミートアップ<br><br>
+<a href="https://appai.info/p/demo-event"><img src="docs/screenshots/previews/demo-event.png" alt="Event Page" width="100%"></a>
+</td>
+</tr>
+</table>
 
 ## セルフホスティング
 

@@ -117,15 +117,46 @@
 
 ## 预设模板
 
-| App Landing | SaaS Landing | 个人简介 |
-|:-----------:|:------------:|:--------:|
-| [![App Landing](docs/screenshots/previews/demo-app-landing.png)](https://appai.info/p/demo-app-landing) | [![SaaS Landing](docs/screenshots/previews/demo-saas.png)](https://appai.info/p/demo-saas) | [![Profile](docs/screenshots/previews/demo-profile.png)](https://appai.info/p/demo-profile) |
-| iOS/Android 应用 | SaaS / Web 工具 | 个人品牌 |
+点击预览查看在线演示：
 
-| Link in Bio | 作品集 | 活动页面 |
-|:-----------:|:------:|:--------:|
-| [![Link in Bio](docs/screenshots/previews/demo-links.png)](https://appai.info/p/demo-links) | [![Portfolio](docs/screenshots/previews/demo-portfolio.png)](https://appai.info/p/demo-portfolio) | [![Event](docs/screenshots/previews/demo-event.png)](https://appai.info/p/demo-event) |
-| 社交媒体链接 | 创意作品展示 | 会议活动 |
+<table>
+<tr>
+<td width="50%" align="center">
+<a href="https://appai.info/p/demo-app-landing"><strong>App Landing Page</strong></a><br>
+iOS/Android 应用<br><br>
+<a href="https://appai.info/p/demo-app-landing"><img src="docs/screenshots/previews/demo-app-landing.png" alt="App Landing Page" width="100%"></a>
+</td>
+<td width="50%" align="center">
+<a href="https://appai.info/p/demo-saas"><strong>SaaS Landing Page</strong></a><br>
+SaaS / Web 工具<br><br>
+<a href="https://appai.info/p/demo-saas"><img src="docs/screenshots/previews/demo-saas.png" alt="SaaS Landing Page" width="100%"></a>
+</td>
+</tr>
+<tr>
+<td width="50%" align="center">
+<a href="https://appai.info/p/demo-profile"><strong>个人简介</strong></a><br>
+个人品牌<br><br>
+<a href="https://appai.info/p/demo-profile"><img src="docs/screenshots/previews/demo-profile.png" alt="Personal Profile" width="100%"></a>
+</td>
+<td width="50%" align="center">
+<a href="https://appai.info/p/demo-links"><strong>Link in Bio</strong></a><br>
+社交媒体链接<br><br>
+<a href="https://appai.info/p/demo-links"><img src="docs/screenshots/previews/demo-links.png" alt="Link in Bio" width="100%"></a>
+</td>
+</tr>
+<tr>
+<td width="50%" align="center">
+<a href="https://appai.info/p/demo-portfolio"><strong>作品集</strong></a><br>
+创意作品展示<br><br>
+<a href="https://appai.info/p/demo-portfolio"><img src="docs/screenshots/previews/demo-portfolio.png" alt="Portfolio" width="100%"></a>
+</td>
+<td width="50%" align="center">
+<a href="https://appai.info/p/demo-event"><strong>活动页面</strong></a><br>
+会议活动<br><br>
+<a href="https://appai.info/p/demo-event"><img src="docs/screenshots/previews/demo-event.png" alt="Event Page" width="100%"></a>
+</td>
+</tr>
+</table>
 
 ## 自行部署
 

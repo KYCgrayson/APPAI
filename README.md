@@ -117,15 +117,46 @@ Build any page by combining these 18 section types:
 
 ## Preset Templates
 
-| App Landing | SaaS Landing | Personal Profile |
-|:-----------:|:------------:|:----------------:|
-| [![App Landing](docs/screenshots/previews/demo-app-landing.png)](https://appai.info/p/demo-app-landing) | [![SaaS Landing](docs/screenshots/previews/demo-saas.png)](https://appai.info/p/demo-saas) | [![Personal Profile](docs/screenshots/previews/demo-profile.png)](https://appai.info/p/demo-profile) |
-| iOS/Android apps | SaaS / Web tools | Personal branding |
+Click any preview to see the live demo:
 
-| Link in Bio | Portfolio | Event Page |
-|:-----------:|:---------:|:----------:|
-| [![Link in Bio](docs/screenshots/previews/demo-links.png)](https://appai.info/p/demo-links) | [![Portfolio](docs/screenshots/previews/demo-portfolio.png)](https://appai.info/p/demo-portfolio) | [![Event Page](docs/screenshots/previews/demo-event.png)](https://appai.info/p/demo-event) |
-| Social media links | Creative work showcase | Conferences & meetups |
+<table>
+<tr>
+<td width="50%" align="center">
+<a href="https://appai.info/p/demo-app-landing"><strong>App Landing Page</strong></a><br>
+For iOS/Android apps<br><br>
+<a href="https://appai.info/p/demo-app-landing"><img src="docs/screenshots/previews/demo-app-landing.png" alt="App Landing Page" width="100%"></a>
+</td>
+<td width="50%" align="center">
+<a href="https://appai.info/p/demo-saas"><strong>SaaS Landing Page</strong></a><br>
+For web tools & APIs<br><br>
+<a href="https://appai.info/p/demo-saas"><img src="docs/screenshots/previews/demo-saas.png" alt="SaaS Landing Page" width="100%"></a>
+</td>
+</tr>
+<tr>
+<td width="50%" align="center">
+<a href="https://appai.info/p/demo-profile"><strong>Personal Profile</strong></a><br>
+Personal branding<br><br>
+<a href="https://appai.info/p/demo-profile"><img src="docs/screenshots/previews/demo-profile.png" alt="Personal Profile" width="100%"></a>
+</td>
+<td width="50%" align="center">
+<a href="https://appai.info/p/demo-links"><strong>Link in Bio</strong></a><br>
+Social media links<br><br>
+<a href="https://appai.info/p/demo-links"><img src="docs/screenshots/previews/demo-links.png" alt="Link in Bio" width="100%"></a>
+</td>
+</tr>
+<tr>
+<td width="50%" align="center">
+<a href="https://appai.info/p/demo-portfolio"><strong>Portfolio</strong></a><br>
+Creative work showcase<br><br>
+<a href="https://appai.info/p/demo-portfolio"><img src="docs/screenshots/previews/demo-portfolio.png" alt="Portfolio" width="100%"></a>
+</td>
+<td width="50%" align="center">
+<a href="https://appai.info/p/demo-event"><strong>Event Page</strong></a><br>
+Conferences & meetups<br><br>
+<a href="https://appai.info/p/demo-event"><img src="docs/screenshots/previews/demo-event.png" alt="Event Page" width="100%"></a>
+</td>
+</tr>
+</table>
 
 ## Self-Hosting
 
