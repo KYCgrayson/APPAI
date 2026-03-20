@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getLocale } from "next-intl/server";
+import { Analytics } from "@vercel/analytics/react";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -47,6 +48,7 @@ export default async function RootLayout({
         className="antialiased font-sans"
       >
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );
