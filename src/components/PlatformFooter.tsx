@@ -18,6 +18,9 @@ export async function PlatformFooter() {
           <a href="https://github.com/KYCgrayson/APPAI" target="_blank" className="hover:text-black">
             {t("github")}
           </a>
+          <a href="https://github.com/KYCgrayson/APPAI/issues" target="_blank" className="hover:text-black">
+            {t("feedback")}
+          </a>
           <a href="/dashboard" className="hover:text-black">
             {t("dashboard")}
           </a>
