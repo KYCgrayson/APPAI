@@ -158,6 +158,45 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* FAQ */}
+      <section className="py-20 px-6">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-12">{t("faqTitle")}</h2>
+          <div className="space-y-6">
+            {(["1", "2", "3", "4", "5", "6"] as const).map((n) => (
+              <details key={n} className="group border rounded-xl px-6 py-4">
+                <summary className="font-semibold cursor-pointer list-none flex items-center justify-between">
+                  {t(`faq${n}Q`)}
+                  <span className="ml-2 text-gray-400 group-open:rotate-180 transition-transform">&#9662;</span>
+                </summary>
+                <p className="mt-3 text-gray-600 text-sm leading-relaxed">
+                  {t(`faq${n}A`)}
+                </p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: ["1", "2", "3", "4", "5", "6"].map((n) => ({
+              "@type": "Question",
+              name: t(`faq${n}Q`),
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: t(`faq${n}A`),
+              },
+            })),
+          }),
+        }}
+      />
+
       {/* CTA */}
       <section className="py-20 px-6 text-center">
         <div className="max-w-2xl mx-auto">
