@@ -117,17 +117,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     languages["x-default"] = `${baseUrl}${buildPagePath(slug, defaultVariant.locale, null, true)}`;
   }
 
+  const title = page.metaTitle || page.title;
+  const description = page.metaDescription || page.tagline || undefined;
+  const image = page.ogImage || page.heroImage || undefined;
+  const canonicalUrl = `${baseUrl}${buildPagePath(slug, page.locale, null, page.isDefault)}`;
+
   return {
-    title: page.metaTitle || page.title,
-    description: page.metaDescription || page.tagline || undefined,
+    title,
+    description,
     icons: logoUrl ? { icon: logoUrl, apple: logoUrl } : undefined,
     openGraph: {
-      title: page.metaTitle || page.title,
-      description: page.metaDescription || page.tagline || undefined,
-      images: page.ogImage ? [page.ogImage] : undefined,
+      title,
+      description,
+      images: image ? [image] : undefined,
       locale: page.locale,
+      type: "website",
+      url: canonicalUrl,
+    },
+    twitter: {
+      card: image ? "summary_large_image" : "summary",
+      title,
+      description,
+      images: image ? [image] : undefined,
     },
     alternates: {
+      canonical: canonicalUrl,
       languages,
     },
   };
