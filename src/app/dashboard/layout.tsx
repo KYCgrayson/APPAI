@@ -41,6 +41,12 @@ export default async function DashboardLayout({
               >
                 API Keys
               </Link>
+              <Link
+                href="/dashboard/tools"
+                className="text-sm text-gray-600 hover:text-black"
+              >
+                Tools
+              </Link>
               {isAdmin && (
                 <Link
                   href="/admin"
