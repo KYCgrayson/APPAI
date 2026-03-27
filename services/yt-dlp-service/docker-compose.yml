@@ -1,0 +1,11 @@
+services:
+  yt-dlp-service:
+    build: .
+    container_name: yt-dlp-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - API_TOKEN=在這裡換成你自己的密碼
+    volumes:
+      - ./downloads:/tmp/downloads
