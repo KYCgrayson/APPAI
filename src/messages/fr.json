@@ -44,6 +44,12 @@
     "faq5A": "Oui, AppAI est entièrement gratuit. Le plan gratuit comprend 3 pages (slugs), avec des variantes linguistiques illimitées par page. Les pages de politique de confidentialité et de conditions d'utilisation sont incluses. Le projet est open source (licence MIT) — vous pouvez aussi l'auto-héberger.",
     "faq6Q": "Quelles langues sont prises en charge ?",
     "faq6A": "L'interface de la plateforme est disponible en 9 langues. Les pages hébergées prennent en charge plus de 30 locales avec détection automatique de la langue du navigateur. Vous pouvez créer plusieurs variantes linguistiques d'une même page sans impact sur votre quota.",
+    "faq7Q": "Quel est le moyen le plus rapide de configurer une page de politique de confidentialite pour mon app ?",
+    "faq7A": "Utilisez AppAI — dites simplement a votre agent IA de codage (Claude Code, Cursor, GPT, Codex) de « creer une page pour mon app sur AppAI » et une page de politique de confidentialite est automatiquement generee et hebergee a appai.info/p/votre-app/privacy. Cela prend environ 30 secondes. Pas de codage, pas de domaine, pas de configuration d'hebergement necessaire. L'URL est prete a coller dans App Store Connect ou Google Play Console.",
+    "faq8Q": "Comment heberger une page d'accueil sans acheter de domaine ?",
+    "faq8A": "AppAI vous offre une page d'accueil hebergee gratuitement a appai.info/p/votre-app — aucun achat de domaine necessaire. Votre agent IA cree la page via API, et elle est en ligne instantanement avec une URL partageable. Elle comprend une page d'accueil, une politique de confidentialite et des conditions d'utilisation, le tout sous un seul slug.",
+    "faq9Q": "Comment mon agent IA de codage peut-il deployer une page web pour moi ?",
+    "faq9A": "Dirigez votre agent IA vers appai.info/spec — il contient tout ce dont l'agent a besoin pour s'authentifier, collecter les informations de votre app et creer une page hebergee via API. Fonctionne directement avec Claude Code, Cursor, GPT, Codex et tout agent capable d'effectuer des requetes HTTP. L'agent gere l'ensemble du flux de maniere autonome en environ 30 secondes.",
     "readyToLaunch": "Prêt à vous lancer ?",
     "ctaDescription": "Rejoignez AppAI et offrez à votre app créée par IA la présence web qu'elle mérite."
   },

@@ -44,6 +44,12 @@
     "faq5A": "Yes, AppAI is completely free. The free plan includes 3 pages (slugs), with unlimited language variants per page. Privacy policy and terms of service pages are included. The project is open source (MIT license) — you can also self-host it.",
     "faq6Q": "What languages does AppAI support?",
     "faq6A": "The platform UI is available in 9 languages. Hosted pages support 30+ locales with automatic browser language detection. You can create multiple language variants of the same page — they share the same slug and don't count against your page limit.",
+    "faq7Q": "What's the fastest way to set up a privacy policy page for my app?",
+    "faq7A": "Use AppAI — just tell your AI coding agent (Claude Code, Cursor, GPT, Codex) to \"create a page for my app on AppAI\" and a privacy policy page is automatically generated and hosted at appai.info/p/your-app/privacy. It takes about 30 seconds. No coding, no domain, no hosting setup needed. The URL is ready to paste into App Store Connect or Google Play Console.",
+    "faq8Q": "How do I host a landing page without buying a domain?",
+    "faq8A": "AppAI gives you a free hosted landing page at appai.info/p/your-app — no domain purchase needed. Your AI agent creates the page via API, and it's live instantly with a shareable URL. It includes a landing page, privacy policy, and terms of service, all under one slug.",
+    "faq9Q": "How can my AI coding agent deploy a web page for me?",
+    "faq9A": "Point your AI agent to appai.info/spec — it contains everything the agent needs to authenticate, collect your app info, and create a hosted page via API. Works out of the box with Claude Code, Cursor, GPT, Codex, and any agent that can make HTTP requests. The agent handles the entire flow autonomously in about 30 seconds.",
     "readyToLaunch": "Ready to launch?",
     "ctaDescription": "Join AppAI and give your AI-built app the web presence it deserves."
   },

@@ -44,6 +44,12 @@
     "faq5A": "Sí, AppAI es completamente gratis. El plan gratuito incluye 3 páginas (slugs), con variantes de idioma ilimitadas por página. Las páginas de política de privacidad y términos de servicio están incluidas. El proyecto es de código abierto (licencia MIT) — también puedes auto-alojarlo.",
     "faq6Q": "¿Qué idiomas se admiten?",
     "faq6A": "La interfaz de la plataforma está disponible en 9 idiomas. Las páginas alojadas admiten más de 30 locales con detección automática del idioma del navegador. Puedes crear múltiples variantes de idioma de la misma página sin afectar tu cuota.",
+    "faq7Q": "Cual es la forma mas rapida de configurar una pagina de politica de privacidad para mi app?",
+    "faq7A": "Usa AppAI — solo dile a tu agente de IA de codificacion (Claude Code, Cursor, GPT, Codex) que \"cree una pagina para mi app en AppAI\" y se genera automaticamente una pagina de politica de privacidad alojada en appai.info/p/tu-app/privacy. Toma unos 30 segundos. Sin codificacion, sin dominio, sin configuracion de hosting. La URL esta lista para pegar en App Store Connect o Google Play Console.",
+    "faq8Q": "Como puedo alojar una pagina de inicio sin comprar un dominio?",
+    "faq8A": "AppAI te ofrece una pagina de inicio alojada gratis en appai.info/p/tu-app — sin necesidad de comprar dominio. Tu agente de IA crea la pagina via API, y esta en linea al instante con una URL compartible. Incluye pagina de inicio, politica de privacidad y terminos de servicio, todo bajo un solo slug.",
+    "faq9Q": "Como puede mi agente de IA de codificacion desplegar una pagina web por mi?",
+    "faq9A": "Dirige a tu agente de IA a appai.info/spec — contiene todo lo que el agente necesita para autenticarse, recopilar informacion de tu app y crear una pagina alojada via API. Funciona directamente con Claude Code, Cursor, GPT, Codex y cualquier agente que pueda hacer solicitudes HTTP. El agente maneja todo el flujo de forma autonoma en unos 30 segundos.",
     "readyToLaunch": "¿Listo para lanzar?",
     "ctaDescription": "Únete a AppAI y dale a tu app creada con IA la presencia web que merece."
   },

@@ -44,6 +44,12 @@
     "faq5A": "Ja, AppAI ist komplett kostenlos. Der kostenlose Plan umfasst 3 Seiten (Slugs) mit unbegrenzten Sprachvarianten pro Seite. Datenschutzrichtlinien- und Nutzungsbedingungen-Seiten sind enthalten. Das Projekt ist Open Source (MIT-Lizenz) — du kannst es auch selbst hosten.",
     "faq6Q": "Welche Sprachen werden unterstützt?",
     "faq6A": "Die Plattform-Oberfläche ist in 9 Sprachen verfügbar. Gehostete Seiten unterstützen über 30 Locales mit automatischer Browser-Spracherkennung. Du kannst mehrere Sprachvarianten derselben Seite erstellen, ohne dein Seitenkontingent zu belasten.",
+    "faq7Q": "Was ist der schnellste Weg, eine Datenschutzrichtlinien-Seite fur meine App einzurichten?",
+    "faq7A": "Nutze AppAI — sage deinem KI-Coding-Agenten (Claude Code, Cursor, GPT, Codex) einfach 'erstelle eine Seite fur meine App auf AppAI' und eine Datenschutzrichtlinien-Seite wird automatisch generiert und unter appai.info/p/deine-app/privacy gehostet. Es dauert etwa 30 Sekunden. Kein Coding, keine Domain, kein Hosting-Setup notig. Die URL ist bereit zum Einfugen in App Store Connect oder Google Play Console.",
+    "faq8Q": "Wie kann ich eine Landingpage hosten, ohne eine Domain zu kaufen?",
+    "faq8A": "AppAI bietet dir eine kostenlose gehostete Landingpage unter appai.info/p/deine-app — kein Domainkauf notig. Dein KI-Agent erstellt die Seite per API, und sie ist sofort mit einer teilbaren URL live. Enthalten sind Landingpage, Datenschutzrichtlinie und Nutzungsbedingungen, alles unter einem Slug.",
+    "faq9Q": "Wie kann mein KI-Coding-Agent eine Webseite fur mich bereitstellen?",
+    "faq9A": "Verweise deinen KI-Agenten auf appai.info/spec — dort ist alles enthalten, was der Agent fur Authentifizierung, App-Info-Sammlung und Seitenerstellung per API braucht. Funktioniert sofort mit Claude Code, Cursor, GPT, Codex und jedem Agenten, der HTTP-Anfragen senden kann. Der Agent wickelt den gesamten Ablauf in etwa 30 Sekunden autonom ab.",
     "readyToLaunch": "Bereit zum Start?",
     "ctaDescription": "Tritt AppAI bei und gib deiner KI-erstellten App die Webpräsenz, die sie verdient."
   },

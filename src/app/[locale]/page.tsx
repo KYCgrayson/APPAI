@@ -163,7 +163,7 @@ export default async function HomePage() {
         <div className="max-w-3xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-12">{t("faqTitle")}</h2>
           <div className="space-y-6">
-            {(["1", "2", "3", "4", "5", "6"] as const).map((n) => (
+            {(["1", "2", "3", "4", "5", "6", "7", "8", "9"] as const).map((n) => (
               <details key={n} className="group border rounded-xl px-6 py-4">
                 <summary className="font-semibold cursor-pointer list-none flex items-center justify-between">
                   {t(`faq${n}Q`)}
@@ -185,7 +185,7 @@ export default async function HomePage() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "FAQPage",
-            mainEntity: ["1", "2", "3", "4", "5", "6"].map((n) => ({
+            mainEntity: ["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((n) => ({
               "@type": "Question",
               name: t(`faq${n}Q`),
               acceptedAnswer: {

@@ -44,6 +44,12 @@
     "faq5A": "是的，AppAI 完全免費。免費方案包含 3 個頁面（slug），每個頁面的語言版本不限。隱私權政策和服務條款頁面也包含在內。這是 MIT 授權的開源專案，您也可以自行架設。",
     "faq6Q": "支援哪些語言？",
     "faq6A": "平台介面支援 9 種語言。託管的頁面透過瀏覽器語言自動偵測支援 30 多種語系。您可以建立同一頁面的多個語言版本，不會佔用頁面配額。",
+    "faq7Q": "為應用程式設定隱私權政策頁面最快的方法是什麼？",
+    "faq7A": "使用 AppAI — 只要告訴您的 AI 編程 Agent（Claude Code、Cursor、GPT、Codex）「在 AppAI 上建立我的應用程式頁面」，隱私權政策頁面就會自動產生並託管於 appai.info/p/your-app/privacy。大約 30 秒即可完成。不需要寫程式、不需要網域、不需要託管設定。網址可以直接貼到 App Store Connect 或 Google Play Console。",
+    "faq8Q": "不購買網域如何託管登陸頁面？",
+    "faq8A": "AppAI 在 appai.info/p/your-app 提供免費託管登陸頁面，不需要購買網域。您的 AI Agent 透過 API 建立頁面，立即上線並擁有可分享的網址。包含登陸頁面、隱私權政策和服務條款，全部在同一個 slug 下。",
+    "faq9Q": "如何讓我的 AI 編程 Agent 幫我部署網頁？",
+    "faq9A": "將您的 AI Agent 指向 appai.info/spec — 其中包含 Agent 進行驗證、收集應用程式資訊和透過 API 建立託管頁面所需的一切。可與 Claude Code、Cursor、GPT、Codex 以及任何能發送 HTTP 請求的 Agent 直接搭配使用。Agent 會在約 30 秒內自主完成整個流程。",
     "readyToLaunch": "準備好上線了嗎？",
     "ctaDescription": "加入 AppAI，讓您用 AI 打造的應用程式擁有它應得的網路形象。"
   },
