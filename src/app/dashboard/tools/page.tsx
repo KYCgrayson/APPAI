@@ -13,8 +13,7 @@ export default function ToolsPage() {
   } | null>(null);
   const [error, setError] = useState("");
 
-  const API_BASE =
-    process.env.NEXT_PUBLIC_YTDLP_API_URL || "http://192.168.200.108:8000";
+  const API_BASE = process.env.NEXT_PUBLIC_YTDLP_API_URL || "";
   const API_TOKEN = process.env.NEXT_PUBLIC_YTDLP_API_TOKEN || "";
 
   const handleDownload = async () => {
