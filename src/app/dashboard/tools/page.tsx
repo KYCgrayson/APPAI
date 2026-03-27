@@ -4,6 +4,7 @@ import { useState } from "react";
 
 export default function ToolsPage() {
   const [url, setUrl] = useState("");
+  const [format, setFormat] = useState<"video" | "mp3">("video");
   const [status, setStatus] = useState<
     "idle" | "downloading" | "ready" | "error"
   >("idle");
@@ -25,7 +26,7 @@ export default function ToolsPage() {
 
     try {
       const res = await fetch(
-        `${API_BASE}/download?url=${encodeURIComponent(url)}`,
+        `${API_BASE}/download?url=${encodeURIComponent(url)}&format=${format}`,
         {
           method: "POST",
           headers: { token: API_TOKEN },
@@ -66,7 +67,7 @@ export default function ToolsPage() {
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="貼上連結"
+            placeholder="Paste URL"
             className="flex-1 border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black"
             onKeyDown={(e) => e.key === "Enter" && handleDownload()}
           />
@@ -76,6 +77,29 @@ export default function ToolsPage() {
             className="bg-black text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {status === "downloading" ? "Processing..." : "Download"}
+          </button>
+        </div>
+
+        <div className="flex gap-2 mt-3 justify-center">
+          <button
+            onClick={() => setFormat("video")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+              format === "video"
+                ? "bg-black text-white border-black"
+                : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+            }`}
+          >
+            Video
+          </button>
+          <button
+            onClick={() => setFormat("mp3")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+              format === "mp3"
+                ? "bg-black text-white border-black"
+                : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+            }`}
+          >
+            MP3
           </button>
         </div>
 
