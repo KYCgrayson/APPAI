@@ -9,7 +9,7 @@ type Mp3Quality = "320" | "192" | "128";
 export default function ToolsPage() {
   const [url, setUrl] = useState("");
   const [format, setFormat] = useState<Format>("video");
-  const [videoQuality, setVideoQuality] = useState<VideoQuality>("1080");
+  const [videoQuality, setVideoQuality] = useState<VideoQuality>("720");
   const [mp3Quality, setMp3Quality] = useState<Mp3Quality>("320");
   const [subtitles, setSubtitles] = useState(false);
   const [status, setStatus] = useState<
