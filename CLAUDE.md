@@ -32,6 +32,10 @@ AppAI (appai.info) — Free hosting platform for AI-built apps. AI agents create
 - `/p/[...segments]` — Hosted pages (own locale system, 30+ languages)
 - `/api/` — API endpoints
 
+## Project Docs
+
+- **TODO.md** — Central todolist and roadmap. All planned features, tasks, and progress are tracked here. Always check and update this file when working on new features or completing tasks.
+
 ## Conventions
 
 - Commit messages: concise, describe the "why"
