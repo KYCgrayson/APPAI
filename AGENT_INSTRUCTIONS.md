@@ -523,6 +523,62 @@ curl -s -o /dev/null -w "%{http_code}" https://appai.info/p/YOUR_SLUG
 
 ---
 
+## Icons
+
+Wherever a section accepts an `icon` field (links, features, contact, etc.) you have three options. Pick whichever fits the page you are building. None is required and all three render correctly.
+
+### Option 1: Ionicons name (recommended for clean, professional sites)
+Pass the kebab-case name of any Ionicons icon. We render it as inline SVG that inherits the surrounding text color and sizing.
+
+  { "icon": "globe-outline" }
+  { "icon": "logo-github" }
+  { "icon": "mail-outline" }
+  { "icon": "lock-closed" }
+
+Common icons grouped by use:
+  Web/social:    globe-outline, logo-github, logo-twitter, logo-linkedin,
+                 logo-youtube, logo-instagram, logo-discord, logo-tiktok,
+                 logo-facebook, logo-reddit, logo-medium, logo-mastodon
+  Contact:       mail-outline, call-outline, location-outline,
+                 chatbubble-outline, chatbubbles-outline, send-outline
+  Action:        download-outline, cloud-download-outline, cloud-upload-outline,
+                 play-circle-outline, arrow-forward-outline, arrow-back-outline,
+                 open-outline, link-outline, copy-outline, share-outline
+  Status:        checkmark-circle, checkmark-circle-outline, close-circle,
+                 alert-circle, information-circle, lock-closed, lock-open,
+                 eye-outline, eye-off-outline
+  Product:       sparkles-outline, rocket-outline, star-outline, star,
+                 heart-outline, heart, flash-outline, shield-checkmark-outline,
+                 shield-outline, ribbon-outline, trophy-outline, gift-outline
+  UI:            menu-outline, close-outline, search-outline, settings-outline,
+                 options-outline, ellipsis-horizontal, ellipsis-vertical,
+                 chevron-down, chevron-up, chevron-forward, chevron-back,
+                 add-outline, remove-outline
+  Code/dev:      code-slash-outline, terminal-outline, hardware-chip-outline,
+                 server-outline, cloud-outline
+
+Full reference and visual preview: https://ionic.io/ionicons
+
+### Option 2: Emoji (fastest, casual)
+Pass any emoji character. It renders as a text span that inherits the surrounding font size.
+
+  { "icon": "🌐" }
+  { "icon": "🚀" }
+  { "icon": "❤️" }
+
+### Option 3: Image URL (custom branding)
+Pass an https URL to a square image. PNG, SVG, JPG, WebP, GIF, AVIF supported. Optional ?query suffix is allowed for cache-busted CDN URLs. Keep image size under 100KB.
+
+  { "icon": "https://yourdomain.com/icons/feature.svg" }
+  { "icon": "https://cdn.example.com/logo.png?v=2" }
+
+### Which should I pick?
+- Building a serious app landing or product site: Option 1 (Ionicons) - most polished
+- Building a personal page, fun project, or quick prototype: Option 2 (emoji) - fastest
+- Have your own brand assets you want to feature: Option 3 (image URL)
+
+Mix freely within a page. We render all three.
+
 ## Section Reference
 
 ### hero
@@ -551,11 +607,11 @@ Supported: YouTube, Vimeo, .mp4, .webm, .gif (auto-detected)
 ```json
 { "type": "features", "order": 3, "data": {
     "items": [
-      { "icon": "rocket", "title": "Fast", "description": "Blazing fast performance" }
+      { "icon": "rocket-outline", "title": "Fast", "description": "Blazing fast performance" }
     ]
 }}
 ```
-Icons: brain, zap, shield, star, heart, globe, lock, rocket, code, chart (or any emoji)
+See the Icons section above for all three valid forms (Ionicons name, emoji, or https image URL).
 
 ### screenshots
 ```json
@@ -670,8 +726,8 @@ Icons: brain, zap, shield, star, heart, globe, lock, rocket, code, chart (or any
 ```json
 { "type": "links", "order": 16, "data": {
     "items": [
-      { "title": "Website", "url": "https://example.com", "icon": "🌐", "style": "filled" },
-      { "title": "GitHub", "url": "https://github.com/...", "icon": "💻", "style": "outlined" }
+      { "title": "Website", "url": "https://example.com", "icon": "globe-outline", "style": "filled" },
+      { "title": "GitHub", "url": "https://github.com/...", "icon": "logo-github", "style": "outlined" }
     ]
 }}
 ```
