@@ -126,10 +126,16 @@ model HostedPage {
 
   customDomain String? @unique
 
+  // Multi-page sites: parentSlug=null means root page; otherwise this is a child
+  // page of (organizationId, parentSlug). Only one level of nesting is allowed —
+  // child pages cannot themselves have children. URL: /p/{parentSlug}/{slug}.
+  parentSlug String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([slug, locale])
+  @@index([organizationId, parentSlug, slug])
 }
 
 // RFC 8628 OAuth Device Authorization Grant
