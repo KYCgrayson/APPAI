@@ -183,7 +183,25 @@ function PageHeader({ page, themeColor }: { page: PageData; themeColor: string }
   );
 }
 
-export function PageRenderer({ page }: { page: PageData }) {
+export interface NavItem {
+  label: string;
+  /** Child page slug, anchor (#section), or absolute URL */
+  target: string;
+}
+
+export function PageRenderer({
+  page,
+  nav = [],
+}: {
+  page: PageData;
+  /** Site navigation items. When non-empty, <SiteNav> renders at the top. */
+  nav?: NavItem[];
+}) {
+  // nav is wired into the data flow here so /p/[...segments]/page.tsx can pass
+  // multi-page nav data through. Visual rendering of <SiteNav> arrives in
+  // task #4. Until then, the prop is accepted but not yet displayed.
+  void nav;
+
   const themeColor = page.themeColor || "#000000";
   const sections = page.content?.sections || [];
   const sortedSections = [...sections].sort(

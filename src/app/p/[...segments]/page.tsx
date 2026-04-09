@@ -76,18 +76,98 @@ function buildJsonLd(page: any, url: string) {
   };
 }
 
-/** Resolve page from DB: explicit locale or default */
+/** Resolve a root page from DB: explicit locale or default */
 async function resolvePage(slug: string, explicitLocale: string | null) {
   if (explicitLocale) {
     return db.hostedPage.findFirst({
-      where: { slug, locale: explicitLocale, isPublished: true },
+      where: { slug, locale: explicitLocale, isPublished: true, parentSlug: null },
     });
   }
   // No locale in URL — find the default, fallback to first
   return db.hostedPage.findFirst({
-    where: { slug, isPublished: true },
+    where: { slug, isPublished: true, parentSlug: null },
     orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
   });
+}
+
+/** Resolve a child page (parentSlug=root.slug) within the same organization. */
+async function resolveChildPage(
+  parentSlug: string,
+  childSlug: string,
+  explicitLocale: string | null,
+  organizationId: string,
+) {
+  if (explicitLocale) {
+    return db.hostedPage.findFirst({
+      where: {
+        organizationId,
+        parentSlug,
+        slug: childSlug,
+        locale: explicitLocale,
+        isPublished: true,
+      },
+    });
+  }
+  return db.hostedPage.findFirst({
+    where: {
+      organizationId,
+      parentSlug,
+      slug: childSlug,
+      isPublished: true,
+    },
+    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+  });
+}
+
+/** Load all sibling child pages for header nav. */
+async function loadSiblings(parentSlug: string, organizationId: string, locale: string) {
+  // Prefer pages in the matching locale; fall back to default variant per slug.
+  return db.hostedPage.findMany({
+    where: {
+      organizationId,
+      parentSlug,
+      isPublished: true,
+      OR: [{ locale }, { isDefault: true }],
+    },
+    select: { slug: true, locale: true, title: true, isDefault: true },
+    orderBy: [{ createdAt: "asc" }],
+  });
+}
+
+interface NavItem {
+  label: string;
+  target: string;
+}
+
+/**
+ * Build the navigation list for a site. Priority:
+ *   1. Explicit `content.nav` array on the root page
+ *   2. Auto-generated from sibling child pages (one entry per child)
+ *   3. Empty list if neither exists
+ */
+function buildNav(
+  rootContent: unknown,
+  siblings: Array<{ slug: string; title: string }>,
+  rootHref: string,
+): NavItem[] {
+  const explicit = (rootContent as { nav?: unknown })?.nav;
+  if (Array.isArray(explicit)) {
+    return explicit
+      .filter((item): item is NavItem =>
+        typeof item === "object" &&
+        item !== null &&
+        typeof (item as NavItem).label === "string" &&
+        typeof (item as NavItem).target === "string",
+      )
+      .map((item) => ({ label: item.label, target: item.target }));
+  }
+  if (siblings.length > 0) {
+    return [
+      { label: "Home", target: rootHref },
+      ...siblings.map((s) => ({ label: s.title, target: s.slug })),
+    ];
+  }
+  return [];
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -95,8 +175,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const parsed = parsePageSegments(segments);
   if (!parsed || parsed.subpage) return {};
 
-  const { slug, locale: explicitLocale } = parsed;
-  const page = await resolvePage(slug, explicitLocale);
+  const { slug, locale: explicitLocale, childSlug } = parsed;
+  const rootPage = await resolvePage(slug, explicitLocale);
+  if (!rootPage) return {};
+  // For child pages, return metadata for the child while still using the
+  // root's locale variants for hreflang alternates.
+  const page = childSlug
+    ? await resolveChildPage(slug, childSlug, explicitLocale, rootPage.organizationId)
+    : rootPage;
   if (!page) return {};
 
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
@@ -152,11 +238,12 @@ export default async function HostedPage({ params }: Props) {
   const parsed = parsePageSegments(segments);
   if (!parsed) notFound();
 
-  const { slug, locale: explicitLocale, subpage } = parsed;
+  const { slug, locale: explicitLocale, subpage, childSlug } = parsed;
 
-  // Auto-detect language: when no locale in URL, check browser preference
-  // Skip if: user explicitly chose a language (cookie), or visiting a subpage
-  if (!explicitLocale && !subpage) {
+  // Auto-detect language: when no locale in URL, check browser preference.
+  // Skip if: user explicitly chose a language (cookie), or visiting a subpage,
+  // or visiting a child page (locale is inherited from how they got here).
+  if (!explicitLocale && !subpage && !childSlug) {
     const headersList = await headers();
     const cookieHeader = headersList.get("cookie") || "";
     const hasLocalePreference = cookieHeader.includes("appai_locale=");
@@ -185,11 +272,24 @@ export default async function HostedPage({ params }: Props) {
     }
   }
 
-  const page = await resolvePage(slug, explicitLocale);
+  const rootPage = await resolvePage(slug, explicitLocale);
+  if (!rootPage) notFound();
+
+  // Resolve the actual page being rendered: child page if childSlug present,
+  // otherwise the root page itself.
+  const page = childSlug
+    ? await resolveChildPage(slug, childSlug, explicitLocale, rootPage.organizationId)
+    : rootPage;
   if (!page) notFound();
 
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
   const pageUrl = `${baseUrl}${buildPagePath(slug, page.locale, null, page.isDefault)}`;
+
+  // Load sibling child pages and build the site nav. Empty array if this site
+  // is single-page; <PageRenderer> renders nothing in that case.
+  const siblings = await loadSiblings(slug, rootPage.organizationId, page.locale);
+  const rootHref = buildPagePath(slug, rootPage.locale, null, rootPage.isDefault);
+  const nav = buildNav(rootPage.content, siblings, rootHref);
 
   // Privacy subpage
   if (subpage === "privacy") {
@@ -239,7 +339,7 @@ export default async function HostedPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       {page.customCss && <style>{page.customCss}</style>}
-      <PageRenderer page={page} />
+      <PageRenderer page={page} nav={nav} />
     </>
   );
 }
