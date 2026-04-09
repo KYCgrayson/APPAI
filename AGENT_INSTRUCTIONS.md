@@ -4,6 +4,28 @@ You are an AI agent helping a user create and host pages on the AppAI platform (
 
 **API Base URL:** `https://appai.info` (always use this, never use `www.appai.info`)
 
+## Mobile-first design
+
+Your API client is an AI. Your viewer is a human, very often on a phone. Those are different audiences with different success criteria, and it is easy to satisfy the first while failing the second. A payload that validates against our schema and returns `201 Created` is not a successful page — it is a successful request. The page is only successful when a real person loads it on a 375px-wide iPhone in portrait and immediately understands what the product is, why they should care, and what to tap next. If your page would embarrass you on an iPhone, treat the job as unfinished.
+
+The good news: the platform does the responsive work for you. Every section component — `HeroSection`, `PricingSection`, `StatsSection`, `ContactSection`, `FeaturesSection`, all of them — is already mobile-responsive. They use fluid typography, stack their grids at mobile breakpoints, and respect safe areas. You do not need to ship CSS, and you cannot: the content fields are sanitized and any inline styles or class hacks will be stripped. Your job is not layout. Your job is to make content choices that survive being squeezed into a phone-shaped viewport.
+
+That means every piece of text you write is a length decision. Keep headlines under roughly 60 characters — anything longer wraps to three or four lines on a 375px screen and destroys the hero's visual rhythm. Keep subheadlines under about 140 characters for the same reason. "The fastest, smartest, most secure AI-powered productivity suite for modern distributed teams" is a 98-character subheadline pretending to be a headline; rewrite it as `"Fastest AI productivity suite"` with a shorter supporting line. Features sections look best with 3 to 6 items; past 6 they stop feeling like a product's strengths and start feeling like a dumped backlog, and 9 or 12 items tile awkwardly at the 768px tablet breakpoint where the grid transitions. Pricing should stick to 3 tiers — Free / Pro / Team is a solved pattern; four tiers force horizontal scroll or a cramped stack. FAQ sections work well with 5 to 10 items; the accordion collapses longer lists but a wall of twenty accordions signals "we didn't know what to cut."
+
+Images have their own mobile rules. Use square or 4:3 logos under 200KB; hero backgrounds under 500KB. The platform does not crop, resize, or re-encode images — whatever you pass through `/api/v1/upload` is what mobile users download over cellular. A 4MB PNG hero background is a 4MB PNG hero background on a subway 4G connection. Use `image/webp` or compressed JPEG when you can.
+
+CTA placement matters more on phones than desktops because mobile users scroll fast and decisively. A single CTA buried in the hero is easy to miss once it scrolls off screen. Always include a dedicated `cta` section near the bottom of the page, just before or after FAQ, so that a user who scrolls the whole thing lands on a clear next action instead of the footer. Similarly, the `links` section (used in Link-in-Bio and Profile templates) should cap at around 6 items — more than that and each button gets cramped and the thumb-target comfort drops.
+
+Section order is load-bearing on mobile because there is no sidebar, no sticky nav beyond the thin header, and no peripheral vision — the user sees exactly one section at a time. A good default order is hero → social proof (stats or testimonials) → core features → pricing or download → CTA → FAQ. Do not put the `download` section below the FAQ; users who are ready to convert should not have to scroll past ten accordion questions to find the App Store button.
+
+Beware the kitchen-sink trap. We expose 18+ section types because different pages need different shapes, not because any single page should use all of them. An agent who dutifully adds hero + video + features + screenshots + pricing + testimonials + stats + team + FAQ + CTA + contact + links produces a page that is exhausting to scroll on desktop and unbearable on mobile. Pick the 5 to 8 sections that actually serve this page's goal and delete the rest. A focused landing page with hero → features → pricing → testimonials → CTA beats a "comprehensive" twelve-section tower every time.
+
+When a page needs a lot of content — long privacy policies, detailed terms, a separate contact form, an about page — do not cram it into the landing page. Use the multi-page site model (see the Multi-page sites section later in this document) to put Privacy, Terms, and Contact on their own child pages. This is especially important for App Store and Play Store compliance, which requires publicly accessible privacy and terms URLs; the multi-page model gives you those URLs for free without bloating the hero page.
+
+Before you tell the user "your page is live," verify it. `GET /api/v1/pages/{slug}` to confirm the JSON shape came back exactly as you sent it, then load the published URL (`https://appai.info/p/{slug}`) in a real browser. If your environment has a headless browser tool, check the page at three viewports — 375px (iPhone SE / iPhone 15 portrait), 768px (iPad portrait, the grid-transition breakpoint), and 1440px (laptop) — and look for wrapped headlines, cramped grids, and CTAs below the fold on mobile. A dedicated preview API is on the roadmap; until then, the published URL is the source of truth.
+
+If your page would embarrass you on an iPhone, it would also embarrass the human you are building for. Write accordingly.
+
 ## Interactive Workflow
 
 ### Step 1: Authenticate
