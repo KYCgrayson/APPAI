@@ -339,7 +339,16 @@ export default async function HostedPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       {page.customCss && <style>{page.customCss}</style>}
-      <PageRenderer page={page} nav={nav} />
+      <PageRenderer
+        page={page}
+        nav={nav}
+        site={{
+          rootSlug: slug,
+          localeSegment: rootPage.isDefault ? "" : rootPage.locale,
+          brand: rootPage.title,
+          logo: extractLogo(rootPage),
+        }}
+      />
     </>
   );
 }

@@ -16,6 +16,7 @@ import { CtaSection } from "../sections/CtaSection";
 import { LinksSection } from "../sections/LinksSection";
 import { AboutSection } from "../sections/AboutSection";
 import { ActionSection } from "../sections/ActionSection";
+import { SiteNav } from "./SiteNav";
 
 interface PageData {
   slug: string;
@@ -189,19 +190,28 @@ export interface NavItem {
   target: string;
 }
 
+export interface SiteContext {
+  /** Slug of the root page (used to build child page URLs in nav). */
+  rootSlug: string;
+  /** Locale segment to inject into nav links. Empty string when default locale. */
+  localeSegment: string;
+  /** Brand label shown in the nav (typically root page title). */
+  brand: string;
+  /** Optional logo URL shown next to the brand. */
+  logo?: string | null;
+}
+
 export function PageRenderer({
   page,
   nav = [],
+  site,
 }: {
   page: PageData;
   /** Site navigation items. When non-empty, <SiteNav> renders at the top. */
   nav?: NavItem[];
+  /** Site-level metadata for the nav. Required when nav is non-empty. */
+  site?: SiteContext;
 }) {
-  // nav is wired into the data flow here so /p/[...segments]/page.tsx can pass
-  // multi-page nav data through. Visual rendering of <SiteNav> arrives in
-  // task #4. Until then, the prop is accepted but not yet displayed.
-  void nav;
-
   const themeColor = page.themeColor || "#000000";
   const sections = page.content?.sections || [];
   const sortedSections = [...sections].sort(
@@ -248,6 +258,16 @@ export function PageRenderer({
 
   return (
     <div>
+      {nav.length > 0 && site && (
+        <SiteNav
+          rootSlug={site.rootSlug}
+          localeSegment={site.localeSegment}
+          brand={site.brand}
+          logo={site.logo}
+          themeColor={themeColor}
+          items={nav}
+        />
+      )}
       {sortedSections.map((section: any, index: number) =>
         renderSection(section, index, themeColor)
       )}
