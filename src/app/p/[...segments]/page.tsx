@@ -295,15 +295,15 @@ export default async function HostedPage({ params }: Props) {
   if (subpage === "privacy") {
     if (!page.privacyPolicy) notFound();
     return (
-      <div className="max-w-3xl mx-auto py-16 px-6">
-        <nav className="flex items-center gap-2 text-sm text-gray-500 mb-8">
-          <a href={buildPagePath(slug, page.locale, null, page.isDefault)} className="hover:text-gray-900">{page.title}</a>
+      <div className="max-w-3xl mx-auto py-10 md:py-16 px-4 sm:px-6">
+        <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6 md:mb-8 flex-wrap">
+          <a href={buildPagePath(slug, page.locale, null, page.isDefault)} className="hover:text-gray-900 truncate max-w-[60%]">{page.title}</a>
           <span className="text-gray-300">/</span>
           <span className="text-gray-900">Privacy Policy</span>
         </nav>
-        <h1 className="text-3xl font-bold mb-2">Privacy Policy</h1>
-        <p className="text-gray-500 mb-8">{page.title}</p>
-        <div className="prose prose-lg max-w-none whitespace-pre-wrap text-gray-700">
+        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 break-words">Privacy Policy</h1>
+        <p className="text-gray-500 mb-6 md:mb-8 break-words">{page.title}</p>
+        <div className="prose prose-base md:prose-lg max-w-none whitespace-pre-wrap break-words text-gray-700">
           {page.privacyPolicy}
         </div>
       </div>
@@ -314,15 +314,15 @@ export default async function HostedPage({ params }: Props) {
   if (subpage === "terms") {
     if (!page.termsOfService) notFound();
     return (
-      <div className="max-w-3xl mx-auto py-16 px-6">
-        <nav className="flex items-center gap-2 text-sm text-gray-500 mb-8">
-          <a href={buildPagePath(slug, page.locale, null, page.isDefault)} className="hover:text-gray-900">{page.title}</a>
+      <div className="max-w-3xl mx-auto py-10 md:py-16 px-4 sm:px-6">
+        <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6 md:mb-8 flex-wrap">
+          <a href={buildPagePath(slug, page.locale, null, page.isDefault)} className="hover:text-gray-900 truncate max-w-[60%]">{page.title}</a>
           <span className="text-gray-300">/</span>
           <span className="text-gray-900">Terms of Service</span>
         </nav>
-        <h1 className="text-3xl font-bold mb-2">Terms of Service</h1>
-        <p className="text-gray-500 mb-8">{page.title}</p>
-        <div className="prose prose-lg max-w-none whitespace-pre-wrap text-gray-700">
+        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 break-words">Terms of Service</h1>
+        <p className="text-gray-500 mb-6 md:mb-8 break-words">{page.title}</p>
+        <div className="prose prose-base md:prose-lg max-w-none whitespace-pre-wrap break-words text-gray-700">
           {page.termsOfService}
         </div>
       </div>

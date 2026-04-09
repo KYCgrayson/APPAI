@@ -149,14 +149,14 @@ function PageHeader({ page, themeColor }: { page: PageData; themeColor: string }
 
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b">
-      <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
-        <a href={`/p/${page.slug}`} className="flex items-center gap-3">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+        <a href={`/p/${page.slug}`} className="flex items-center gap-3 min-w-0">
           {logo && (
-            <img src={logo} alt={page.title} className="w-8 h-8 rounded-lg object-cover" />
+            <img src={logo} alt={page.title} className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />
           )}
-          <span className="font-semibold text-lg">{page.title}</span>
+          <span className="font-semibold text-base sm:text-lg truncate">{page.title}</span>
         </a>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
           {page.privacyPolicy && (
             <a href={`/p/${page.slug}/privacy`} className="text-sm text-gray-500 hover:text-gray-900 hidden sm:inline">
               Privacy
