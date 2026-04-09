@@ -56,6 +56,16 @@ export const createPageSchema = z.object({
     ),
   themeColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   isPublished: z.boolean().default(false),
+  // Multi-page sites: when set, this page is a child of the root page with
+  // slug=parentSlug in the same organization. null/undefined means this IS a
+  // root page. Only one level of nesting is supported (no grandchildren).
+  parentSlug: z
+    .string()
+    .min(2)
+    .max(100)
+    .regex(/^[a-z0-9-]+$/, "parentSlug must be lowercase alphanumeric with hyphens")
+    .nullable()
+    .optional(),
   // Optional: override auto-detected category for the App listing
   category: z
     .enum(["WRITING", "CODING", "DESIGN", "AUTOMATION", "PRODUCTIVITY", "SOCIAL", "FINANCE", "HEALTH", "EDUCATION", "OTHER"])

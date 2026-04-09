@@ -33,6 +33,36 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = createPageSchema.parse(body);
     const locale = data.locale || "en";
+    const parentSlug = data.parentSlug ?? null;
+
+    // Multi-page sites: when creating a child page, the parent root page must
+    // already exist in the same organization and must itself be a root page
+    // (only one level of nesting is allowed).
+    if (parentSlug) {
+      if (parentSlug === data.slug) {
+        return NextResponse.json(
+          { error: "parentSlug cannot equal slug — a page cannot be its own parent." },
+          { status: 400 }
+        );
+      }
+      const parent = await db.hostedPage.findFirst({
+        where: {
+          organizationId: authResult.organizationId,
+          slug: parentSlug,
+          parentSlug: null,
+        },
+        select: { id: true },
+      });
+      if (!parent) {
+        return NextResponse.json(
+          {
+            error: `parentSlug "${parentSlug}" does not exist as a root page in your organization.`,
+            hint: "Create the parent page first (without parentSlug), then create children.",
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     // Check slug+locale availability
     const existing = await db.hostedPage.findUnique({
@@ -60,7 +90,9 @@ export async function POST(request: NextRequest) {
       }
 
       data.content = sanitizeContent(data.content) as Record<string, any>;
-      const { category: appCategory, locale: _locale, ...pageData } = data;
+      // parentSlug is intentionally excluded from upsert mutations: reparenting
+      // a page (root <-> child) is destructive and must go through delete+create.
+      const { category: appCategory, locale: _locale, parentSlug: _parentSlug, ...pageData } = data;
 
       const updated = await db.hostedPage.update({
         where: { id: existing.id },
@@ -97,16 +129,17 @@ export async function POST(request: NextRequest) {
     });
 
     if (!isAdmin) {
-      const slugCount = await db.hostedPage.groupBy({
+      // Plan limits count only ROOT pages. Locale variants of an existing
+      // slug and child pages of an existing root are free.
+      const rootSlugs = await db.hostedPage.groupBy({
         by: ["slug"],
-        where: { organizationId: authResult.organizationId },
+        where: { organizationId: authResult.organizationId, parentSlug: null },
       });
-      if (authResult.organization.plan === "FREE" && slugCount.length >= 3) {
-        // Allow locale variants of existing slugs
-        const existingSlugs = slugCount.map((g) => g.slug);
+      if (authResult.organization.plan === "FREE" && rootSlugs.length >= 3 && !parentSlug) {
+        const existingSlugs = rootSlugs.map((g) => g.slug);
         if (!existingSlugs.includes(data.slug)) {
           return NextResponse.json(
-            { error: "Free plan limit: max 3 pages (locale variants are free). Upgrade to Pro." },
+            { error: "Free plan limit: max 3 root pages (locale variants and child pages are free). Upgrade to Pro." },
             { status: 403 }
           );
         }
@@ -116,11 +149,19 @@ export async function POST(request: NextRequest) {
     // Sanitize content before saving: strip HTML tags and validate URLs
     data.content = sanitizeContent(data.content) as Record<string, any>;
 
-    const { category: appCategory, locale: _locale, ...pageData } = data;
+    // parentSlug is set explicitly below from the validated `parentSlug`
+    // local, so it's stripped here from the spread to avoid double-set.
+    const { category: appCategory, locale: _locale, parentSlug: _parentSlug, ...pageData } = data;
 
-    // First locale variant for this slug becomes the default
+    // First locale variant for this slug becomes the default. For child pages
+    // we scope the variant count by (slug, parentSlug) so a child "faq" under
+    // root "foo" is independent from a root page named "faq" elsewhere.
     const existingVariants = await db.hostedPage.count({
-      where: { slug: data.slug },
+      where: {
+        slug: data.slug,
+        organizationId: authResult.organizationId,
+        parentSlug,
+      },
     });
     const shouldBeDefault = existingVariants === 0;
 
@@ -129,13 +170,15 @@ export async function POST(request: NextRequest) {
         ...pageData,
         locale,
         isDefault: shouldBeDefault,
+        parentSlug,
         content: pageData.content as any,
         organizationId: authResult.organizationId,
       },
     });
 
-    // Auto-create a corresponding App record (only for default locale)
-    if (shouldBeDefault) {
+    // Auto-create a corresponding App record (only for default locale of root
+    // pages — child pages do not get their own App listing).
+    if (shouldBeDefault && !parentSlug) {
       const existingApp = await db.app.findUnique({
         where: { hostedPageSlug: page.slug },
       });

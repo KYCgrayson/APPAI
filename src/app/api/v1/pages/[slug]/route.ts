@@ -4,8 +4,9 @@ import { validateApiKey } from "@/lib/api-auth";
 import { updatePageSchema } from "@/lib/validations/page";
 import { sanitizeContent } from "@/lib/sanitize";
 
-// Fields that cannot be changed via PUT/PATCH
-const IMMUTABLE_FIELDS = ["slug", "locale", "id", "organizationId", "createdAt", "updatedAt"];
+// Fields that cannot be changed via PUT/PATCH. parentSlug is immutable because
+// reparenting (root <-> child) is destructive — agents must delete and recreate.
+const IMMUTABLE_FIELDS = ["slug", "locale", "id", "organizationId", "createdAt", "updatedAt", "parentSlug"];
 
 /**
  * Check for immutable fields in the request body.
