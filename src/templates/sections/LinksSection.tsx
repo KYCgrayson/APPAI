@@ -19,12 +19,15 @@ export function LinksSection({ data, themeColor }: Props) {
   return (
     <section className="py-20 px-6">
       <div className="max-w-md mx-auto space-y-4">
-        {items.map((item, i) => (
+        {items.map((item, i) => {
+          const safeUrl = sanitizeUrl(item.url);
+          const isExternal = /^https?:\/\//i.test(safeUrl);
+          return (
           <a
             key={i}
-            href={sanitizeUrl(item.url)}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={safeUrl}
+            target={isExternal ? "_blank" : undefined}
+            rel={isExternal ? "noopener noreferrer" : undefined}
             className="block w-full text-center px-6 py-4 rounded-full font-semibold text-lg transition-transform hover:scale-105"
             style={
               item.style === "outlined"
@@ -35,7 +38,8 @@ export function LinksSection({ data, themeColor }: Props) {
             {item.icon && <span className="mr-2">{item.icon}</span>}
             {item.title}
           </a>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
