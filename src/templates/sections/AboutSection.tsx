@@ -8,10 +8,10 @@ interface Props {
 
 export function AboutSection({ data, themeColor }: Props) {
   return (
-    <section className="py-20 px-6">
+    <section className="py-12 md:py-20 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto">
         {data.heading && (
-          <h2 className="text-3xl font-bold text-center mb-8" style={{ color: themeColor }}>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-6 md:mb-8" style={{ color: themeColor }}>
             {data.heading}
           </h2>
         )}

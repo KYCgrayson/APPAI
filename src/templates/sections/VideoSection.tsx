@@ -31,7 +31,7 @@ export function VideoSection({ data, themeColor }: Props) {
   const type = getVideoType(safeUrl);
 
   return (
-    <section className="py-20 px-6">
+    <section className="py-12 md:py-20 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
         <div className="rounded-2xl overflow-hidden shadow-lg">
           {type === "youtube" && (

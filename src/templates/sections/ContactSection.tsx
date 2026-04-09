@@ -12,12 +12,12 @@ interface Props {
 
 export function ContactSection({ data, themeColor }: Props) {
   return (
-    <section className="py-20 px-6 bg-gray-50">
+    <section className="py-12 md:py-20 px-4 sm:px-6 bg-gray-50">
       <div className="max-w-3xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-16" style={{ color: themeColor }}>
+        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>
           Contact
         </h2>
-        <div className="bg-white rounded-2xl p-8 shadow-sm space-y-6">
+        <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm space-y-6">
           {data.email && (
             <div className="flex items-center gap-4">
               <span className="text-2xl">&#9993;</span>
@@ -53,7 +53,7 @@ export function ContactSection({ data, themeColor }: Props) {
               <span className="text-2xl">&#9873;</span>
               <div>
                 <p className="text-sm text-gray-400">Address</p>
-                <p className="font-semibold">{data.address}</p>
+                <p className="font-semibold break-words">{data.address}</p>
               </div>
             </div>
           )}

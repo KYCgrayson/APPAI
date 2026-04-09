@@ -18,7 +18,7 @@ export function HeroSection({ data, themeColor }: Props) {
 
   return (
     <section
-      className="relative min-h-[70vh] flex items-center justify-center text-center px-6"
+      className="relative min-h-[70vh] flex items-center justify-center text-center px-4 sm:px-6 py-16"
       style={{
         backgroundImage: !data.backgroundVideo && data.backgroundImage ? `url(${sanitizeUrl(data.backgroundImage)})` : undefined,
         backgroundSize: "cover",
@@ -43,13 +43,13 @@ export function HeroSection({ data, themeColor }: Props) {
           <img src={sanitizeUrl(data.logo)} alt="Logo" className="h-16 w-16 mx-auto mb-6 rounded-2xl object-cover" />
         )}
         <h1
-          className="text-5xl md:text-7xl font-bold mb-6"
+          className="text-4xl sm:text-5xl md:text-7xl font-bold mb-6 break-words"
           style={{ color: hasBackground ? "#fff" : themeColor }}
         >
           {data.headline || "Welcome"}
         </h1>
         {data.subheadline && (
-          <p className={`text-xl md:text-2xl mb-8 ${hasBackground ? "text-gray-200" : "text-gray-600"}`}>
+          <p className={`text-lg sm:text-xl md:text-2xl mb-8 ${hasBackground ? "text-gray-200" : "text-gray-600"}`}>
             {data.subheadline}
           </p>
         )}

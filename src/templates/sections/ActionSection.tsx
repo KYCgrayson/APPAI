@@ -116,7 +116,7 @@ function ActionButton({ item, themeColor }: { item: ActionItem; themeColor: stri
       </button>
       {result && (
         <pre
-          className={`text-xs p-3 rounded-lg overflow-auto max-h-48 ${
+          className={`text-xs p-3 rounded-lg overflow-x-auto max-h-48 whitespace-pre-wrap break-words ${
             state === "success"
               ? "bg-green-50 text-green-800 border border-green-200"
               : "bg-red-50 text-red-800 border border-red-200"
@@ -133,10 +133,10 @@ export function ActionSection({ data, themeColor }: Props) {
   const items = data.items || [];
 
   return (
-    <section className="py-16 px-4">
+    <section className="py-12 md:py-16 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto">
         {data.heading && (
-          <h2 className="text-2xl font-bold text-center mb-2">{data.heading}</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-2">{data.heading}</h2>
         )}
         {data.description && (
           <p className="text-gray-600 text-center mb-8">{data.description}</p>

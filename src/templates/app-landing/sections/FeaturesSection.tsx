@@ -29,18 +29,18 @@ export function FeaturesSection({ data, themeColor }: Props) {
   if (items.length === 0) return null;
 
   return (
-    <section className="py-20 px-6 bg-gray-50">
+    <section className="py-12 md:py-20 px-4 sm:px-6 bg-gray-50">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-16" style={{ color: themeColor }}>
+        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>
           Features
         </h2>
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
           {items.map((item, i) => {
             const iconValue = item.icon
               ? (LEGACY_ALIASES[item.icon] ?? item.icon)
               : "sparkles-outline";
             return (
-              <div key={i} className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow">
+              <div key={i} className="bg-white rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
                 <div className="mb-4" style={{ color: themeColor }}>
                   <SmartIcon value={iconValue} size={48} />
                 </div>

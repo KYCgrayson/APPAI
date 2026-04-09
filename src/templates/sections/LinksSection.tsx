@@ -18,7 +18,7 @@ export function LinksSection({ data, themeColor }: Props) {
   if (items.length === 0) return null;
 
   return (
-    <section className="py-20 px-6">
+    <section className="py-12 md:py-20 px-4 sm:px-6">
       <div className="max-w-md mx-auto space-y-4">
         {items.map((item, i) => {
           const safeUrl = sanitizeUrl(item.url);

@@ -12,13 +12,13 @@ interface Props {
 
 export function CtaSection({ data, themeColor }: Props) {
   return (
-    <section className="py-20 px-6" style={{ backgroundColor: themeColor }}>
+    <section className="py-12 md:py-20 px-4 sm:px-6" style={{ backgroundColor: themeColor }}>
       <div className="max-w-3xl mx-auto text-center">
-        <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
           {data.headline}
         </h2>
         {data.subheadline && (
-          <p className="text-lg text-white/80 mb-8">{data.subheadline}</p>
+          <p className="text-base md:text-lg text-white/80 mb-8">{data.subheadline}</p>
         )}
         <a
           href={sanitizeUrl(data.buttonUrl)}
