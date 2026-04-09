@@ -26,6 +26,83 @@ Before you tell the user "your page is live," verify it. `GET /api/v1/pages/{slu
 
 If your page would embarrass you on an iPhone, it would also embarrass the human you are building for. Write accordingly.
 
+## Multi-page sites
+
+A single landing page is fine for a quick prototype, but real product sites — especially anything you plan to ship to the App Store or Play Store — need more than one page. App Review wants Privacy, Terms, Contact, and an account-deletion path that look like first-class destinations, not text dumped at the bottom of the marketing scroll. Multi-page sites let you build a complete app website under one root slug.
+
+### The mental model
+
+Each `(organization, slug)` is one tenant site. Within a tenant you have one ROOT page and any number of CHILD pages. The root has `parentSlug=null` (or omitted). Children have `parentSlug` set to the root's slug. Children render at `/p/{root}/{child}`, with locale variants at `/p/{root}/{locale}/{child}`. Only one level of nesting is allowed — children cannot have their own children.
+
+### Creating a child page
+
+Create the root first as you normally would, then POST a child:
+
+```json
+POST /api/v1/pages
+{
+  "slug": "faq",
+  "parentSlug": "medlogai",
+  "title": "MedLogAI FAQ",
+  "content": { "sections": [ /* ... */ ] }
+}
+```
+
+Note that `slug` is the CHILD slug ("faq"), not the root. The root must already exist in the same organization or the request returns 400.
+
+### Header navigation
+
+Every multi-page site automatically gets a sticky header with a brand and a nav. If you do nothing, the nav is auto-generated from your sibling child pages — one entry per child, using the child's title as the label. To take explicit control (custom labels, custom ordering, anchors, external links), set `content.nav` on the ROOT page:
+
+```json
+"nav": [
+  { "label": "Features", "target": "#features" },
+  { "label": "Pricing",  "target": "#pricing" },
+  { "label": "FAQ",      "target": "faq" },
+  { "label": "Contact",  "target": "contact" },
+  { "label": "Blog",     "target": "https://blog.example.com" }
+]
+```
+
+Targets resolve in three ways: an absolute `https://...` URL opens in a new tab, a `#anchor` jumps within the current page, and a bare slug like `faq` links to a child page on the same root.
+
+### The compliance pattern
+
+A typical mobile-app website that passes App Review looks like this:
+
+- Root: marketing landing (hero, features, download, testimonials)
+- Child `faq`: product FAQ
+- Child `contact`: contact page (use a Links section with `mailto:` buttons today; native form sections arrive in Sprint 2)
+- Child `privacy`: privacy policy
+- Child `terms`: terms of service
+- Child `delete-account`: account deletion request page
+
+Build it this way and submission goes smoothly. Cram everything into one page and you will get bounced.
+
+### Migrating from the legacy text fields
+
+The old `privacyPolicy` and `termsOfService` text fields on a page still work, and `/p/{slug}/privacy` and `/p/{slug}/terms` will keep rendering them as plain prose. New pages should prefer child pages instead because (a) child pages support the full section system and styling, not just plain text, and (b) they show up in the header nav automatically. The legacy fields are not deprecated — old pages keep working — but you should default to child pages for anything new.
+
+### Listing children
+
+```
+GET /api/v1/pages/{root-slug}/children
+```
+
+Returns every child of the given root, optionally filtered by `?locale=en`.
+
+### Plan limits
+
+Child pages and locale variants do NOT count against the FREE tier 3-page limit. Only root pages count. A FREE tier tenant can have up to 3 root sites, each with unlimited child pages and unlimited locale variants. This is intentional — we want compliance pages to be free.
+
+### What you cannot do (by design)
+
+- Grandchildren: a child page cannot itself have children. The site structure is two levels deep, no more.
+- Reparenting via PATCH/PUT/upsert: `parentSlug` is immutable on existing pages. To move a page between roots, delete it and recreate.
+- Self-parenting: `parentSlug` cannot equal `slug`.
+
+These limits exist to keep the URL structure predictable and the nav generation simple. If you find yourself wanting grandchildren, that is usually a sign you should split into two separate root sites instead.
+
 ## Interactive Workflow
 
 ### Step 1: Authenticate
