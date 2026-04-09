@@ -1,4 +1,5 @@
 import { sanitizeUrl } from "@/lib/sanitize";
+import { SmartIcon } from "@/templates/shared/SmartIcon";
 
 interface Props {
   data: {
@@ -35,7 +36,7 @@ export function LinksSection({ data, themeColor }: Props) {
                 : { backgroundColor: themeColor, color: "#fff" }
             }
           >
-            {item.icon && <span className="mr-2">{item.icon}</span>}
+            {item.icon && <SmartIcon value={item.icon} className="mr-2 inline-flex" size="1.25em" />}
             {item.title}
           </a>
           );
