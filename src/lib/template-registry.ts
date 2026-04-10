@@ -102,7 +102,7 @@ export const SECTION_DEFS: SectionDef[] = [
         items: [
           { name: "name", type: "string", required: true, description: "Plan name (e.g. 'Free', 'Pro')" },
           { name: "price", type: "string", required: true, description: "Price display (e.g. '$0', '$9/mo')" },
-          { name: "description", type: "string", required: false, description: "Short plan description" },
+          { name: "description", type: "markdown", required: false, description: "Short plan description (Markdown supported)" },
           { name: "features", type: "array", required: true, description: "List of feature strings included in this plan" },
           { name: "highlighted", type: "boolean", required: false, description: "Whether this plan is recommended (highlighted)" },
           { name: "ctaText", type: "string", required: false, description: "Button text (default: 'Get Started')" },
@@ -122,7 +122,7 @@ export const SECTION_DEFS: SectionDef[] = [
           { name: "name", type: "string", required: true, description: "Person's name" },
           { name: "role", type: "string", required: false, description: "Role or title (e.g. 'CEO at Company')" },
           { name: "avatar", type: "url", required: false, description: "Avatar image URL" },
-          { name: "quote", type: "string", required: true, description: "Testimonial text" },
+          { name: "quote", type: "markdown", required: true, description: "Testimonial text (Markdown supported)" },
         ],
       },
     ],
@@ -136,7 +136,7 @@ export const SECTION_DEFS: SectionDef[] = [
         name: "items", type: "array", required: true, description: "List of Q&A pairs",
         items: [
           { name: "question", type: "string", required: true, description: "Question text" },
-          { name: "answer", type: "string", required: true, description: "Answer text" },
+          { name: "answer", type: "markdown", required: true, description: "Answer text (Markdown supported)" },
         ],
       },
     ],
@@ -167,7 +167,7 @@ export const SECTION_DEFS: SectionDef[] = [
           { name: "name", type: "string", required: true, description: "Member name" },
           { name: "role", type: "string", required: true, description: "Job title or role" },
           { name: "photo", type: "url", required: false, description: "Photo URL" },
-          { name: "bio", type: "string", required: false, description: "Short bio" },
+          { name: "bio", type: "markdown", required: false, description: "Short bio (Markdown supported)" },
         ],
       },
     ],
@@ -182,7 +182,7 @@ export const SECTION_DEFS: SectionDef[] = [
         items: [
           { name: "time", type: "string", required: true, description: "Time slot (e.g. '10:00 AM', 'Day 1')" },
           { name: "title", type: "string", required: true, description: "Session title" },
-          { name: "description", type: "string", required: false, description: "Session description" },
+          { name: "description", type: "markdown", required: false, description: "Session description (Markdown supported)" },
           { name: "speaker", type: "string", required: false, description: "Speaker name" },
         ],
       },
@@ -234,7 +234,7 @@ export const SECTION_DEFS: SectionDef[] = [
     description: "Bold call-to-action banner. Usually placed at the bottom of the page.",
     fields: [
       { name: "headline", type: "string", required: true, description: "CTA headline" },
-      { name: "subheadline", type: "string", required: false, description: "Supporting text" },
+      { name: "subheadline", type: "markdown", required: false, description: "Supporting text (Markdown supported)" },
       { name: "buttonText", type: "string", required: true, description: "Button label" },
       { name: "buttonUrl", type: "url", required: true, description: "Button link" },
     ],
@@ -270,7 +270,7 @@ export const SECTION_DEFS: SectionDef[] = [
     description: "Interactive buttons that send HTTP requests to custom URLs. Use for webhooks, API triggers, admin tools, or test panels. Each button displays the response after execution.",
     fields: [
       { name: "heading", type: "string", required: false, description: "Section heading" },
-      { name: "description", type: "string", required: false, description: "Description text" },
+      { name: "description", type: "markdown", required: false, description: "Description text (Markdown supported)" },
       {
         name: "items", type: "array", required: true, description: "List of action buttons",
         items: [
@@ -283,6 +283,29 @@ export const SECTION_DEFS: SectionDef[] = [
           { name: "style", type: "string", required: false, description: "'primary' (filled), 'secondary' (outlined), or 'danger' (red)" },
         ],
       },
+    ],
+  },
+  {
+    type: "form",
+    name: "Form",
+    description: "Contact or account-management form. Renders a real HTML form with typed fields. On submit, our backend relays to either an email address (submitTo: 'mailto:...') or a webhook (submitTo: 'https://...') — the user's device does not need a configured mail client. Required for App Store compliance pages like contact, delete-account, or data-export.",
+    fields: [
+      { name: "heading", type: "string", required: false, description: "Section heading" },
+      { name: "description", type: "markdown", required: false, description: "Short description above the form (Markdown supported)" },
+      {
+        name: "fields", type: "array", required: true, description: "Form field definitions",
+        items: [
+          { name: "type", type: "string", required: true, description: "'text' | 'email' | 'tel' | 'textarea' | 'select'" },
+          { name: "name", type: "string", required: true, description: "Field identifier, sent in the submission payload" },
+          { name: "label", type: "string", required: true, description: "Label shown above the field" },
+          { name: "required", type: "boolean", required: false, description: "Whether the field must be filled before submit" },
+          { name: "placeholder", type: "string", required: false, description: "Placeholder text shown inside the field" },
+          { name: "options", type: "array", required: false, description: "For type 'select' only: dropdown choices" },
+        ],
+      },
+      { name: "submitTo", type: "string", required: true, description: "Destination: 'mailto:you@example.com' (email relay) or 'https://...' (webhook). Non-https webhooks are rejected." },
+      { name: "submitLabel", type: "string", required: false, description: "Submit button text (default: 'Submit')" },
+      { name: "successMessage", type: "markdown", required: false, description: "Message shown after successful submission" },
     ],
   },
 ];

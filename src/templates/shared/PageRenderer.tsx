@@ -16,6 +16,7 @@ import { CtaSection } from "../sections/CtaSection";
 import { LinksSection } from "../sections/LinksSection";
 import { AboutSection } from "../sections/AboutSection";
 import { ActionSection } from "../sections/ActionSection";
+import { FormSection } from "../sections/FormSection";
 import { SiteNav } from "./SiteNav";
 
 interface PageData {
@@ -29,11 +30,20 @@ interface PageData {
   customCss?: string | null;
   privacyPolicy?: string | null;
   termsOfService?: string | null;
+  /** Multi-page sites: slug of the parent root page, or null for a root. */
+  parentSlug?: string | null;
+  /** Locale of this page, used by client-side form submission. */
+  locale?: string;
 }
 
 // Maps section type string to its React component
 // Each section supports optional backgroundColor and alternating bg for visual rhythm
-function renderSection(section: any, index: number, themeColor: string) {
+function renderSection(
+  section: any,
+  index: number,
+  themeColor: string,
+  page: PageData,
+) {
   const props = { data: section.data, themeColor };
   const bg = section.data?.backgroundColor || (index % 2 === 1 ? "#f9fafb" : undefined);
 
@@ -92,6 +102,18 @@ function renderSection(section: any, index: number, themeColor: string) {
       break;
     case "action":
       content = <ActionSection {...props} />;
+      break;
+    case "form":
+      content = (
+        <FormSection
+          data={section.data}
+          themeColor={themeColor}
+          pageSlug={page.slug}
+          parentSlug={page.parentSlug ?? null}
+          locale={page.locale ?? "en"}
+          sectionOrder={section.order}
+        />
+      );
       break;
     default:
       return null;
@@ -269,7 +291,7 @@ export function PageRenderer({
         />
       )}
       {sortedSections.map((section: any, index: number) =>
-        renderSection(section, index, themeColor)
+        renderSection(section, index, themeColor, page)
       )}
     </div>
   );
