@@ -53,21 +53,56 @@ function isUrlKey(key: string): boolean {
   return URL_KEY_PATTERNS.test(key);
 }
 
+export interface SanitizeWarning {
+  path: string;
+  message: string;
+  original?: string;
+  sanitized?: string;
+}
+
 /**
  * Recursively walks a content JSON object and sanitizes all values:
  * - String values have HTML tags stripped
  * - URL fields (detected by key name) are validated to use safe protocols
+ *
+ * When `warnings` is provided, each mutation is recorded instead of being
+ * silently applied. The returned value is still sanitized — warnings are
+ * informational only, not blocking.
  */
-export function sanitizeContent(obj: unknown, parentKey?: string): unknown {
+export function sanitizeContent(
+  obj: unknown,
+  parentKey?: string,
+  warnings?: SanitizeWarning[],
+  pathPrefix?: string,
+): unknown {
   if (obj === null || obj === undefined) return obj;
+  const path = pathPrefix || "";
 
   if (typeof obj === "string") {
+    let result = obj;
     const stripped = stripHtmlTags(obj);
-    // If the parent key suggests this is a URL, validate it
-    if (parentKey && isUrlKey(parentKey)) {
-      return sanitizeUrl(stripped);
+    if (stripped !== obj && warnings) {
+      warnings.push({
+        path: path || parentKey || "unknown",
+        message: "HTML tags were stripped from this field.",
+        original: obj.slice(0, 200),
+        sanitized: stripped.slice(0, 200),
+      });
     }
-    return stripped;
+    result = stripped;
+    if (parentKey && isUrlKey(parentKey)) {
+      const safe = sanitizeUrl(stripped);
+      if (safe !== stripped && warnings) {
+        warnings.push({
+          path: path || parentKey || "unknown",
+          message: "URL was sanitized because it uses a disallowed protocol.",
+          original: stripped.slice(0, 200),
+          sanitized: safe,
+        });
+      }
+      return safe;
+    }
+    return result;
   }
 
   if (typeof obj === "number" || typeof obj === "boolean") {
@@ -75,13 +110,15 @@ export function sanitizeContent(obj: unknown, parentKey?: string): unknown {
   }
 
   if (Array.isArray(obj)) {
-    return obj.map((item) => sanitizeContent(item, parentKey));
+    return obj.map((item, i) =>
+      sanitizeContent(item, parentKey, warnings, `${path}[${i}]`),
+    );
   }
 
   if (typeof obj === "object") {
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
-      result[key] = sanitizeContent(value, key);
+      result[key] = sanitizeContent(value, key, warnings, path ? `${path}.${key}` : key);
     }
     return result;
   }

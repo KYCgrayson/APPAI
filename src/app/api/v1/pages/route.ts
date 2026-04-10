@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
 import { createPageSchema } from "@/lib/validations/page";
-import { sanitizeContent } from "@/lib/sanitize";
+import { sanitizeContent, type SanitizeWarning } from "@/lib/sanitize";
 
 function extractLogoFromContent(content: any, heroImage?: string | null): string | null {
   if (content?.logo) return content.logo;
@@ -89,7 +89,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Slug belongs to another organization" }, { status: 403 });
       }
 
-      data.content = sanitizeContent(data.content) as Record<string, any>;
+      const upsertWarnings: SanitizeWarning[] = [];
+      data.content = sanitizeContent(data.content, undefined, upsertWarnings) as Record<string, any>;
       // parentSlug is intentionally excluded from upsert mutations: reparenting
       // a page (root <-> child) is destructive and must go through delete+create.
       const { category: appCategory, locale: _locale, parentSlug: _parentSlug, ...pageData } = data;
@@ -118,7 +119,10 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      return NextResponse.json(updated, { status: 200 });
+      return NextResponse.json(
+        { ...updated, ...(upsertWarnings.length > 0 ? { warnings: upsertWarnings } : {}) },
+        { status: 200 },
+      );
     }
 
     // Check plan limits — count distinct slugs, not locale variants
@@ -147,7 +151,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Sanitize content before saving: strip HTML tags and validate URLs
-    data.content = sanitizeContent(data.content) as Record<string, any>;
+    const contentWarnings: SanitizeWarning[] = [];
+    data.content = sanitizeContent(data.content, undefined, contentWarnings) as Record<string, any>;
 
     // parentSlug is set explicitly below from the validated `parentSlug`
     // local, so it's stripped here from the spread to avoid double-set.
@@ -198,7 +203,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(page, { status: 201 });
+    return NextResponse.json(
+      { ...page, ...(contentWarnings.length > 0 ? { warnings: contentWarnings } : {}) },
+      { status: 201 },
+    );
   } catch (error: any) {
     if (error.name === "ZodError") {
       return NextResponse.json({ error: "Validation failed", details: error.errors }, { status: 400 });
