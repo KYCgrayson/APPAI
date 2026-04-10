@@ -656,6 +656,39 @@ Pass an https URL to a square image. PNG, SVG, JPG, WebP, GIF, AVIF supported. O
 
 Mix freely within a page. We render all three.
 
+## Markdown in long-text fields
+
+A handful of section fields render Markdown so you can ship formatted prose without writing JSX or custom CSS. The fields that accept Markdown are:
+
+- `about.text`
+- `faq.items[].answer`
+- `testimonials.items[].quote`
+- `team.items[].bio`
+- `schedule.items[].description`
+- `pricing.items[].description`
+- `cta.subheadline`
+- `action.description`
+- `form.description` and `form.successMessage`
+
+Anywhere else (headlines, titles, labels, taglines, addresses, button text) is plain text. Newlines render as paragraph breaks. The supported syntax is the safe subset:
+
+- **Bold** with `**text**`, *italic* with `*text*`
+- Links `[label](https://example.com)` — opens externally; `mailto:` and `tel:` also allowed; anything else (`javascript:`, `data:`, etc.) is stripped to plain text for safety
+- Bullet lists with `- ` and ordered lists with `1. `
+- Inline code with backticks
+- Blockquotes with `>`
+- Headings (h3 / h4 only — h1 and h2 are reserved for section titles and will be auto-demoted)
+
+Raw HTML tags are escaped — `<script>` renders as the literal text `<script>`. You cannot inject styling or scripts; that is intentional. The fields above are also tagged `"type": "markdown"` in `GET /api/v1/sections` so you can introspect which fields support formatting.
+
+Example — an FAQ answer with a link and a list:
+```json
+{
+  "question": "How do I delete my account?",
+  "answer": "Go to **Settings → Account → Delete**, or visit our [account deletion page](contact). Deletion is permanent and removes:\n\n- Your profile and login\n- All saved entries\n- Subscription history (refunds processed separately)"
+}
+```
+
 ## Section Reference
 
 ### hero
@@ -836,6 +869,55 @@ See the Icons section above for all three valid forms (Ionicons name, emoji, or 
 }}
 ```
 Button styles: `primary` (filled with theme color), `secondary` (outlined), `danger` (red). Each button sends a request to the specified URL and displays the response.
+
+### form
+```json
+{ "type": "form", "order": 19, "data": {
+    "heading": "Contact us",
+    "description": "Send us a message and we will get back to you within 24 hours.",
+    "fields": [
+      { "type": "email", "name": "email", "label": "Your email", "required": true },
+      { "type": "select", "name": "requestType", "label": "Request type",
+        "options": [
+          { "value": "general", "label": "General question" },
+          { "value": "bug", "label": "Report a bug" },
+          { "value": "delete", "label": "Delete my account",
+            "description": "Your account and all data will be permanently deleted after a 7-day grace period." }
+        ]
+      },
+      { "type": "textarea", "name": "details", "label": "Details", "required": true }
+    ],
+    "submitTo": "mailto:support@yourdomain.com",
+    "submitLabel": "Send message",
+    "successMessage": "Thanks — your message has been sent. We will respond within one business day."
+}}
+```
+
+Form renders a real HTML form on the page. When the user submits, the data is relayed **server-side** to the `submitTo` destination. No local mail client required.
+
+**submitTo options:**
+- `"mailto:you@example.com"` — server relays via email (requires platform RESEND_API_KEY; if not configured, returns a clear error)
+- `"https://your-webhook.com/endpoint"` — server POSTs the form values as JSON with a 10-second timeout
+
+**Field types:** `text`, `email`, `tel`, `textarea`, `select`. Select fields accept an `options` array with `value`, `label`, and optional `description` (shown below the dropdown when that option is selected).
+
+**Compliance pattern:** every App Store / Play Store bound site should have a `/contact` child page (see Multi-page sites above) containing a Form section with `submitTo: "mailto:support@..."`. This solves contact, bug reports, account deletion requests, and data export requests in a single form. Here is the canonical account-deletion form for compliance:
+
+```json
+{ "type": "form", "order": 1, "data": {
+    "heading": "Delete your account",
+    "description": "Submit this form and we will permanently delete your account and all associated data within 7 days. This action cannot be undone.",
+    "fields": [
+      { "type": "email", "name": "email", "label": "Account email", "required": true, "placeholder": "Enter the email you signed up with" },
+      { "type": "textarea", "name": "reason", "label": "Reason for leaving (optional)", "placeholder": "Help us improve" }
+    ],
+    "submitTo": "mailto:privacy@yourdomain.com",
+    "submitLabel": "Request account deletion",
+    "successMessage": "Your deletion request has been received. Your account will be removed within 7 business days."
+}}
+```
+
+**Rate limit:** 5 submissions per IP per 10 minutes. Submissions are relayed in real time and not stored on our servers.
 
 ## Page Layout Features
 
