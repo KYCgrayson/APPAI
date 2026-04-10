@@ -67,6 +67,27 @@ export function FormSection({
       }
     }
     setState({ kind: "submitting" });
+
+    const submitTo = data.submitTo || "";
+
+    if (submitTo.startsWith("mailto:")) {
+      // Client-side mailto: compose the email body from form fields, then
+      // trigger the user's own device mail client. No server round-trip.
+      const to = submitTo.slice("mailto:".length);
+      const subject = encodeURIComponent(
+        data.heading ? `[${data.heading}] Form submission` : "Form submission",
+      );
+      const bodyLines: string[] = [];
+      for (const f of fields) {
+        bodyLines.push(`${f.label}: ${values[f.name] ?? ""}`);
+      }
+      const body = encodeURIComponent(bodyLines.join("\n"));
+      window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+      setState({ kind: "success" });
+      return;
+    }
+
+    // Webhook path: POST to our server which proxies to the agent's URL.
     try {
       const res = await fetch("/api/v1/form-submit", {
         method: "POST",
@@ -80,10 +101,10 @@ export function FormSection({
         }),
       });
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        const respBody = (await res.json().catch(() => ({}))) as { error?: string };
         setState({
           kind: "error",
-          message: body.error || `Submission failed (HTTP ${res.status}).`,
+          message: respBody.error || `Submission failed (HTTP ${res.status}).`,
         });
         return;
       }

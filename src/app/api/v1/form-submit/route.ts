@@ -70,62 +70,6 @@ function cleanValue(v: unknown): string {
   return v.replace(/[\u0000-\u001f\u007f]/g, "").slice(0, 5000).trim();
 }
 
-function renderPlainBody(
-  form: FormSectionData,
-  values: Record<string, string>,
-  meta: { pageSlug: string; parentSlug: string | null; locale: string; ip: string },
-): string {
-  const lines: string[] = [];
-  lines.push(`New form submission from appai.info`);
-  lines.push(``);
-  lines.push(`Page: /${meta.parentSlug ? `${meta.parentSlug}/` : ""}${meta.pageSlug} (${meta.locale})`);
-  lines.push(`IP:   ${meta.ip}`);
-  lines.push(`Form: ${form.heading ?? "(untitled)"}`);
-  lines.push(``);
-  for (const f of form.fields) {
-    lines.push(`${f.label}: ${values[f.name] ?? ""}`);
-  }
-  return lines.join("\n");
-}
-
-async function deliverMailto(
-  to: string,
-  subject: string,
-  body: string,
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  const resendKey = process.env.RESEND_API_KEY;
-  const from = process.env.FORM_FROM_EMAIL || "forms@appai.info";
-  if (!resendKey) {
-    return {
-      ok: false,
-      error:
-        "Email delivery is not configured on this platform instance (set RESEND_API_KEY). Use a webhook submitTo instead, or contact the platform operator.",
-    };
-  }
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${resendKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from,
-        to,
-        subject,
-        text: body,
-      }),
-    });
-    if (!res.ok) {
-      const detail = await res.text();
-      return { ok: false, error: `Email relay failed: ${res.status} ${detail.slice(0, 200)}` };
-    }
-    return { ok: true };
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "unknown";
-    return { ok: false, error: `Email relay error: ${msg}` };
-  }
-}
 
 async function deliverWebhook(
   url: string,
@@ -157,8 +101,9 @@ async function deliverWebhook(
  *
  * Public, unauthenticated endpoint. Takes a form submission from a
  * hosted page's Form section, validates the destination against the
- * stored page config, and relays the submission to either a mailto:
- * or an https:// webhook. We never persist submissions to our DB.
+ * stored page config, and proxies the submission to the agent's
+ * webhook URL. mailto: submissions are handled entirely client-side
+ * by FormSection.tsx and never reach this endpoint.
  */
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
@@ -225,14 +170,16 @@ export async function POST(request: NextRequest) {
     values[f.name] = clean;
   }
 
-  const subject = form.heading ? `[appai.info] ${form.heading}` : `[appai.info] Form submission`;
-  const bodyText = renderPlainBody(form, values, { pageSlug, parentSlug: parent, locale, ip });
-
   if (form.submitTo.startsWith("mailto:")) {
-    const to = form.submitTo.slice("mailto:".length);
-    const result = await deliverMailto(to, subject, bodyText);
-    if (!result.ok) return NextResponse.json({ error: result.error }, { status: 502 });
-  } else if (/^https:\/\//.test(form.submitTo)) {
+    // mailto: is handled entirely client-side by FormSection.tsx.
+    // If a request somehow reaches here with a mailto: submitTo, reject it.
+    return NextResponse.json(
+      { error: "mailto: forms are handled client-side. This endpoint only processes webhook submissions." },
+      { status: 400 },
+    );
+  }
+
+  if (/^https:\/\//.test(form.submitTo)) {
     const result = await deliverWebhook(form.submitTo, {
       pageSlug,
       parentSlug: parent,

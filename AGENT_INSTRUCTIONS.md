@@ -909,8 +909,8 @@ Button styles: `primary` (filled with theme color), `secondary` (outlined), `dan
 Form renders a real HTML form on the page. When the user submits, the data is relayed **server-side** to the `submitTo` destination. No local mail client required.
 
 **submitTo options:**
-- `"mailto:you@example.com"` — server relays via email (requires platform RESEND_API_KEY; if not configured, returns a clear error)
-- `"https://your-webhook.com/endpoint"` — server POSTs the form values as JSON with a 10-second timeout
+- `"mailto:you@example.com"` — handled entirely client-side. When the user submits the form, their device opens their default mail client with all form fields pre-filled in the email body. No server round-trip, no platform email account needed. The user sends the email directly from their own device to the agent's address.
+- `"https://your-webhook.com/endpoint"` — server-side proxy. Our backend POSTs the form values as JSON to the target URL with a 10-second timeout. Rate limited to 5 submissions per IP per 10 minutes.
 
 **Field types:** `text`, `email`, `tel`, `textarea`, `select`. Select fields accept an `options` array with `value`, `label`, and optional `description` (shown below the dropdown when that option is selected).
 
