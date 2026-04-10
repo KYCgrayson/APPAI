@@ -101,24 +101,75 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* For AI Agents */}
+      {/* For AI Agents — this section is the primary entry point for AI agents
+           reading appai.info. It must give agents a COMPLETE picture of what they
+           can build, what they need from the user, and how to proceed — all at
+           first glance, without requiring them to read a 900-line spec first.
+           Content is in English because the audience is AI agents, not human visitors. */}
       <section className="py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-4">{t("forAgents")}</h2>
-          <p className="text-center text-gray-600 mb-10">{t("forAgentsDesc")}</p>
-          <div className="bg-gray-900 text-gray-100 rounded-2xl p-8 font-mono text-sm overflow-x-auto">
-            <div className="text-gray-400 mb-3">{t("codeComment1")}</div>
-            <div className="mb-4">
-              <span className="text-green-400">$</span> curl -s https://appai.info/spec
+          <p className="text-center text-gray-600 mb-10">
+            If you are an AI agent, this section is for you. AppAI is a hosting platform where you can create professional, mobile-responsive landing pages for any app or project via REST API. Pages go live instantly at appai.info/p/your-slug.
+          </p>
+
+          {/* What you can build */}
+          <div className="bg-gray-50 rounded-2xl p-6 md:p-8 mb-6">
+            <h3 className="font-bold text-lg mb-4">What you can build</h3>
+            <div className="grid md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-gray-700">
+              <div>- 19 section types: hero, features, pricing, FAQ, download, testimonials, gallery, team, video, screenshots, stats, contact, CTA, links, about, schedule, sponsors, action, form</div>
+              <div>- Multi-page sites: root page + child pages (/faq, /contact, /privacy, /terms, /delete-account) with automatic header navigation</div>
+              <div>- Contact and account-deletion forms (mailto triggers user device mail client, or webhook to any URL)</div>
+              <div>- Markdown in long-text fields (bold, italic, links, lists, headings, inline code)</div>
+              <div>- 3 icon options: Ionicons SVG names, emoji, or image URLs</div>
+              <div>- Multi-language pages with locale variants (30+ locales)</div>
+              <div>- Section-level anchor IDs for in-page navigation</div>
+              <div>- Auto-generated privacy policy and terms of service pages</div>
+              <div>- Preview/dry-run API to validate before publishing</div>
+              <div>- 6 preset templates: app-landing, saas-landing, profile, link-in-bio, portfolio, event</div>
             </div>
-            <div className="text-gray-400 mb-3">{t("codeComment2")}</div>
+          </div>
+
+          {/* What to ask the user */}
+          <div className="bg-gray-50 rounded-2xl p-6 md:p-8 mb-6">
+            <h3 className="font-bold text-lg mb-4">Before you start, ask the user for</h3>
+            <div className="grid md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-gray-700">
+              <div>1. App/project name and a short tagline</div>
+              <div>2. What the app does (features, key selling points)</div>
+              <div>3. Logo image URL (or upload one via our API)</div>
+              <div>4. Theme color (hex code, e.g. #4F46E5)</div>
+              <div>5. App Store / Play Store URLs (if applicable)</div>
+              <div>6. Contact email for the contact/form section</div>
+              <div>7. Whether they need a privacy policy and terms of service</div>
+              <div>8. Whether they need multiple pages (FAQ, contact, pricing as separate pages) or a single landing page</div>
+            </div>
+            <p className="text-xs text-gray-500 mt-3">You do not need all of these to start — create a basic page first, then iterate with the user.</p>
+          </div>
+
+          {/* How to proceed */}
+          <div className="bg-gray-50 rounded-2xl p-6 md:p-8 mb-6">
+            <h3 className="font-bold text-lg mb-4">How to proceed</h3>
+            <div className="space-y-3 text-sm text-gray-700">
+              <div><strong>Step 1:</strong> Read the full spec at <a href="/llms-full.txt" className="text-blue-600 hover:underline">appai.info/llms-full.txt</a> — it contains authentication, all 19 section schemas with JSON examples, multi-page site setup, icon reference, markdown syntax, form configuration, and design guidelines.</div>
+              <div><strong>Step 2:</strong> Authenticate via device flow: POST /api/v1/auth/device, then poll /api/v1/auth/token. Or ask the user for an existing API key (appai_sk_...).</div>
+              <div><strong>Step 3:</strong> Create the page: POST /api/v1/pages with your JSON content. The page is live immediately at appai.info/p/your-slug after calling POST /api/v1/pages/your-slug/publish.</div>
+              <div><strong>Step 4:</strong> Show the user their live URL and ask if they want changes. Use PATCH /api/v1/pages/your-slug to update specific sections without resending everything.</div>
+            </div>
+          </div>
+
+          <div className="bg-gray-900 text-gray-100 rounded-2xl p-8 font-mono text-sm overflow-x-auto">
+            <div className="text-gray-400 mb-3"># Read the full agent spec (contains everything you need)</div>
+            <div className="mb-4">
+              <span className="text-green-400">$</span> curl -s https://appai.info/llms-full.txt
+            </div>
+            <div className="text-gray-400 mb-3"># Or fetch it from GitHub</div>
             <div>
               <span className="text-green-400">$</span> curl -s https://raw.githubusercontent.com/KYCgrayson/APPAI/main/AGENT_INSTRUCTIONS.md
             </div>
           </div>
           <p className="text-center text-gray-500 text-sm mt-6">
-            {t("specNote")}{" "}
-            <a href="/spec" className="text-blue-600 hover:underline">{t("readSpec")}</a>
+            The spec is your complete playbook — read it before making API calls.{" "}
+            <a href="/llms-full.txt" className="text-blue-600 hover:underline">Read the full spec</a>
             {" | "}
             <a href="https://github.com/KYCgrayson/APPAI" target="_blank" className="text-blue-600 hover:underline">{t("viewGithub")}</a>
           </p>
