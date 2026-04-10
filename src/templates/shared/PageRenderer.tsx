@@ -93,7 +93,7 @@ function renderSection(
       break;
     case "cta":
       // CTA already has its own background color
-      return <CtaSection key={index} {...props} />;
+      return <div key={index} id={section.data?.id || section.id || undefined}><CtaSection {...props} /></div>;
     case "links":
       content = <LinksSection {...props} />;
       break;
@@ -119,13 +119,16 @@ function renderSection(
       return null;
   }
 
+  // Optional anchor id for in-page navigation (#pricing, #faq, etc.)
+  const sectionId = section.data?.id || section.id || undefined;
+
   // Hero section handles its own background
   if (section.type === "hero") {
-    return <div key={index}>{content}</div>;
+    return <div key={index} id={sectionId}>{content}</div>;
   }
 
   return (
-    <div key={index} style={bg ? { backgroundColor: bg } : undefined}>
+    <div key={index} id={sectionId} style={bg ? { backgroundColor: bg } : undefined}>
       {content}
     </div>
   );

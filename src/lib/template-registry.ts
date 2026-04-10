@@ -14,10 +14,19 @@ export interface SectionFieldDef {
   fields?: SectionFieldDef[]; // for object types
 }
 
+/** Common field available on every section: an optional anchor `id`. */
+export const COMMON_SECTION_FIELD: SectionFieldDef = {
+  name: "id",
+  type: "string",
+  required: false,
+  description: "Optional anchor id for in-page linking (e.g. \"pricing\" to enable #pricing). Must be a valid HTML id — lowercase, no spaces.",
+};
+
 export interface SectionDef {
   type: string;
   name: string;
   description: string;
+  /** Section-specific fields. The common `id` field is added automatically by the /api/v1/sections endpoint. */
   fields: SectionFieldDef[];
 }
 

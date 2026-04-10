@@ -689,6 +689,19 @@ Example — an FAQ answer with a link and a list:
 }
 ```
 
+## Section-level anchors
+
+Every section accepts an optional `"id"` field in its `data` object. When set, the section's wrapper element gets that id as an HTML attribute, enabling in-page anchor links like `#pricing` or `#faq`. This works with both the multi-page nav (`"target": "#pricing"`) and external links.
+
+```json
+{ "type": "pricing", "order": 5, "data": {
+    "id": "pricing",
+    ...
+}}
+```
+
+Keep ids lowercase, no spaces, unique within the page. If two sections share an id the browser jumps to whichever appears first. The `id` field is also returned by `GET /api/v1/sections` as a common field on every section type.
+
 ## Section Reference
 
 ### hero
