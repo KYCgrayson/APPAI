@@ -1,3 +1,5 @@
+import { Prose } from "@/templates/shared/Prose";
+
 interface Props {
   data: {
     items: Array<{
@@ -42,7 +44,7 @@ export function ScheduleSection({ data, themeColor }: Props) {
                   <p className="text-sm text-gray-400 mt-1">{item.speaker}</p>
                 )}
                 {item.description && (
-                  <p className="text-gray-600 mt-2 text-sm md:text-base">{item.description}</p>
+                  <Prose className="prose prose-sm md:prose-base max-w-none text-gray-600 mt-2 prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{item.description}</Prose>
                 )}
               </div>
             ))}

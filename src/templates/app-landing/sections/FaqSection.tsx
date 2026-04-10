@@ -1,3 +1,5 @@
+import { Prose } from "@/templates/shared/Prose";
+
 interface Props {
   data: {
     items?: Array<{
@@ -25,7 +27,7 @@ export function FaqSection({ data, themeColor }: Props) {
                 {item.question}
                 <span className="text-gray-400 group-open:rotate-180 transition-transform">▾</span>
               </summary>
-              <p className="mt-4 text-gray-600 leading-relaxed">{item.answer}</p>
+              <Prose className="prose prose-sm md:prose-base max-w-none mt-4 text-gray-600 leading-relaxed prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{item.answer}</Prose>
             </details>
           ))}
         </div>

@@ -1,4 +1,5 @@
 import { sanitizeUrl } from "@/lib/sanitize";
+import { Prose } from "@/templates/shared/Prose";
 
 interface Props {
   data: {
@@ -52,7 +53,7 @@ export function TeamSection({ data, themeColor }: Props) {
               <p className="text-sm mb-2" style={{ color: themeColor }}>
                 {item.role}
               </p>
-              {item.bio && <p className="text-gray-500 text-sm">{item.bio}</p>}
+              {item.bio && <Prose className="prose prose-sm max-w-none text-gray-500 prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{item.bio}</Prose>}
             </div>
           ))}
         </div>

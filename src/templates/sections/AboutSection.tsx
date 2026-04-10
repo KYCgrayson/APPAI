@@ -1,3 +1,5 @@
+import { Prose } from "@/templates/shared/Prose";
+
 interface Props {
   data: {
     heading?: string;
@@ -15,7 +17,7 @@ export function AboutSection({ data, themeColor }: Props) {
             {data.heading}
           </h2>
         )}
-        <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{data.text}</p>
+        <Prose className="prose prose-sm md:prose-base max-w-none text-gray-600 leading-relaxed prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{data.text}</Prose>
       </div>
     </section>
   );

@@ -1,4 +1,5 @@
 import { sanitizeUrl } from "@/lib/sanitize";
+import { Prose } from "@/templates/shared/Prose";
 
 interface Props {
   data: {
@@ -18,7 +19,7 @@ export function CtaSection({ data, themeColor }: Props) {
           {data.headline}
         </h2>
         {data.subheadline && (
-          <p className="text-base md:text-lg text-white/80 mb-8">{data.subheadline}</p>
+          <Prose className="prose prose-sm md:prose-base max-w-none text-white/80 mb-8 prose-a:text-white prose-a:underline prose-headings:font-semibold prose-headings:text-white prose-strong:text-white">{data.subheadline}</Prose>
         )}
         <a
           href={sanitizeUrl(data.buttonUrl)}

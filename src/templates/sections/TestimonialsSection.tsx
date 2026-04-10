@@ -1,4 +1,5 @@
 import { sanitizeUrl } from "@/lib/sanitize";
+import { Prose } from "@/templates/shared/Prose";
 
 interface Props {
   data: {
@@ -34,7 +35,7 @@ export function TestimonialsSection({ data, themeColor }: Props) {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {items.map((item, i) => (
             <div key={i} className="bg-white rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow border border-gray-100">
-              <p className="text-gray-600 leading-relaxed mb-6 text-sm md:text-base">&ldquo;{item.quote}&rdquo;</p>
+              <Prose className="prose prose-sm md:prose-base max-w-none text-gray-600 leading-relaxed mb-6 prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{item.quote}</Prose>
               <div className="flex items-center gap-3">
                 {item.avatar ? (
                   <img

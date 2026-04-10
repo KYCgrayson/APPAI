@@ -7,6 +7,7 @@ import {
   isActionUrlSafe,
   extractDomain,
 } from "@/lib/sanitize";
+import { Prose } from "@/templates/shared/Prose";
 
 interface ActionItem {
   label: string;
@@ -139,7 +140,7 @@ export function ActionSection({ data, themeColor }: Props) {
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-2">{data.heading}</h2>
         )}
         {data.description && (
-          <p className="text-gray-600 text-center mb-8">{data.description}</p>
+          <Prose className="prose prose-sm md:prose-base max-w-none text-gray-600 text-center mb-8 prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{data.description}</Prose>
         )}
         <div className="flex flex-col gap-4">
           {items.map((item, i) => (

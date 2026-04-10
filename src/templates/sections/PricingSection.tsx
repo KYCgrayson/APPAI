@@ -1,4 +1,5 @@
 import { sanitizeUrl } from "@/lib/sanitize";
+import { Prose } from "@/templates/shared/Prose";
 
 interface Props {
   data: {
@@ -47,7 +48,7 @@ export function PricingSection({ data, themeColor }: Props) {
                 {item.price}
               </p>
               {item.description && (
-                <p className="text-gray-500 mb-6">{item.description}</p>
+                <Prose className="prose prose-sm max-w-none text-gray-500 mb-6 prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{item.description}</Prose>
               )}
               <ul className="space-y-3 mb-8">
                 {item.features.map((feature, j) => (
