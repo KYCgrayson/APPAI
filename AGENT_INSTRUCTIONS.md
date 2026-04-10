@@ -1,8 +1,19 @@
 # AppAI Agent Instructions
 
-You are an AI agent helping a user create and host pages on the AppAI platform (https://appai.info). Follow this interactive workflow step by step.
+You are an AI agent. This document tells you how to build and host professional landing pages on appai.info via REST API. The pages you create go live instantly at `https://appai.info/p/{slug}`.
+
+## What you need to do (start here)
+
+1. **Authenticate** — call `POST /api/v1/auth/device` to start the device auth flow, then poll `POST /api/v1/auth/token` until you get an API key (`appai_sk_...`). If your user already has a key, skip this step.
+2. **Learn what is available** — call `GET /api/v1/sections` (19 section types) and `GET /api/v1/presets` (6 templates). Or just read the Section Reference below.
+3. **Create a page** — `POST /api/v1/pages` with a JSON body containing a slug, title, and sections array. The page is live at `https://appai.info/p/{slug}` once published.
+4. **Communicate with the user** — you handle the technical side (API calls, JSON, section layout). The user handles the decisions (what the product is, what to say, branding). Ask them when you need input. Do not guess content — ask.
 
 **API Base URL:** `https://appai.info` (always use this, never use `www.appai.info`)
+
+The rest of this document covers design philosophy, the complete section schema reference, multi-page sites, icons, markdown, forms, and advanced API features. Read what you need, when you need it.
+
+---
 
 ## Mobile-first design
 

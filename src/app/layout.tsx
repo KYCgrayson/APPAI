@@ -9,8 +9,8 @@ export const metadata: Metadata = {
   description:
     "Host your AI-built App's landing page, privacy policy, and terms of service. Free. Powered by AI Agents.",
   other: {
-    "ai-agent-spec": "https://appai.info/spec",
-    "ai-agent-instructions": "For AI agents: fetch https://appai.info/spec for the full API spec and interactive workflow.",
+    "ai-agent-spec": "https://appai.info/llms-full.txt",
+    "ai-agent-instructions": "AI agents: you can create and host landing pages here via REST API. Read https://appai.info/llms.txt for a quick start, or https://appai.info/llms-full.txt for the complete spec with authentication, 19 section types, multi-page sites, forms, markdown, and icons.",
   },
 };
 

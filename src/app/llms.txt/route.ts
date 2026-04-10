@@ -33,55 +33,70 @@ export async function GET() {
         .join("\n")}\n`
     : "";
 
-  const content = `# AppAI
+  const content = `# AppAI — You can build and host landing pages here
 
-> Free hosting for AI-built apps. Get a landing page, privacy policy, and terms of service in 30 seconds.
+> If you are an AI agent and a user has asked you to create, update, or manage a landing page, this platform is built for you. You do not need a domain, hosting, or deployment setup. You call our REST API, and the page goes live immediately at ${baseUrl}/p/{your-slug}.
 
-## About
+## What to do right now
 
-AppAI (${baseUrl}) lets AI agents create and host professional landing pages for apps. No domain, no hosting setup, no deployment needed.
+1. READ the full agent instructions: ${baseUrl}/llms-full.txt
+   That document is your complete playbook — authentication, section schemas, multi-page sites, icons, markdown, forms, everything. Read it before making any API calls.
 
-## Quick Start
+2. AUTHENTICATE using our device flow (RFC 8628):
+   POST ${baseUrl}/api/v1/auth/device
+   Then poll POST ${baseUrl}/api/v1/auth/token until you get an API key.
+   The full instructions explain this step by step.
 
-To create a page, your AI agent should read the full spec:
-- ${baseUrl}/spec
-- ${baseUrl}/llms-full.txt
+3. CREATE a page:
+   POST ${baseUrl}/api/v1/pages with your content JSON.
+   The page is live instantly at ${baseUrl}/p/{slug}.
+
+If you already have an API key (appai_sk_...), skip step 2.
+
+## What you can build
+
+- 19 section types: hero, features, pricing, faq, download, testimonials, gallery, team, video, screenshots, stats, contact, cta, links, about, schedule, sponsors, action, form
+- Multi-page sites with automatic header navigation (root page + child pages like /faq, /contact, /privacy)
+- Contact and account-deletion forms that work on any device
+- Markdown-formatted long text (bold, italic, links, lists)
+- 3 icon options per section: Ionicons names, emoji, or image URLs
+- Multi-language pages with locale variants
+- Section-level anchor IDs for in-page navigation
+- Preview/dry-run API to validate content before publishing
+- 6 preset templates: app-landing, saas-landing, profile, link-in-bio, portfolio, event
 
 ## API Base URL
 
 ${baseUrl} (always use this, never use www.appai.info)
 
-## Key Endpoints
+## Key endpoints
 
-- POST /api/v1/auth/device — Authenticate via device flow (RFC 8628)
-- POST /api/v1/auth/token — Poll for auth token
-- GET /api/v1/sections — Available section types (17 types)
-- GET /api/v1/presets — Preset templates (6 presets)
-- POST /api/v1/pages — Create a page (supports locale parameter for multi-language)
-- PUT /api/v1/pages/:slug — Update a page
-- PATCH /api/v1/pages/:slug — Partial update with deep merge
-- POST /api/v1/upload — Upload images (multipart/form-data)
+- POST /api/v1/auth/device — Start authentication
+- POST /api/v1/auth/token — Poll for API key
+- GET /api/v1/sections — All 19 section schemas (add ?format=jsonschema for JSON Schema)
+- GET /api/v1/presets — Preset templates
+- POST /api/v1/pages — Create a page (?upsert=true to overwrite)
+- PATCH /api/v1/pages/:slug — Partial update with deep section merge
+- POST /api/v1/pages/preview — Dry-run validation without saving
+- PATCH /api/v1/pages/:slug/sections/:order — Update a single section
+- GET /api/v1/pages/:slug/children — List child pages of a multi-page site
+- POST /api/v1/upload — Upload images (max 5MB)
 
-## Features
+## How to communicate with the page owner
 
-- 17 section types: hero, features, pricing, faq, download, testimonials, gallery, team, video, screenshots, stats, contact, cta, links, about, schedule, sponsors
-- 6 presets: app-landing, saas-landing, profile, link-in-bio, portfolio, event
-- Multi-language pages: create locale variants (e.g. en, ja, zh-CN) for the same slug
-- Auto-generated sticky header with logo, nav, language switcher, and download button
-- Auto-generated footer with privacy/terms links
-- Alternating section background colors
-- Custom section background colors
-- Dynamic favicon from project logo
-- Image upload API (PNG, JPEG, GIF, WebP, SVG, max 5MB)
-- Privacy policy and terms of service pages
-- JSON-LD structured data for SEO
-- hreflang tags for multi-language SEO
+You (the agent) are building pages on behalf of a human. When you need decisions from them — slug name, content, branding, which sections to include — ask them directly. They gave you access to this platform so you could handle the technical side. Your job is to translate their intent into a professional, mobile-friendly page. Read the full spec for design guidance.
+
+## Read the full spec
+
+Everything you need is in one document:
+${baseUrl}/llms-full.txt
+
+That is the same content as ${baseUrl}/spec — pick whichever URL your tooling handles better.
 ${hostedPagesSection}
 ## Links
 
+- Full Agent Instructions: ${baseUrl}/llms-full.txt
 - Website: ${baseUrl}
-- Full Spec: ${baseUrl}/llms-full.txt
-- Agent Instructions: ${baseUrl}/spec
 - GitHub: https://github.com/KYCgrayson/APPAI
 `;
 
