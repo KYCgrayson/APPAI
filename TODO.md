@@ -39,3 +39,4 @@ Check items off as they are completed. Add new items with date and description.
 ## Existing Tools
 
 - [x] YouTube/Media Download Tool (admin-only, hosted on NAS via Docker + Cloudflare Tunnel)
+- [x] `media-downloader` section type — public, interactive download tool embeddable in any landing page via API

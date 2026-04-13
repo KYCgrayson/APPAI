@@ -92,7 +92,7 @@ See the [full Agent Spec](https://appai.info/spec) for the complete interactive 
 
 ## Available Page Sections
 
-Build any page by combining these 18 section types:
+Build any page by combining these 21 section types:
 
 | Section | Description |
 |---------|-------------|
@@ -114,6 +114,9 @@ Build any page by combining these 18 section types:
 | `links` | Link button list (Linktree-style) |
 | `about` | Text content section |
 | `action` | API action buttons (POST/GET with confirmation) |
+| `form` | Contact/account-management form with email or webhook submission |
+| `media-downloader` | Interactive media download tool (YouTube, IG, TikTok, 1000+ platforms) |
+| `tool` | Universal interactive tool (file upload, processing, download — connect any API) |
 
 ## Preset Templates
 

@@ -5,7 +5,7 @@ You are an AI agent. This document tells you how to build and host professional 
 ## What you need to do (start here)
 
 1. **Authenticate** — call `POST /api/v1/auth/device` to start the device auth flow, then poll `POST /api/v1/auth/token` until you get an API key (`appai_sk_...`). If your user already has a key, skip this step.
-2. **Learn what is available** — call `GET /api/v1/sections` (19 section types) and `GET /api/v1/presets` (6 templates). Or just read the Section Reference below.
+2. **Learn what is available** — call `GET /api/v1/sections` (21 section types) and `GET /api/v1/presets` (6 templates). Or just read the Section Reference below.
 3. **Create a page** — `POST /api/v1/pages` with a JSON body containing a slug, title, and sections array. The page is live at `https://appai.info/p/{slug}` once published.
 4. **Communicate with the user** — you handle the technical side (API calls, JSON, section layout). The user handles the decisions (what the product is, what to say, branding). Ask them when you need input. Do not guess content — ask.
 
@@ -914,6 +914,95 @@ Button styles: `primary` (filled with theme color), `secondary` (outlined), `dan
     "submitTo": "mailto:support@yourdomain.com",
     "submitLabel": "Send message",
     "successMessage": "Thanks — your message has been sent. We will respond within one business day."
+}}
+```
+
+### media-downloader
+```json
+{ "type": "media-downloader", "order": 20, "data": {
+    "heading": "Media Downloader",
+    "description": "Download videos and audio from YouTube, Instagram, TikTok, and 1000+ platforms.",
+    "apiBase": "https://your-api-endpoint.trycloudflare.com",
+    "apiToken": "your_api_token"
+}}
+```
+Interactive media download tool. Users paste a URL, choose format (Video or MP3), select quality (4K/1080p/720p/480p for video, 320/192/128 kbps for MP3), optionally enable subtitles, and download the file. Requires a backend API running yt-dlp that exposes `POST /download` and `GET /file/{file_id}` endpoints.
+
+### tool
+```json
+{ "type": "tool", "order": 21, "data": {
+    "heading": "PDF Merger",
+    "description": "Upload multiple PDFs and merge them into one file.",
+    "apiBase": "https://your-api.trycloudflare.com",
+    "apiEndpoint": "/merge-pdf",
+    "apiToken": "optional_token",
+    "fields": [
+      { "type": "file", "name": "files", "label": "Upload PDFs", "accept": ".pdf", "multiple": true, "maxSizeMB": 50 },
+      { "type": "toggle", "name": "orientation", "label": "Page Order", "options": [
+        { "value": "original", "label": "Original" },
+        { "value": "reverse", "label": "Reverse" }
+      ], "default": "original" }
+    ],
+    "submitLabel": "Merge PDFs",
+    "fileSizeLimit": "50MB",
+    "expiresIn": "1 hour"
+}}
+```
+Universal interactive tool section. Connect any backend API to create tools like PDF merger, image compressor, background remover, file converter, etc. Supports:
+
+**Input field types:** `text`, `url`, `password` (text inputs), `file` (single/multiple with drag & drop), `select` (dropdown), `toggle` (button group).
+
+**File fields:** Set `accept` to restrict file types (e.g. `.pdf`, `image/*`, `.pdf,.docx`), `multiple: true` for multi-file upload, `maxSizeMB` for size limit per file.
+
+**API contract:** The section sends either `multipart/form-data` (when file fields exist) or `application/json` (text-only tools) to `{apiBase}{apiEndpoint}`. The backend should return JSON with any combination of: `download_url` (file URL), `filename`, `preview_url` (image preview), `message` (text). Alternatively, the backend can return the file directly with appropriate `Content-Type` and `Content-Disposition` headers.
+
+**More examples:**
+
+Image background remover:
+```json
+{ "type": "tool", "data": {
+    "heading": "Background Remover",
+    "description": "Upload an image and get it with the background removed.",
+    "apiBase": "https://your-api.com",
+    "apiEndpoint": "/remove-bg",
+    "fields": [
+      { "type": "file", "name": "image", "label": "Upload Image", "accept": "image/*", "maxSizeMB": 10 }
+    ],
+    "submitLabel": "Remove Background"
+}}
+```
+
+Image compressor:
+```json
+{ "type": "tool", "data": {
+    "heading": "Image Compressor",
+    "description": "Compress images without visible quality loss.",
+    "apiBase": "https://your-api.com",
+    "apiEndpoint": "/compress",
+    "fields": [
+      { "type": "file", "name": "image", "label": "Upload Image", "accept": "image/*", "maxSizeMB": 20 },
+      { "type": "toggle", "name": "quality", "label": "Quality", "options": [
+        { "value": "high", "label": "High" },
+        { "value": "medium", "label": "Medium" },
+        { "value": "low", "label": "Low" }
+      ], "default": "medium" }
+    ],
+    "submitLabel": "Compress"
+}}
+```
+
+PDF password remover:
+```json
+{ "type": "tool", "data": {
+    "heading": "Remove PDF Password",
+    "description": "Upload a password-protected PDF and unlock it.",
+    "apiBase": "https://your-api.com",
+    "apiEndpoint": "/unlock-pdf",
+    "fields": [
+      { "type": "file", "name": "file", "label": "Upload PDF", "accept": ".pdf" },
+      { "type": "password", "name": "password", "label": "PDF Password", "required": true }
+    ],
+    "submitLabel": "Unlock PDF"
 }}
 ```
 

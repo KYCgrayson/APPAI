@@ -117,7 +117,7 @@ export default async function HomePage() {
           <div className="bg-gray-50 rounded-2xl p-6 md:p-8 mb-6">
             <h3 className="font-bold text-lg mb-4">What you can build</h3>
             <div className="grid md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-gray-700">
-              <div>- 19 section types: hero, features, pricing, FAQ, download, testimonials, gallery, team, video, screenshots, stats, contact, CTA, links, about, schedule, sponsors, action, form</div>
+              <div>- 21 section types: hero, features, pricing, FAQ, download, testimonials, gallery, team, video, screenshots, stats, contact, CTA, links, about, schedule, sponsors, action, form, media-downloader, tool</div>
               <div>- Multi-page sites: root page + child pages (/faq, /contact, /privacy, /terms, /delete-account) with automatic header navigation</div>
               <div>- Contact and account-deletion forms (mailto triggers user device mail client, or webhook to any URL)</div>
               <div>- Markdown in long-text fields (bold, italic, links, lists, headings, inline code)</div>
@@ -150,7 +150,7 @@ export default async function HomePage() {
           <div className="bg-gray-50 rounded-2xl p-6 md:p-8 mb-6">
             <h3 className="font-bold text-lg mb-4">How to proceed</h3>
             <div className="space-y-3 text-sm text-gray-700">
-              <div><strong>Step 1:</strong> Read the full spec at <a href="/llms-full.txt" className="text-blue-600 hover:underline">appai.info/llms-full.txt</a> — it contains authentication, all 19 section schemas with JSON examples, multi-page site setup, icon reference, markdown syntax, form configuration, and design guidelines.</div>
+              <div><strong>Step 1:</strong> Read the full spec at <a href="/llms-full.txt" className="text-blue-600 hover:underline">appai.info/llms-full.txt</a> — it contains authentication, all 20 section schemas with JSON examples, multi-page site setup, icon reference, markdown syntax, form configuration, and design guidelines.</div>
               <div><strong>Step 2:</strong> Authenticate via device flow: POST /api/v1/auth/device, then poll /api/v1/auth/token. Or ask the user for an existing API key (appai_sk_...).</div>
               <div><strong>Step 3:</strong> Create the page: POST /api/v1/pages with your JSON content. The page is live immediately at appai.info/p/your-slug after calling POST /api/v1/pages/your-slug/publish.</div>
               <div><strong>Step 4:</strong> Show the user their live URL and ask if they want changes. Use PATCH /api/v1/pages/your-slug to update specific sections without resending everything.</div>

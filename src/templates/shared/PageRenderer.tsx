@@ -17,6 +17,8 @@ import { LinksSection } from "../sections/LinksSection";
 import { AboutSection } from "../sections/AboutSection";
 import { ActionSection } from "../sections/ActionSection";
 import { FormSection } from "../sections/FormSection";
+import { MediaDownloaderSection } from "../sections/MediaDownloaderSection";
+import { ToolSection } from "../sections/ToolSection";
 import { SiteNav } from "./SiteNav";
 
 interface PageData {
@@ -102,6 +104,12 @@ function renderSection(
       break;
     case "action":
       content = <ActionSection {...props} />;
+      break;
+    case "media-downloader":
+      content = <MediaDownloaderSection {...props} />;
+      break;
+    case "tool":
+      content = <ToolSection {...props} />;
       break;
     case "form":
       content = (

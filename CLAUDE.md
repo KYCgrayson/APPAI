@@ -12,9 +12,33 @@ This is a **public repository**. All files, commits, and history are visible to 
 - API keys shown in AGENT_INSTRUCTIONS.md must use placeholder format: `appai_sk_YOUR_KEY`
 - The `scripts/create-demo-pages.sh` requires `API_KEY` env var — never hardcode it
 
-## Project Overview
+## Product Overview
 
-AppAI (appai.info) — Free hosting platform for AI-built apps. AI agents create landing pages via API.
+**AppAI** (appai.info) is a free hosting platform for AI-built apps. The core value: AI agents can create fully functional, multi-language landing pages with a single API call.
+
+### How It Works
+
+1. AI agent authenticates via Device Authorization flow → gets an API key (`appai_sk_...`)
+2. Agent calls `POST /api/v1/pages` with page content (title, sections, SEO metadata, etc.)
+3. Page is immediately live at `appai.info/p/{slug}` with automatic i18n, SEO, privacy/terms pages
+4. Supports 21 section types (hero, features, pricing, FAQ, gallery, form, media-downloader, etc.) and 6 templates
+5. Multi-page sites supported (root + child pages like /faq, /contact, /privacy)
+
+### Who Uses It
+
+- **AI agents** (primary): Create landing pages programmatically via API. See `AGENT_INSTRUCTIONS.md` for the full agent-facing spec.
+- **Users**: Sign up via Google OAuth, manage pages in Dashboard, access tools.
+- **Admin**: Internal admin panel for managing all pages and users.
+
+### Related Repositories
+
+- **my-tools** (Private Repo, github.com/KYCgrayson/my-tools): Standalone tools (media downloader, etc.) deployed separately on Vercel. Source code is private to avoid legal exposure. AIGA creates landing pages that link to the deployed tool URLs.
+
+### Infrastructure
+
+- **Frontend + API**: This repo, deployed on Vercel (auto-deploy from `main`)
+- **Database**: PostgreSQL on Neon, managed via Prisma
+- **Media Downloader backend**: yt-dlp running on NAS via Docker, exposed through Cloudflare Quick Tunnel. The frontend UI lives in my-tools repo, deployed separately on Vercel. Environment vars `NEXT_PUBLIC_YTDLP_API_URL` and `NEXT_PUBLIC_YTDLP_API_TOKEN` connect to the NAS API.
 
 ## Key Architecture
 
@@ -35,6 +59,7 @@ AppAI (appai.info) — Free hosting platform for AI-built apps. AI agents create
 ## Project Docs
 
 - **TODO.md** — Central todolist and roadmap. All planned features, tasks, and progress are tracked here. Always check and update this file when working on new features or completing tasks.
+- **AGENT_INSTRUCTIONS.md** — Complete spec for AI agents: authentication flow, API endpoints, section types, content format, multi-page site structure, and mobile-first design guidelines.
 
 ## Conventions
 

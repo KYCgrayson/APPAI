@@ -55,7 +55,7 @@ If you already have an API key (appai_sk_...), skip step 2.
 
 ## What you can build
 
-- 19 section types: hero, features, pricing, faq, download, testimonials, gallery, team, video, screenshots, stats, contact, cta, links, about, schedule, sponsors, action, form
+- 21 section types: hero, features, pricing, faq, download, testimonials, gallery, team, video, screenshots, stats, contact, cta, links, about, schedule, sponsors, action, form, media-downloader, tool
 - Multi-page sites with automatic header navigation (root page + child pages like /faq, /contact, /privacy)
 - Contact and account-deletion forms that work on any device
 - Markdown-formatted long text (bold, italic, links, lists)
@@ -73,7 +73,7 @@ ${baseUrl} (always use this, never use www.appai.info)
 
 - POST /api/v1/auth/device — Start authentication
 - POST /api/v1/auth/token — Poll for API key
-- GET /api/v1/sections — All 19 section schemas (add ?format=jsonschema for JSON Schema)
+- GET /api/v1/sections — All 20 section schemas (add ?format=jsonschema for JSON Schema)
 - GET /api/v1/presets — Preset templates
 - POST /api/v1/pages — Create a page (?upsert=true to overwrite)
 - PATCH /api/v1/pages/:slug — Partial update with deep section merge
