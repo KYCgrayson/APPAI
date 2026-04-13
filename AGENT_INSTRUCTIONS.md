@@ -5,7 +5,7 @@ You are an AI agent. This document tells you how to build and host professional 
 ## What you need to do (start here)
 
 1. **Authenticate** — call `POST /api/v1/auth/device` to start the device auth flow, then poll `POST /api/v1/auth/token` until you get an API key (`appai_sk_...`). If your user already has a key, skip this step.
-2. **Learn what is available** — call `GET /api/v1/sections` (21 section types) and `GET /api/v1/presets` (6 templates). Or just read the Section Reference below.
+2. **Learn what is available** — call `GET /api/v1/sections` (22 section types) and `GET /api/v1/presets` (6 templates). Or just read the Section Reference below.
 3. **Create a page** — `POST /api/v1/pages` with a JSON body containing a slug, title, and sections array. The page is live at `https://appai.info/p/{slug}` once published.
 4. **Communicate with the user** — you handle the technical side (API calls, JSON, section layout). The user handles the decisions (what the product is, what to say, branding). Ask them when you need input. Do not guess content — ask.
 
@@ -1005,6 +1005,15 @@ PDF password remover:
     "submitLabel": "Unlock PDF"
 }}
 ```
+
+### pdf-viewer
+```json
+{ "type": "pdf-viewer", "order": 22, "data": {
+    "heading": "PDF Viewer & Unlocker",
+    "description": "Open, preview, and unlock password-protected PDFs. No upload to server — everything runs in your browser."
+}}
+```
+Interactive PDF viewer with password unlock. Users drag & drop a PDF file, preview pages with zoom controls and page navigation, enter a password if the file is encrypted, and save an unlocked copy without the password. Fully client-side using pdf.js — no backend required, no files leave the user's device.
 
 Form renders a real HTML form on the page. When the user submits, the data is relayed **server-side** to the `submitTo` destination. No local mail client required.
 

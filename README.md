@@ -92,7 +92,7 @@ See the [full Agent Spec](https://appai.info/spec) for the complete interactive 
 
 ## Available Page Sections
 
-Build any page by combining these 21 section types:
+Build any page by combining these 22 section types:
 
 | Section | Description |
 |---------|-------------|
@@ -117,6 +117,7 @@ Build any page by combining these 21 section types:
 | `form` | Contact/account-management form with email or webhook submission |
 | `media-downloader` | Interactive media download tool (YouTube, IG, TikTok, 1000+ platforms) |
 | `tool` | Universal interactive tool (file upload, processing, download — connect any API) |
+| `pdf-viewer` | PDF viewer with password unlock and save-as-unlocked (client-side, no backend) |
 
 ## Preset Templates
 

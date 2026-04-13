@@ -339,6 +339,15 @@ export const SECTION_DEFS: SectionDef[] = [
     ],
   },
   {
+    type: "pdf-viewer",
+    name: "PDF Viewer",
+    description: "Interactive PDF viewer with password unlock and save-as-unlocked functionality. Users upload a PDF (drag & drop), preview pages with zoom and navigation, enter a password if the file is encrypted, and save an unlocked copy. Fully client-side — no backend required.",
+    fields: [
+      { name: "heading", type: "string", required: false, description: "Section heading (e.g. 'PDF Viewer', 'Unlock PDF')" },
+      { name: "description", type: "string", required: false, description: "Short description of the tool" },
+    ],
+  },
+  {
     type: "form",
     name: "Form",
     description: "Contact or account-management form. Renders a real HTML form with typed fields. On submit, our backend relays to either an email address (submitTo: 'mailto:...') or a webhook (submitTo: 'https://...') — the user's device does not need a configured mail client. Required for App Store compliance pages like contact, delete-account, or data-export.",

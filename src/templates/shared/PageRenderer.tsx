@@ -19,6 +19,7 @@ import { ActionSection } from "../sections/ActionSection";
 import { FormSection } from "../sections/FormSection";
 import { MediaDownloaderSection } from "../sections/MediaDownloaderSection";
 import { ToolSection } from "../sections/ToolSection";
+import { PdfViewerSection } from "../sections/PdfViewerSection";
 import { SiteNav } from "./SiteNav";
 
 interface PageData {
@@ -110,6 +111,9 @@ function renderSection(
       break;
     case "tool":
       content = <ToolSection {...props} />;
+      break;
+    case "pdf-viewer":
+      content = <PdfViewerSection {...props} />;
       break;
     case "form":
       content = (

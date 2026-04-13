@@ -55,7 +55,7 @@ If you already have an API key (appai_sk_...), skip step 2.
 
 ## What you can build
 
-- 21 section types: hero, features, pricing, faq, download, testimonials, gallery, team, video, screenshots, stats, contact, cta, links, about, schedule, sponsors, action, form, media-downloader, tool
+- 22 section types: hero, features, pricing, faq, download, testimonials, gallery, team, video, screenshots, stats, contact, cta, links, about, schedule, sponsors, action, form, media-downloader, tool, pdf-viewer
 - Multi-page sites with automatic header navigation (root page + child pages like /faq, /contact, /privacy)
 - Contact and account-deletion forms that work on any device
 - Markdown-formatted long text (bold, italic, links, lists)

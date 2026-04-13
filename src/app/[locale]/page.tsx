@@ -117,7 +117,7 @@ export default async function HomePage() {
           <div className="bg-gray-50 rounded-2xl p-6 md:p-8 mb-6">
             <h3 className="font-bold text-lg mb-4">What you can build</h3>
             <div className="grid md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-gray-700">
-              <div>- 21 section types: hero, features, pricing, FAQ, download, testimonials, gallery, team, video, screenshots, stats, contact, CTA, links, about, schedule, sponsors, action, form, media-downloader, tool</div>
+              <div>- 22 section types: hero, features, pricing, FAQ, download, testimonials, gallery, team, video, screenshots, stats, contact, CTA, links, about, schedule, sponsors, action, form, media-downloader, tool, pdf-viewer</div>
               <div>- Multi-page sites: root page + child pages (/faq, /contact, /privacy, /terms, /delete-account) with automatic header navigation</div>
               <div>- Contact and account-deletion forms (mailto triggers user device mail client, or webhook to any URL)</div>
               <div>- Markdown in long-text fields (bold, italic, links, lists, headings, inline code)</div>
