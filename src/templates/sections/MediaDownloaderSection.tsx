@@ -12,14 +12,20 @@ interface Props {
     description?: string;
     apiBase: string;
     apiToken: string;
+    /** Optional cap on video quality. Buttons above this value are hidden. */
+    maxVideoQuality?: VideoQuality;
   };
   themeColor: string;
 }
 
 export function MediaDownloaderSection({ data, themeColor }: Props) {
+  const maxVideo = Number(data.maxVideoQuality ?? "2160");
+  const defaultVideoQuality: VideoQuality =
+    720 <= maxVideo ? "720" : 480 <= maxVideo ? "480" : (data.maxVideoQuality ?? "480");
+
   const [url, setUrl] = useState("");
   const [format, setFormat] = useState<Format>("video");
-  const [videoQuality, setVideoQuality] = useState<VideoQuality>("720");
+  const [videoQuality, setVideoQuality] = useState<VideoQuality>(defaultVideoQuality);
   const [mp3Quality, setMp3Quality] = useState<Mp3Quality>("320");
   const [subtitles, setSubtitles] = useState(false);
   const [status, setStatus] = useState<
@@ -173,8 +179,13 @@ export function MediaDownloaderSection({ data, themeColor }: Props) {
               <div className="flex flex-wrap gap-2 justify-end">
                 {format === "video" ? (
                   <>
-                    {(["4K", "1080p", "720p", "480p"] as const).map(
-                      (label) => {
+                    {(["4K", "1080p", "720p", "480p"] as const)
+                      .filter((label) => {
+                        const val =
+                          label === "4K" ? "2160" : label.replace("p", "");
+                        return Number(val) <= maxVideo;
+                      })
+                      .map((label) => {
                         const val =
                           label === "4K"
                             ? "2160"
@@ -195,8 +206,7 @@ export function MediaDownloaderSection({ data, themeColor }: Props) {
                             {label}
                           </button>
                         );
-                      },
-                    )}
+                      })}
                   </>
                 ) : (
                   <>
