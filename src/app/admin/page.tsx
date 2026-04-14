@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { db } from "@/lib/db";
 import Link from "next/link";
+import { StatCard } from "@/components/admin/StatCard";
 
 export default async function AdminOverviewPage() {
   const [
@@ -123,12 +124,3 @@ export default async function AdminOverviewPage() {
   );
 }
 
-function StatCard({ label, value, detail }: { label: string; value: number; detail?: string }) {
-  return (
-    <div className="bg-white rounded-xl p-5 shadow-sm">
-      <div className="text-3xl font-bold">{value}</div>
-      <div className="text-gray-500 text-sm">{label}</div>
-      {detail && <div className="text-xs text-gray-400 mt-1">{detail}</div>}
-    </div>
-  );
-}

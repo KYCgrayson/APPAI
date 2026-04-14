@@ -33,7 +33,7 @@ Beware the kitchen-sink trap. We expose 18+ section types because different page
 
 When a page needs a lot of content — long privacy policies, detailed terms, a separate contact form, an about page — do not cram it into the landing page. Use the multi-page site model (see the Multi-page sites section later in this document) to put Privacy, Terms, and Contact on their own child pages. This is especially important for App Store and Play Store compliance, which requires publicly accessible privacy and terms URLs; the multi-page model gives you those URLs for free without bloating the hero page.
 
-Before you tell the user "your page is live," verify it. `GET /api/v1/pages/{slug}` to confirm the JSON shape came back exactly as you sent it, then load the published URL (`https://appai.info/p/{slug}`) in a real browser. If your environment has a headless browser tool, check the page at three viewports — 375px (iPhone SE / iPhone 15 portrait), 768px (iPad portrait, the grid-transition breakpoint), and 1440px (laptop) — and look for wrapped headlines, cramped grids, and CTAs below the fold on mobile. A dedicated preview API is on the roadmap; until then, the published URL is the source of truth.
+Before you tell the user "your page is live," verify it. `GET /api/v1/pages/{slug}` to confirm the JSON shape came back exactly as you sent it, then load the published URL (`https://appai.info/p/{slug}`) in a real browser. If your environment has a headless browser tool, check the page at three viewports — 375px (iPhone SE / iPhone 15 portrait), 768px (iPad portrait, the grid-transition breakpoint), and 1440px (laptop) — and look for wrapped headlines, cramped grids, and CTAs below the fold on mobile. If you want to validate a page before committing it, `POST /api/v1/pages/preview` accepts the same body as page creation and returns the sanitized, rendered JSON without writing to the database — use it for dry-run checks when you are iterating on content.
 
 If your page would embarrass you on an iPhone, it would also embarrass the human you are building for. Write accordingly.
 
@@ -83,7 +83,7 @@ A typical mobile-app website that passes App Review looks like this:
 
 - Root: marketing landing (hero, features, download, testimonials)
 - Child `faq`: product FAQ
-- Child `contact`: contact page (use a Links section with `mailto:` buttons today; native form sections arrive in Sprint 2)
+- Child `contact`: contact page (use a `form` section with `submitTo: "mailto:you@example.com"` or an `https://` webhook URL — see the `### form` reference below)
 - Child `privacy`: privacy policy
 - Child `terms`: terms of service
 - Child `delete-account`: account deletion request page
@@ -955,6 +955,8 @@ Universal interactive tool section. Connect any backend API to create tools like
 **File fields:** Set `accept` to restrict file types (e.g. `.pdf`, `image/*`, `.pdf,.docx`), `multiple: true` for multi-file upload, `maxSizeMB` for size limit per file.
 
 **API contract:** The section sends either `multipart/form-data` (when file fields exist) or `application/json` (text-only tools) to `{apiBase}{apiEndpoint}`. The backend should return JSON with any combination of: `download_url` (file URL), `filename`, `preview_url` (image preview), `message` (text). Alternatively, the backend can return the file directly with appropriate `Content-Type` and `Content-Disposition` headers.
+
+**Progress bar:** The section renders a progress bar automatically during upload and processing, styled with the page's theme color. You do not configure it — it fills as the request progresses (upload start, server processing, response received). Timeouts are enforced: 120 seconds for file uploads, 30 seconds for text-only requests. On timeout or error, the user sees an inline error with a "Try again" link.
 
 **More examples:**
 
