@@ -73,7 +73,7 @@ ${baseUrl} (always use this, never use www.appai.info)
 
 - POST /api/v1/auth/device — Start authentication
 - POST /api/v1/auth/token — Poll for API key
-- GET /api/v1/sections — All 20 section schemas (add ?format=jsonschema for JSON Schema)
+- GET /api/v1/sections — All 22 section schemas (add ?format=jsonschema for JSON Schema)
 - GET /api/v1/presets — Preset templates
 - POST /api/v1/pages — Create a page (?upsert=true to overwrite)
 - PATCH /api/v1/pages/:slug — Partial update with deep section merge
