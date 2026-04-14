@@ -303,6 +303,7 @@ export const SECTION_DEFS: SectionDef[] = [
       { name: "description", type: "string", required: false, description: "Short description below heading" },
       { name: "apiBase", type: "url", required: true, description: "Base URL of the download API (e.g. https://your-tunnel.trycloudflare.com)" },
       { name: "apiToken", type: "string", required: true, description: "API authentication token sent as 'token' header" },
+      { name: "maxVideoQuality", type: "string", required: false, description: "Optional cap on video quality: '2160' | '1080' | '720' | '480'. Buttons above this value are hidden (e.g. '1080' hides the 4K button). Default: '2160' (all qualities shown)." },
     ],
   },
   {
