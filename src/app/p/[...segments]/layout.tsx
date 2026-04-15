@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { parsePageSegments, buildPagePath } from "@/lib/parse-page-segments";
 import { LocaleLink } from "./LocaleLink";
+import { PageViewTracker } from "@/components/PageViewTracker";
 
 interface Props {
   params: Promise<{ segments: string[] }>;
@@ -20,6 +21,8 @@ export default async function HostedPageLayout({ params, children }: Props) {
     page = await db.hostedPage.findFirst({
       where: { slug, locale: explicitLocale, isPublished: true },
       select: {
+        id: true,
+        organizationId: true,
         slug: true,
         locale: true,
         isDefault: true,
@@ -38,6 +41,8 @@ export default async function HostedPageLayout({ params, children }: Props) {
       where: { slug, isPublished: true },
       orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
       select: {
+        id: true,
+        organizationId: true,
         slug: true,
         locale: true,
         isDefault: true,
@@ -90,6 +95,12 @@ export default async function HostedPageLayout({ params, children }: Props) {
 
   return (
     <div lang={locale} dir={locale === "ar" || locale === "he" ? "rtl" : "ltr"} className="min-h-screen bg-white flex flex-col">
+      <PageViewTracker
+        pageId={page.id}
+        slug={page.slug}
+        locale={page.locale}
+        orgId={page.organizationId}
+      />
       {/* Demo Ribbon */}
       {isDemo && (
         <div className="fixed top-0 left-0 z-[100] overflow-hidden pointer-events-none" style={{ width: 150, height: 150 }}>

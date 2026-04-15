@@ -152,6 +152,22 @@ model DeviceCode {
   createdAt      DateTime @default(now())
 }
 
+model PageView {
+  id        String   @id @default(cuid())
+  pageId    String
+  slug      String
+  locale    String
+  orgId     String
+  ipHash    String
+  country   String?
+  referrer  String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([pageId, createdAt])
+  @@index([orgId, createdAt])
+  @@index([createdAt])
+}
+
 model App {
   id             String       @id @default(cuid())
   organizationId String
