@@ -18,7 +18,7 @@ export function LanguageSwitcher() {
     <select
       value={locale}
       onChange={onChange}
-      className="text-sm bg-transparent border border-gray-200 rounded-md px-2 py-1 text-gray-600 hover:border-gray-400 cursor-pointer focus:outline-none focus:ring-1 focus:ring-gray-300"
+      className="text-sm bg-transparent border border-gray-700 rounded-md px-2 py-1 text-gray-400 hover:border-gray-500 hover:text-gray-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-gray-600 transition-colors"
       aria-label="Select language"
     >
       {locales.map((l) => (

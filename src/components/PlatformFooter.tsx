@@ -8,23 +8,23 @@ export async function PlatformFooter() {
     || "dev";
 
   return (
-    <footer className="border-t py-8 px-6">
+    <footer className="border-t border-gray-800 py-8 px-6 bg-gray-950">
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500">
         <div>{t("footerTagline")}</div>
         <div className="flex flex-wrap justify-center gap-4">
-          <Link href="/apps" className="hover:text-black">
+          <Link href="/apps" className="hover:text-gray-300 transition-colors">
             {t("browse")}
           </Link>
-          <a href="/spec" className="hover:text-black">
+          <a href="/spec" className="hover:text-gray-300 transition-colors">
             {t("agentSpec")}
           </a>
-          <a href="https://github.com/KYCgrayson/APPAI" target="_blank" className="hover:text-black">
+          <a href="https://github.com/KYCgrayson/APPAI" target="_blank" className="hover:text-gray-300 transition-colors">
             {t("github")}
           </a>
-          <a href="https://github.com/KYCgrayson/APPAI/issues" target="_blank" className="hover:text-black">
+          <a href="https://github.com/KYCgrayson/APPAI/issues" target="_blank" className="hover:text-gray-300 transition-colors">
             {t("feedback")}
           </a>
-          <a href="/dashboard" className="hover:text-black">
+          <a href="/dashboard" className="hover:text-gray-300 transition-colors">
             {t("dashboard")}
           </a>
           <span className="text-gray-300 font-mono text-xs" title={`Build: ${commitSha}`}>
