@@ -22,7 +22,8 @@ This is a **public repository**. All files, commits, and history are visible to 
 2. Agent calls `POST /api/v1/pages` with page content (title, sections, SEO metadata, etc.)
 3. Page is immediately live at `appai.info/p/{slug}` with automatic i18n, SEO, privacy/terms pages
 4. Supports 22 section types (hero, features, pricing, FAQ, gallery, form, media-downloader, etc.) and 6 templates
-5. Multi-page sites supported (root + child pages like /faq, /contact, /privacy)
+5. Visual design system: dark mode, custom Google Fonts, color palettes, hero variants (centered/split/minimal), per-section backgroundColor
+6. Multi-page sites supported (root + child pages like /faq, /contact, /privacy)
 
 ### Who Uses It
 
@@ -38,7 +39,7 @@ This is a **public repository**. All files, commits, and history are visible to 
 
 - **Frontend + API**: This repo, deployed on Vercel (auto-deploy from `main`)
 - **Database**: PostgreSQL on Neon, managed via Prisma
-- **Media Downloader backend**: yt-dlp running on NAS via Docker, exposed through Cloudflare Quick Tunnel. The frontend UI lives in my-tools repo, deployed separately on Vercel. Environment vars `NEXT_PUBLIC_YTDLP_API_URL` and `NEXT_PUBLIC_YTDLP_API_TOKEN` connect to the NAS API.
+- **Media Downloader backend**: yt-dlp running on NAS via Docker, exposed through Cloudflare Quick Tunnel. Hosted pages use a server-side proxy (`/api/v1/media-proxy`) so API tokens stay on the server and are never exposed to the browser. The standalone frontend UI lives in my-tools repo, deployed separately on Vercel.
 
 ## Key Architecture
 
@@ -59,7 +60,7 @@ This is a **public repository**. All files, commits, and history are visible to 
 ## Project Docs
 
 - **TODO.md** — Central todolist and roadmap. All planned features, tasks, and progress are tracked here. Always check and update this file when working on new features or completing tasks.
-- **AGENT_INSTRUCTIONS.md** — Complete spec for AI agents: authentication flow, API endpoints, section types, content format, multi-page site structure, and mobile-first design guidelines.
+- **AGENT_INSTRUCTIONS.md** — Complete spec for AI agents: capability overview, visual design guide, authentication flow, API endpoints, section types, content format, multi-page sites, and multi-language support. Redesigned with a "designer mindset" — agents build first, iterate after.
 
 ## Conventions
 

@@ -21,6 +21,7 @@ Built an app with AI but don't have a website? AppAI gives you:
 - **App discovery** — your app appears in the AppAI directory alongside other AI-built apps
 - **Zero setup** — no domain, no hosting, no deployment. Just an API call.
 - **Multi-language** — platform UI in 9 languages, hosted pages support 30+ locales with auto-detection
+- **Visual design system** — dark mode, custom Google Fonts, color palettes, hero variants (centered/split/minimal)
 
 ## How It Works
 
@@ -80,6 +81,8 @@ See the [full Agent Spec](https://appai.info/spec) for the complete interactive 
 | `POST` | `/api/v1/pages/:slug/publish` | Bearer | Publish a page |
 | `POST` | `/api/v1/pages/:slug/unpublish` | Bearer | Unpublish a page |
 | `POST` | `/api/v1/pages/:slug/set-default` | Bearer | Set default locale (`?locale=ja`) |
+| `POST` | `/api/v1/pages/preview` | Bearer | Preview a page without saving |
+| `POST` | `/api/v1/media-proxy` | None | Server-side proxy for media-downloader sections |
 | `POST` | `/api/v1/upload` | Bearer | Upload an image (returns public URL) |
 | `POST` | `/api/v1/apps` | Bearer | Submit an app |
 | `GET` | `/api/v1/apps` | Bearer | List apps |
@@ -96,7 +99,7 @@ Build any page by combining these 22 section types:
 
 | Section | Description |
 |---------|-------------|
-| `hero` | Headline with logo, background image/video, CTA |
+| `hero` | Headline with logo, background image/video, CTA. Three variants: centered, split (text+image), minimal. Configurable height. |
 | `video` | Embedded video (YouTube, Vimeo, mp4, webm, gif) |
 | `features` | Feature cards with icons in a grid |
 | `screenshots` | Horizontal image carousel |
@@ -118,6 +121,19 @@ Build any page by combining these 22 section types:
 | `media-downloader` | Interactive media download tool (YouTube, IG, TikTok, 1000+ platforms) |
 | `tool` | Universal interactive tool (file upload, processing, download — connect any API) |
 | `pdf-viewer` | PDF viewer with password unlock and save-as-unlocked (client-side, no backend) |
+
+## Page-Level Design Options
+
+Every hosted page supports these visual customization fields:
+
+| Field | Description |
+|-------|-------------|
+| `themeColor` | Primary brand color (hex). Drives CTA buttons, accents, links. |
+| `themeColorSecondary` | Accent color for secondary buttons. Auto-generated if omitted. |
+| `darkMode` | Dark backgrounds + light text. All sections adapt automatically. |
+| `fontFamily` | Google Fonts name (e.g. `"Inter"`, `"Noto Sans JP"`). Loaded automatically. |
+| `headerLogo` | Separate logo for the light sticky header (when hero logo is light-colored). |
+| `backgroundColor` | Per-section background color for visual rhythm. |
 
 ## Preset Templates
 
