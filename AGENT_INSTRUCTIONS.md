@@ -80,6 +80,29 @@ Every section supports optional `backgroundColor` (hex) and `id` (anchor for `#l
 
 Every page automatically gets: sticky header (with logo, title, language switcher, download button), footer (privacy/terms links), dynamic favicon (from hero logo), breadcrumb navigation on sub-pages, alternating section backgrounds, responsive mobile layout, SEO meta tags, JSON-LD structured data.
 
+### Logo Architecture
+
+You need ONE primary logo that works everywhere. Optionally provide context-specific overrides.
+
+**Primary logo (`content.logo` or hero section `data.logo`):**
+Must be a self-contained app-icon format with its own background color — recognizable on ANY background (light, dark, colored). Think: app store icon style, rounded square with solid fill. 512x512px PNG recommended. This is used as the universal fallback for all UI contexts.
+
+**Context-specific overrides (optional):**
+- `headerLogo` (page-level field): Override for the light sticky header. Use when your primary logo is white/light and invisible on the header's white background.
+- Hero section `data.logo`: Override for the hero section. Use when your primary logo doesn't work on the hero's dark background (e.g. primary logo has a dark background, hero is also dark).
+
+**Priority by context:**
+
+| Context | Priority |
+|---------|----------|
+| Sticky header | `headerLogo` > primary logo |
+| Hero section | hero `data.logo` > primary logo |
+| App cards / Browse | primary logo (always) |
+| Favicon | `headerLogo` > primary logo |
+| OG image | `ogImage` > primary logo |
+
+**Example:** Your app has a blue rounded-square logo (primary), a dark version for the white header (`headerLogo`), and a white version for the dark hero (hero `data.logo`). Set all three and each context picks the right one.
+
 ---
 
 ## Document Guide
