@@ -437,7 +437,7 @@ export function ToolSection({ data, themeColor }: Props) {
                   <span className="text-sm font-medium text-gray-700">
                     {field.label}
                   </span>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {field.options.map((opt) => (
                       <button
                         key={opt.value}

@@ -339,9 +339,9 @@ export function PdfViewerSection({ data, themeColor }: Props) {
         {status === "viewing" && (
           <div className="space-y-4">
             {/* Toolbar */}
-            <div className="flex items-center justify-between border rounded-lg px-4 py-2 bg-gray-50">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border rounded-lg px-4 py-2 bg-gray-50">
               <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
-                <span className="truncate max-w-[200px]">{file?.name}</span>
+                <span className="truncate max-w-[150px] sm:max-w-[200px]">{file?.name}</span>
                 <span className="text-gray-400">|</span>
                 <span>
                   {currentPage} / {totalPages}

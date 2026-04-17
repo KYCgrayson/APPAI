@@ -23,7 +23,7 @@ export function ScreenshotsSection({ data, themeColor }: Props) {
               <img
                 src={sanitizeUrl(url)}
                 alt={`Screenshot ${i + 1}`}
-                className="rounded-2xl shadow-lg h-[360px] md:h-[500px] w-auto object-cover"
+                className="rounded-2xl shadow-lg h-[360px] md:h-[500px] w-auto max-w-[85vw] sm:max-w-sm object-cover"
               />
             </div>
           ))}

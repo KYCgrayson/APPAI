@@ -6,9 +6,11 @@ interface Props {
     }>;
   };
   themeColor: string;
+  themeColorSecondary?: string;
+  darkMode?: boolean;
 }
 
-export function StatsSection({ data, themeColor }: Props) {
+export function StatsSection({ data, themeColor, darkMode }: Props) {
   const items = data.items || [];
   if (items.length === 0) return null;
 
@@ -21,7 +23,7 @@ export function StatsSection({ data, themeColor }: Props) {
               <p className="text-3xl md:text-5xl font-bold" style={{ color: themeColor }}>
                 {item.value}
               </p>
-              <p className="text-gray-500 mt-2 text-sm uppercase tracking-wide">
+              <p className={`mt-2 text-sm uppercase tracking-wide ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
                 {item.label}
               </p>
             </div>

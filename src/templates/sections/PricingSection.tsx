@@ -14,6 +14,8 @@ interface Props {
     }>;
   };
   themeColor: string;
+  themeColorSecondary?: string;
+  darkMode?: boolean;
 }
 
 // Parse "free", "$29", "$29/mo", "NT$500", "€10" into { amount, currency }.
@@ -55,7 +57,7 @@ function parsePrice(raw: string): { amount: string; currency: string } | null {
   return null;
 }
 
-export function PricingSection({ data, themeColor }: Props) {
+export function PricingSection({ data, themeColor, darkMode }: Props) {
   const items = data.items || [];
   if (items.length === 0) return null;
 
@@ -88,7 +90,7 @@ export function PricingSection({ data, themeColor }: Props) {
   };
 
   return (
-    <section className="py-12 md:py-20 px-4 sm:px-6 bg-gray-50">
+    <section className={`py-12 md:py-20 px-4 sm:px-6 ${darkMode ? "" : "bg-gray-50"}`}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(offerSchema) }}
@@ -101,8 +103,10 @@ export function PricingSection({ data, themeColor }: Props) {
           {items.map((item, i) => (
             <div
               key={i}
-              className={`relative bg-white rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow ${
-                item.highlighted ? "border-2" : "border border-gray-100"
+              className={`relative rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow ${
+                darkMode ? "bg-gray-800" : "bg-white"
+              } ${
+                item.highlighted ? "border-2" : `border ${darkMode ? "border-gray-700" : "border-gray-100"}`
               }`}
               style={item.highlighted ? { borderColor: themeColor } : undefined}
             >
@@ -114,7 +118,7 @@ export function PricingSection({ data, themeColor }: Props) {
                   Recommended
                 </span>
               )}
-              <h3 className="text-xl font-semibold mb-2">{item.name}</h3>
+              <h3 className={`text-xl font-semibold mb-2 ${darkMode ? "text-gray-100" : ""}`}>{item.name}</h3>
               <p className="text-4xl font-bold mb-4" style={{ color: themeColor }}>
                 {item.price}
               </p>
@@ -123,7 +127,7 @@ export function PricingSection({ data, themeColor }: Props) {
               )}
               <ul className="space-y-3 mb-8">
                 {item.features.map((feature, j) => (
-                  <li key={j} className="flex items-start gap-2 text-gray-600">
+                  <li key={j} className={`flex items-start gap-2 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
                     <span style={{ color: themeColor }}>&#10003;</span>
                     <span>{feature}</span>
                   </li>

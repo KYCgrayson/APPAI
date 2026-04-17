@@ -28,27 +28,39 @@ interface PageData {
   title: string;
   tagline?: string | null;
   heroImage?: string | null;
+  headerLogo?: string | null;
   content: any;
   themeColor?: string | null;
+  themeColorSecondary?: string | null;
+  fontFamily?: string | null;
+  darkMode?: boolean;
   customCss?: string | null;
   privacyPolicy?: string | null;
   termsOfService?: string | null;
-  /** Multi-page sites: slug of the parent root page, or null for a root. */
   parentSlug?: string | null;
-  /** Locale of this page, used by client-side form submission. */
   locale?: string;
 }
 
-// Maps section type string to its React component
-// Each section supports optional backgroundColor and alternating bg for visual rhythm
+function autoSecondaryColor(primary: string): string {
+  const r = parseInt(primary.slice(1, 3), 16);
+  const g = parseInt(primary.slice(3, 5), 16);
+  const b = parseInt(primary.slice(5, 7), 16);
+  const blend = (c: number) => Math.round(c + (255 - c) * 0.75);
+  return `#${blend(r).toString(16).padStart(2, "0")}${blend(g).toString(16).padStart(2, "0")}${blend(b).toString(16).padStart(2, "0")}`;
+}
+
 function renderSection(
   section: any,
   index: number,
   themeColor: string,
+  themeColorSecondary: string,
+  darkMode: boolean,
   page: PageData,
 ) {
-  const props = { data: section.data, themeColor };
-  const bg = section.data?.backgroundColor || (index % 2 === 1 ? "#f9fafb" : undefined);
+  const props = { data: section.data, themeColor, themeColorSecondary, darkMode };
+  const darkBg = darkMode ? "#111827" : undefined;
+  const darkBgAlt = darkMode ? "#1f2937" : "#f9fafb";
+  const bg = section.data?.backgroundColor || (index % 2 === 1 ? darkBgAlt : darkBg);
 
   let content;
   switch (section.type) {
@@ -107,7 +119,7 @@ function renderSection(
       content = <ActionSection {...props} />;
       break;
     case "media-downloader":
-      content = <MediaDownloaderSection {...props} />;
+      content = <MediaDownloaderSection data={{ ...section.data, _pageSlug: page.slug }} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} />;
       break;
     case "tool":
       content = <ToolSection {...props} />;
@@ -146,25 +158,25 @@ function renderSection(
   );
 }
 
-function PageFooter({ slug, hasPrivacy, hasTerms }: { slug: string; hasPrivacy: boolean; hasTerms: boolean }) {
+function PageFooter({ slug, hasPrivacy, hasTerms, darkMode = false }: { slug: string; hasPrivacy: boolean; hasTerms: boolean; darkMode?: boolean }) {
   return (
-    <footer className="py-8 border-t">
+    <footer className={`py-8 border-t ${darkMode ? "border-gray-700" : ""}`}>
       {(hasPrivacy || hasTerms) && (
-        <div className="flex justify-center gap-6 mb-4 text-sm text-gray-500">
+        <div className={`flex justify-center gap-6 mb-4 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
           {hasPrivacy && (
-            <a href={`/p/${slug}/privacy`} className="hover:text-gray-800">
+            <a href={`/p/${slug}/privacy`} className={darkMode ? "hover:text-gray-200" : "hover:text-gray-800"}>
               Privacy Policy
             </a>
           )}
           {hasTerms && (
-            <a href={`/p/${slug}/terms`} className="hover:text-gray-800">
+            <a href={`/p/${slug}/terms`} className={darkMode ? "hover:text-gray-200" : "hover:text-gray-800"}>
               Terms of Service
             </a>
           )}
         </div>
       )}
-      <div className="text-center text-sm text-gray-400">
-        <a href="https://appai.info" target="_blank" rel="noopener noreferrer" className="hover:text-gray-600">
+      <div className={`text-center text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
+        <a href="https://appai.info" target="_blank" rel="noopener noreferrer" className={darkMode ? "hover:text-gray-300" : "hover:text-gray-600"}>
           Hosted on AppAI
         </a>
       </div>
@@ -250,6 +262,9 @@ export function PageRenderer({
   site?: SiteContext;
 }) {
   const themeColor = page.themeColor || "#000000";
+  const themeColorSecondary = page.themeColorSecondary || autoSecondaryColor(themeColor);
+  const darkMode = page.darkMode ?? false;
+  const fontFamily = page.fontFamily || undefined;
   const sections = page.content?.sections || [];
   const sortedSections = [...sections].sort(
     (a: any, b: any) => (a.order || 0) - (b.order || 0)
@@ -293,8 +308,18 @@ export function PageRenderer({
     );
   }
 
+  const fontUrl = fontFamily
+    ? `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily)}:wght@400;500;600;700&display=swap`
+    : null;
+
+  const wrapperStyle: React.CSSProperties = {
+    ...(fontFamily ? { fontFamily: `"${fontFamily}", sans-serif` } : {}),
+    ...(darkMode ? { backgroundColor: "#111827", color: "#f9fafb" } : {}),
+  };
+
   return (
-    <div>
+    <div style={wrapperStyle}>
+      {fontUrl && <link rel="stylesheet" href={fontUrl} />}
       {nav.length > 0 && site && (
         <SiteNav
           rootSlug={site.rootSlug}
@@ -303,10 +328,11 @@ export function PageRenderer({
           logo={site.logo}
           themeColor={themeColor}
           items={nav}
+          darkMode={darkMode}
         />
       )}
       {sortedSections.map((section: any, index: number) =>
-        renderSection(section, index, themeColor, page)
+        renderSection(section, index, themeColor, themeColorSecondary, darkMode, page)
       )}
     </div>
   );

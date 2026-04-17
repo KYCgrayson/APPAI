@@ -43,12 +43,16 @@ function matchLocale(preferred: string[], available: string[]): string | null {
   return null;
 }
 
-function extractLogo(page: any): string | null {
+function extractLogos(page: any): { headerLogo: string | null; heroLogo: string | null } {
   const content = page.content as any;
-  return content?.logo
+  const defaultLogo = content?.logo
     || content?.sections?.find((s: any) => s.type === "hero")?.data?.logo
     || page.heroImage
     || null;
+  return {
+    headerLogo: page.headerLogo || defaultLogo,
+    heroLogo: defaultLogo,
+  };
 }
 
 interface BreadcrumbEntry {
@@ -221,7 +225,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!page) return {};
 
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
-  const logoUrl = extractLogo(page);
+  const { headerLogo: logoUrl } = extractLogos(page);
 
   // Build hreflang alternates against the correct variant set:
   //   - root page: all root variants with this slug
@@ -465,7 +469,7 @@ export default async function HostedPage({ params }: Props) {
           rootSlug: slug,
           localeSegment: rootPage.isDefault ? "" : rootPage.locale,
           brand: rootPage.title,
-          logo: extractLogo(rootPage),
+          logo: extractLogos(rootPage).headerLogo,
         }}
       />
     </>

@@ -33,6 +33,7 @@ export const createPageSchema = z.object({
   title: z.string().min(1).max(200),
   tagline: z.string().max(500).optional(),
   heroImage: z.string().url().optional(),
+  headerLogo: z.string().url().optional(),
   content: z.record(z.string(), z.any()).default({}),
   privacyPolicy: z.string().optional(),
   termsOfService: z.string().optional(),
@@ -55,6 +56,9 @@ export const createPageSchema = z.object({
       { message: "Custom CSS contains disallowed patterns" }
     ),
   themeColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  themeColorSecondary: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  fontFamily: z.string().max(100).optional(),
+  darkMode: z.boolean().default(false),
   isPublished: z.boolean().default(false),
   // Multi-page sites: when set, this page is a child of the root page with
   // slug=parentSlug in the same organization. null/undefined means this IS a

@@ -17,6 +17,8 @@ interface Props {
   themeColor: string;
   /** Navigation items. */
   items: NavItem[];
+  /** Dark mode flag. */
+  darkMode?: boolean;
 }
 
 /**
@@ -51,6 +53,7 @@ export function SiteNav({
   logo,
   themeColor,
   items,
+  darkMode = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   if (items.length === 0) return null;
@@ -59,7 +62,11 @@ export function SiteNav({
 
   return (
     <nav
-      className="sticky top-0 z-40 w-full border-b border-gray-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70"
+      className={`sticky top-0 z-40 w-full border-b backdrop-blur ${
+        darkMode
+          ? "border-gray-700 bg-gray-900/90 supports-[backdrop-filter]:bg-gray-900/70"
+          : "border-gray-200 bg-white/90 supports-[backdrop-filter]:bg-white/70"
+      }`}
       style={{ borderBottomColor: `${themeColor}1a` }}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
@@ -71,12 +78,11 @@ export function SiteNav({
               className="w-7 h-7 rounded-md object-cover"
             />
           )}
-          <span className="font-semibold text-gray-900 truncate" style={{ maxWidth: "12rem" }}>
+          <span className={`font-semibold truncate ${darkMode ? "text-gray-100" : "text-gray-900"}`} style={{ maxWidth: "12rem" }}>
             {brand}
           </span>
         </a>
 
-        {/* Desktop links */}
         <ul className="hidden md:flex items-center gap-1">
           {items.map((item, i) => {
             const { href, external } = resolveTarget(item.target, rootSlug, localeSegment);
@@ -86,7 +92,11 @@ export function SiteNav({
                   href={href}
                   target={external ? "_blank" : undefined}
                   rel={external ? "noopener noreferrer" : undefined}
-                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    darkMode
+                      ? "text-gray-300 hover:text-white hover:bg-gray-800"
+                      : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                  }`}
                 >
                   {item.label}
                 </a>
@@ -95,13 +105,14 @@ export function SiteNav({
           })}
         </ul>
 
-        {/* Mobile hamburger */}
         <button
           type="button"
           aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
-          className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-md text-gray-700 hover:bg-gray-100"
+          className={`md:hidden inline-flex items-center justify-center w-10 h-10 rounded-md ${
+            darkMode ? "text-gray-300 hover:bg-gray-800" : "text-gray-700 hover:bg-gray-100"
+          }`}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -131,9 +142,8 @@ export function SiteNav({
         </button>
       </div>
 
-      {/* Mobile dropdown */}
       {open && (
-        <ul className="md:hidden border-t border-gray-200 bg-white">
+        <ul className={`md:hidden border-t ${darkMode ? "border-gray-700 bg-gray-900" : "border-gray-200 bg-white"}`}>
           {items.map((item, i) => {
             const { href, external } = resolveTarget(item.target, rootSlug, localeSegment);
             return (
@@ -143,7 +153,11 @@ export function SiteNav({
                   target={external ? "_blank" : undefined}
                   rel={external ? "noopener noreferrer" : undefined}
                   onClick={() => setOpen(false)}
-                  className="block px-6 py-4 text-base font-medium text-gray-800 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                  className={`block px-6 py-4 text-base font-medium border-b last:border-b-0 ${
+                    darkMode
+                      ? "text-gray-200 hover:bg-gray-800 border-gray-700"
+                      : "text-gray-800 hover:bg-gray-50 border-gray-100"
+                  }`}
                 >
                   {item.label}
                 </a>

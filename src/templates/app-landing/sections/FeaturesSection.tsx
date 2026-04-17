@@ -9,6 +9,8 @@ interface Props {
     }>;
   };
   themeColor: string;
+  themeColorSecondary?: string;
+  darkMode?: boolean;
 }
 
 const LEGACY_ALIASES: Record<string, string> = {
@@ -24,12 +26,12 @@ const LEGACY_ALIASES: Record<string, string> = {
   chart: "sparkles-outline",
 };
 
-export function FeaturesSection({ data, themeColor }: Props) {
+export function FeaturesSection({ data, themeColor, darkMode }: Props) {
   const items = data.items || [];
   if (items.length === 0) return null;
 
   return (
-    <section className="py-12 md:py-20 px-4 sm:px-6 bg-gray-50">
+    <section className={`py-12 md:py-20 px-4 sm:px-6 ${darkMode ? "" : "bg-gray-50"}`}>
       <div className="max-w-6xl mx-auto">
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>
           Features
@@ -40,12 +42,12 @@ export function FeaturesSection({ data, themeColor }: Props) {
               ? (LEGACY_ALIASES[item.icon] ?? item.icon)
               : "sparkles-outline";
             return (
-              <div key={i} className="bg-white rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+              <div key={i} className={`rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow ${darkMode ? "bg-gray-800" : "bg-white"}`}>
                 <div className="mb-4" style={{ color: themeColor }}>
                   <SmartIcon value={iconValue} size={48} />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
-                <p className="text-gray-600">{item.description}</p>
+                <h3 className={`text-xl font-semibold mb-2 ${darkMode ? "text-gray-100" : ""}`}>{item.title}</h3>
+                <p className={darkMode ? "text-gray-400" : "text-gray-600"}>{item.description}</p>
               </div>
             );
           })}

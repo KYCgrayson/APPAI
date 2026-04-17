@@ -110,8 +110,9 @@ model HostedPage {
   template  String @default("APP_LANDING")
   title     String
   tagline   String?
-  heroImage String?
-  content   Json
+  heroImage   String?
+  headerLogo  String?
+  content     Json
 
   privacyPolicy  String? @db.Text
   termsOfService String? @db.Text
@@ -121,8 +122,11 @@ model HostedPage {
   ogImage         String?
 
   customCss   String? @db.Text
-  themeColor  String? @default("#000000")
-  isPublished Boolean @default(false)
+  themeColor          String? @default("#000000")
+  themeColorSecondary String?
+  fontFamily          String?
+  darkMode            Boolean @default(false)
+  isPublished         Boolean @default(false)
 
   customDomain String? @unique
 

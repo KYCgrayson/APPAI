@@ -8,6 +8,8 @@ interface Props {
     }>;
   };
   themeColor: string;
+  themeColorSecondary?: string;
+  darkMode?: boolean;
 }
 
 // Strip minimal markdown so the JSON-LD answer text is clean for LLMs.
@@ -22,7 +24,7 @@ function stripMarkdown(input: string): string {
     .trim();
 }
 
-export function FaqSection({ data, themeColor }: Props) {
+export function FaqSection({ data, themeColor, darkMode }: Props) {
   const items = data.items || [];
   if (items.length === 0) return null;
 
@@ -51,12 +53,12 @@ export function FaqSection({ data, themeColor }: Props) {
         </h2>
         <div className="space-y-4 md:space-y-6">
           {items.map((item, i) => (
-            <details key={i} className="group border rounded-xl p-5 md:p-6">
-              <summary className="font-semibold text-base md:text-lg cursor-pointer list-none flex justify-between items-center gap-4">
+            <details key={i} className={`group border rounded-xl p-5 md:p-6 ${darkMode ? "border-gray-700" : ""}`}>
+              <summary className={`font-semibold text-base md:text-lg cursor-pointer list-none flex justify-between items-center gap-4 ${darkMode ? "text-gray-100" : ""}`}>
                 {item.question}
                 <span className="text-gray-400 group-open:rotate-180 transition-transform">▾</span>
               </summary>
-              <Prose className="prose prose-sm md:prose-base max-w-none mt-4 text-gray-600 leading-relaxed prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{item.answer}</Prose>
+              <Prose className={`prose prose-sm md:prose-base max-w-none mt-4 leading-relaxed prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold ${darkMode ? "text-gray-400 prose-headings:text-gray-200" : "text-gray-600"}`}>{item.answer}</Prose>
             </details>
           ))}
         </div>

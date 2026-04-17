@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   SECTION_DEFS,
-  COMMON_SECTION_FIELD,
+  COMMON_SECTION_FIELDS,
   type SectionFieldDef,
 } from "@/lib/template-registry";
 
@@ -68,11 +68,9 @@ function fieldToJsonSchema(field: SectionFieldDef): JsonSchema {
 export async function GET(request: NextRequest) {
   const format = request.nextUrl.searchParams.get("format");
 
-  // Inject the common `id` field into every section's field list so agents
-  // see it in the spec without us having to duplicate it in SECTION_DEFS.
   const enriched = SECTION_DEFS.map((s) => ({
     ...s,
-    fields: [COMMON_SECTION_FIELD, ...s.fields],
+    fields: [...COMMON_SECTION_FIELDS, ...s.fields],
   }));
 
   if (format === "jsonschema") {

@@ -14,13 +14,24 @@ export interface SectionFieldDef {
   fields?: SectionFieldDef[]; // for object types
 }
 
-/** Common field available on every section: an optional anchor `id`. */
-export const COMMON_SECTION_FIELD: SectionFieldDef = {
-  name: "id",
-  type: "string",
-  required: false,
-  description: "Optional anchor id for in-page linking (e.g. \"pricing\" to enable #pricing). Must be a valid HTML id — lowercase, no spaces.",
-};
+/** Common fields available on every section. Injected automatically by the /api/v1/sections endpoint. */
+export const COMMON_SECTION_FIELDS: SectionFieldDef[] = [
+  {
+    name: "id",
+    type: "string",
+    required: false,
+    description: "Optional anchor id for in-page linking (e.g. \"pricing\" to enable #pricing). Must be a valid HTML id — lowercase, no spaces.",
+  },
+  {
+    name: "backgroundColor",
+    type: "string",
+    required: false,
+    description: "CSS color for the section background (e.g. \"#EEF2FF\", \"#1E293B\"). Use tints of your themeColor for visual rhythm. If omitted, sections alternate between white and light gray.",
+  },
+];
+
+/** @deprecated Use COMMON_SECTION_FIELDS instead. Kept for backward compatibility. */
+export const COMMON_SECTION_FIELD: SectionFieldDef = COMMON_SECTION_FIELDS[0];
 
 export interface SectionDef {
   type: string;
@@ -43,15 +54,19 @@ export const SECTION_DEFS: SectionDef[] = [
   {
     type: "hero",
     name: "Hero",
-    description: "Large headline banner with optional background image/video, logo, and call-to-action button. Usually the first section of any page.",
+    description: "Large headline banner with optional background image/video, logo, and call-to-action button. Supports three layout variants: 'centered' (default), 'split' (text left, image right), and 'minimal' (compact, no min-height). Usually the first section of any page.",
     fields: [
       { name: "headline", type: "string", required: true, description: "Main headline text" },
       { name: "subheadline", type: "string", required: false, description: "Supporting text below headline" },
       { name: "logo", type: "url", required: false, description: "Logo image URL, displayed top-left" },
-      { name: "backgroundImage", type: "url", required: false, description: "Background image URL (static)" },
-      { name: "backgroundVideo", type: "url", required: false, description: "Background video URL (mp4/webm, autoplays muted)" },
-      { name: "ctaText", type: "string", required: false, description: "Call-to-action button text" },
-      { name: "ctaUrl", type: "url", required: false, description: "Call-to-action button link" },
+      { name: "backgroundImage", type: "url", required: false, description: "Background image URL. In 'centered' variant: full-bleed background. In 'split' variant: displayed as the right-side image." },
+      { name: "backgroundVideo", type: "url", required: false, description: "Background video URL (mp4/webm, autoplays muted). Only used in 'centered' variant." },
+      { name: "ctaText", type: "string", required: false, description: "Primary call-to-action button text" },
+      { name: "ctaUrl", type: "url", required: false, description: "Primary call-to-action button link" },
+      { name: "ctaSecondaryText", type: "string", required: false, description: "Secondary CTA button text (outlined style, uses themeColorSecondary)" },
+      { name: "ctaSecondaryUrl", type: "url", required: false, description: "Secondary CTA button link" },
+      { name: "variant", type: "string", required: false, description: "Layout variant: 'centered' (default, full-width with centered text), 'split' (text left, image right — great for product pages), 'minimal' (compact, padding-only unless heroHeight is set)" },
+      { name: "heroHeight", type: "string", required: false, description: "Hero height: 'full' (100vh), 'large' (70vh, default), 'medium' (50vh), 'small' (35vh). Controls the minimum height of the hero section." },
     ],
   },
   {

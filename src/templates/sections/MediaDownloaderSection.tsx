@@ -11,14 +11,17 @@ interface Props {
     heading?: string;
     description?: string;
     apiBase: string;
-    apiToken: string;
-    /** Optional cap on video quality. Buttons above this value are hidden. */
+    apiToken?: string;
     maxVideoQuality?: VideoQuality;
+    /** Page slug, injected by PageRenderer for proxy mode */
+    _pageSlug?: string;
   };
   themeColor: string;
+  themeColorSecondary?: string;
+  darkMode?: boolean;
 }
 
-export function MediaDownloaderSection({ data, themeColor }: Props) {
+export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
   const maxVideo = Number(data.maxVideoQuality ?? "2160");
   const defaultVideoQuality: VideoQuality =
     720 <= maxVideo ? "720" : 480 <= maxVideo ? "480" : (data.maxVideoQuality ?? "480");
@@ -37,34 +40,52 @@ export function MediaDownloaderSection({ data, themeColor }: Props) {
   } | null>(null);
   const [error, setError] = useState("");
 
+  const useProxy = !!data._pageSlug;
+
   const handleDownload = async () => {
-    if (!url.trim() || !data.apiBase) return;
+    if (!url.trim()) return;
 
     setStatus("downloading");
     setError("");
     setResult(null);
 
-    const params = new URLSearchParams({
-      url: url.trim(),
-      format,
-      quality: format === "video" ? videoQuality : mp3Quality,
-      subtitles: subtitles ? "true" : "false",
-    });
-
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 120_000);
 
     try {
-      const res = await fetch(`${data.apiBase}/download?${params}`, {
-        method: "POST",
-        headers: data.apiToken ? { token: data.apiToken } : {},
-        signal: controller.signal,
-      });
+      let res: Response;
+
+      if (useProxy) {
+        const params = new URLSearchParams({
+          slug: data._pageSlug!,
+          action: "download",
+          url: url.trim(),
+          format,
+          quality: format === "video" ? videoQuality : mp3Quality,
+          subtitles: subtitles ? "true" : "false",
+        });
+        res = await fetch(`/api/v1/media-proxy?${params}`, {
+          method: "POST",
+          signal: controller.signal,
+        });
+      } else {
+        const params = new URLSearchParams({
+          url: url.trim(),
+          format,
+          quality: format === "video" ? videoQuality : mp3Quality,
+          subtitles: subtitles ? "true" : "false",
+        });
+        res = await fetch(`${data.apiBase}/download?${params}`, {
+          method: "POST",
+          headers: data.apiToken ? { token: data.apiToken } : {},
+          signal: controller.signal,
+        });
+      }
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(
-          (body as Record<string, string>).detail || "Download failed",
+          (body as Record<string, string>).detail || (body as Record<string, string>).error || "Download failed",
         );
       }
 
@@ -88,7 +109,16 @@ export function MediaDownloaderSection({ data, themeColor }: Props) {
   const handleFileDownload = () => {
     if (!result) return;
     const link = document.createElement("a");
-    link.href = `${data.apiBase}/file/${result.file_id}?token=${data.apiToken}`;
+    if (useProxy) {
+      const params = new URLSearchParams({
+        slug: data._pageSlug!,
+        action: "file",
+        fileId: result.file_id,
+      });
+      link.href = `/api/v1/media-proxy?${params}`;
+    } else {
+      link.href = `${data.apiBase}/file/${result.file_id}${data.apiToken ? `?token=${data.apiToken}` : ""}`;
+    }
     link.download = result.title || result.file_id;
     link.click();
   };
@@ -97,32 +127,35 @@ export function MediaDownloaderSection({ data, themeColor }: Props) {
     `px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
       active
         ? "text-white border-transparent"
-        : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+        : darkMode
+          ? "bg-gray-800 text-gray-300 border-gray-600 hover:border-gray-500"
+          : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
     }`;
 
   return (
     <section className="py-12 md:py-16 px-4 sm:px-6">
       <div className="max-w-xl mx-auto">
         {data.heading && (
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-2">
+          <h2 className={`text-2xl md:text-3xl font-bold text-center mb-2 ${darkMode ? "text-gray-100" : ""}`}>
             {data.heading}
           </h2>
         )}
         {data.description && (
-          <p className="text-gray-500 text-sm text-center mb-8">
+          <p className={`text-sm text-center mb-8 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
             {data.description}
           </p>
         )}
 
         <div className="space-y-5">
-          {/* URL + Download */}
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="Paste URL"
-              className="flex-1 border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2"
+              className={`w-full sm:flex-1 border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 ${
+                darkMode ? "bg-gray-800 border-gray-600 text-gray-100 placeholder-gray-500" : ""
+              }`}
               style={
                 { "--tw-ring-color": themeColor } as React.CSSProperties
               }
@@ -138,11 +171,9 @@ export function MediaDownloaderSection({ data, themeColor }: Props) {
             </button>
           </div>
 
-          {/* Settings */}
-          <div className="border rounded-xl p-4 space-y-4">
-            {/* Format */}
+          <div className={`border rounded-xl p-4 space-y-4 ${darkMode ? "border-gray-700" : ""}`}>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">
+              <span className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
                 Format
               </span>
               <div className="flex gap-2">
@@ -171,9 +202,8 @@ export function MediaDownloaderSection({ data, themeColor }: Props) {
               </div>
             </div>
 
-            {/* Quality */}
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">
+              <span className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
                 Quality
               </span>
               <div className="flex flex-wrap gap-2 justify-end">
@@ -229,17 +259,16 @@ export function MediaDownloaderSection({ data, themeColor }: Props) {
               </div>
             </div>
 
-            {/* Subtitles (video only) */}
             {format === "video" && (
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">
+                <span className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
                   Subtitles
                 </span>
                 <button
                   onClick={() => setSubtitles(!subtitles)}
                   className="relative w-11 h-6 rounded-full transition-colors"
                   style={{
-                    backgroundColor: subtitles ? themeColor : "#d1d5db",
+                    backgroundColor: subtitles ? themeColor : darkMode ? "#4b5563" : "#d1d5db",
                   }}
                 >
                   <span
@@ -252,9 +281,8 @@ export function MediaDownloaderSection({ data, themeColor }: Props) {
             )}
           </div>
 
-          {/* Status */}
           {status === "downloading" && (
-            <p className="text-sm text-gray-500 text-center">
+            <p className={`text-sm text-center ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
               Downloading and processing, please wait...
             </p>
           )}
