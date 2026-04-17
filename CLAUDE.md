@@ -62,6 +62,14 @@ This is a **public repository**. All files, commits, and history are visible to 
 - **TODO.md** — Central todolist and roadmap. All planned features, tasks, and progress are tracked here. Always check and update this file when working on new features or completing tasks.
 - **AGENT_INSTRUCTIONS.md** — Complete spec for AI agents: capability overview, visual design guide, authentication flow, API endpoints, section types, content format, multi-page sites, and multi-language support. Redesigned with a "designer mindset" — agents build first, iterate after.
 
+## AGENT_INSTRUCTIONS.md Style Rules
+
+This file is the most important entry point for external AI agents. Keep it tight:
+- **Tables and one-liners over paragraphs.** If it can be a table row, don't write a paragraph.
+- **Capability-first.** The first 300 lines tell agents what they CAN do. Details come after.
+- **No unnecessary statements.** Every line must earn its place. Target: under 700 lines total.
+- **Agent is a designer, not a form-filler.** Instructions should empower agents to build autonomously, not ask the user 10 questions before starting.
+
 ## Conventions
 
 - Commit messages: concise, describe the "why"
