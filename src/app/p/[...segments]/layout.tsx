@@ -30,6 +30,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
         content: true,
         themeColor: true,
         heroImage: true,
+        headerLogo: true,
         privacyPolicy: true,
         termsOfService: true,
         isPublished: true,
@@ -50,6 +51,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
         content: true,
         themeColor: true,
         heroImage: true,
+        headerLogo: true,
         privacyPolicy: true,
         termsOfService: true,
         isPublished: true,
@@ -73,10 +75,10 @@ export default async function HostedPageLayout({ params, children }: Props) {
   const themeColor = page.themeColor || "#000000";
   const content = page.content as any;
 
-  // Extract logo
-  const logo = content?.logo
+  const defaultLogo = content?.logo
     || content?.sections?.find((s: any) => s.type === "hero")?.data?.logo
     || page.heroImage;
+  const logo = (page as any).headerLogo || defaultLogo;
 
   // Extract download URLs
   const downloadSection = content?.sections?.find((s: any) => s.type === "download");

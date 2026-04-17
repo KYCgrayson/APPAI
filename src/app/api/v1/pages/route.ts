@@ -5,7 +5,8 @@ import { createPageSchema } from "@/lib/validations/page";
 import { sanitizeContent, type SanitizeWarning } from "@/lib/sanitize";
 import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 
-function extractLogoFromContent(content: any, heroImage?: string | null): string | null {
+function extractLogoFromContent(content: any, heroImage?: string | null, headerLogo?: string | null): string | null {
+  if (headerLogo) return headerLogo;
   if (content?.logo) return content.logo;
   const heroSection = content?.sections?.find((s: any) => s.type === "hero");
   if (heroSection?.data?.logo) return heroSection.data.logo;
@@ -114,6 +115,7 @@ export async function POST(request: NextRequest) {
             data: {
               name: updated.title,
               tagline: updated.tagline || updated.title,
+              logoUrl: extractLogoFromContent(updated.content as any, updated.heroImage, updated.headerLogo),
               ...(appCategory ? { category: appCategory } : {}),
             },
           });
@@ -198,7 +200,7 @@ export async function POST(request: NextRequest) {
             description: page.tagline || page.title,
             category: appCategory || mapTemplateToCategory(data.template),
             hostedPageSlug: page.slug,
-            logoUrl: extractLogoFromContent(pageData.content, page.heroImage),
+            logoUrl: extractLogoFromContent(pageData.content, page.heroImage, page.headerLogo),
             isApproved: true,
           },
         });
