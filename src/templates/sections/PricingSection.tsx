@@ -16,12 +16,83 @@ interface Props {
   themeColor: string;
 }
 
+// Parse "free", "$29", "$29/mo", "NT$500", "€10" into { amount, currency }.
+// Agents write pricing strings in whatever format they like, so this is a
+// best-effort extractor — when parsing fails we omit priceSpecification and
+// just emit the raw text, which Google still accepts.
+function parsePrice(raw: string): { amount: string; currency: string } | null {
+  const text = raw.trim();
+  if (/^free$/i.test(text) || /^0(\.0+)?$/.test(text)) {
+    return { amount: "0", currency: "USD" };
+  }
+  const currencyMap: Record<string, string> = {
+    $: "USD",
+    "US$": "USD",
+    "NT$": "TWD",
+    "HK$": "HKD",
+    "CA$": "CAD",
+    "A$": "AUD",
+    "€": "EUR",
+    "£": "GBP",
+    "¥": "JPY",
+    "₩": "KRW",
+    "₹": "INR",
+  };
+  for (const [symbol, code] of Object.entries(currencyMap)) {
+    if (text.startsWith(symbol)) {
+      const rest = text.slice(symbol.length);
+      const amount = rest.match(/^([\d.,]+)/)?.[1]?.replace(/,/g, "");
+      if (amount) return { amount, currency: code };
+    }
+  }
+  const bareNumber = text.match(/^([\d.,]+)\s*(USD|TWD|EUR|GBP|JPY|HKD|KRW|INR|CAD|AUD)?/i);
+  if (bareNumber?.[1]) {
+    return {
+      amount: bareNumber[1].replace(/,/g, ""),
+      currency: (bareNumber[2] || "USD").toUpperCase(),
+    };
+  }
+  return null;
+}
+
 export function PricingSection({ data, themeColor }: Props) {
   const items = data.items || [];
   if (items.length === 0) return null;
 
+  const offers = items.map((item) => {
+    const parsed = parsePrice(item.price);
+    const offer: Record<string, any> = {
+      "@type": "Offer",
+      name: item.name,
+      description: item.description || undefined,
+      category: item.name,
+    };
+    if (parsed) {
+      offer.price = parsed.amount;
+      offer.priceCurrency = parsed.currency;
+    } else {
+      offer.priceSpecification = {
+        "@type": "PriceSpecification",
+        description: item.price,
+      };
+    }
+    if (item.ctaUrl) offer.url = item.ctaUrl;
+    return offer;
+  });
+
+  const offerSchema = {
+    "@context": "https://schema.org",
+    "@type": "OfferCatalog",
+    name: "Pricing",
+    itemListElement: offers,
+  };
+
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6 bg-gray-50">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(offerSchema) }}
+      />
       <div className="max-w-6xl mx-auto">
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>
           Pricing

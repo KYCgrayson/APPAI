@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
+import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 
 // POST /api/v1/pages/:slug/set-default?locale=ja
 // Sets the specified locale as the default for this slug.
@@ -57,6 +58,7 @@ export async function POST(
     });
   }
 
+  revalidateSeoIndexes(slug);
   return NextResponse.json({
     message: `Locale "${locale}" is now the default for "${slug}"`,
     page: updated,

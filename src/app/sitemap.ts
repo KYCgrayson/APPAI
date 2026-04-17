@@ -3,6 +3,10 @@ import { db } from "@/lib/db";
 import { buildPagePath } from "@/lib/parse-page-segments";
 import { locales } from "@/i18n/routing";
 
+// ISR: regenerate at most once per hour; on publish/update, call
+// revalidatePath('/sitemap.xml') to push fresh entries sooner.
+export const revalidate = 3600;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
 
@@ -66,12 +70,34 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         alternates: { languages },
       },
     ];
+    // Build hreflang alternates for privacy/terms subpages — only include
+    // locales whose sibling row actually has the corresponding policy set.
+    const privacyLangs: Record<string, string> = {};
+    const termsLangs: Record<string, string> = {};
+    for (const sibling of siblings) {
+      if ((sibling as typeof page).privacyPolicy) {
+        privacyLangs[sibling.locale] = `${baseUrl}${buildPagePath(page.slug, sibling.locale, "privacy", sibling.isDefault)}`;
+      }
+      if ((sibling as typeof page).termsOfService) {
+        termsLangs[sibling.locale] = `${baseUrl}${buildPagePath(page.slug, sibling.locale, "terms", sibling.isDefault)}`;
+      }
+    }
+    const privacyDefault = siblings.find((s) => s.isDefault && (s as typeof page).privacyPolicy);
+    if (privacyDefault) {
+      privacyLangs["x-default"] = `${baseUrl}${buildPagePath(page.slug, privacyDefault.locale, "privacy", true)}`;
+    }
+    const termsDefault = siblings.find((s) => s.isDefault && (s as typeof page).termsOfService);
+    if (termsDefault) {
+      termsLangs["x-default"] = `${baseUrl}${buildPagePath(page.slug, termsDefault.locale, "terms", true)}`;
+    }
+
     if (page.privacyPolicy) {
       entries.push({
         url: `${baseUrl}${buildPagePath(page.slug, page.locale, "privacy", page.isDefault)}`,
         lastModified: page.updatedAt,
         changeFrequency: "monthly",
         priority: 0.3,
+        alternates: Object.keys(privacyLangs).length > 1 ? { languages: privacyLangs } : undefined,
       });
     }
     if (page.termsOfService) {
@@ -80,6 +106,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: page.updatedAt,
         changeFrequency: "monthly",
         priority: 0.3,
+        alternates: Object.keys(termsLangs).length > 1 ? { languages: termsLangs } : undefined,
       });
     }
     return entries;

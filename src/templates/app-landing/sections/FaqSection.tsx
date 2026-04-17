@@ -10,12 +10,41 @@ interface Props {
   themeColor: string;
 }
 
+// Strip minimal markdown so the JSON-LD answer text is clean for LLMs.
+function stripMarkdown(input: string): string {
+  return input
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*]+)\*/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/^#+\s+/gm, "")
+    .replace(/\n{2,}/g, "\n")
+    .trim();
+}
+
 export function FaqSection({ data, themeColor }: Props) {
   const items = data.items || [];
   if (items.length === 0) return null;
 
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: stripMarkdown(item.answer),
+      },
+    })),
+  };
+
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
       <div className="max-w-3xl mx-auto">
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>
           FAQ

@@ -26,12 +26,40 @@ function getVimeoEmbedUrl(url: string): string {
   return match[1] ? `https://player.vimeo.com/video/${match[1]}` : url;
 }
 
+function getYouTubeId(url: string): string | null {
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  return match?.[1] ?? null;
+}
+
 export function VideoSection({ data, themeColor }: Props) {
   const safeUrl = sanitizeUrl(data.url);
   const type = getVideoType(safeUrl);
 
+  const videoSchema: Record<string, any> = {
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    name: data.caption || "Video",
+    description: data.caption || "Video content",
+    uploadDate: new Date().toISOString(),
+  };
+  if (type === "youtube") {
+    const id = getYouTubeId(safeUrl);
+    videoSchema.embedUrl = getYouTubeEmbedUrl(safeUrl);
+    videoSchema.contentUrl = safeUrl;
+    if (id) videoSchema.thumbnailUrl = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+  } else if (type === "vimeo") {
+    videoSchema.embedUrl = getVimeoEmbedUrl(safeUrl);
+    videoSchema.contentUrl = safeUrl;
+  } else {
+    videoSchema.contentUrl = safeUrl;
+  }
+
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(videoSchema) }}
+      />
       <div className="max-w-4xl mx-auto">
         <div className="rounded-2xl overflow-hidden shadow-lg">
           {type === "youtube" && (

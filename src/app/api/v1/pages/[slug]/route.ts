@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
 import { updatePageSchema } from "@/lib/validations/page";
 import { sanitizeContent, type SanitizeWarning } from "@/lib/sanitize";
+import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 
 // Fields that cannot be changed via PUT/PATCH. parentSlug is immutable because
 // reparenting (root <-> child) is destructive — agents must delete and recreate.
@@ -171,6 +172,7 @@ export async function PUT(
       }
     }
 
+    revalidateSeoIndexes(updated.slug);
     return NextResponse.json({ ...updated, ...(putWarnings.length > 0 ? { warnings: putWarnings } : {}) });
   } catch (error: any) {
     if (error.name === "ZodError") {
@@ -248,6 +250,7 @@ export async function PATCH(
       }
     }
 
+    revalidateSeoIndexes(updated.slug);
     return NextResponse.json({ ...updated, ...(patchWarnings.length > 0 ? { warnings: patchWarnings } : {}) });
   } catch (error: any) {
     if (error.name === "ZodError") {
@@ -285,6 +288,7 @@ export async function DELETE(
     await db.app.deleteMany({ where: { hostedPageSlug: slug } });
   }
 
+  revalidateSeoIndexes(slug);
   return NextResponse.json({
     message: `Page "${slug}" (locale: ${locale}) has been deleted`,
     remaining_variants: remaining,

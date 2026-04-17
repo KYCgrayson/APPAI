@@ -33,13 +33,47 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "WebApplication",
-              name: "AppAI",
-              url: "https://appai.info",
-              description: "Free hosting for AI-built apps. Create landing pages, privacy policies, and terms of service in 30 seconds.",
-              applicationCategory: "DeveloperApplication",
-              operatingSystem: "Web",
-              offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+              "@graph": [
+                {
+                  "@type": "Organization",
+                  "@id": "https://appai.info/#org",
+                  name: "AppAI",
+                  alternateName: "AIGA",
+                  url: "https://appai.info",
+                  logo: {
+                    "@type": "ImageObject",
+                    "@id": "https://appai.info/#logo",
+                    url: "https://appai.info/appai-logo2.png",
+                    caption: "AppAI",
+                  },
+                  sameAs: [
+                    "https://github.com/KYCgrayson/APPAI",
+                  ],
+                },
+                {
+                  "@type": "WebSite",
+                  "@id": "https://appai.info/#website",
+                  url: "https://appai.info",
+                  name: "AppAI",
+                  description:
+                    "Free hosting for AI-built apps. Create landing pages, privacy policies, and terms of service in 30 seconds.",
+                  publisher: { "@id": "https://appai.info/#org" },
+                  inLanguage: ["en", "ja", "ko", "zh-CN", "zh-TW", "de", "fr", "es", "hi"],
+                },
+                {
+                  "@type": "WebApplication",
+                  "@id": "https://appai.info/#app",
+                  name: "AppAI",
+                  url: "https://appai.info",
+                  description:
+                    "Free hosting for AI-built apps. AI agents create fully functional, multi-language landing pages with a single API call.",
+                  applicationCategory: "DeveloperApplication",
+                  operatingSystem: "Web",
+                  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+                  publisher: { "@id": "https://appai.info/#org" },
+                  isPartOf: { "@id": "https://appai.info/#website" },
+                },
+              ],
             }),
           }}
         />

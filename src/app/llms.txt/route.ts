@@ -1,35 +1,65 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
+// ISR: regenerate at most once per hour. Create/update API routes should call
+// revalidatePath('/llms.txt') on publish for instant refresh.
+export const revalidate = 3600;
+
 // llms.txt — A standard for providing LLM-readable site information
 // See: https://llmstxt.org/
 export async function GET() {
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
 
-  // Fetch published pages grouped by slug for listing
+  // Fetch all published pages (root only — child pages are discoverable from the root)
   const pages = await db.hostedPage.findMany({
-    where: { isPublished: true },
-    select: { slug: true, locale: true, title: true },
+    where: { isPublished: true, parentSlug: null },
+    select: { slug: true, locale: true, title: true, tagline: true, updatedAt: true, isDefault: true, content: true },
     orderBy: { updatedAt: "desc" },
-    take: 50,
+    take: 500,
   });
 
-  // Group by slug
-  const slugMap = new Map<string, { title: string; locales: string[] }>();
+  // Group by slug; pick the default locale row as the representative
+  type PageInfo = {
+    slug: string;
+    title: string;
+    tagline: string | null;
+    updatedAt: Date;
+    locales: string[];
+    sectionTypes: string[];
+  };
+  const slugMap = new Map<string, PageInfo>();
   for (const page of pages) {
     const existing = slugMap.get(page.slug);
     if (existing) {
       existing.locales.push(page.locale);
+      if (page.updatedAt > existing.updatedAt) existing.updatedAt = page.updatedAt;
     } else {
-      slugMap.set(page.slug, { title: page.title, locales: [page.locale] });
+      const sections = (page.content as { sections?: Array<{ type?: string }> })?.sections || [];
+      const sectionTypes = Array.from(
+        new Set(sections.map((s) => s?.type).filter((t): t is string => typeof t === "string"))
+      );
+      slugMap.set(page.slug, {
+        slug: page.slug,
+        title: page.title,
+        tagline: page.tagline,
+        updatedAt: page.updatedAt,
+        locales: [page.locale],
+        sectionTypes,
+      });
     }
   }
 
   const hostedPagesSection = slugMap.size > 0
-    ? `\n## Hosted Pages\n\n${[...slugMap.entries()]
-        .map(([slug, { title, locales }]) =>
-          `- ${baseUrl}/p/${slug} — ${title} (${locales.join(", ")})`
-        )
+    ? `\n## Hosted Pages\n\n${[...slugMap.values()]
+        .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+        .map((p) => {
+          const date = p.updatedAt.toISOString().slice(0, 10);
+          const taglinePart = p.tagline ? `: ${p.tagline}` : "";
+          const sectionsPart = p.sectionTypes.length
+            ? ` [sections: ${p.sectionTypes.join(", ")}]`
+            : "";
+          return `- ${baseUrl}/p/${p.slug} — ${p.title}${taglinePart} (updated ${date}, locales: ${p.locales.join(", ")})${sectionsPart}`;
+        })
         .join("\n")}\n`
     : "";
 

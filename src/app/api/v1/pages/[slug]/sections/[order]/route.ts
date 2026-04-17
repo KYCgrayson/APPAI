@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
 import { sanitizeContent, type SanitizeWarning } from "@/lib/sanitize";
+import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 
 /**
  * PATCH /api/v1/pages/:slug/sections/:order
@@ -106,6 +107,7 @@ export async function PATCH(
     data: { content: { ...content, sections } as any },
   });
 
+  revalidateSeoIndexes(updated.slug);
   return NextResponse.json({
     section: sections[idx],
     etag: `"${updated.updatedAt.toISOString()}"`,

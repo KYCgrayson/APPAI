@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
+import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 
 export async function POST(
   request: NextRequest,
@@ -25,5 +26,6 @@ export async function POST(
     data: { isPublished: false },
   });
 
+  revalidateSeoIndexes(updated.slug);
   return NextResponse.json(updated);
 }

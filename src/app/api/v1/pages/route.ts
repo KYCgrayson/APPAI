@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
 import { createPageSchema } from "@/lib/validations/page";
 import { sanitizeContent, type SanitizeWarning } from "@/lib/sanitize";
+import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 
 function extractLogoFromContent(content: any, heroImage?: string | null): string | null {
   if (content?.logo) return content.logo;
@@ -119,6 +120,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      revalidateSeoIndexes(updated.slug);
       return NextResponse.json(
         { ...updated, ...(upsertWarnings.length > 0 ? { warnings: upsertWarnings } : {}) },
         { status: 200 },
@@ -203,6 +205,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    revalidateSeoIndexes(page.slug);
     return NextResponse.json(
       { ...page, ...(contentWarnings.length > 0 ? { warnings: contentWarnings } : {}) },
       { status: 201 },

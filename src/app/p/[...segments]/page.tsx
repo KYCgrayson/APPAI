@@ -51,28 +51,63 @@ function extractLogo(page: any): string | null {
     || null;
 }
 
-function buildJsonLd(page: any, url: string) {
+interface BreadcrumbEntry {
+  name: string;
+  url: string;
+}
+
+function buildBreadcrumbList(baseUrl: string, entries: BreadcrumbEntry[]) {
+  if (entries.length === 0) return null;
+  return {
+    "@type": "BreadcrumbList",
+    itemListElement: entries.map((entry, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: entry.name,
+      item: entry.url.startsWith("http") ? entry.url : `${baseUrl}${entry.url}`,
+    })),
+  };
+}
+
+function buildJsonLd(
+  page: any,
+  url: string,
+  baseUrl: string,
+  breadcrumb: ReturnType<typeof buildBreadcrumbList>,
+) {
   const content = page.content as any;
   const downloadSection = content?.sections?.find((s: any) => s.type === "download");
   const platforms: string[] = [];
   if (downloadSection?.data?.appStoreUrl) platforms.push("iOS");
   if (downloadSection?.data?.playStoreUrl) platforms.push("Android");
 
-  return {
-    "@context": "https://schema.org",
+  const primary: Record<string, any> = {
     "@type": downloadSection ? "SoftwareApplication" : "WebPage",
+    "@id": `${url}#primary`,
     name: page.title,
+    headline: page.title,
     description: page.metaDescription || page.tagline || undefined,
     url,
     image: page.ogImage || page.heroImage || undefined,
     inLanguage: page.locale,
-    ...(downloadSection
-      ? {
-          applicationCategory: "Application",
-          operatingSystem: platforms.join(", ") || undefined,
-          offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-        }
-      : {}),
+    datePublished: page.createdAt ? new Date(page.createdAt).toISOString() : undefined,
+    dateModified: page.updatedAt ? new Date(page.updatedAt).toISOString() : undefined,
+    isPartOf: { "@id": `${baseUrl}/#website` },
+    publisher: { "@id": `${baseUrl}/#org` },
+  };
+
+  if (downloadSection) {
+    primary.applicationCategory = "Application";
+    if (platforms.length > 0) primary.operatingSystem = platforms.join(", ");
+    primary.offers = { "@type": "Offer", price: "0", priceCurrency: "USD" };
+  }
+
+  const graph: any[] = [primary];
+  if (breadcrumb) graph.push(breadcrumb);
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": graph,
   };
 }
 
@@ -188,26 +223,44 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
   const logoUrl = extractLogo(page);
 
-  // Build hreflang alternates
-  const variants = await db.hostedPage.findMany({
-    where: { slug, isPublished: true },
-    select: { locale: true, isDefault: true },
-  });
+  // Build hreflang alternates against the correct variant set:
+  //   - root page: all root variants with this slug
+  //   - child page: all child variants with (parentSlug=slug, slug=childSlug)
+  //     in the same organization
+  const variants = childSlug
+    ? await db.hostedPage.findMany({
+        where: {
+          organizationId: rootPage.organizationId,
+          parentSlug: slug,
+          slug: childSlug,
+          isPublished: true,
+        },
+        select: { locale: true, isDefault: true },
+      })
+    : await db.hostedPage.findMany({
+        where: { slug, isPublished: true, parentSlug: null },
+        select: { locale: true, isDefault: true },
+      });
 
   const languages: Record<string, string> = {};
   for (const v of variants) {
-    languages[v.locale] = `${baseUrl}${buildPagePath(slug, v.locale, null, v.isDefault)}`;
+    languages[v.locale] = childSlug
+      ? `${baseUrl}${buildPagePath(slug, v.locale, null, v.isDefault)}/${childSlug}`
+      : `${baseUrl}${buildPagePath(slug, v.locale, null, v.isDefault)}`;
   }
   const defaultVariant = variants.find((v) => v.isDefault) || variants[0];
   if (defaultVariant) {
-    languages["x-default"] = `${baseUrl}${buildPagePath(slug, defaultVariant.locale, null, true)}`;
+    languages["x-default"] = childSlug
+      ? `${baseUrl}${buildPagePath(slug, defaultVariant.locale, null, true)}/${childSlug}`
+      : `${baseUrl}${buildPagePath(slug, defaultVariant.locale, null, true)}`;
   }
 
   const title = page.metaTitle || page.title;
   const description = page.metaDescription || page.tagline || undefined;
   const image = page.ogImage || page.heroImage || undefined;
-  const canonicalUrl = `${baseUrl}${buildPagePath(slug, page.locale, null, page.isDefault)}`;
-
+  const canonicalUrl = childSlug
+    ? `${baseUrl}${buildPagePath(slug, page.locale, null, page.isDefault)}/${childSlug}`
+    : `${baseUrl}${buildPagePath(slug, page.locale, null, page.isDefault)}`;
   return {
     title,
     description,
@@ -283,7 +336,12 @@ export default async function HostedPage({ params }: Props) {
   if (!page) notFound();
 
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
-  const pageUrl = `${baseUrl}${buildPagePath(slug, page.locale, null, page.isDefault)}`;
+  const rootUrl = `${baseUrl}${buildPagePath(slug, rootPage.locale, null, rootPage.isDefault)}`;
+  const pageUrl = childSlug
+    ? `${rootUrl}/${childSlug}`
+    : subpage
+      ? `${baseUrl}${buildPagePath(slug, page.locale, subpage, page.isDefault)}`
+      : `${baseUrl}${buildPagePath(slug, page.locale, null, page.isDefault)}`;
 
   // Load sibling child pages and build the site nav. Empty array if this site
   // is single-page; <PageRenderer> renders nothing in that case.
@@ -294,43 +352,104 @@ export default async function HostedPage({ params }: Props) {
   // Privacy subpage
   if (subpage === "privacy") {
     if (!page.privacyPolicy) notFound();
+    const privacyBreadcrumb = buildBreadcrumbList(baseUrl, [
+      { name: rootPage.title, url: rootUrl },
+      { name: "Privacy Policy", url: pageUrl },
+    ]);
+    const privacyLd = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebPage",
+          "@id": `${pageUrl}#page`,
+          name: `Privacy Policy — ${rootPage.title}`,
+          url: pageUrl,
+          inLanguage: page.locale,
+          datePublished: page.createdAt ? new Date(page.createdAt).toISOString() : undefined,
+          dateModified: page.updatedAt ? new Date(page.updatedAt).toISOString() : undefined,
+          isPartOf: { "@id": `${baseUrl}/#website` },
+          publisher: { "@id": `${baseUrl}/#org` },
+        },
+        privacyBreadcrumb,
+      ].filter(Boolean),
+    };
     return (
-      <div className="max-w-3xl mx-auto py-10 md:py-16 px-4 sm:px-6">
-        <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6 md:mb-8 flex-wrap">
-          <a href={buildPagePath(slug, page.locale, null, page.isDefault)} className="hover:text-gray-900 truncate max-w-[60%]">{page.title}</a>
-          <span className="text-gray-300">/</span>
-          <span className="text-gray-900">Privacy Policy</span>
-        </nav>
-        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 break-words">Privacy Policy</h1>
-        <p className="text-gray-500 mb-6 md:mb-8 break-words">{page.title}</p>
-        <div className="prose prose-base md:prose-lg max-w-none whitespace-pre-wrap break-words text-gray-700">
-          {page.privacyPolicy}
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(privacyLd) }}
+        />
+        <div className="max-w-3xl mx-auto py-10 md:py-16 px-4 sm:px-6">
+          <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6 md:mb-8 flex-wrap">
+            <a href={buildPagePath(slug, page.locale, null, page.isDefault)} className="hover:text-gray-900 truncate max-w-[60%]">{page.title}</a>
+            <span className="text-gray-300">/</span>
+            <span className="text-gray-900">Privacy Policy</span>
+          </nav>
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 break-words">Privacy Policy</h1>
+          <p className="text-gray-500 mb-6 md:mb-8 break-words">{page.title}</p>
+          <div className="prose prose-base md:prose-lg max-w-none whitespace-pre-wrap break-words text-gray-700">
+            {page.privacyPolicy}
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   // Terms subpage
   if (subpage === "terms") {
     if (!page.termsOfService) notFound();
+    const termsBreadcrumb = buildBreadcrumbList(baseUrl, [
+      { name: rootPage.title, url: rootUrl },
+      { name: "Terms of Service", url: pageUrl },
+    ]);
+    const termsLd = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebPage",
+          "@id": `${pageUrl}#page`,
+          name: `Terms of Service — ${rootPage.title}`,
+          url: pageUrl,
+          inLanguage: page.locale,
+          datePublished: page.createdAt ? new Date(page.createdAt).toISOString() : undefined,
+          dateModified: page.updatedAt ? new Date(page.updatedAt).toISOString() : undefined,
+          isPartOf: { "@id": `${baseUrl}/#website` },
+          publisher: { "@id": `${baseUrl}/#org` },
+        },
+        termsBreadcrumb,
+      ].filter(Boolean),
+    };
     return (
-      <div className="max-w-3xl mx-auto py-10 md:py-16 px-4 sm:px-6">
-        <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6 md:mb-8 flex-wrap">
-          <a href={buildPagePath(slug, page.locale, null, page.isDefault)} className="hover:text-gray-900 truncate max-w-[60%]">{page.title}</a>
-          <span className="text-gray-300">/</span>
-          <span className="text-gray-900">Terms of Service</span>
-        </nav>
-        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 break-words">Terms of Service</h1>
-        <p className="text-gray-500 mb-6 md:mb-8 break-words">{page.title}</p>
-        <div className="prose prose-base md:prose-lg max-w-none whitespace-pre-wrap break-words text-gray-700">
-          {page.termsOfService}
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(termsLd) }}
+        />
+        <div className="max-w-3xl mx-auto py-10 md:py-16 px-4 sm:px-6">
+          <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6 md:mb-8 flex-wrap">
+            <a href={buildPagePath(slug, page.locale, null, page.isDefault)} className="hover:text-gray-900 truncate max-w-[60%]">{page.title}</a>
+            <span className="text-gray-300">/</span>
+            <span className="text-gray-900">Terms of Service</span>
+          </nav>
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 break-words">Terms of Service</h1>
+          <p className="text-gray-500 mb-6 md:mb-8 break-words">{page.title}</p>
+          <div className="prose prose-base md:prose-lg max-w-none whitespace-pre-wrap break-words text-gray-700">
+            {page.termsOfService}
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
-  // Main landing page
-  const jsonLd = buildJsonLd(page, pageUrl);
+  // Main landing page — build breadcrumb only when we're on a child page
+  // (root pages are top-level, no breadcrumb needed).
+  const breadcrumb = childSlug
+    ? buildBreadcrumbList(baseUrl, [
+        { name: rootPage.title, url: rootUrl },
+        { name: page.title, url: pageUrl },
+      ])
+    : null;
+  const jsonLd = buildJsonLd(page, pageUrl, baseUrl, breadcrumb);
 
   return (
     <>
