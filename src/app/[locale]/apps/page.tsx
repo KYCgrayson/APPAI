@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { db } from "@/lib/db";
 import { PlatformHeader } from "@/components/PlatformHeader";
+import { getExternalCanonical } from "@/lib/canonical";
 
 export default async function AppsPage({
   searchParams,
@@ -21,6 +22,15 @@ export default async function AppsPage({
     },
     orderBy: { createdAt: "desc" },
   });
+
+  const hostedSlugs = apps.map((a) => a.hostedPageSlug).filter((s): s is string => !!s);
+  const hostedPages = hostedSlugs.length
+    ? await db.hostedPage.findMany({
+        where: { slug: { in: hostedSlugs }, isDefault: true },
+        select: { slug: true, canonicalUrl: true },
+      })
+    : [];
+  const canonicalBySlug = new Map(hostedPages.map((h) => [h.slug, h.canonicalUrl]));
 
   const categories = [
     "ALL", "WRITING", "CODING", "DESIGN", "AUTOMATION",
@@ -63,7 +73,11 @@ export default async function AppsPage({
           </div>
         ) : (
           <div className="grid md:grid-cols-3 gap-6">
-            {apps.map((app) => (
+            {apps.map((app) => {
+              const canonical = app.hostedPageSlug
+                ? getExternalCanonical(canonicalBySlug.get(app.hostedPageSlug))
+                : null;
+              return (
               <a
                 key={app.id}
                 href={app.hostedPageSlug ? `/p/${app.hostedPageSlug}` : `/apps/${app.id}`}
@@ -84,15 +98,24 @@ export default async function AppsPage({
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold truncate text-white">{app.name}</h3>
                     <p className="text-sm text-gray-400 line-clamp-2">{app.tagline}</p>
-                    <div className="flex gap-2 mt-2">
+                    <div className="flex gap-2 mt-2 items-center flex-wrap">
                       <span className="text-xs text-gray-600">{app.category}</span>
                       {app.iosUrl && <span className="text-xs text-blue-400">iOS</span>}
                       {app.androidUrl && <span className="text-xs text-green-400">Android</span>}
+                      {canonical && (
+                        <span
+                          className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border border-amber-600/40 text-amber-400"
+                          title={`Landing page for ${canonical.host}`}
+                        >
+                          Landing page
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
               </a>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

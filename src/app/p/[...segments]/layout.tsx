@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { parsePageSegments, buildPagePath } from "@/lib/parse-page-segments";
 import { LocaleLink } from "./LocaleLink";
 import { PageViewTracker } from "@/components/PageViewTracker";
+import { getExternalCanonical } from "@/lib/canonical";
 
 interface Props {
   params: Promise<{ segments: string[] }>;
@@ -34,6 +35,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
         privacyPolicy: true,
         termsOfService: true,
         isPublished: true,
+        canonicalUrl: true,
       },
     });
   } else {
@@ -55,6 +57,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
         privacyPolicy: true,
         termsOfService: true,
         isPublished: true,
+        canonicalUrl: true,
       },
     });
   }
@@ -94,6 +97,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
   };
 
   const isDemo = slug.startsWith("demo-");
+  const externalCanonical = getExternalCanonical((page as any).canonicalUrl);
 
   return (
     <div lang={locale} dir={locale === "ar" || locale === "he" ? "rtl" : "ltr"} className="min-h-screen bg-white flex flex-col">
@@ -147,6 +151,17 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 ))}
               </div>
             )}
+            {externalCanonical && (
+              <a
+                href={externalCanonical.url}
+                target="_blank"
+                rel="noopener"
+                className="text-sm text-gray-500 hover:text-gray-900 hidden sm:inline"
+                title={`Visit the official site at ${externalCanonical.host}`}
+              >
+                Official site: {externalCanonical.host}
+              </a>
+            )}
             {page.privacyPolicy && (
               <a href={buildPagePath(slug, locale, "privacy", page.isDefault)} className="text-sm text-gray-500 hover:text-gray-900 hidden sm:inline">
                 Privacy
@@ -194,9 +209,23 @@ export default async function HostedPageLayout({ params, children }: Props) {
           </div>
         )}
         <div className="text-center text-sm text-gray-400">
-          <a href="https://appai.info" target="_blank" rel="noopener noreferrer" className="hover:text-gray-600">
-            Hosted on AppAI
-          </a>
+          {externalCanonical ? (
+            <span className="inline-flex flex-wrap justify-center items-center gap-x-2">
+              <span>Landing page</span>
+              <span aria-hidden>·</span>
+              <a href="https://appai.info" target="_blank" rel="noopener noreferrer" className="hover:text-gray-600">
+                Hosted on AppAI
+              </a>
+              <span aria-hidden>·</span>
+              <a href={externalCanonical.url} target="_blank" rel="noopener" className="hover:text-gray-600">
+                {externalCanonical.host}
+              </a>
+            </span>
+          ) : (
+            <a href="https://appai.info" target="_blank" rel="noopener noreferrer" className="hover:text-gray-600">
+              Hosted on AppAI
+            </a>
+          )}
         </div>
       </footer>
     </div>
