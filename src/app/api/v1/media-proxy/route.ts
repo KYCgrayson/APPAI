@@ -15,8 +15,8 @@ function findMediaSection(content: any): MediaDownloaderData | null {
 }
 
 // POST /api/v1/media-proxy?slug=xxx&action=download
-// POST /api/v1/media-proxy?slug=xxx&action=file&fileId=xxx
-export async function POST(request: NextRequest) {
+// GET  /api/v1/media-proxy?slug=xxx&action=file&fileId=xxx  (triggered by <a download>)
+async function handle(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const slug = searchParams.get("slug");
   const action = searchParams.get("action");
@@ -100,3 +100,6 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ error: "Invalid action" }, { status: 400 });
 }
+
+export const GET = handle;
+export const POST = handle;
