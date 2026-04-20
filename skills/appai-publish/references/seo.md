@@ -21,7 +21,12 @@ Use when:
 - AppAI is being used as a template host / secondary surface
 - You want the main domain to accumulate backlinks
 
-Do NOT set when the AppAI page IS the primary site — it will suppress indexing.
+Setting an external `canonicalUrl` also surfaces satellite-landing identity to visitors:
+- Header link: `Official site: {host}` (desktop)
+- Footer: `Landing page · Hosted on AppAI · {host}`
+- `/apps` directory card: `Landing page` tag
+
+Do NOT set when the AppAI page IS the primary site — it will suppress indexing and wrongly label the page as a satellite.
 
 ## Meta fields
 

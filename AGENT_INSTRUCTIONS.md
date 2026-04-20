@@ -338,7 +338,7 @@ curl -X POST https://appai.info/api/v1/pages \
 | `privacyPolicy` | No | Markdown text |
 | `termsOfService` | No | Markdown text |
 | `ogImage` | No | URL for social sharing image |
-| `canonicalUrl` | No | Override canonical. Use when the app has its own domain and you want SEO credit to stay on the main site instead of appai.info |
+| `canonicalUrl` | No | Full URL of the app's main site. Sends SEO credit there instead of appai.info, and marks the page as a satellite landing: header shows "Official site: {host}", footer becomes "Landing page · Hosted on AppAI · {host}", `/apps` directory card gets a "Landing page" tag. Set this whenever the app already has a primary website. |
 | `isPublished` | No | Set `true` to publish immediately |
 | `parentSlug` | No | Set to root slug to create a child page |
 | `category` | No | For app listing: `WRITING`, `CODING`, `DESIGN`, `AUTOMATION`, `PRODUCTIVITY`, `SOCIAL`, `FINANCE`, `HEALTH`, `EDUCATION`, `FOOD`, `TRAVEL`, `ENTERTAINMENT`, `GAMES`, `MEDIA`, `UTILITIES`, `COMMERCE`, `OTHER` |
