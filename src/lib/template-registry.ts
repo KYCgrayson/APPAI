@@ -261,6 +261,7 @@ export const SECTION_DEFS: SectionDef[] = [
       { name: "subheadline", type: "markdown", required: false, description: "Supporting text (Markdown supported)" },
       { name: "buttonText", type: "string", required: true, description: "Button label" },
       { name: "buttonUrl", type: "url", required: true, description: "Button link" },
+      { name: "rel", type: "string", required: false, description: "Optional link rel attribute. Use 'nofollow' for affiliate/sponsored/user-supplied links, 'sponsored' for paid placements. Default is standard dofollow." },
     ],
   },
   {
@@ -275,6 +276,7 @@ export const SECTION_DEFS: SectionDef[] = [
           { name: "url", type: "url", required: true, description: "Link URL" },
           { name: "icon", type: "string", required: false, description: "Emoji or icon" },
           { name: "style", type: "string", required: false, description: "'filled' or 'outlined' (default: 'outlined')" },
+          { name: "rel", type: "string", required: false, description: "Optional link rel attribute. Use 'nofollow' for affiliate/sponsored/user-supplied links, 'sponsored' for paid placements. Default is standard dofollow." },
         ],
       },
     ],
@@ -361,6 +363,17 @@ export const SECTION_DEFS: SectionDef[] = [
     fields: [
       { name: "heading", type: "string", required: false, description: "Section heading (e.g. 'PDF Viewer', 'Unlock PDF')" },
       { name: "description", type: "string", required: false, description: "Short description of the tool" },
+    ],
+  },
+  {
+    type: "embed",
+    name: "Embed",
+    description: "Embed content from TikTok, Loom, YouTube, Vimeo, Spotify, CodePen, or Figma. Auto-detects the provider from the URL and renders a sandboxed iframe with the right aspect ratio. X (Twitter) and Instagram render as linked preview cards (their iframe policy blocks direct embedding). Use this when showing a short-form video, design prototype, music track, code demo, or tutorial recording.",
+    fields: [
+      { name: "url", type: "url", required: true, description: "URL of the content to embed. Examples: https://www.tiktok.com/@user/video/123, https://www.loom.com/share/abc, https://youtu.be/xyz, https://open.spotify.com/track/abc, https://codepen.io/user/pen/abc, https://www.figma.com/file/..." },
+      { name: "title", type: "string", required: false, description: "Optional heading rendered above the embed" },
+      { name: "caption", type: "string", required: false, description: "Optional caption rendered below the embed" },
+      { name: "aspectRatio", type: "string", required: false, description: "'16:9' (default for YouTube/Vimeo/Loom), '9:16' (default for TikTok), '1:1', or '4:5' (Figma)" },
     ],
   },
   {

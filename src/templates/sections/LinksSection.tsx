@@ -8,6 +8,7 @@ interface Props {
       url: string;
       icon?: string;
       style?: "filled" | "outlined";
+      rel?: string; // e.g. "nofollow", "sponsored", "nofollow sponsored"
     }>;
   };
   themeColor: string;
@@ -23,12 +24,15 @@ export function LinksSection({ data, themeColor }: Props) {
         {items.map((item, i) => {
           const safeUrl = sanitizeUrl(item.url);
           const isExternal = /^https?:\/\//i.test(safeUrl);
+          const relParts = isExternal ? ["noopener", "noreferrer"] : [];
+          if (item.rel) relParts.push(...item.rel.split(/\s+/).filter(Boolean));
+          const relAttr = relParts.length > 0 ? Array.from(new Set(relParts)).join(" ") : undefined;
           return (
           <a
             key={i}
             href={safeUrl}
             target={isExternal ? "_blank" : undefined}
-            rel={isExternal ? "noopener noreferrer" : undefined}
+            rel={relAttr}
             className="block w-full text-center px-6 py-4 rounded-full font-semibold text-lg transition-transform hover:scale-105"
             style={
               item.style === "outlined"

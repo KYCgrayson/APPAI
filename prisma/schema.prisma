@@ -120,6 +120,7 @@ model HostedPage {
   metaTitle       String?
   metaDescription String?
   ogImage         String?
+  canonicalUrl    String? // Override canonical URL; lets apps with own domain reuse template while keeping SEO on main site
 
   customCss   String? @db.Text
   themeColor          String? @default("#000000")

@@ -7,7 +7,10 @@ export const createAppSchema = z.object({
   category: z
     .enum([
       "WRITING", "CODING", "DESIGN", "AUTOMATION", "PRODUCTIVITY",
-      "SOCIAL", "FINANCE", "HEALTH", "EDUCATION", "OTHER",
+      "SOCIAL", "FINANCE", "HEALTH", "EDUCATION",
+      "FOOD", "TRAVEL", "ENTERTAINMENT", "GAMES", "MEDIA",
+      "UTILITIES", "COMMERCE",
+      "OTHER",
     ])
     .default("OTHER"),
   tags: z.array(z.string()).default([]),

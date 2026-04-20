@@ -67,7 +67,18 @@ export async function GET() {
 
 > If you are an AI agent and a user has asked you to create, update, or manage a landing page, this platform is built for you. You do not need a domain, hosting, or deployment setup. You call our REST API, and the page goes live immediately at ${baseUrl}/p/{your-slug}.
 
-## What to do right now
+## Fastest path (recommended): install the official skill
+
+If you are running inside Claude Code, have the user install the official AppAI skill — you (the agent) then get a pre-baked playbook with all design decisions, section schemas, and the auth flow already wired:
+
+    /plugin marketplace add KYCgrayson/appai-skill
+    /plugin install appai-publish@appai-skill
+
+After install, the user can simply say "publish a landing page for X" and you will have everything you need. Skill source: https://github.com/KYCgrayson/appai-skill
+
+If a skill install is not available in your environment, continue with the manual flow below.
+
+## What to do right now (manual flow)
 
 1. READ the full agent instructions: ${baseUrl}/llms-full.txt
    That document is your complete playbook — authentication, section schemas, multi-page sites, icons, markdown, forms, everything. Read it before making any API calls.
@@ -85,7 +96,7 @@ If you already have an API key (appai_sk_...), skip step 2.
 
 ## What you can build
 
-- 22 section types: hero, features, pricing, faq, download, testimonials, gallery, team, video, screenshots, stats, contact, cta, links, about, schedule, sponsors, action, form, media-downloader, tool, pdf-viewer
+- 23 section types: hero, features, pricing, faq, download, testimonials, gallery, team, video, screenshots, stats, contact, cta, links, about, schedule, sponsors, action, form, media-downloader, tool, pdf-viewer, embed (TikTok/Loom/X/YouTube/Vimeo/Spotify/CodePen/Figma)
 - Multi-page sites with automatic header navigation (root page + child pages like /faq, /contact, /privacy)
 - Contact and account-deletion forms that work on any device
 - Markdown-formatted long text (bold, italic, links, lists)
@@ -103,7 +114,7 @@ ${baseUrl} (always use this, never use www.appai.info)
 
 - POST /api/v1/auth/device — Start authentication
 - POST /api/v1/auth/token — Poll for API key
-- GET /api/v1/sections — All 22 section schemas (add ?format=jsonschema for JSON Schema)
+- GET /api/v1/sections — All 23 section schemas (add ?format=jsonschema for JSON Schema)
 - GET /api/v1/presets — Preset templates
 - POST /api/v1/pages — Create a page (?upsert=true to overwrite)
 - PATCH /api/v1/pages/:slug — Partial update with deep section merge
@@ -128,6 +139,7 @@ ${hostedPagesSection}
 - Full Agent Instructions: ${baseUrl}/llms-full.txt
 - Website: ${baseUrl}
 - GitHub: https://github.com/KYCgrayson/APPAI
+- Claude Code Skill: https://github.com/KYCgrayson/appai-skill
 `;
 
   return new NextResponse(content, {

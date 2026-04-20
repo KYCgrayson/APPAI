@@ -262,9 +262,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = page.metaTitle || page.title;
   const description = page.metaDescription || page.tagline || undefined;
   const image = page.ogImage || page.heroImage || undefined;
-  const canonicalUrl = childSlug
+  const defaultCanonical = childSlug
     ? `${baseUrl}${buildPagePath(slug, page.locale, null, page.isDefault)}/${childSlug}`
     : `${baseUrl}${buildPagePath(slug, page.locale, null, page.isDefault)}`;
+  const canonicalUrl = page.canonicalUrl || defaultCanonical;
   return {
     title,
     description,

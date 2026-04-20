@@ -40,6 +40,7 @@ export const createPageSchema = z.object({
   metaTitle: z.string().max(200).optional(),
   metaDescription: z.string().max(500).optional(),
   ogImage: z.string().url().optional(),
+  canonicalUrl: z.string().url().optional(),
   customCss: z
     .string()
     .optional()
@@ -72,7 +73,13 @@ export const createPageSchema = z.object({
     .optional(),
   // Optional: override auto-detected category for the App listing
   category: z
-    .enum(["WRITING", "CODING", "DESIGN", "AUTOMATION", "PRODUCTIVITY", "SOCIAL", "FINANCE", "HEALTH", "EDUCATION", "OTHER"])
+    .enum([
+      "WRITING", "CODING", "DESIGN", "AUTOMATION", "PRODUCTIVITY",
+      "SOCIAL", "FINANCE", "HEALTH", "EDUCATION",
+      "FOOD", "TRAVEL", "ENTERTAINMENT", "GAMES", "MEDIA",
+      "UTILITIES", "COMMERCE",
+      "OTHER",
+    ])
     .optional(),
 });
 

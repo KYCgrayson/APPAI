@@ -51,6 +51,7 @@ Every section supports optional `backgroundColor` (hex) and `id` (anchor for `#l
 | `media-downloader` | Interactive video/audio downloader. Requires a yt-dlp backend API. |
 | `tool` | Universal interactive tool (file upload, processing, download). Connect any backend API. |
 | `pdf-viewer` | Client-side PDF viewer with password unlock. No backend needed. |
+| `embed` | Embed TikTok / Loom / YouTube / Vimeo / Spotify / CodePen / Figma / X / Instagram. Auto-detects provider from URL. |
 
 ### Visual Design Capabilities
 
@@ -140,7 +141,7 @@ This document has everything you need. Here's where to find it:
 
 ### Rules
 
-- **NEVER** tell the user the platform can't do something. You have 22 section types, dark mode, custom fonts, multi-language, multi-page sites, forms, interactive tools — the platform is highly capable.
+- **NEVER** tell the user the platform can't do something. You have 23 section types, dark mode, custom fonts, multi-language, multi-page sites, forms, interactive tools — the platform is highly capable.
 - **NEVER** present a list of 6 templates and ask the user to pick one. Infer the right sections from context.
 - **NEVER** ask for 10 pieces of information before building. Build first, iterate after.
 - Headlines under 60 characters, subheadlines under 140 characters (mobile readability)
@@ -309,30 +310,9 @@ This document has everything you need. Here's where to find it:
 
 ## Authentication
 
-Use the Device Authorization flow to get an API key:
+`POST /api/v1/auth/device` → open the returned `verification_uri_complete` in the user's browser → poll `POST /api/v1/auth/token` every 5s until it returns `api_key`.
 
-1. `POST /api/v1/auth/device` → get `device_code` + `verification_uri_complete`
-2. **Automatically** open the verification URL in the user's browser:
-   ```bash
-   open "VERIFICATION_URI_COMPLETE"    # macOS
-   xdg-open "VERIFICATION_URI_COMPLETE"  # Linux
-   start "VERIFICATION_URI_COMPLETE"     # Windows
-   ```
-3. Tell the user: "I've opened a browser window. Please sign in with Google. Once you see 'Authorized!', come back here."
-4. **Immediately start polling** (do NOT wait for user confirmation):
-   ```bash
-   while true; do
-     RESPONSE=$(curl -s -X POST https://appai.info/api/v1/auth/token \
-       -H "Content-Type: application/json" \
-       -d '{"device_code": "DEVICE_CODE"}')
-     echo "$RESPONSE" | grep -q '"status":"complete"' && break
-     echo "$RESPONSE" | grep -q '"expired_token"' && break
-     sleep 5
-   done
-   ```
-5. On `"status": "complete"` → save the `api_key`. On `expired_token` → restart. On `slow_down` → increase interval.
-
-**Fallback:** Ask if the user already has an API key (`appai_sk_...`). If not, direct them to https://appai.info/dashboard/settings.
+**The key is delivered to you by the token endpoint. Never ask the user to paste a key — if your flow includes that step, you are doing it wrong.** Full curl examples: https://appai.info/spec
 
 ## Creating a Page
 
@@ -358,9 +338,10 @@ curl -X POST https://appai.info/api/v1/pages \
 | `privacyPolicy` | No | Markdown text |
 | `termsOfService` | No | Markdown text |
 | `ogImage` | No | URL for social sharing image |
+| `canonicalUrl` | No | Override canonical. Use when the app has its own domain and you want SEO credit to stay on the main site instead of appai.info |
 | `isPublished` | No | Set `true` to publish immediately |
 | `parentSlug` | No | Set to root slug to create a child page |
-| `category` | No | For app listing: `WRITING`, `CODING`, `DESIGN`, `AUTOMATION`, `PRODUCTIVITY`, `SOCIAL`, `FINANCE`, `HEALTH`, `EDUCATION`, `OTHER` |
+| `category` | No | For app listing: `WRITING`, `CODING`, `DESIGN`, `AUTOMATION`, `PRODUCTIVITY`, `SOCIAL`, `FINANCE`, `HEALTH`, `EDUCATION`, `FOOD`, `TRAVEL`, `ENTERTAINMENT`, `GAMES`, `MEDIA`, `UTILITIES`, `COMMERCE`, `OTHER` |
 
 **Preview without saving:** `POST /api/v1/pages/preview` — same body, returns sanitized JSON.
 
@@ -703,3 +684,24 @@ Field types: `text`, `url`, `password`, `file` (with `accept`, `multiple`, `maxS
 }}
 ```
 Fully client-side using pdf.js. No backend needed.
+
+### embed
+```json
+{ "type": "embed", "order": 23, "data": {
+    "url": "https://www.tiktok.com/@user/video/1234567890",
+    "title": "Optional heading above the embed",
+    "caption": "Optional caption below",
+    "aspectRatio": "9:16"
+}}
+```
+Auto-detects provider from URL. Supported: YouTube, Vimeo, TikTok, Loom, Spotify, CodePen, Figma. X (Twitter) and Instagram render as linked preview cards (their iframe policy blocks direct embeds). `aspectRatio` optional — sensible default per provider (TikTok → 9:16, YouTube → 16:9). Iframe is sandboxed.
+
+### Link rel (SEO)
+Links in `links` and `cta` sections accept an optional `rel` string. Use `"nofollow"` for sponsored/affiliate/user-supplied links, `"sponsored"` for paid placements, `"nofollow sponsored"` for both. Leaving it unset produces `rel="noopener noreferrer"` for external links (standard dofollow). Example:
+```json
+{ "type": "links", "data": { "items": [
+    { "title": "Our main site", "url": "https://acme.com" },
+    { "title": "Sponsor", "url": "https://partner.com", "rel": "sponsored" },
+    { "title": "User submission", "url": "https://ugc.com", "rel": "nofollow" }
+]}}
+```

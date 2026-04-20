@@ -24,7 +24,9 @@ export default async function AppsPage({
 
   const categories = [
     "ALL", "WRITING", "CODING", "DESIGN", "AUTOMATION",
-    "PRODUCTIVITY", "SOCIAL", "FINANCE", "HEALTH", "EDUCATION", "OTHER",
+    "PRODUCTIVITY", "SOCIAL", "FINANCE", "HEALTH", "EDUCATION",
+    "FOOD", "TRAVEL", "ENTERTAINMENT", "GAMES", "MEDIA",
+    "UTILITIES", "COMMERCE", "OTHER",
   ];
 
   return (

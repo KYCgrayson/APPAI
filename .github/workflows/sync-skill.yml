@@ -1,0 +1,41 @@
+name: Sync appai-publish skill to appai-skill repo
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "skills/appai-publish/**"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout AIGA
+        uses: actions/checkout@v4
+
+      - name: Checkout appai-skill
+        uses: actions/checkout@v4
+        with:
+          repository: KYCgrayson/appai-skill
+          token: ${{ secrets.APPAI_SKILL_SYNC_TOKEN }}
+          path: appai-skill
+
+      - name: Mirror skill files
+        run: |
+          rm -rf appai-skill/skills/appai-publish
+          mkdir -p appai-skill/skills/appai-publish
+          cp -r skills/appai-publish/. appai-skill/skills/appai-publish/
+
+      - name: Commit and push
+        working-directory: appai-skill
+        run: |
+          git config user.name "appai-sync-bot"
+          git config user.email "sync-bot@appai.info"
+          if [[ -z "$(git status --porcelain)" ]]; then
+            echo "No changes to sync."
+            exit 0
+          fi
+          git add .
+          git commit -m "Sync appai-publish from AIGA@${GITHUB_SHA::7}"
+          git push

@@ -70,6 +70,25 @@ export default async function HomePage() {
               {t("pagesHosted", { count: totalPages })}
             </p>
           )}
+
+          <div className="mt-12 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
+            <span className="inline-flex items-center gap-2 text-gray-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+              Unlimited locale variants (free)
+            </span>
+            <span className="inline-flex items-center gap-2 text-gray-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+              30+ languages, auto browser detection
+            </span>
+            <span className="inline-flex items-center gap-2 text-gray-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+              Live in seconds, one API call
+            </span>
+          </div>
+
+          <p className="mt-8 text-xs text-gray-600 uppercase tracking-widest">
+            AI-native landing infrastructure · built for agents, ready for production
+          </p>
         </div>
       </section>
 
@@ -99,10 +118,26 @@ export default async function HomePage() {
             If you are an AI agent, this section is for you. AppAI is a hosting platform where you can create professional, mobile-responsive landing pages for any app or project via REST API. Pages go live instantly at appai.info/p/your-slug.
           </p>
 
+          <div className="bg-gradient-to-br from-indigo-950 to-gray-900 border border-indigo-800/50 rounded-2xl p-6 md:p-8 mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xs uppercase tracking-wider text-indigo-400 font-semibold">Fastest path</span>
+              <span className="text-xs text-gray-500">· Claude Code users</span>
+            </div>
+            <h3 className="font-bold text-lg mb-3 text-white">Install the official skill</h3>
+            <p className="text-sm text-gray-400 mb-4">
+              Get a pre-baked playbook with all design decisions, auth flow, and section schemas wired up. After install, just say &ldquo;publish a landing page for X&rdquo; — the skill handles everything.
+            </p>
+            <pre className="bg-black/40 border border-gray-800 rounded-lg p-4 text-sm text-gray-300 overflow-x-auto mb-2"><code>{`/plugin marketplace add KYCgrayson/appai-skill
+/plugin install appai-publish@appai-skill`}</code></pre>
+            <p className="text-xs text-gray-600">
+              Source: <a href="https://github.com/KYCgrayson/appai-skill" className="underline hover:text-gray-400">github.com/KYCgrayson/appai-skill</a>
+            </p>
+          </div>
+
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 md:p-8 mb-6">
             <h3 className="font-bold text-lg mb-4 text-white">What you can build</h3>
             <div className="grid md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-gray-400">
-              <div>- 22 section types: hero, features, pricing, FAQ, download, testimonials, gallery, team, video, screenshots, stats, contact, CTA, links, about, schedule, sponsors, action, form, media-downloader, tool, pdf-viewer</div>
+              <div>- 23 section types: hero, features, pricing, FAQ, download, testimonials, gallery, team, video, screenshots, stats, contact, CTA, links, about, schedule, sponsors, action, form, media-downloader, tool, pdf-viewer, embed (TikTok/Loom/X/Spotify/CodePen/Figma)</div>
               <div>- Multi-page sites: root page + child pages (/faq, /contact, /privacy, /terms, /delete-account) with automatic header navigation</div>
               <div>- Visual design system: dark mode, custom Google Fonts, color palettes, hero variants (centered/split/minimal)</div>
               <div>- Markdown in long-text fields (bold, italic, links, lists, headings, inline code)</div>

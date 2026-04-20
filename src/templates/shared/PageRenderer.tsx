@@ -20,6 +20,7 @@ import { FormSection } from "../sections/FormSection";
 import { MediaDownloaderSection } from "../sections/MediaDownloaderSection";
 import { ToolSection } from "../sections/ToolSection";
 import { PdfViewerSection } from "../sections/PdfViewerSection";
+import { EmbedSection } from "../sections/EmbedSection";
 import { SiteNav } from "./SiteNav";
 
 interface PageData {
@@ -126,6 +127,9 @@ function renderSection(
       break;
     case "pdf-viewer":
       content = <PdfViewerSection {...props} />;
+      break;
+    case "embed":
+      content = <EmbedSection {...props} />;
       break;
     case "form":
       content = (
