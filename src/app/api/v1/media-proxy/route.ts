@@ -74,9 +74,11 @@ async function handle(request: NextRequest) {
       return NextResponse.json({ error: "Missing fileId" }, { status: 400 });
     }
 
+    const fileUrl = new URL(`${media.apiBase}/file/${encodeURIComponent(fileId)}`);
+    if (media.apiToken) fileUrl.searchParams.set("token", media.apiToken);
+
     try {
-      const res = await fetch(`${media.apiBase}/file/${encodeURIComponent(fileId)}`, {
-        headers,
+      const res = await fetch(fileUrl, {
         signal: AbortSignal.timeout(300_000),
       });
 
