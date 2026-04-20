@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const res = await fetch(`${media.apiBase}/file/${fileId}`, {
+      const res = await fetch(`${media.apiBase}/file/${encodeURIComponent(fileId)}`, {
         headers,
         signal: AbortSignal.timeout(300_000),
       });
