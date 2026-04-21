@@ -13,8 +13,6 @@ interface Props {
     apiBase: string;
     apiToken?: string;
     maxVideoQuality?: VideoQuality;
-    /** Page slug, injected by PageRenderer for proxy mode */
-    _pageSlug?: string;
   };
   themeColor: string;
   themeColorSecondary?: string;
@@ -40,8 +38,6 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
   } | null>(null);
   const [error, setError] = useState("");
 
-  const useProxy = !!data._pageSlug;
-
   const handleDownload = async () => {
     if (!url.trim()) return;
 
@@ -53,34 +49,17 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
     const timeout = setTimeout(() => controller.abort(), 120_000);
 
     try {
-      let res: Response;
-
-      if (useProxy) {
-        const params = new URLSearchParams({
-          slug: data._pageSlug!,
-          action: "download",
-          url: url.trim(),
-          format,
-          quality: format === "video" ? videoQuality : mp3Quality,
-          subtitles: subtitles ? "true" : "false",
-        });
-        res = await fetch(`/api/v1/media-proxy?${params}`, {
-          method: "POST",
-          signal: controller.signal,
-        });
-      } else {
-        const params = new URLSearchParams({
-          url: url.trim(),
-          format,
-          quality: format === "video" ? videoQuality : mp3Quality,
-          subtitles: subtitles ? "true" : "false",
-        });
-        res = await fetch(`${data.apiBase}/download?${params}`, {
-          method: "POST",
-          headers: data.apiToken ? { token: data.apiToken } : {},
-          signal: controller.signal,
-        });
-      }
+      const params = new URLSearchParams({
+        url: url.trim(),
+        format,
+        quality: format === "video" ? videoQuality : mp3Quality,
+        subtitles: subtitles ? "true" : "false",
+      });
+      const res = await fetch(`${data.apiBase}/download?${params}`, {
+        method: "POST",
+        headers: data.apiToken ? { token: data.apiToken } : {},
+        signal: controller.signal,
+      });
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -109,16 +88,9 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
   const handleFileDownload = () => {
     if (!result) return;
     const link = document.createElement("a");
-    if (useProxy) {
-      const params = new URLSearchParams({
-        slug: data._pageSlug!,
-        action: "file",
-        fileId: result.file_id,
-      });
-      link.href = `/api/v1/media-proxy?${params}`;
-    } else {
-      link.href = `${data.apiBase}/file/${result.file_id}${data.apiToken ? `?token=${data.apiToken}` : ""}`;
-    }
+    const fileUrl = new URL(`${data.apiBase}/file/${encodeURIComponent(result.file_id)}`);
+    if (data.apiToken) fileUrl.searchParams.set("token", data.apiToken);
+    link.href = fileUrl.toString();
     link.download = result.title || result.file_id;
     link.click();
   };

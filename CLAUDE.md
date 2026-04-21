@@ -39,7 +39,7 @@ This is a **public repository**. All files, commits, and history are visible to 
 
 - **Frontend + API**: This repo, deployed on Vercel (auto-deploy from `main`)
 - **Database**: PostgreSQL on Neon, managed via Prisma
-- **Media Downloader backend**: yt-dlp running on NAS via Docker, exposed through Cloudflare Quick Tunnel. Hosted pages use a server-side proxy (`/api/v1/media-proxy`) so API tokens stay on the server and are never exposed to the browser. The standalone frontend UI lives in my-tools repo, deployed separately on Vercel.
+- **Media Downloader backend**: yt-dlp running on NAS via Docker, exposed through a named Cloudflare Tunnel at `ytdlp.myaiapp.uk`. `MediaDownloaderSection` calls it directly from the browser; the backend has `CORSMiddleware allow_origins=["*"]` and accepts the API token via header (`/download`) or `?token=` query param (`/file/{id}`, so `<a download>` works). Product spec lives in my-tools repo.
 
 ## Key Architecture
 

@@ -82,7 +82,6 @@ See the [full Agent Spec](https://appai.info/spec) for the complete interactive 
 | `POST` | `/api/v1/pages/:slug/unpublish` | Bearer | Unpublish a page |
 | `POST` | `/api/v1/pages/:slug/set-default` | Bearer | Set default locale (`?locale=ja`) |
 | `POST` | `/api/v1/pages/preview` | Bearer | Preview a page without saving |
-| `POST` | `/api/v1/media-proxy` | None | Server-side proxy for media-downloader sections |
 | `POST` | `/api/v1/upload` | Bearer | Upload an image (returns public URL) |
 | `POST` | `/api/v1/apps` | Bearer | Submit an app |
 | `GET` | `/api/v1/apps` | Bearer | List apps |

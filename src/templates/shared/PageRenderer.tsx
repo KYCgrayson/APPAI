@@ -120,7 +120,7 @@ function renderSection(
       content = <ActionSection {...props} />;
       break;
     case "media-downloader":
-      content = <MediaDownloaderSection data={{ ...section.data, _pageSlug: page.slug }} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} />;
+      content = <MediaDownloaderSection data={section.data} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} />;
       break;
     case "tool":
       content = <ToolSection {...props} />;
