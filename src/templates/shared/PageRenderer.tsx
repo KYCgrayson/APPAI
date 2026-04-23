@@ -162,81 +162,6 @@ function renderSection(
   );
 }
 
-function PageFooter({ slug, hasPrivacy, hasTerms, darkMode = false }: { slug: string; hasPrivacy: boolean; hasTerms: boolean; darkMode?: boolean }) {
-  return (
-    <footer className={`py-8 border-t ${darkMode ? "border-gray-700" : ""}`}>
-      {(hasPrivacy || hasTerms) && (
-        <div className={`flex justify-center gap-6 mb-4 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-          {hasPrivacy && (
-            <a href={`/p/${slug}/privacy`} className={darkMode ? "hover:text-gray-200" : "hover:text-gray-800"}>
-              Privacy Policy
-            </a>
-          )}
-          {hasTerms && (
-            <a href={`/p/${slug}/terms`} className={darkMode ? "hover:text-gray-200" : "hover:text-gray-800"}>
-              Terms of Service
-            </a>
-          )}
-        </div>
-      )}
-      <div className={`text-center text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-        <a href="https://appai.info" target="_blank" rel="noopener noreferrer" className={darkMode ? "hover:text-gray-300" : "hover:text-gray-600"}>
-          Hosted on AppAI
-        </a>
-      </div>
-    </footer>
-  );
-}
-
-function PageHeader({ page, themeColor }: { page: PageData; themeColor: string }) {
-  // Extract logo from content
-  const logo = page.content?.logo
-    || page.content?.sections?.find((s: any) => s.type === "hero")?.data?.logo
-    || page.heroImage;
-
-  // Extract download URLs
-  const downloadSection = page.content?.sections?.find((s: any) => s.type === "download");
-  const appStoreUrl = downloadSection?.data?.appStoreUrl || page.content?.appStoreUrl;
-  const playStoreUrl = downloadSection?.data?.playStoreUrl || page.content?.playStoreUrl;
-  const hasDownload = appStoreUrl || playStoreUrl;
-
-  return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
-        <a href={`/p/${page.slug}`} className="flex items-center gap-3 min-w-0">
-          {logo && (
-            <img src={logo} alt={page.title} className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />
-          )}
-          <span className="font-semibold text-base sm:text-lg truncate">{page.title}</span>
-        </a>
-        <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
-          {page.privacyPolicy && (
-            <a href={`/p/${page.slug}/privacy`} className="text-sm text-gray-500 hover:text-gray-900 hidden sm:inline">
-              Privacy
-            </a>
-          )}
-          {page.termsOfService && (
-            <a href={`/p/${page.slug}/terms`} className="text-sm text-gray-500 hover:text-gray-900 hidden sm:inline">
-              Terms
-            </a>
-          )}
-          {hasDownload && (
-            <a
-              href={appStoreUrl || playStoreUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-white px-4 py-1.5 rounded-full font-medium"
-              style={{ backgroundColor: themeColor }}
-            >
-              Download
-            </a>
-          )}
-        </div>
-      </div>
-    </header>
-  );
-}
-
 export interface NavItem {
   label: string;
   /** Child page slug, anchor (#section), or absolute URL */
@@ -248,10 +173,6 @@ export interface SiteContext {
   rootSlug: string;
   /** Locale segment to inject into nav links. Empty string when default locale. */
   localeSegment: string;
-  /** Brand label shown in the nav (typically root page title). */
-  brand: string;
-  /** Optional logo URL shown next to the brand. */
-  logo?: string | null;
 }
 
 export function PageRenderer({
@@ -328,8 +249,6 @@ export function PageRenderer({
         <SiteNav
           rootSlug={site.rootSlug}
           localeSegment={site.localeSegment}
-          brand={site.brand}
-          logo={site.logo}
           themeColor={themeColor}
           items={nav}
           darkMode={darkMode}

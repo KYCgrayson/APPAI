@@ -9,10 +9,6 @@ interface Props {
   rootSlug: string;
   /** Locale segment to inject into nav links. Empty string when default locale. */
   localeSegment: string;
-  /** Page title shown as the brand label on the left. */
-  brand: string;
-  /** Optional logo URL shown next to the brand. */
-  logo?: string | null;
   /** Theme color used for hover/border highlights. */
   themeColor: string;
   /** Navigation items. */
@@ -26,6 +22,7 @@ interface Props {
  *
  *   target = "https://..."     → external URL, opens in new tab
  *   target = "#anchor"         → in-page anchor, stays on current page
+ *   target = "/p/..."          → absolute internal path (used by Home)
  *   target = "child-slug"      → child page on the same root site
  */
 function resolveTarget(
@@ -36,7 +33,7 @@ function resolveTarget(
   if (/^https?:\/\//i.test(target)) {
     return { href: sanitizeUrl(target), external: true };
   }
-  if (target.startsWith("#")) {
+  if (target.startsWith("#") || target.startsWith("/")) {
     return { href: target, external: false };
   }
   // Treat as child slug. Build /p/{root}/{locale}/{child} or /p/{root}/{child}.
@@ -46,11 +43,14 @@ function resolveTarget(
   return { href: parts.join("/"), external: false };
 }
 
+/**
+ * Secondary site navigation for multi-page sites. Deliberately does NOT render
+ * logo or site title — that's owned by the layout's sticky header. This avoids
+ * the "two rows of branding" duplication. Renders nothing when items is empty.
+ */
 export function SiteNav({
   rootSlug,
   localeSegment,
-  brand,
-  logo,
   themeColor,
   items,
   darkMode = false,
@@ -58,31 +58,14 @@ export function SiteNav({
   const [open, setOpen] = useState(false);
   if (items.length === 0) return null;
 
-  const homeHref = localeSegment ? `/p/${rootSlug}/${localeSegment}` : `/p/${rootSlug}`;
-
   return (
     <nav
-      className={`sticky top-0 z-40 w-full border-b backdrop-blur ${
-        darkMode
-          ? "border-gray-700 bg-gray-900/90 supports-[backdrop-filter]:bg-gray-900/70"
-          : "border-gray-200 bg-white/90 supports-[backdrop-filter]:bg-white/70"
+      className={`w-full border-b ${
+        darkMode ? "border-gray-700 bg-gray-900" : "border-gray-200 bg-white"
       }`}
       style={{ borderBottomColor: `${themeColor}1a` }}
     >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-        <a href={homeHref} className="flex items-center gap-2 min-w-0">
-          {logo && (
-            <img
-              src={sanitizeUrl(logo)}
-              alt=""
-              className="w-7 h-7 rounded-md object-cover"
-            />
-          )}
-          <span className={`font-semibold truncate ${darkMode ? "text-gray-100" : "text-gray-900"}`} style={{ maxWidth: "12rem" }}>
-            {brand}
-          </span>
-        </a>
-
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-12 flex items-center justify-between">
         <ul className="hidden md:flex items-center gap-1">
           {items.map((item, i) => {
             const { href, external } = resolveTarget(item.target, rootSlug, localeSegment);

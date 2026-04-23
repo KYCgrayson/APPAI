@@ -71,6 +71,11 @@ export const createPageSchema = z.object({
     .regex(/^[a-z0-9-]+$/, "parentSlug must be lowercase alphanumeric with hyphens")
     .nullable()
     .optional(),
+  // Nav controls: hideFromNav excludes a page from the auto-generated site nav
+  // (useful for Privacy, Terms, compliance-only landing pages). navOrder sets
+  // position in the nav; ties break on createdAt.
+  hideFromNav: z.boolean().optional(),
+  navOrder: z.number().int().nullable().optional(),
   // Optional: override auto-detected category for the App listing
   category: z
     .enum([
