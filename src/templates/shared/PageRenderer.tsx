@@ -21,8 +21,6 @@ import { MediaDownloaderSection } from "../sections/MediaDownloaderSection";
 import { ToolSection } from "../sections/ToolSection";
 import { PdfViewerSection } from "../sections/PdfViewerSection";
 import { EmbedSection } from "../sections/EmbedSection";
-import { SiteNav } from "./SiteNav";
-
 interface PageData {
   slug: string;
   template: string;
@@ -162,30 +160,10 @@ function renderSection(
   );
 }
 
-export interface NavItem {
-  label: string;
-  /** Child page slug, anchor (#section), or absolute URL */
-  target: string;
-}
+// Re-export NavItem from the canonical location so existing imports keep working.
+export type { NavItem } from "@/lib/site-nav";
 
-export interface SiteContext {
-  /** Slug of the root page (used to build child page URLs in nav). */
-  rootSlug: string;
-  /** Locale segment to inject into nav links. Empty string when default locale. */
-  localeSegment: string;
-}
-
-export function PageRenderer({
-  page,
-  nav = [],
-  site,
-}: {
-  page: PageData;
-  /** Site navigation items. When non-empty, <SiteNav> renders at the top. */
-  nav?: NavItem[];
-  /** Site-level metadata for the nav. Required when nav is non-empty. */
-  site?: SiteContext;
-}) {
+export function PageRenderer({ page }: { page: PageData }) {
   const themeColor = page.themeColor || "#000000";
   const themeColorSecondary = page.themeColorSecondary || autoSecondaryColor(themeColor);
   const darkMode = page.darkMode ?? false;
@@ -245,15 +223,6 @@ export function PageRenderer({
   return (
     <div style={wrapperStyle}>
       {fontUrl && <link rel="stylesheet" href={fontUrl} />}
-      {nav.length > 0 && site && (
-        <SiteNav
-          rootSlug={site.rootSlug}
-          localeSegment={site.localeSegment}
-          themeColor={themeColor}
-          items={nav}
-          darkMode={darkMode}
-        />
-      )}
       {sortedSections.map((section: any, index: number) =>
         renderSection(section, index, themeColor, themeColorSecondary, darkMode, page)
       )}

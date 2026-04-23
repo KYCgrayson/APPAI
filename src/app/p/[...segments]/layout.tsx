@@ -3,6 +3,7 @@ import { parsePageSegments, buildPagePath } from "@/lib/parse-page-segments";
 import { LocaleLink } from "./LocaleLink";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { getExternalCanonical } from "@/lib/canonical";
+import { loadSiblings, buildNav, resolveNavHref } from "@/lib/site-nav";
 
 interface Props {
   params: Promise<{ segments: string[] }>;
@@ -99,6 +100,15 @@ export default async function HostedPageLayout({ params, children }: Props) {
   const isDemo = slug.startsWith("demo-");
   const externalCanonical = getExternalCanonical((page as any).canonicalUrl);
 
+  // Build site nav once, for rendering inline in the sticky header. Nav is
+  // derived from sibling child pages (deduped by locale + filtered by
+  // hideFromNav + sorted by navOrder) or from an explicit content.nav[] on
+  // the root page.
+  const siblings = await loadSiblings(slug, page.organizationId, locale);
+  const rootHref = buildPagePath(slug, page.locale, null, page.isDefault);
+  const navItems = buildNav(content, siblings, rootHref, locale);
+  const localeSegment = page.isDefault ? "" : page.locale;
+
   return (
     <div lang={locale} dir={locale === "ar" || locale === "he" ? "rtl" : "ltr"} className="min-h-screen bg-white flex flex-col">
       <PageViewTracker
@@ -129,14 +139,33 @@ export default async function HostedPageLayout({ params, children }: Props) {
 
       {/* Sticky Header */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b">
-        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
-          <a href={buildPagePath(slug, locale, null, page.isDefault)} className="flex items-center gap-3">
+        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center gap-6">
+          <a href={buildPagePath(slug, locale, null, page.isDefault)} className="flex items-center gap-3 flex-shrink-0">
             {logo && (
               <img src={logo} alt={page.title} className="w-8 h-8 rounded-xl object-cover" />
             )}
             <span className="font-semibold text-lg">{page.title}</span>
           </a>
-          <div className="flex items-center gap-4">
+          {/* Site nav (multi-page sites only) — inline with header, hidden on mobile */}
+          {navItems.length > 0 && (
+            <nav className="hidden md:flex items-center gap-1 flex-1 min-w-0">
+              {navItems.map((item, i) => {
+                const { href, external } = resolveNavHref(item.target, slug, localeSegment);
+                return (
+                  <a
+                    key={i}
+                    href={href}
+                    target={external ? "_blank" : undefined}
+                    rel={external ? "noopener noreferrer" : undefined}
+                    className="px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors truncate"
+                  >
+                    {item.label}
+                  </a>
+                );
+              })}
+            </nav>
+          )}
+          <div className="flex items-center gap-4 ml-auto flex-shrink-0">
             {/* Language Switcher */}
             {variants.length > 1 && (
               <div className="flex items-center gap-1 text-sm">
