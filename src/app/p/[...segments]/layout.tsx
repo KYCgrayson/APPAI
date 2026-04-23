@@ -4,6 +4,7 @@ import { LocaleLink } from "./LocaleLink";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { getExternalCanonical } from "@/lib/canonical";
 import { loadSiblings, buildNav, resolveNavHref } from "@/lib/site-nav";
+import { MobileMenu } from "./MobileMenu";
 
 interface Props {
   params: Promise<{ segments: string[] }>;
@@ -109,6 +110,33 @@ export default async function HostedPageLayout({ params, children }: Props) {
   const navItems = buildNav(content, siblings, rootHref, locale);
   const localeSegment = page.isDefault ? "" : page.locale;
 
+  // Pre-resolve hrefs for the mobile drawer. Keeping URL resolution on the
+  // server keeps the client component pure-JSX.
+  const mobileNavLinks = navItems.map((item) => {
+    const { href, external } = resolveNavHref(item.target, slug, localeSegment);
+    return { label: item.label, href, external };
+  });
+  const mobileUtilityLinks: { label: string; href: string; external?: boolean }[] = [];
+  if (externalCanonical) {
+    mobileUtilityLinks.push({
+      label: `Official site: ${externalCanonical.host}`,
+      href: externalCanonical.url,
+      external: true,
+    });
+  }
+  if (page.privacyPolicy) {
+    mobileUtilityLinks.push({
+      label: "Privacy",
+      href: buildPagePath(slug, locale, "privacy", page.isDefault),
+    });
+  }
+  if (page.termsOfService) {
+    mobileUtilityLinks.push({
+      label: "Terms",
+      href: buildPagePath(slug, locale, "terms", page.isDefault),
+    });
+  }
+
   return (
     <div lang={locale} dir={locale === "ar" || locale === "he" ? "rtl" : "ltr"} className="min-h-screen bg-white flex flex-col">
       <PageViewTracker
@@ -166,9 +194,9 @@ export default async function HostedPageLayout({ params, children }: Props) {
             </nav>
           )}
           <div className="flex items-center gap-4 ml-auto flex-shrink-0">
-            {/* Language Switcher */}
+            {/* Language Switcher — desktop only; mobile accesses it via the drawer */}
             {variants.length > 1 && (
-              <div className="flex items-center gap-1 text-sm">
+              <div className="hidden md:flex items-center gap-1 text-sm">
                 {variants.map((v) => (
                   <LocaleLink
                     key={v.locale}
@@ -185,19 +213,19 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 href={externalCanonical.url}
                 target="_blank"
                 rel="noopener"
-                className="text-sm text-gray-500 hover:text-gray-900 hidden sm:inline"
+                className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline"
                 title={`Visit the official site at ${externalCanonical.host}`}
               >
                 Official site: {externalCanonical.host}
               </a>
             )}
             {page.privacyPolicy && (
-              <a href={buildPagePath(slug, locale, "privacy", page.isDefault)} className="text-sm text-gray-500 hover:text-gray-900 hidden sm:inline">
+              <a href={buildPagePath(slug, locale, "privacy", page.isDefault)} className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline">
                 Privacy
               </a>
             )}
             {page.termsOfService && (
-              <a href={buildPagePath(slug, locale, "terms", page.isDefault)} className="text-sm text-gray-500 hover:text-gray-900 hidden sm:inline">
+              <a href={buildPagePath(slug, locale, "terms", page.isDefault)} className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline">
                 Terms
               </a>
             )}
@@ -206,12 +234,24 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 href={appStoreUrl || playStoreUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-white px-4 py-1.5 rounded-full font-medium"
+                className="hidden md:inline text-sm text-white px-4 py-1.5 rounded-full font-medium"
                 style={{ backgroundColor: themeColor }}
               >
                 Download
               </a>
             )}
+            <MobileMenu
+              navItems={mobileNavLinks}
+              locales={variants.map((v) => ({
+                locale: v.locale,
+                href: buildPagePath(slug, v.locale, null, v.isDefault),
+                label: localeLabels[v.locale] || v.locale.toUpperCase(),
+                isActive: v.locale === locale,
+              }))}
+              utilityLinks={mobileUtilityLinks}
+              download={hasDownload ? { label: "Download", href: (appStoreUrl || playStoreUrl) as string } : undefined}
+              themeColor={themeColor}
+            />
           </div>
         </div>
       </header>
