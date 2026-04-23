@@ -1,10 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 type Format = "video" | "mp3";
 type VideoQuality = "2160" | "1080" | "720" | "480";
 type Mp3Quality = "320" | "192" | "128";
+
+export interface MediaDownloaderStrings {
+  placeholder?: string;
+  clearAriaLabel?: string;
+  downloadButton?: string;
+  downloadingButton?: string;
+  formatLabel?: string;
+  videoLabel?: string;
+  mp3Label?: string;
+  qualityLabel?: string;
+  subtitlesLabel?: string;
+  pastedMessage?: string;
+  downloadingMessage?: string;
+  saveFileButton?: string;
+  genericError?: string;
+  timeoutError?: string;
+  downloadFailedError?: string;
+}
+
+const DEFAULT_STRINGS: Required<MediaDownloaderStrings> = {
+  placeholder: "Paste URL",
+  clearAriaLabel: "Clear URL and paste from clipboard",
+  downloadButton: "Download",
+  downloadingButton: "Processing...",
+  formatLabel: "Format",
+  videoLabel: "Video",
+  mp3Label: "MP3",
+  qualityLabel: "Quality",
+  subtitlesLabel: "Subtitles",
+  pastedMessage: "New URL pasted from clipboard — ready to download.",
+  downloadingMessage: "Downloading and processing, please wait...",
+  saveFileButton: "Save File",
+  genericError: "Something went wrong",
+  timeoutError: "Request timed out. The server took too long to respond.",
+  downloadFailedError: "Download failed",
+};
 
 interface Props {
   data: {
@@ -13,6 +49,7 @@ interface Props {
     apiBase: string;
     apiToken?: string;
     maxVideoQuality?: VideoQuality;
+    strings?: MediaDownloaderStrings;
   };
   themeColor: string;
   themeColorSecondary?: string;
@@ -20,17 +57,19 @@ interface Props {
 }
 
 export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
+  const t = { ...DEFAULT_STRINGS, ...data.strings };
   const maxVideo = Number(data.maxVideoQuality ?? "2160");
   const defaultVideoQuality: VideoQuality =
     720 <= maxVideo ? "720" : 480 <= maxVideo ? "480" : (data.maxVideoQuality ?? "480");
 
+  const inputRef = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState("");
   const [format, setFormat] = useState<Format>("video");
   const [videoQuality, setVideoQuality] = useState<VideoQuality>(defaultVideoQuality);
   const [mp3Quality, setMp3Quality] = useState<Mp3Quality>("320");
   const [subtitles, setSubtitles] = useState(false);
   const [status, setStatus] = useState<
-    "idle" | "downloading" | "ready" | "error"
+    "idle" | "downloading" | "ready" | "error" | "pasted"
   >("idle");
   const [result, setResult] = useState<{
     file_id: string;
@@ -64,7 +103,7 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(
-          (body as Record<string, string>).detail || (body as Record<string, string>).error || "Download failed",
+          (body as Record<string, string>).detail || (body as Record<string, string>).error || t.downloadFailedError,
         );
       }
 
@@ -72,9 +111,9 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
       setResult(body);
       setStatus("ready");
     } catch (e: unknown) {
-      let message = "Something went wrong";
+      let message = t.genericError;
       if (e instanceof DOMException && e.name === "AbortError") {
-        message = "Request timed out. The server took too long to respond.";
+        message = t.timeoutError;
       } else if (e instanceof Error) {
         message = e.message;
       }
@@ -83,6 +122,23 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
     } finally {
       clearTimeout(timeout);
     }
+  };
+
+  const handleClearAndPaste = async () => {
+    setUrl("");
+    setStatus("idle");
+    setResult(null);
+    setError("");
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text.trim()) {
+        setUrl(text.trim());
+        setStatus("pasted");
+      }
+    } catch {
+      // clipboard read denied/unsupported — leave empty; user can paste manually
+    }
+    inputRef.current?.focus();
   };
 
   const handleFileDownload = () => {
@@ -120,33 +176,65 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
 
         <div className="space-y-5">
           <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="Paste URL"
-              className={`w-full sm:flex-1 border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 ${
-                darkMode ? "bg-gray-800 border-gray-600 text-gray-100 placeholder-gray-500" : ""
-              }`}
-              style={
-                { "--tw-ring-color": themeColor } as React.CSSProperties
-              }
-              onKeyDown={(e) => e.key === "Enter" && handleDownload()}
-            />
+            <div className="relative w-full sm:flex-1">
+              <input
+                ref={inputRef}
+                type="url"
+                value={url}
+                onChange={(e) => {
+                  setUrl(e.target.value);
+                  if (status === "pasted") setStatus("idle");
+                }}
+                placeholder={t.placeholder}
+                className={`w-full border rounded-lg pl-4 pr-11 py-3 text-sm focus:outline-none focus:ring-2 ${
+                  darkMode ? "bg-gray-800 border-gray-600 text-gray-100 placeholder-gray-500" : ""
+                }`}
+                style={
+                  { "--tw-ring-color": themeColor } as React.CSSProperties
+                }
+                onKeyDown={(e) => e.key === "Enter" && handleDownload()}
+              />
+              {url && (
+                <button
+                  type="button"
+                  onClick={handleClearAndPaste}
+                  disabled={status === "downloading"}
+                  aria-label={t.clearAriaLabel}
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                    darkMode
+                      ? "text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+                      : "text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 512 512"
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="32"
+                  >
+                    <path d="M368 368L144 144M368 144L144 368" />
+                  </svg>
+                </button>
+              )}
+            </div>
             <button
               onClick={handleDownload}
               disabled={status === "downloading" || !url.trim()}
               className="text-white px-6 py-3 rounded-lg text-sm font-medium hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: themeColor }}
             >
-              {status === "downloading" ? "Processing..." : "Download"}
+              {status === "downloading" ? t.downloadingButton : t.downloadButton}
             </button>
           </div>
 
           <div className={`border rounded-xl p-4 space-y-4 ${darkMode ? "border-gray-700" : ""}`}>
             <div className="flex items-center justify-between">
               <span className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-                Format
+                {t.formatLabel}
               </span>
               <div className="flex gap-2">
                 <button
@@ -158,7 +246,7 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
                       : undefined
                   }
                 >
-                  Video
+                  {t.videoLabel}
                 </button>
                 <button
                   onClick={() => setFormat("mp3")}
@@ -169,14 +257,14 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
                       : undefined
                   }
                 >
-                  MP3
+                  {t.mp3Label}
                 </button>
               </div>
             </div>
 
             <div className="flex items-center justify-between">
               <span className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-                Quality
+                {t.qualityLabel}
               </span>
               <div className="flex flex-wrap gap-2 justify-end">
                 {format === "video" ? (
@@ -234,7 +322,7 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
             {format === "video" && (
               <div className="flex items-center justify-between">
                 <span className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-                  Subtitles
+                  {t.subtitlesLabel}
                 </span>
                 <button
                   onClick={() => setSubtitles(!subtitles)}
@@ -253,9 +341,15 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
             )}
           </div>
 
+          {status === "pasted" && (
+            <p className={`text-sm text-center ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+              {t.pastedMessage}
+            </p>
+          )}
+
           {status === "downloading" && (
             <p className={`text-sm text-center ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-              Downloading and processing, please wait...
+              {t.downloadingMessage}
             </p>
           )}
 
@@ -272,7 +366,7 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
                 onClick={handleFileDownload}
                 className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700"
               >
-                Save File
+                {t.saveFileButton}
               </button>
             </div>
           )}
