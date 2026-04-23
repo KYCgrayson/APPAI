@@ -341,6 +341,8 @@ curl -X POST https://appai.info/api/v1/pages \
 | `canonicalUrl` | No | Full URL of the app's main site. Sends SEO credit there instead of appai.info, and marks the page as a satellite landing: header shows "Official site: {host}", footer becomes "Landing page · Hosted on AppAI · {host}", `/apps` directory card gets a "Landing page" tag. Set this whenever the app already has a primary website. |
 | `isPublished` | No | Set `true` to publish immediately |
 | `parentSlug` | No | Set to root slug to create a child page |
+| `hideFromNav` | No | `true` to keep the page off the auto-generated site nav (still reachable by URL). Use for Privacy, Terms, or compliance-only pages already linked from the footer. |
+| `navOrder` | No | Integer. Controls nav ordering; smaller numbers appear first. Nulls sort last by `createdAt`. |
 | `category` | No | For app listing: `WRITING`, `CODING`, `DESIGN`, `AUTOMATION`, `PRODUCTIVITY`, `SOCIAL`, `FINANCE`, `HEALTH`, `EDUCATION`, `FOOD`, `TRAVEL`, `ENTERTAINMENT`, `GAMES`, `MEDIA`, `UTILITIES`, `COMMERCE`, `OTHER` |
 
 **Preview without saving:** `POST /api/v1/pages/preview` — same body, returns sanitized JSON.
@@ -414,11 +416,30 @@ POST /api/v1/pages
 ```
 
 - URLs: `/p/my-app` (root), `/p/my-app/faq` (child), `/p/my-app/ja/faq` (locale variant of child)
-- Auto-generated sticky header with nav (from child page titles, or set `content.nav` on root for custom nav)
-- Nav target resolution: `https://...` → new tab, `#anchor` → in-page jump, `faq` → child page
 - Children and locale variants are free (only root slugs count)
 - Structure is two levels deep (root + children, no grandchildren)
 - List children: `GET /api/v1/pages/{root-slug}/children`
+
+### How the site nav is built (automatic)
+
+Branding (logo + site title + language switcher + Privacy/Terms) lives in the layout's sticky header. The site nav below it lists child pages only — no branding. You don't need to build any nav chrome yourself.
+
+- **Locale dedup is automatic.** If you create `{slug: "contact", locale: "en"}` and `{slug: "contact", locale: "zh-TW"}`, the nav shows one "Contact" entry, titled in whichever locale the visitor is on. Just create every locale variant and trust the renderer.
+- **"Home" is auto-localized** (en/zh-TW/zh-CN/ja/ko/es/fr/de/pt/ar/hi/th/vi + more). No action needed.
+- **Ordering** defaults to `createdAt`. Set `navOrder: <int>` on a child page to force position (smaller = first).
+- **Hide from nav**: set `hideFromNav: true` on any page that should exist but not appear in the nav — typical for `privacy` and `terms` (already linked from the footer), or compliance-only pages reached from a CTA.
+- **Custom nav (escape hatch)**: set `content.nav: [{label, target}, ...]` on the root page to bypass auto-generation entirely. Target resolution: `https://...` → new tab, `#anchor` → in-page jump, `faq` → child page.
+
+### Compliance pages: recommended flags
+
+```json
+{ "slug": "privacy",  "parentSlug": "my-app", "hideFromNav": true, ... }
+{ "slug": "terms",    "parentSlug": "my-app", "hideFromNav": true, ... }
+{ "slug": "contact",  "parentSlug": "my-app", "navOrder": 1, ... }
+{ "slug": "delete-account", "parentSlug": "my-app", "hideFromNav": true, ... }
+```
+
+This keeps the nav clean (only Contact shows) while every compliance URL stays reachable for App Store / Play Store review.
 
 ## Managing Pages (CRUD)
 
