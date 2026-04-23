@@ -136,6 +136,12 @@ model HostedPage {
   // child pages cannot themselves have children. URL: /p/{parentSlug}/{slug}.
   parentSlug String?
 
+  // Nav controls — apply to both root and child pages. hideFromNav lets a page
+  // exist without appearing in site navigation (Privacy, Terms, compliance-only
+  // pages). navOrder controls position when non-null; ties break on createdAt.
+  hideFromNav Boolean @default(false)
+  navOrder    Int?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
