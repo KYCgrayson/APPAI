@@ -5,6 +5,7 @@ import { PageViewTracker } from "@/components/PageViewTracker";
 import { getExternalCanonical } from "@/lib/canonical";
 import { loadSiblings, buildNav, resolveNavHref } from "@/lib/site-nav";
 import { MobileMenu } from "./MobileMenu";
+import { AdaptiveChrome } from "./AdaptiveChrome";
 
 interface Props {
   params: Promise<{ segments: string[] }>;
@@ -165,18 +166,25 @@ export default async function HostedPageLayout({ params, children }: Props) {
         </div>
       )}
 
-      {/* Sticky Header */}
+      {/* Sticky Header — AdaptiveChrome measures overflow and toggles
+          data-cramped on its wrapper. Descendants that should hide when the
+          header runs out of space use group-data-[cramped=true]/chrome:!hidden.
+          The hamburger shows when cramped OR below the md breakpoint. */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b">
-        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center gap-6">
-          <a href={buildPagePath(slug, locale, null, page.isDefault)} className="flex items-center gap-3 flex-shrink-0">
+        <AdaptiveChrome>
+          <a
+            href={buildPagePath(slug, locale, null, page.isDefault)}
+            className="flex items-center gap-3 flex-shrink-0 min-w-0"
+          >
             {logo && (
-              <img src={logo} alt={page.title} className="w-8 h-8 rounded-xl object-cover" />
+              <img src={logo} alt={page.title} className="w-8 h-8 rounded-xl object-cover flex-shrink-0" />
             )}
-            <span className="font-semibold text-lg">{page.title}</span>
+            <span className="font-semibold text-lg truncate">{page.title}</span>
           </a>
-          {/* Site nav (multi-page sites only) — inline with header, hidden on mobile */}
+
+          {/* Desktop inline nav — natural widths so overflow is measurable */}
           {navItems.length > 0 && (
-            <nav className="hidden md:flex items-center gap-1 flex-1 min-w-0">
+            <nav className="hidden md:flex items-center gap-1 flex-shrink-0 group-data-[cramped=true]/chrome:!hidden">
               {navItems.map((item, i) => {
                 const { href, external } = resolveNavHref(item.target, slug, localeSegment);
                 return (
@@ -185,7 +193,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
                     href={href}
                     target={external ? "_blank" : undefined}
                     rel={external ? "noopener noreferrer" : undefined}
-                    className="px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors truncate"
+                    className="px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors whitespace-nowrap"
                   >
                     {item.label}
                   </a>
@@ -193,10 +201,10 @@ export default async function HostedPageLayout({ params, children }: Props) {
               })}
             </nav>
           )}
+
           <div className="flex items-center gap-4 ml-auto flex-shrink-0">
-            {/* Language Switcher — desktop only; mobile accesses it via the drawer */}
             {variants.length > 1 && (
-              <div className="hidden md:flex items-center gap-1 text-sm">
+              <div className="hidden md:flex items-center gap-1 text-sm group-data-[cramped=true]/chrome:!hidden">
                 {variants.map((v) => (
                   <LocaleLink
                     key={v.locale}
@@ -213,19 +221,19 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 href={externalCanonical.url}
                 target="_blank"
                 rel="noopener"
-                className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline"
+                className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline whitespace-nowrap group-data-[cramped=true]/chrome:!hidden"
                 title={`Visit the official site at ${externalCanonical.host}`}
               >
                 Official site: {externalCanonical.host}
               </a>
             )}
             {page.privacyPolicy && (
-              <a href={buildPagePath(slug, locale, "privacy", page.isDefault)} className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline">
+              <a href={buildPagePath(slug, locale, "privacy", page.isDefault)} className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline whitespace-nowrap group-data-[cramped=true]/chrome:!hidden">
                 Privacy
               </a>
             )}
             {page.termsOfService && (
-              <a href={buildPagePath(slug, locale, "terms", page.isDefault)} className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline">
+              <a href={buildPagePath(slug, locale, "terms", page.isDefault)} className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline whitespace-nowrap group-data-[cramped=true]/chrome:!hidden">
                 Terms
               </a>
             )}
@@ -234,26 +242,31 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 href={appStoreUrl || playStoreUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden md:inline text-sm text-white px-4 py-1.5 rounded-full font-medium"
+                className="hidden md:inline text-sm text-white px-4 py-1.5 rounded-full font-medium whitespace-nowrap group-data-[cramped=true]/chrome:!hidden"
                 style={{ backgroundColor: themeColor }}
               >
                 Download
               </a>
             )}
-            <MobileMenu
-              navItems={mobileNavLinks}
-              locales={variants.map((v) => ({
-                locale: v.locale,
-                href: buildPagePath(slug, v.locale, null, v.isDefault),
-                label: localeLabels[v.locale] || v.locale.toUpperCase(),
-                isActive: v.locale === locale,
-              }))}
-              utilityLinks={mobileUtilityLinks}
-              download={hasDownload ? { label: "Download", href: (appStoreUrl || playStoreUrl) as string } : undefined}
-              themeColor={themeColor}
-            />
+
+            {/* Hamburger wrapper: shown when either (a) below md breakpoint OR
+                (b) AdaptiveChrome reports cramped=true at any breakpoint. */}
+            <div className="md:hidden group-data-[cramped=true]/chrome:md:!block">
+              <MobileMenu
+                navItems={mobileNavLinks}
+                locales={variants.map((v) => ({
+                  locale: v.locale,
+                  href: buildPagePath(slug, v.locale, null, v.isDefault),
+                  label: localeLabels[v.locale] || v.locale.toUpperCase(),
+                  isActive: v.locale === locale,
+                }))}
+                utilityLinks={mobileUtilityLinks}
+                download={hasDownload ? { label: "Download", href: (appStoreUrl || playStoreUrl) as string } : undefined}
+                themeColor={themeColor}
+              />
+            </div>
           </div>
-        </div>
+        </AdaptiveChrome>
       </header>
 
       {/* Page Content */}

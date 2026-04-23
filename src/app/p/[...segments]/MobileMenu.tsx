@@ -69,7 +69,7 @@ export function MobileMenu({
         aria-label={open ? "Close menu" : "Open menu"}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="md:hidden inline-flex items-center justify-center w-10 h-10 -mr-2 rounded-md text-gray-700 hover:bg-gray-100"
+        className="inline-flex items-center justify-center w-10 h-10 -mr-2 rounded-md text-gray-700 hover:bg-gray-100"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -104,10 +104,10 @@ export function MobileMenu({
             type="button"
             aria-label="Close menu"
             onClick={() => setOpen(false)}
-            className="md:hidden fixed inset-0 top-[57px] z-40 bg-black/20"
+            className="fixed inset-0 top-[57px] z-40 bg-black/20"
           />
           <div
-            className="md:hidden fixed left-0 right-0 top-[57px] z-40 bg-white border-b shadow-lg max-h-[calc(100vh-57px)] overflow-y-auto"
+            className="fixed left-0 right-0 top-[57px] z-40 bg-white border-b shadow-lg max-h-[calc(100vh-57px)] overflow-y-auto"
             style={{ borderBottomColor: `${themeColor}1a` }}
           >
             {navItems.length > 0 && (
