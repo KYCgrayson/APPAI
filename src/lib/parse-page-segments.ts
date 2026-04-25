@@ -13,6 +13,8 @@ export interface ParsedSegments {
   subpage: Subpage | null;
   /** Multi-page sites: child page slug under the root `slug` */
   childSlug: string | null;
+  /** iframe-tool fullscreen view: section order index, e.g. /p/{slug}/tools/0 */
+  toolOrder: number | null;
 }
 
 /**
@@ -37,31 +39,40 @@ export function parsePageSegments(segments: string[]): ParsedSegments | null {
   if (!CHILD_SLUG_REGEX.test(slug)) return null;
 
   if (segments.length === 1) {
-    return { slug, locale: null, subpage: null, childSlug: null };
+    return { slug, locale: null, subpage: null, childSlug: null, toolOrder: null };
   }
 
   if (segments.length === 2) {
     const second = segments[1];
     if (SUBPAGES.includes(second as Subpage)) {
-      return { slug, locale: null, subpage: second as Subpage, childSlug: null };
+      return { slug, locale: null, subpage: second as Subpage, childSlug: null, toolOrder: null };
     }
     if (isValidLocale(second)) {
-      return { slug, locale: second, subpage: null, childSlug: null };
+      return { slug, locale: second, subpage: null, childSlug: null, toolOrder: null };
     }
     if (CHILD_SLUG_REGEX.test(second)) {
-      return { slug, locale: null, subpage: null, childSlug: second };
+      return { slug, locale: null, subpage: null, childSlug: second, toolOrder: null };
     }
     return null;
   }
 
   if (segments.length === 3) {
-    const [, locale, third] = segments;
-    if (!isValidLocale(locale)) return null;
+    const [, second, third] = segments;
+    // /p/{slug}/tools/{order} — iframe-tool fullscreen view (locale-agnostic;
+    // the tool receives locale via URL params, not via path).
+    if (second === "tools") {
+      const order = Number.parseInt(third, 10);
+      if (Number.isInteger(order) && order >= 0 && String(order) === third) {
+        return { slug, locale: null, subpage: null, childSlug: null, toolOrder: order };
+      }
+      return null;
+    }
+    if (!isValidLocale(second)) return null;
     if (SUBPAGES.includes(third as Subpage)) {
-      return { slug, locale, subpage: third as Subpage, childSlug: null };
+      return { slug, locale: second, subpage: third as Subpage, childSlug: null, toolOrder: null };
     }
     if (CHILD_SLUG_REGEX.test(third)) {
-      return { slug, locale, subpage: null, childSlug: third };
+      return { slug, locale: second, subpage: null, childSlug: third, toolOrder: null };
     }
     return null;
   }

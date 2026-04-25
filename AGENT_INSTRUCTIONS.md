@@ -23,7 +23,7 @@ This platform gives you full control over visual design. Every parameter below i
 | `headerLogo` | URL — separate logo for the light header (when hero logo is white/light). |
 | `ogImage` | URL — Open Graph image for social sharing. Falls back to heroImage if not set. |
 
-### 22 Section Types
+### 24 Section Types
 
 Every section supports optional `backgroundColor` (hex) and `id` (anchor for `#links`).
 
@@ -52,6 +52,7 @@ Every section supports optional `backgroundColor` (hex) and `id` (anchor for `#l
 | `tool` | Universal interactive tool (file upload, processing, download). Connect any backend API. |
 | `pdf-viewer` | Client-side PDF viewer with password unlock. No backend needed. |
 | `embed` | Embed TikTok / Loom / YouTube / Vimeo / Spotify / CodePen / Figma / X / Instagram. Auto-detects provider from URL. |
+| `iframe-tool` | Embed a tool the user (or another agent) deployed to a free static host (Vercel / Cloudflare Pages / Netlify / GitHub Pages). Use for vibe-coded interactive tools — wheel spinners, mini-games, calculators, drawing pads, visualizations. AppAI wraps it in a multi-language SEO landing page; the iframe receives `?locale=...&color=...&theme=dark` so the tool can match the host page. Each tool also gets a fullscreen URL at `/p/{slug}/tools/{order}`. |
 
 ### Visual Design Capabilities
 
@@ -141,7 +142,7 @@ This document has everything you need. Here's where to find it:
 
 ### Rules
 
-- **NEVER** tell the user the platform can't do something. You have 23 section types, dark mode, custom fonts, multi-language, multi-page sites, forms, interactive tools — the platform is highly capable.
+- **NEVER** tell the user the platform can't do something. You have 24 section types, dark mode, custom fonts, multi-language, multi-page sites, forms, interactive tools — the platform is highly capable.
 - **NEVER** present a list of 6 templates and ask the user to pick one. Infer the right sections from context.
 - **NEVER** ask for 10 pieces of information before building. Build first, iterate after.
 - Headlines under 60 characters, subheadlines under 140 characters (mobile readability)
@@ -716,6 +717,32 @@ Fully client-side using pdf.js. No backend needed.
 }}
 ```
 Auto-detects provider from URL. Supported: YouTube, Vimeo, TikTok, Loom, Spotify, CodePen, Figma. X (Twitter) and Instagram render as linked preview cards (their iframe policy blocks direct embeds). `aspectRatio` optional — sensible default per provider (TikTok → 9:16, YouTube → 16:9). Iframe is sandboxed.
+
+### iframe-tool
+```json
+{ "type": "iframe-tool", "order": 24, "data": {
+    "heading": "Wheel Spinner",
+    "description": "A weighted random picker for groups, raffles, dinner choices, and classroom warm-ups. Spin to decide.",
+    "features": ["Configurable segments", "Sound + haptics", "Works offline"],
+    "src": "https://my-tools.vercel.app/wheel-spinner",
+    "initialHeight": 720,
+    "allowFullscreen": true
+}}
+```
+
+**For vibe-coded interactive tools.** Use this when the user (or another agent) has deployed a self-contained HTML/JS tool to a free static host and wants a multi-language SEO landing page wrapped around it.
+
+**`src` allowlist (hardcoded, host must match):** `*.vercel.app`, `*.pages.dev`, `*.netlify.app`, `*.github.io`. Custom domains are not currently allowed — point a Vercel project at the same code if needed.
+
+**SEO requirement:** `heading` and `description` are required and rendered above the iframe. Crawlers cannot see iframe content; these fields are what gets indexed. Add `features` (string array) for bullet-point credibility. Without these the page has no crawlable content.
+
+**Locale + theme passthrough:** AppAI appends `?locale={page.locale}&color={themeColor}&theme=dark` (when dark mode) to the iframe URL. The tool can read these query params on first paint and match the host page styling.
+
+**Auto-resize protocol:** Tool can `postMessage({ type: "resize", height })` to the parent window — AppAI clamps to 200..4000 px and updates the iframe height. Recommended on every `ResizeObserver` tick of the body. Also `postMessage({ type: "ready" })` to dismiss the loading spinner sooner than the 1.5s default.
+
+**Fullscreen URL:** Every iframe-tool section automatically gets a chrome-less, viewport-sized URL at `/p/{slug}/tools/{order}` (locale-agnostic — the iframe still receives the right locale via URL params). Shareable for "open the tool standalone" use cases like games. The fullscreen page is set to `noindex` so the parent landing page stays the canonical SEO target.
+
+**Sandbox:** `allow-scripts allow-same-origin allow-forms allow-downloads allow-popups`. Top-level navigation is blocked. `allow="fullscreen; clipboard-write; gamepad; accelerometer; gyroscope"` unless `allowFullscreen: false`.
 
 ### Link rel (SEO)
 Links in `links` and `cta` sections accept an optional `rel` string. Use `"nofollow"` for sponsored/affiliate/user-supplied links, `"sponsored"` for paid placements, `"nofollow sponsored"` for both. Leaving it unset produces `rel="noopener noreferrer"` for external links (standard dofollow). Example:

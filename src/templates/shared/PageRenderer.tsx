@@ -21,6 +21,7 @@ import { MediaDownloaderSection } from "../sections/MediaDownloaderSection";
 import { ToolSection } from "../sections/ToolSection";
 import { PdfViewerSection } from "../sections/PdfViewerSection";
 import { EmbedSection } from "../sections/EmbedSection";
+import { IframeToolSection } from "../sections/IframeToolSection";
 interface PageData {
   slug: string;
   template: string;
@@ -129,6 +130,23 @@ function renderSection(
     case "embed":
       content = <EmbedSection {...props} />;
       break;
+    case "iframe-tool": {
+      const sectionOrder = typeof section.order === "number" ? section.order : index;
+      const pagePath = page.parentSlug
+        ? `/p/${page.parentSlug}/${page.slug}`
+        : `/p/${page.slug}`;
+      const fullscreenHref = `${pagePath}/tools/${sectionOrder}`;
+      content = (
+        <IframeToolSection
+          data={section.data}
+          themeColor={themeColor}
+          darkMode={darkMode}
+          locale={page.locale ?? "en"}
+          fullscreenHref={fullscreenHref}
+        />
+      );
+      break;
+    }
     case "form":
       content = (
         <FormSection

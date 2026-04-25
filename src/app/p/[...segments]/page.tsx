@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { PageRenderer } from "@/templates/shared/PageRenderer";
 import { parsePageSegments, buildPagePath } from "@/lib/parse-page-segments";
+import { checkIframeToolUrl } from "@/lib/iframe-tool-allowlist";
 import type { Metadata } from "next";
 
 interface Props {
@@ -166,6 +167,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const parsed = parsePageSegments(segments);
   if (!parsed || parsed.subpage) return {};
 
+  // Tool fullscreen: minimal metadata, noindex (the parent page is the canonical SEO target).
+  if (parsed.toolOrder !== null) {
+    const rootPage = await db.hostedPage.findFirst({
+      where: { slug: parsed.slug, isPublished: true, parentSlug: null },
+      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+      select: { title: true, content: true },
+    });
+    const sections = ((rootPage?.content as { sections?: Array<{ type: string; order: number; data: Record<string, unknown> }> })?.sections) || [];
+    const section = sections.find((s) => s.order === parsed.toolOrder);
+    const data = (section?.data ?? {}) as { heading?: string; description?: string };
+    return {
+      title: data.heading ? `${data.heading} — ${rootPage?.title ?? ""}` : rootPage?.title,
+      description: data.description,
+      robots: { index: false, follow: false },
+    };
+  }
+
   const { slug, locale: explicitLocale, childSlug } = parsed;
   const rootPage = await resolvePage(slug, explicitLocale);
   if (!rootPage) return {};
@@ -248,7 +266,43 @@ export default async function HostedPage({ params }: Props) {
   const parsed = parsePageSegments(segments);
   if (!parsed) notFound();
 
-  const { slug, locale: explicitLocale, subpage, childSlug } = parsed;
+  const { slug, locale: explicitLocale, subpage, childSlug, toolOrder } = parsed;
+
+  // Iframe-tool fullscreen view: /p/{slug}/tools/{order}.
+  // Renders just the iframe at viewport size, no site chrome (handled by layout).
+  if (toolOrder !== null) {
+    const rootPage = await db.hostedPage.findFirst({
+      where: { slug, isPublished: true, parentSlug: null },
+      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+    });
+    if (!rootPage) notFound();
+    const sections = ((rootPage.content as { sections?: Array<{ type: string; order: number; data: Record<string, unknown> }> })?.sections) || [];
+    const section = sections.find((s) => s.order === toolOrder);
+    if (!section || section.type !== "iframe-tool") notFound();
+    const data = section.data as { src?: string; heading?: string; allowFullscreen?: boolean };
+    const check = data.src ? checkIframeToolUrl(data.src) : { ok: false as const };
+    if (!check.ok || !check.url) notFound();
+
+    const themeColor = rootPage.themeColor || "#000000";
+    const url = new URL(data.src!);
+    url.searchParams.set("locale", rootPage.locale);
+    url.searchParams.set("color", themeColor);
+    if (rootPage.darkMode) url.searchParams.set("theme", "dark");
+
+    return (
+      <div style={{ position: "fixed", inset: 0, backgroundColor: rootPage.darkMode ? "#000" : "#fff" }}>
+        <iframe
+          src={url.toString()}
+          title={data.heading || rootPage.title}
+          loading="eager"
+          allow={data.allowFullscreen === false ? undefined : "fullscreen; clipboard-write; gamepad; accelerometer; gyroscope"}
+          sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-popups allow-popups-to-escape-sandbox"
+          referrerPolicy="strict-origin-when-cross-origin"
+          style={{ width: "100%", height: "100%", border: 0, display: "block" }}
+        />
+      </div>
+    );
+  }
 
   // Auto-detect language: when no locale in URL, check browser preference.
   // Skip if: user explicitly chose a language (cookie), or visiting a subpage,

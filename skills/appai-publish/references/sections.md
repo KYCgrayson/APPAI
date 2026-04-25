@@ -1,6 +1,6 @@
 # Section Library
 
-23 section types. Pick 4–8 per page. Order them via `order` field (ascending).
+24 section types. Pick 4–8 per page. Order them via `order` field (ascending).
 
 ## Hero variants
 

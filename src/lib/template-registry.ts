@@ -366,6 +366,19 @@ export const SECTION_DEFS: SectionDef[] = [
     ],
   },
   {
+    type: "iframe-tool",
+    name: "Iframe Tool",
+    description: "Embed any tool you (or an agent) deployed to a free static host as an interactive section on the page. Use this for vibe-coded tools — wheel spinners, calculators, mini-games, drawing pads, visualizations — that the agent built and pushed to Vercel / Cloudflare Pages / Netlify / GitHub Pages. AppAI wraps it in a multi-language SEO landing page. The iframe is sandboxed (no top-nav, isolated origin) and auto-resizes when the tool sends a postMessage(`{type:'resize', height}`). The locale, theme color, and dark-mode flag are appended to the iframe URL as query params (`?locale=...&color=...&theme=dark`) so the tool can match the host page. Each section also gets a standalone fullscreen URL at /p/{slug}/tools/{order}.",
+    fields: [
+      { name: "heading", type: "string", required: true, description: "Section heading. Required because iframes are invisible to search engines — this text is what gets indexed. Minimum 5 characters." },
+      { name: "description", type: "string", required: true, description: "Short paragraph describing what the tool does. Required for SEO. Minimum 30 characters." },
+      { name: "features", type: "array", required: false, description: "Optional list of bullet-point feature strings rendered above the iframe." },
+      { name: "src", type: "url", required: true, description: "Tool URL. Must be https:// and the host must match the iframe-tool allowlist: *.vercel.app, *.pages.dev, *.netlify.app, *.github.io. Custom domains are not currently allowed." },
+      { name: "initialHeight", type: "number", required: false, description: "Initial iframe height in pixels (default 600). The iframe can request a new height by sending postMessage({type:'resize', height}). Clamped to 200..4000." },
+      { name: "allowFullscreen", type: "boolean", required: false, description: "Whether the iframe can request fullscreen mode (default true). Useful for games and visualizations." },
+    ],
+  },
+  {
     type: "embed",
     name: "Embed",
     description: "Embed content from TikTok, Loom, YouTube, Vimeo, Spotify, CodePen, or Figma. Auto-detects the provider from the URL and renders a sandboxed iframe with the right aspect ratio. X (Twitter) and Instagram render as linked preview cards (their iframe policy blocks direct embedding). Use this when showing a short-form video, design prototype, music track, code demo, or tutorial recording.",

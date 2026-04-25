@@ -83,7 +83,7 @@ The API key is scoped to your AppAI account and can be revoked anytime from the 
 | `start-auth` | Start device authorization flow to get an API key |
 | `poll-auth` | Poll for auth completion after `start-auth` |
 | `list-presets` | List page templates (app landing, SaaS, profile, link-in-bio, portfolio, event) |
-| `list-sections` | List all 22 section types with full JSON schemas |
+| `list-sections` | List all 24 section types with full JSON schemas |
 | `create-page` | Create a hosted page with landing content, privacy policy, and ToS |
 | `list-pages` | List all pages owned by the authenticated user |
 | `get-page` | Fetch a page by slug (optionally a specific locale or variants list) |
@@ -107,7 +107,7 @@ The API key is scoped to your AppAI account and can be revoked anytime from the 
 
 ---
 
-## Section Types (22 total)
+## Section Types (24 total)
 
 AppAI pages are built from composable sections. Ask the agent to call `list-sections` for full JSON schemas — this table is just the overview:
 
@@ -116,10 +116,20 @@ AppAI pages are built from composable sections. Ask the agent to call `list-sect
 | Hero & narrative | `hero`, `about`, `stats`, `cta` |
 | Product | `features`, `screenshots`, `gallery`, `video`, `pricing`, `pdf-viewer` |
 | Social proof | `testimonials`, `team`, `sponsors` |
-| Interactive | `form`, `action`, `tool`, `media-downloader`, `embed` |
+| Interactive | `form`, `action`, `tool`, `media-downloader`, `embed`, `iframe-tool` |
 | Info & utility | `faq`, `contact`, `links`, `downloads`, `schedule` |
 
 Each section supports a `backgroundColor` and optional anchor `id` for in-page linking. The `hero` section supports `centered` / `split` / `minimal` variants and four heights.
+
+### Vibe-coded tool hosting (`iframe-tool`)
+
+Got code from a coding agent and want to publish it without buying a domain?
+
+1. Deploy your tool to a free static host (`*.vercel.app`, `*.pages.dev`, `*.netlify.app`, or `*.github.io`)
+2. Tell your agent: "publish my tool at `<deploy-url>` on AppAI"
+3. The agent uses `iframe-tool` section — AppAI wraps it in a multi-language SEO landing page, passes locale + theme color via URL params, auto-resizes the iframe, and gives you a fullscreen URL at `/p/{slug}/tools/{order}` for sharing the tool standalone.
+
+Hosts outside the allowlist are rejected (anti-phishing). Custom domains are not currently allowed.
 
 ### Contact pages
 

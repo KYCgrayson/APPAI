@@ -94,7 +94,7 @@ See the [full Agent Spec](https://appai.info/spec) for the complete interactive 
 
 ## Available Page Sections
 
-Build any page by combining these 22 section types:
+Build any page by combining these 24 section types:
 
 | Section | Description |
 |---------|-------------|
@@ -120,6 +120,8 @@ Build any page by combining these 22 section types:
 | `media-downloader` | Interactive media download tool (YouTube, IG, TikTok, 1000+ platforms) |
 | `tool` | Universal interactive tool (file upload, processing, download — connect any API) |
 | `pdf-viewer` | PDF viewer with password unlock and save-as-unlocked (client-side, no backend) |
+| `embed` | TikTok / Loom / YouTube / Vimeo / Spotify / CodePen / Figma. Auto-detects provider |
+| `iframe-tool` | Embed a vibe-coded tool deployed to Vercel / Cloudflare Pages / Netlify / GitHub Pages. AppAI provides multi-language SEO landing page wrapper, locale + theme passthrough, auto-resize, fullscreen URL |
 
 ## Page-Level Design Options
 

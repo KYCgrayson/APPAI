@@ -17,6 +17,10 @@ export default async function HostedPageLayout({ params, children }: Props) {
   const parsed = parsePageSegments(segments);
   if (!parsed) return <>{children}</>;
 
+  // Iframe-tool fullscreen views skip site chrome entirely — the iframe
+  // takes the whole viewport.
+  if (parsed.toolOrder !== null) return <>{children}</>;
+
   const { slug, locale: explicitLocale } = parsed;
 
   // Resolve locale: explicit from URL, or find the default for this slug

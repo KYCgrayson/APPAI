@@ -21,7 +21,7 @@ This is a **public repository**. All files, commits, and history are visible to 
 1. AI agent authenticates via Device Authorization flow → gets an API key (`appai_sk_...`)
 2. Agent calls `POST /api/v1/pages` with page content (title, sections, SEO metadata, etc.)
 3. Page is immediately live at `appai.info/p/{slug}` with automatic i18n, SEO, privacy/terms pages
-4. Supports 22 section types (hero, features, pricing, FAQ, gallery, form, media-downloader, etc.) and 6 templates
+4. Supports 24 section types (hero, features, pricing, FAQ, gallery, form, media-downloader, iframe-tool, etc.) and 6 templates
 5. Visual design system: dark mode, custom Google Fonts, color palettes, hero variants (centered/split/minimal), per-section backgroundColor
 6. Multi-page sites supported (root + child pages like /faq, /contact, /privacy)
 
