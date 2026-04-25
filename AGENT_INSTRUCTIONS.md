@@ -52,7 +52,7 @@ Every section supports optional `backgroundColor` (hex) and `id` (anchor for `#l
 | `tool` | Universal interactive tool (file upload, processing, download). Connect any backend API. |
 | `pdf-viewer` | Client-side PDF viewer with password unlock. No backend needed. |
 | `embed` | Embed TikTok / Loom / YouTube / Vimeo / Spotify / CodePen / Figma / X / Instagram. Auto-detects provider from URL. |
-| `iframe-tool` | Embed a tool deployed to a free static host (Vercel / Cloudflare Pages / Netlify / GitHub Pages) — wheel spinners, mini-games, calculators, drawing pads. Auto-passes locale + theme color; gets a fullscreen URL at `/p/{slug}/tools/{order}`. |
+| `iframe-tool` | **Host a tool the user vibe-coded.** Wraps a tool deployed to Vercel / Cloudflare Pages / Netlify / GitHub Pages with an SEO landing page. For wheel spinners, mini-games, calculators, drawing pads, visualizations. Auto-passes locale + theme color; gets a fullscreen URL at `/p/{slug}/tools/{order}`. **Use this — not `embed` — when the URL is a tool the user built, not a media post.** |
 
 ### Visual Design Capabilities
 
@@ -122,6 +122,17 @@ This document has everything you need. Here's where to find it:
 2. **Make design decisions yourself.** Choose themeColor based on the product category. Pick sections based on the product type. Generate features, FAQ, and copy from what the user told you. Generate privacy policy and terms of service automatically.
 3. **Build the first draft.** Authenticate, create the page, publish it. Show the user the live URL.
 4. **Iterate.** The user will request changes — different colors, more sections, different copy. Use PATCH to update.
+
+### Two intents, two flows
+
+Detect which one the user is asking for and don't mix them up:
+
+| User intent | Signal | Page shape |
+|---|---|---|
+| **Landing page for an app/product** | "Make me a landing page for [my app/SaaS/startup]" | Hero + features + pricing + testimonials + faq + cta. Standard SaaS template. |
+| **Host a vibe-coded tool** | "I built a [wheel spinner / calculator / mini-game / visualization]…", "I deployed my tool to [vercel.app / pages.dev / netlify.app / github.io]", "Put my tool on AppAI" | Hero (short tagline) + `iframe-tool` (the tool itself) + 1-2 supporting sections (about / faq / cta). The tool is the page. |
+
+If the user gives you a `*.vercel.app` / `*.pages.dev` / `*.netlify.app` / `*.github.io` URL and describes it as their own tool, the section is `iframe-tool` — never `embed` (that's for TikTok/YouTube/etc.) and never `tool` (that's for form-input → backend API).
 
 ### What to decide yourself (do NOT ask the user)
 
