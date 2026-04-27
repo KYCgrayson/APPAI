@@ -37,9 +37,44 @@ const securityHeaders = [
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.gstatic.com",
       "connect-src 'self' https:",
-      // frame-src: whitelist providers supported by the `embed` section.
+      // frame-src: allows two classes of embeds —
+      //   (1) common public hosting platforms used by tools registered via
+      //       the `iframe-tool` section (agents push their own deployments)
+      //   (2) media/embed providers used by the `embed` section
       // frame-ancestors stays 'none' — that's who can embed US, unrelated.
-      "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://www.tiktok.com https://www.loom.com https://open.spotify.com https://codepen.io https://www.figma.com",
+      [
+        "frame-src 'self'",
+        // Public hosting platforms (agent-deployed tools)
+        "https://*.vercel.app",
+        "https://*.netlify.app",
+        "https://*.pages.dev",
+        "https://*.github.io",
+        "https://*.web.app",
+        "https://*.firebaseapp.com",
+        "https://*.fly.dev",
+        "https://*.onrender.com",
+        "https://*.workers.dev",
+        "https://*.deno.dev",
+        "https://*.replit.app",
+        "https://*.repl.co",
+        "https://*.hf.space",
+        "https://*.gradio.live",
+        "https://*.streamlit.app",
+        "https://*.modal.run",
+        "https://*.railway.app",
+        "https://*.up.railway.app",
+        "https://*.glitch.me",
+        "https://*.surge.sh",
+        // Media / embed providers
+        "https://www.youtube.com",
+        "https://www.youtube-nocookie.com",
+        "https://player.vimeo.com",
+        "https://www.tiktok.com",
+        "https://www.loom.com",
+        "https://open.spotify.com",
+        "https://codepen.io",
+        "https://www.figma.com",
+      ].join(" "),
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
