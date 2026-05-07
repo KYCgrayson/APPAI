@@ -324,6 +324,18 @@ export const SECTION_DEFS: SectionDef[] = [
     ],
   },
   {
+    type: "video-subtitle",
+    name: "Video Subtitle",
+    description: "Interactive YouTube subtitle generator. Visitors paste a YouTube URL, trim a clip up to 5 minutes, auto-transcribe via ASR, translate into chosen languages, customise subtitle style (size, position, background, animation, single/bilingual), and download a new mp4 with the subtitles burned in. Requires a backend service implementing the AppAI Video Subtitle API (OpenAPI spec at docs/video-subtitle/api-spec.yaml — job kinds 'transcribe' + 'render', AIP-151 LRO, RFC 7807 errors).",
+    fields: [
+      { name: "heading", type: "string", required: false, description: "Section heading (e.g. 'YouTube Subtitle Studio')" },
+      { name: "description", type: "string", required: false, description: "Short description below heading" },
+      { name: "apiBase", type: "url", required: true, description: "Base URL of the video-subtitle backend service, including the /v1 path prefix (e.g. https://subtitle.myaiapp.uk/v1)" },
+      { name: "maxDurationSec", type: "number", required: false, description: "Cap on the trim window length in seconds. Default 300 (5 minutes). The backend enforces this independently." },
+      { name: "supportedLanguages", type: "array", required: false, description: "BCP-47 language codes shown in the translation picker. Default: ['en','ja','ko','zh-Hans','zh-Hant','es','fr','de','hi']. Empty array hides the picker." },
+    ],
+  },
+  {
     type: "tool",
     name: "Tool",
     description: "Universal interactive tool section. Supports text inputs, file uploads (single/multiple with drag & drop), toggle/select options, and displays results as file downloads, image previews, or text. Connect any backend API. Use this for PDF tools, image processing, file conversion, or any custom tool.",
