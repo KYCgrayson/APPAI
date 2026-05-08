@@ -49,6 +49,7 @@ Every section supports optional `backgroundColor` (hex) and `id` (anchor for `#l
 | `action` | Interactive buttons that send HTTP requests to custom URLs (webhooks, API triggers). |
 | `form` | Real HTML form with server-side relay. Supports `mailto:` and `https://` webhook destinations. |
 | `media-downloader` | Interactive video/audio downloader. Requires a yt-dlp backend API. |
+| `video-subtitle` | Interactive YouTube subtitle generator. Visitor pastes a YouTube link, trims ≤5 min, auto-transcribes via ASR, translates into chosen languages, tweaks subtitle style, and downloads a burned mp4. Requires the Video Subtitle backend service. |
 | `tool` | Universal interactive tool (file upload, processing, download). Connect any backend API. |
 | `pdf-viewer` | Client-side PDF viewer with password unlock. No backend needed. |
 | `embed` | Embed TikTok / Loom / YouTube / Vimeo / Spotify / CodePen / Figma / X / Instagram. Auto-detects provider from URL. |
@@ -693,6 +694,16 @@ Field types: `text`, `email`, `tel`, `textarea`, `select`. submitTo: `mailto:...
 }}
 ```
 Requires a yt-dlp backend API with `POST /download` and `GET /file/{id}` endpoints.
+
+### video-subtitle
+```json
+{ "type": "video-subtitle", "order": 21, "data": {
+    "heading": "YouTube Subtitle Studio",
+    "description": "Paste a link, get a translated, subtitled video.",
+    "apiBase": "https://subtitle.myaiapp.uk/v1"
+}}
+```
+Requires the Video Subtitle backend service implementing the AppAI Video Subtitle API (OpenAPI 3.1 — job kinds `transcribe` + `render`, AIP-151 LRO, RFC 7807 errors). MVP caps the trim window at 5 minutes and uses one embedded subtitle font (Noto Sans JP).
 
 ### tool
 ```json
