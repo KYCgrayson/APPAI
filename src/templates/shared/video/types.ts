@@ -24,12 +24,12 @@ export interface TrimValue {
 }
 
 /**
- * MVP locks the burned-in font to a single OFL face shipped on the
- * backend. Frontend does NOT send `font_family` in render requests;
- * the backend hard-codes it. The overlay uses the same name in CSS so
- * the live preview matches the rendered output.
+ * MVP locks the burned-in font to "Noto Sans" — installed on the backend
+ * via Debian's fonts-noto-core (Latin) + fonts-noto-cjk (CJK) packages,
+ * so no manual font setup is required. fontconfig auto-substitutes CJK
+ * glyphs to "Noto Sans CJK JP/SC/TC" when needed.
  */
-export const MVP_FONT_FAMILY = "Noto Sans JP";
+export const MVP_FONT_FAMILY = "Noto Sans";
 
 export const DEFAULT_STYLE: StyleSpec = {
   display: "single",
