@@ -3,7 +3,7 @@
 **Audience:** the agent or developer building the backend service in the
 private `my-tools` repository.
 **Status:** Draft v1 — not started
-**Deploy target:** the author's always-on **iMac (Apple Silicon)**, exposed
+**Deploy target:** the author's always-on **iMac (Apple Silicon M4)**, exposed
 via Cloudflare Tunnel at `subtitle.myaiapp.uk`.
 **Companion docs:** `./api-spec.yaml` (canonical contract), `./appai-prd.md` (frontend consumer)
 
@@ -29,10 +29,10 @@ A self-hosted HTTP service that:
 Frontend consumer: `appai.info`'s `video-subtitle` section.
 
 **Why the iMac instead of a NAS:** Whisper transcription is the slowest
-stage. An Apple Silicon iMac with the Metal/MLX backend transcribes a
-5-minute clip in ~10–20s, versus 60–90s on a typical NAS CPU. The iMac
-stays powered on 24/7, so it can host the service. Cloudflare Tunnel
-gives a stable public hostname without opening ports on the home router.
+stage. The M4 iMac with the MLX/Metal backend transcribes a 5-minute clip
+in ~5–10s, versus 60–90s on a typical NAS CPU. The iMac stays powered on
+24/7, so it can host the service. Cloudflare Tunnel gives a stable public
+hostname without opening ports on the home router.
 
 ## 2. Non-goals (v1)
 
@@ -57,7 +57,7 @@ long as the contract in `./api-spec.yaml` is preserved.
 | Process model         | **Native Python venv** (NOT Docker)           | Docker Desktop on macOS cannot pass through the Apple GPU — Whisper would fall back to CPU. Run native to use Metal/MLX. |
 | Process supervision   | **launchd** plists (or `brew services`)       | macOS-native way to keep web + worker + redis + tunnel running across reboots.       |
 | YouTube download      | **yt-dlp** (Python lib, not CLI)              | Programmatic, handles age-gate, fragment download for trim.                          |
-| ASR                   | **mlx-whisper** (Apple MLX, Metal-accelerated) | Native Apple Silicon GPU. ~10–20s for a 5-min clip. See §3.1 for Intel fallback.    |
+| ASR                   | **mlx-whisper** (Apple MLX, Metal-accelerated) | Native Apple Silicon GPU. ~5–10s for a 5-min clip on M4. Locked in (target hardware is M4). |
 | Translation           | **Anthropic Claude (Haiku 4.5)**              | Author already uses the Anthropic SDK. Haiku is fast and cheap for translation.      |
 | Subtitle burn-in      | **FFmpeg ≥ 6.0** with **libass** (`brew install ffmpeg`) | `subtitles=` filter + `.ass` for full styling control.                    |
 | Subtitle file format  | `.ass` (Advanced SubStation Alpha)            | Required for libass; richer than `.srt`/`.vtt` for styling.                          |
@@ -67,19 +67,15 @@ long as the contract in `./api-spec.yaml` is preserved.
 | Keep-awake            | `caffeinate -s` (or `pmset` settings)         | Prevents the iMac sleeping and dropping the service.                                 |
 | Observability         | **structlog** → JSON logs, `/healthz` endpoint | Standard.                                                                          |
 
-### 3.1 ASR backend selection
+### 3.1 ASR backend
 
-- **Apple Silicon (M1/M2/M3/M4)** → `mlx-whisper`, model `medium` or
-  `large-v3-turbo`. Metal-accelerated, fastest option.
-- **Intel iMac (no Apple GPU)** → fall back to **`whisper.cpp`** (CoreML
-  or CPU) or **`faster-whisper`** (CTranslate2, int8 CPU). Slower but
-  works.
-- Make the backend pluggable behind a single `transcribe(audio_path,
-  language) -> segments` interface so the engine can be swapped via env
-  (`ASR_ENGINE=mlx|whispercpp|faster`).
-
-> **Confirm the iMac's chip** (Apple Silicon vs Intel) before picking the
-> default — it decides whether `mlx-whisper` is even installable.
+- **Target hardware: M4 iMac** → `mlx-whisper`, default model
+  `large-v3-turbo` (best quality, still fast on M4; falls back to
+  `medium` via env if needed).
+- Still expose the engine behind a single `transcribe(audio_path,
+  language) -> segments` interface so it can be swapped via env
+  (`ASR_ENGINE=mlx|whispercpp|faster`) if the service later moves to
+  non-Apple hardware — but no Intel fallback ships in v1.
 
 ## 4. Repository layout (suggested)
 
@@ -138,8 +134,8 @@ my-tools/
   probability / token-level data.
 - Auto-detect language if `asr.language="auto"`; persist detected
   language as `result.language` (BCP-47).
-- **Performance budget**: ≤ 20s for a 5-minute clip on Apple Silicon.
-  Update `progress.percent` every 5–10s in Redis.
+- **Performance budget (M4)**: ≤ 10s for a 5-minute clip with
+  `large-v3-turbo`. Update `progress.percent` every 2–5s in Redis.
 
 ### 5.3 Claude translation
 
@@ -306,12 +302,11 @@ Cloudflare Tunnel: create a named tunnel `subtitle`, map hostname
 ## 14. Open questions for the my-tools owner
 
 1. ~~Hostname.~~ **Resolved**: `subtitle.myaiapp.uk` (Cloudflare Tunnel → iMac).
-2. **iMac chip** — Apple Silicon or Intel? Decides `mlx-whisper` vs
-   `whisper.cpp`/`faster-whisper` (§3.1).
-3. **Whisper model size** — `medium` (faster, good enough) or
-   `large-v3-turbo` (best quality, still fast on Apple Silicon)?
+2. ~~iMac chip.~~ **Resolved**: **M4** (Apple Silicon). Use `mlx-whisper`.
+3. ~~Whisper model size.~~ **Resolved**: default `large-v3-turbo`
+   (M4 handles it comfortably). Override via env if needed.
 4. **Concurrency cap** — how many simultaneous jobs should the worker
-   run? Set RQ worker count to match the iMac's headroom (start with 1–2).
+   run? Start with 1–2 RQ workers; tune based on observed M4 utilisation.
 5. **Redis** — fresh `brew install redis`, or reuse an existing Redis if
    another my-tools service already runs one?
 
