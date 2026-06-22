@@ -1,0 +1,468 @@
+openapi: 3.1.0
+info:
+  title: Video Subtitle Service API
+  version: 1.0.0
+  summary: Async pipeline for transcribing, translating, and burning subtitles into video.
+  description: |
+    Single source of truth for the contract between `appai.info` (frontend
+    consumer) and the `my-tools` repo (backend implementer).
+
+    The HTTP contract is INDEPENDENT of where the backend runs. v1 targets
+    the author's always-on iMac (Apple Silicon), exposed via a Cloudflare
+    Tunnel at `subtitle.myaiapp.uk`. If the backend later moves to a NAS or
+    cloud host, this spec does not change.
+
+    ## Standards this API conforms to
+
+    | Concern             | Standard                                            |
+    |---------------------|-----------------------------------------------------|
+    | Async job lifecycle | Google AIP-151 (Long Running Operations)            |
+    | Subtitle structure  | OpenAI Whisper segment JSON                         |
+    | Subtitle download   | WebVTT (W3C TTML/WebVTT)                            |
+    | Language codes      | BCP-47 (RFC 5646)                                   |
+    | Error envelope      | RFC 7807 — Problem Details for HTTP APIs            |
+    | Rate limiting       | RFC 6585 (`Retry-After`) + draft-ietf-httpapi-ratelimit-headers (`RateLimit-*`) |
+    | HTTP semantics      | RFC 9110 (status codes, methods)                    |
+    | Auth                | RFC 6750 — `Authorization: Bearer` (optional in v1) |
+
+    ## Resource model
+
+    A single `Job` resource represents any long-running pipeline.
+    `kind` discriminates between `transcribe` and `render`. Both follow
+    the same lifecycle: `queued → processing → (completed | failed | cancelled)`.
+
+    Splitting transcription and rendering into independent jobs is intentional:
+    callers may transcribe without rendering (subtitle export only), or render
+    using externally-supplied subtitles (re-style with a known transcript).
+
+    ## Polling cadence
+
+    Frontend polls `GET /v1/jobs/{id}` every 2s while `status` is
+    `queued | processing`. Server may include `Retry-After` to slow the
+    client down if needed.
+  license:
+    name: Proprietary
+  contact:
+    name: AppAI
+    url: https://appai.info
+
+servers:
+  - url: https://subtitle.myaiapp.uk/v1
+    description: Production (Cloudflare Tunnel → author's iMac)
+  - url: http://localhost:8000/v1
+    description: Local dev (on the iMac itself)
+
+security:
+  - bearerAuth: []
+  - {}  # Anonymous allowed in v1; bearer token reserved for v2
+
+tags:
+  - name: jobs
+    description: Async job lifecycle (AIP-151)
+
+paths:
+  /jobs:
+    post:
+      tags: [jobs]
+      summary: Create a new job
+      operationId: createJob
+      description: |
+        Creates a transcribe or render job. Returns immediately with the job
+        resource in `queued` state. Poll `GET /jobs/{id}` for status.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/TranscribeJobRequest"
+                - $ref: "#/components/schemas/RenderJobRequest"
+              discriminator:
+                propertyName: kind
+                mapping:
+                  transcribe: "#/components/schemas/TranscribeJobRequest"
+                  render: "#/components/schemas/RenderJobRequest"
+      responses:
+        "202":
+          description: Job accepted and queued.
+          headers:
+            Location:
+              description: URL of the created job resource.
+              schema: { type: string, format: uri }
+            RateLimit-Limit:    { schema: { type: integer }, description: "draft-ietf-httpapi-ratelimit-headers" }
+            RateLimit-Remaining: { schema: { type: integer } }
+            RateLimit-Reset:    { schema: { type: integer }, description: "Seconds until window resets" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Job" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /jobs/{id}:
+    parameters:
+      - $ref: "#/components/parameters/JobId"
+    get:
+      tags: [jobs]
+      summary: Get a job
+      operationId: getJob
+      description: |
+        Returns the current state of a job. Poll while `status` is
+        `queued` or `processing`. When `status` is `completed`, `result`
+        is populated. When `failed`, `error` is populated (RFC 7807).
+      responses:
+        "200":
+          description: Job state.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Job" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "410": { $ref: "#/components/responses/Gone" }
+    delete:
+      tags: [jobs]
+      summary: Cancel a job
+      operationId: cancelJob
+      description: Cancels a queued or processing job. Idempotent.
+      responses:
+        "204": { description: Cancelled. }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Job already completed or failed; cannot cancel.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /jobs/{id}/file:
+    parameters:
+      - $ref: "#/components/parameters/JobId"
+    get:
+      tags: [jobs]
+      summary: Download the rendered video
+      operationId: downloadFile
+      description: |
+        Only valid for `render` jobs in `completed` state. Returns a 303
+        redirect to a time-limited signed URL pointing at the mp4 stream.
+        The signed URL allows direct browser download (`<a download>`)
+        without exposing storage credentials.
+      responses:
+        "303":
+          description: Redirect to signed download URL.
+          headers:
+            Location:
+              schema: { type: string, format: uri }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Job is not yet `completed` or is not a render job.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "410": { $ref: "#/components/responses/Gone" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+      description: Reserved for v2. v1 accepts anonymous; rate limiting is per-IP.
+
+  parameters:
+    JobId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    BadRequest:
+      description: Malformed request.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    UnprocessableEntity:
+      description: Validation failed (e.g. trim > 300s, unsupported language).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    PayloadTooLarge:
+      description: Request body exceeds size limit.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    TooManyRequests:
+      description: Rate limit exceeded.
+      headers:
+        Retry-After:
+          description: Seconds until next allowed attempt (RFC 6585).
+          schema: { type: integer }
+        RateLimit-Reset:
+          schema: { type: integer }
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    NotFound:
+      description: Job does not exist.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    Gone:
+      description: Job artifacts have expired (TTL elapsed).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    InternalError:
+      description: Unexpected server error.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    # ─────────────────────── Source ───────────────────────
+    Source:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [youtube_url]
+          description: |
+            v1 supports `youtube_url` only. v2 will add `upload`
+            (referencing a previously-uploaded file_id).
+        url:
+          type: string
+          format: uri
+          description: Required when `type=youtube_url`. Must be a YouTube watch URL.
+        trim:
+          $ref: "#/components/schemas/Trim"
+      examples:
+        - { type: youtube_url, url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", trim: { start_sec: 0, end_sec: 180 } }
+
+    Trim:
+      type: object
+      required: [start_sec, end_sec]
+      properties:
+        start_sec: { type: number, minimum: 0 }
+        end_sec:   { type: number, minimum: 1 }
+      description: |
+        `end_sec - start_sec` MUST be ≤ 300. Server returns 422 if violated.
+
+    # ─────────────────────── Subtitle ───────────────────────
+    Subtitle:
+      type: object
+      required: [start, end, text]
+      properties:
+        id:    { type: integer, description: "Sequence id (Whisper convention)" }
+        start: { type: number, description: "Seconds from start of trimmed clip" }
+        end:   { type: number }
+        text:  { type: string }
+      description: Whisper segment JSON shape.
+
+    # ─────────────────────── Style ───────────────────────
+    StyleSpec:
+      type: object
+      required: [primary_language, font_family, font_size_px, color, position]
+      properties:
+        display:
+          type: string
+          enum: [single, bilingual]
+          default: single
+        primary_language:   { $ref: "#/components/schemas/LanguageCode" }
+        secondary_language:
+          allOf: [{ $ref: "#/components/schemas/LanguageCode" }]
+          description: Required when `display=bilingual`.
+        font_family:
+          type: string
+          description: |
+            MVP: the frontend sends "Noto Sans" but the backend may treat
+            font as fixed. Backend resolves it via fontconfig (auto-
+            substitutes "Noto Sans CJK JP/SC/TC" for CJK glyphs). Installed
+            on macOS via `brew install --cask font-noto-sans font-noto-sans-cjk`.
+        font_size_px: { type: integer, minimum: 12, maximum: 96 }
+        color:
+          type: string
+          pattern: "^#[0-9a-fA-F]{6}$"
+        outline_color:
+          type: string
+          pattern: "^#[0-9a-fA-F]{6}$"
+        background:
+          type: object
+          properties:
+            shape:   { type: string, enum: [none, box, rounded], default: none }
+            color:   { type: string, pattern: "^#[0-9a-fA-F]{6}$" }
+            opacity: { type: number, minimum: 0, maximum: 1 }
+        position:
+          type: string
+          enum: [top, middle, bottom]
+          default: bottom
+        animation:
+          type: string
+          enum: [none, fade, slide_up]
+          default: none
+
+    LanguageCode:
+      type: string
+      pattern: "^[a-zA-Z]{2,3}(-[A-Za-z]{2,4})?(-[A-Za-z]{2})?$"
+      description: BCP-47 language tag, e.g. `en`, `zh-Hant`, `pt-BR`, `ja`.
+
+    # ─────────────────── Job: requests ───────────────────
+    TranscribeJobRequest:
+      type: object
+      required: [kind, input]
+      properties:
+        kind: { type: string, enum: [transcribe] }
+        input:
+          type: object
+          required: [source]
+          properties:
+            source: { $ref: "#/components/schemas/Source" }
+            asr:
+              type: object
+              properties:
+                language:
+                  oneOf:
+                    - { $ref: "#/components/schemas/LanguageCode" }
+                    - { type: string, enum: [auto] }
+                  default: auto
+            translation:
+              type: object
+              properties:
+                target_languages:
+                  type: array
+                  items: { $ref: "#/components/schemas/LanguageCode" }
+                  maxItems: 5
+                  description: Empty array or omitted = no translation.
+
+    RenderJobRequest:
+      type: object
+      required: [kind, input]
+      properties:
+        kind: { type: string, enum: [render] }
+        input:
+          type: object
+          required: [source, subtitles, style]
+          properties:
+            source: { $ref: "#/components/schemas/Source" }
+            subtitles:
+              type: array
+              items: { $ref: "#/components/schemas/Subtitle" }
+              description: Primary-language subtitles.
+            translations:
+              type: object
+              additionalProperties:
+                type: array
+                items: { $ref: "#/components/schemas/Subtitle" }
+              description: |
+                Map of BCP-47 code → segment list. Required when
+                `style.display=bilingual`; the secondary_language key
+                must exist here.
+            style: { $ref: "#/components/schemas/StyleSpec" }
+
+    # ─────────────────── Job: resource ───────────────────
+    Job:
+      type: object
+      required: [id, kind, status, created_at]
+      properties:
+        id:        { type: string, format: uuid }
+        kind:      { type: string, enum: [transcribe, render] }
+        status:    { type: string, enum: [queued, processing, completed, failed, cancelled] }
+        progress:  { $ref: "#/components/schemas/Progress" }
+        created_at:   { type: string, format: date-time }
+        completed_at: { type: string, format: date-time, nullable: true }
+        expires_at:   { type: string, format: date-time, description: "When result artifacts will be deleted." }
+        result:
+          oneOf:
+            - { $ref: "#/components/schemas/TranscribeResult" }
+            - { $ref: "#/components/schemas/RenderResult" }
+            - { type: "null" }
+        error:
+          oneOf:
+            - { $ref: "#/components/schemas/Problem" }
+            - { type: "null" }
+
+    Progress:
+      type: object
+      required: [stage, percent]
+      properties:
+        stage:
+          type: string
+          enum: [queued, downloading, transcribing, translating, rendering, uploading]
+        percent: { type: integer, minimum: 0, maximum: 100 }
+        message: { type: string, description: "Optional human-readable status." }
+
+    TranscribeResult:
+      type: object
+      required: [duration_sec, language, segments]
+      properties:
+        metadata:
+          type: object
+          properties:
+            title:              { type: string }
+            thumbnail_url:      { type: string, format: uri }
+            source_duration_sec: { type: number }
+        duration_sec: { type: number, description: "Length of trimmed clip." }
+        language:     { $ref: "#/components/schemas/LanguageCode" }
+        segments:
+          type: array
+          items: { $ref: "#/components/schemas/Subtitle" }
+        translations:
+          type: object
+          additionalProperties:
+            type: array
+            items: { $ref: "#/components/schemas/Subtitle" }
+        vtt_urls:
+          type: object
+          additionalProperties:
+            type: string
+            format: uri
+          description: |
+            Optional. Map of BCP-47 code → signed WebVTT download URL.
+            Useful for callers who want a standard `.vtt` file.
+
+    RenderResult:
+      type: object
+      required: [file_url, expires_at]
+      properties:
+        file_url:
+          type: string
+          format: uri
+          description: |
+            Signed, time-limited URL pointing at the rendered mp4.
+            Suitable for direct browser download via `<a download>`.
+        file_size_bytes: { type: integer }
+        duration_sec:    { type: number }
+        expires_at:      { type: string, format: date-time }
+
+    # ─────────────────── Errors (RFC 7807) ───────────────────
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri
+          description: |
+            URI reference identifying the problem type. Use
+            `about:blank` if no specific type. Service-specific
+            codes are documented at
+            `https://subtitle.myaiapp.uk/errors/{code}`.
+        title:    { type: string }
+        status:   { type: integer }
+        detail:   { type: string }
+        instance: { type: string, format: uri }
+        code:
+          type: string
+          description: |
+            Service-specific error code. Stable identifier the
+            frontend keys off for error UX. Examples below.
+          enum:
+            - validation_failed
+            - source_unavailable      # YouTube returned 404 / region-locked
+            - source_too_long         # exceeds 300s after trim
+            - asr_failed
+            - translation_failed
+            - render_failed
+            - rate_limited
+            - job_expired
+            - upstream_timeout

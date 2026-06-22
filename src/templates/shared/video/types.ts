@@ -24,10 +24,11 @@ export interface TrimValue {
 }
 
 /**
- * MVP locks the burned-in font to "Noto Sans" — installed on the backend
- * via Debian's fonts-noto-core (Latin) + fonts-noto-cjk (CJK) packages,
- * so no manual font setup is required. fontconfig auto-substitutes CJK
- * glyphs to "Noto Sans CJK JP/SC/TC" when needed.
+ * MVP locks the burned-in font to "Noto Sans". The backend runs on the
+ * author's iMac (macOS); install via Homebrew:
+ *   brew install --cask font-noto-sans font-noto-sans-cjk
+ * fontconfig auto-substitutes "Noto Sans CJK JP/SC/TC" for CJK glyphs,
+ * so this single family covers Latin + Japanese + Chinese.
  */
 export const MVP_FONT_FAMILY = "Noto Sans";
 

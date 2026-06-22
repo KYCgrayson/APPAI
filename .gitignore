@@ -38,6 +38,9 @@ yarn-error.log*
 # docs (internal planning documents, but allow screenshots)
 /docs/*
 !/docs/screenshots
+# video-subtitle handoff docs are tracked so new sessions + the my-tools
+# repo can read the API contract and PRDs (no secrets in these files).
+!/docs/video-subtitle
 
 # vercel
 .vercel
