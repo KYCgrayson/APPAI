@@ -65,6 +65,42 @@ async function proxy(
       ? undefined
       : await req.text();
 
+  // Daily quota: the owner (admin) is unlimited; everyone else may start
+  // one new video per rolling 24h. "Starting a video" = a transcribe job;
+  // render (re-styling an already-transcribed clip) is not counted, so
+  // users can tweak subtitles/style freely within their one video.
+  const kind = (() => {
+    try {
+      return body ? (JSON.parse(body)?.kind as string | undefined) : undefined;
+    } catch {
+      return undefined;
+    }
+  })();
+  if (
+    !isAdmin &&
+    req.method === "POST" &&
+    rel === "jobs" &&
+    kind === "transcribe"
+  ) {
+    const limit = Number(process.env.SUBTITLE_DAILY_LIMIT ?? "1");
+    const since = new Date(Date.now() - 24 * 3600 * 1000);
+    const usedToday = await db.subtitleUsage.count({
+      where: { userId, kind: "transcribe", createdAt: { gte: since } },
+    });
+    if (usedToday >= limit) {
+      return NextResponse.json(
+        {
+          type: "about:blank",
+          title: "Too Many Requests",
+          status: 429,
+          detail: `Daily limit reached (${limit} video/day). Try again later.`,
+          code: "rate_limited",
+        },
+        { status: 429, headers: { "retry-after": "86400" } },
+      );
+    }
+  }
+
   const upstream = await fetch(
     `${backend.replace(/\/$/, "")}/v1/${rel}${req.nextUrl.search}`,
     {
