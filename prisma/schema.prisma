@@ -18,8 +18,9 @@ model User {
   image         String?
   role          String    @default("USER") // USER | ADMIN
 
-  accounts Account[]
-  sessions Session[]
+  accounts       Account[]
+  sessions       Session[]
+  subtitleUsages SubtitleUsage[]
 
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
@@ -205,4 +206,18 @@ model App {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Usage tracking for the video-subtitle service (proxied via /api/subtitle).
+// One row per created job; lets the operator see per-user counts/frequency.
+model SubtitleUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String // transcribe | render
+  jobId     String?
+  videoHash String? // sha256[:16] of the source URL — usage stats without storing full URLs
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }

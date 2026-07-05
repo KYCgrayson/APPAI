@@ -54,6 +54,8 @@ export interface StyleSpec {
   secondary_language?: LanguageCode;
   font_family: string;
   font_size_px: number;
+  /** Bilingual secondary line size; defaults to 0.8 × font_size_px. */
+  secondary_font_size_px?: number;
   color: string;
   outline_color?: string;
   background?: {
@@ -62,16 +64,26 @@ export interface StyleSpec {
     opacity?: number;
   };
   position: "top" | "middle" | "bottom";
-  animation?: "none" | "fade" | "slide_up";
+  animation?: "none" | "fade" | "fade_in" | "fade_out" | "slide_up";
 }
+
+export type TranscriptSource = "whisper" | "original" | "auto_caption";
 
 export interface TranscribeJobRequest {
   kind: "transcribe";
   input: {
     source: Source;
     asr?: { language?: LanguageCode | "auto" };
+    transcript?: {
+      source?: TranscriptSource;
+      original_language?: LanguageCode;
+    };
     translation?: { target_languages?: LanguageCode[] };
   };
+}
+
+export interface RenderOutputOptions {
+  end_fade_out_sec?: number;
 }
 
 export interface RenderJobRequest {
@@ -81,21 +93,34 @@ export interface RenderJobRequest {
     subtitles: Subtitle[];
     translations?: Record<string, Subtitle[]>;
     style: StyleSpec;
+    output?: RenderOutputOptions;
   };
 }
 
 export type JobRequest = TranscribeJobRequest | RenderJobRequest;
+
+export interface SubtitleFileUrls {
+  vtt?: string;
+  srt?: string;
+  ass?: string;
+}
 
 export interface TranscribeResult {
   metadata?: {
     title?: string;
     thumbnail_url?: string;
     source_duration_sec?: number;
+    transcript_origin?: TranscriptSource;
   };
+  /** Signed URL to the trimmed clean mp4 (no subtitles). */
+  clip_url?: string;
   duration_sec: number;
   language: LanguageCode;
   segments: Subtitle[];
   translations?: Record<string, Subtitle[]>;
+  /** Map of BCP-47 code → signed download URLs per format. */
+  subtitle_files?: Record<string, SubtitleFileUrls>;
+  /** @deprecated use `subtitle_files[lang].vtt`. */
   vtt_urls?: Record<string, string>;
 }
 
@@ -135,7 +160,7 @@ export interface Job<TResult = JobResult> {
   progress?: Progress;
   created_at: string;
   completed_at?: string | null;
-  expires_at?: string;
+  expires_at: string;
   result?: TResult | null;
   error?: Problem | null;
 }
@@ -148,3 +173,30 @@ export const TERMINAL_STATUSES: ReadonlySet<JobStatus> = new Set([
   "failed",
   "cancelled",
 ]);
+
+// ─────────────────── Source inspection / preview ───────────────────
+
+export type SubtitleTrackKind = "manual" | "auto";
+
+export interface SubtitleTrack {
+  lang: LanguageCode;
+  kind: SubtitleTrackKind;
+  name?: string;
+}
+
+export interface SourceInfo {
+  title?: string;
+  duration_sec: number;
+  thumbnail_url?: string;
+  available_subtitles?: SubtitleTrack[];
+}
+
+export interface CompileSubtitlesRequest {
+  subtitles: Subtitle[];
+  translations?: Record<string, Subtitle[]>;
+  style: StyleSpec;
+}
+
+export interface CompileSubtitlesResponse {
+  ass_url: string;
+}

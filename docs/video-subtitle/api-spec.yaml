@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Video Subtitle Service API
-  version: 1.0.0
+  version: 1.1.0
   summary: Async pipeline for transcribing, translating, and burning subtitles into video.
   description: |
     Single source of truth for the contract between `appai.info` (frontend
@@ -59,6 +59,12 @@ security:
 tags:
   - name: jobs
     description: Async job lifecycle (AIP-151)
+  - name: sources
+    description: Source inspection (pre-download)
+  - name: subtitles
+    description: Subtitle compilation / preview
+  - name: ops
+    description: Operational endpoints (health, metrics)
 
 paths:
   /jobs:
@@ -160,6 +166,78 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "410": { $ref: "#/components/responses/Gone" }
 
+  /sources:inspect:
+    post:
+      tags: [sources]
+      summary: Inspect a source before downloading
+      operationId: inspectSource
+      description: |
+        Probes a YouTube URL without downloading the video. Returns metadata
+        and the list of available subtitle tracks so the frontend can offer
+        "use original subtitles" vs "transcribe with Whisper" at preview time.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string, format: uri }
+      responses:
+        "200":
+          description: Source metadata.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SourceInfo" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+
+  /subtitles:compile:
+    post:
+      tags: [subtitles]
+      summary: Compile styled subtitles for preview
+      operationId: compileSubtitles
+      description: |
+        Given subtitles + style, returns a signed URL to a styled `.ass`
+        file. The frontend renders it in-browser with libass (WASM) for a
+        WYSIWYG preview that matches the final FFmpeg/libass burn exactly.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CompileSubtitlesRequest" }
+      responses:
+        "200":
+          description: Compiled subtitle artifact.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ass_url]
+                properties:
+                  ass_url: { type: string, format: uri }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+
+  /healthz:
+    get:
+      tags: [ops]
+      summary: Liveness/readiness probe
+      operationId: healthz
+      security: []
+      responses:
+        "200":
+          description: Service healthy.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, version]
+                properties:
+                  status:  { type: string, enum: [ok, degraded] }
+                  version: { type: string }
+                  redis:   { type: string, enum: [ok, degraded] }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -246,7 +324,8 @@ components:
         start_sec: { type: number, minimum: 0 }
         end_sec:   { type: number, minimum: 1 }
       description: |
-        `end_sec - start_sec` MUST be ≤ 300. Server returns 422 if violated.
+        `end_sec - start_sec` MUST be > 0 and ≤ 600. Server returns
+        `422 Problem{code=source_too_long}` if violated.
 
     # ─────────────────────── Subtitle ───────────────────────
     Subtitle:
@@ -280,6 +359,13 @@ components:
             substitutes "Noto Sans CJK JP/SC/TC" for CJK glyphs). Installed
             on macOS via `brew install --cask font-noto-sans font-noto-sans-cjk`.
         font_size_px: { type: integer, minimum: 12, maximum: 96 }
+        secondary_font_size_px:
+          type: integer
+          minimum: 8
+          maximum: 96
+          description: |
+            Bilingual secondary line size. Defaults to 0.8 × font_size_px
+            when omitted.
         color:
           type: string
           pattern: "^#[0-9a-fA-F]{6}$"
@@ -298,8 +384,10 @@ components:
           default: bottom
         animation:
           type: string
-          enum: [none, fade, slide_up]
+          enum: [none, fade, fade_in, fade_out, slide_up]
           default: none
+          description: |
+            `fade` = fade in+out; `fade_in`/`fade_out` = one side only.
 
     LanguageCode:
       type: string
@@ -325,6 +413,20 @@ components:
                     - { $ref: "#/components/schemas/LanguageCode" }
                     - { type: string, enum: [auto] }
                   default: auto
+            transcript:
+              type: object
+              description: |
+                Where the base transcript comes from. `original` pulls the
+                creator-uploaded captions (best quality, skips ASR);
+                `auto_caption` pulls YouTube's auto-generated captions;
+                `whisper` runs local Whisper ASR (default, best when no
+                manual captions exist).
+              properties:
+                source:
+                  type: string
+                  enum: [whisper, original, auto_caption]
+                  default: whisper
+                original_language: { $ref: "#/components/schemas/LanguageCode" }
             translation:
               type: object
               properties:
@@ -358,11 +460,19 @@ components:
                 `style.display=bilingual`; the secondary_language key
                 must exist here.
             style: { $ref: "#/components/schemas/StyleSpec" }
+            output:
+              type: object
+              description: Output / finishing options applied during render.
+              properties:
+                end_fade_out_sec:
+                  type: number
+                  minimum: 0
+                  description: Fade video+audio to black over N seconds at clip end.
 
     # ─────────────────── Job: resource ───────────────────
     Job:
       type: object
-      required: [id, kind, status, created_at]
+      required: [id, kind, status, created_at, expires_at]
       properties:
         id:        { type: string, format: uuid }
         kind:      { type: string, enum: [transcribe, render] }
@@ -401,6 +511,16 @@ components:
             title:              { type: string }
             thumbnail_url:      { type: string, format: uri }
             source_duration_sec: { type: number }
+            transcript_origin:
+              type: string
+              enum: [whisper, original, auto_caption]
+              description: Where the base transcript came from.
+        clip_url:
+          type: string
+          format: uri
+          description: |
+            Optional. Signed URL to the trimmed clean mp4 (no subtitles).
+            For callers who want to re-style / edit in their own editor.
         duration_sec: { type: number, description: "Length of trimmed clip." }
         language:     { $ref: "#/components/schemas/LanguageCode" }
         segments:
@@ -411,14 +531,27 @@ components:
           additionalProperties:
             type: array
             items: { $ref: "#/components/schemas/Subtitle" }
+        subtitle_files:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              vtt: { type: string, format: uri }
+              srt: { type: string, format: uri }
+              ass: { type: string, format: uri }
+          description: |
+            Optional. Map of BCP-47 code → signed download URLs per format.
+            `.srt` for editors / YouTube CC, `.vtt` for web, `.ass` for
+            re-burn / advanced styling.
         vtt_urls:
           type: object
           additionalProperties:
             type: string
             format: uri
+          deprecated: true
           description: |
-            Optional. Map of BCP-47 code → signed WebVTT download URL.
-            Useful for callers who want a standard `.vtt` file.
+            DEPRECATED — use `subtitle_files[lang].vtt`. Kept for
+            backward compatibility.
 
     RenderResult:
       type: object
@@ -459,10 +592,42 @@ components:
           enum:
             - validation_failed
             - source_unavailable      # YouTube returned 404 / region-locked
-            - source_too_long         # exceeds 300s after trim
+            - source_too_long         # exceeds 600s after trim
             - asr_failed
             - translation_failed
             - render_failed
             - rate_limited
             - job_expired
             - upstream_timeout
+
+    # ─────────────────── Source inspection / preview ───────────────────
+    SourceInfo:
+      type: object
+      required: [duration_sec]
+      properties:
+        title:         { type: string }
+        duration_sec:  { type: number }
+        thumbnail_url: { type: string, format: uri }
+        available_subtitles:
+          type: array
+          items:
+            type: object
+            required: [lang, kind]
+            properties:
+              lang: { $ref: "#/components/schemas/LanguageCode" }
+              kind: { type: string, enum: [manual, auto] }
+              name: { type: string }
+
+    CompileSubtitlesRequest:
+      type: object
+      required: [subtitles, style]
+      properties:
+        subtitles:
+          type: array
+          items: { $ref: "#/components/schemas/Subtitle" }
+        translations:
+          type: object
+          additionalProperties:
+            type: array
+            items: { $ref: "#/components/schemas/Subtitle" }
+        style: { $ref: "#/components/schemas/StyleSpec" }

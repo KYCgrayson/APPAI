@@ -36,7 +36,18 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.gstatic.com",
-      "connect-src 'self' https:",
+      // Allow a local HTTP backend (the video-subtitle service at
+      // http://localhost:8000) when ALLOW_LOCAL_HTTP_BACKEND=1 — set in
+      // .env.local for local dev/prod runs on the iMac. Unset on Vercel,
+      // so the real deployment stays HTTPS-only.
+      process.env.ALLOW_LOCAL_HTTP_BACKEND === "1"
+        ? "connect-src 'self' https: http://localhost:8000 http://127.0.0.1:8000 ws: wss:"
+        : "connect-src 'self' https:",
+      // media-src: <video> plays clips served by the subtitle backend
+      // (clip preview in the edit phase, rendered mp4 in the done phase).
+      process.env.ALLOW_LOCAL_HTTP_BACKEND === "1"
+        ? "media-src 'self' blob: https: http://localhost:8000 http://127.0.0.1:8000"
+        : "media-src 'self' blob: https:",
       // frame-src: allows two classes of embeds —
       //   (1) common public hosting platforms used by tools registered via
       //       the `iframe-tool` section (agents push their own deployments)

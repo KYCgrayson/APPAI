@@ -149,7 +149,10 @@ export function SubtitleOverlay({ videoRef, primary, secondary, style }: Props) 
         {showSecondary && activeSecondary && (
           <div
             className={animationClass}
-            style={{ ...lineStyle, fontSize: `${style.font_size_px * 0.85}px` }}
+            style={{
+              ...lineStyle,
+              fontSize: `${style.secondary_font_size_px ?? style.font_size_px * 0.85}px`,
+            }}
             key={`s-${activeSecondary.start}`}
           >
             {activeSecondary.text}

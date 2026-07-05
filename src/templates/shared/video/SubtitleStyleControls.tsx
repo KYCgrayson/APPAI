@@ -175,28 +175,76 @@ export function SubtitleStyleControls({
       </label>
 
       {value.display === "bilingual" && availableSecondaryLanguages.length > 0 && (
-        <label className="flex flex-col gap-1 sm:col-span-2">
-          <span className={`text-xs ${subColor}`}>
-            {t.secondaryLanguageLabel}
-          </span>
-          <select
-            value={value.secondary_language ?? availableSecondaryLanguages[0]}
-            onChange={(e) => set("secondary_language", e.target.value)}
-            disabled={disabled}
-            className={inputCls}
-          >
-            {availableSecondaryLanguages.map((lc) => (
-              <option key={lc} value={lc}>
-                {lc}
-              </option>
-            ))}
-          </select>
-        </label>
+        <>
+          <label className="flex flex-col gap-1">
+            <span className={`text-xs ${subColor}`}>
+              {t.secondaryLanguageLabel}
+            </span>
+            <select
+              value={value.secondary_language ?? availableSecondaryLanguages[0]}
+              onChange={(e) => set("secondary_language", e.target.value)}
+              disabled={disabled}
+              className={inputCls}
+            >
+              {availableSecondaryLanguages.map((lc) => (
+                <option key={lc} value={lc}>
+                  {lc}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className={`text-xs ${subColor}`}>
+              {t.fontSizeLabel} (secondary)
+            </span>
+            <input
+              type="number"
+              min={8}
+              max={96}
+              step={1}
+              value={
+                value.secondary_font_size_px ??
+                Math.round(value.font_size_px * 0.85)
+              }
+              onChange={(e) =>
+                set(
+                  "secondary_font_size_px",
+                  Math.max(8, Math.min(96, Number(e.target.value) || 15)),
+                )
+              }
+              disabled={disabled}
+              className={`${inputCls} w-24`}
+            />
+          </label>
+        </>
       )}
 
-      <span className={`text-xs ${labelColor} sm:col-span-2 sr-only`}>
-        Color and outline use defaults; v2 will expose pickers.
-      </span>
+      <label className="flex flex-col gap-1">
+        <span className={`text-xs ${subColor}`}>Font color</span>
+        <input
+          type="color"
+          value={value.color}
+          onChange={(e) => set("color", e.target.value)}
+          disabled={disabled}
+          className="h-9 w-16 cursor-pointer rounded border p-0.5"
+        />
+      </label>
+
+      <label className="flex flex-col gap-1">
+        <span className={`text-xs ${subColor}`}>Background color</span>
+        <input
+          type="color"
+          value={value.background?.color ?? "#000000"}
+          onChange={(e) => setBg({ color: e.target.value })}
+          disabled={disabled || (value.background?.shape ?? "none") === "none"}
+          title={
+            (value.background?.shape ?? "none") === "none"
+              ? "Pick a background shape (Box/Rounded) first"
+              : undefined
+          }
+          className="h-9 w-16 cursor-pointer rounded border p-0.5 disabled:opacity-40"
+        />
+      </label>
     </div>
   );
 }

@@ -10,13 +10,30 @@ export const revalidate = 3600;
 export async function GET() {
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
 
-  // Fetch all published pages (root only — child pages are discoverable from the root)
-  const pages = await db.hostedPage.findMany({
-    where: { isPublished: true, parentSlug: null },
-    select: { slug: true, locale: true, title: true, tagline: true, updatedAt: true, isDefault: true, content: true },
-    orderBy: { updatedAt: "desc" },
-    take: 500,
-  });
+  // Fetch all published pages (root only — child pages are discoverable from
+  // the root). Tolerate DB unavailability (e.g. local builds without a real
+  // Postgres): fall back to an empty page list instead of failing the build.
+  let pages: {
+    slug: string;
+    locale: string;
+    title: string;
+    tagline: string | null;
+    updatedAt: Date;
+    isDefault: boolean;
+    content: unknown;
+  }[] = [];
+  try {
+    pages = await db.hostedPage.findMany({
+      where: { isPublished: true, parentSlug: null },
+      select: { slug: true, locale: true, title: true, tagline: true, updatedAt: true, isDefault: true, content: true },
+      orderBy: { updatedAt: "desc" },
+      take: 500,
+    });
+  } catch (e) {
+    // Local builds without a real Postgres: serve the static portion only.
+    // Production keeps failing loudly (stale ISR is preserved).
+    if (process.env.ALLOW_LOCAL_HTTP_BACKEND !== "1") throw e;
+  }
 
   // Group by slug; pick the default locale row as the representative
   type PageInfo = {

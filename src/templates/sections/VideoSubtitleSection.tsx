@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAsyncJob } from "../shared/jobs/use-async-job";
 import { JobProgress } from "../shared/jobs/JobProgress";
 import { DownloadResult } from "../shared/jobs/DownloadResult";
@@ -27,6 +27,7 @@ import type {
   TranscribeJobRequest,
   RenderJobRequest,
   LanguageCode,
+  SubtitleFileUrls,
 } from "../shared/jobs/types";
 
 type Phase =
@@ -112,6 +113,71 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Edit-phase live preview: plays the trimmed clean clip (result.clip_url)
+  // with subtitles overlaid; the subtitle list follows / seeks the video.
+  const editVideoRef = useRef<HTMLVideoElement>(null);
+  const [editTimeSec, setEditTimeSec] = useState(0);
+
+  // ── Persistence: survive page reloads (dev-server restarts force a full
+  // reload and used to wipe the in-flight job → user came back to a blank
+  // idle page while the backend had actually finished the work).
+  const STORAGE_KEY = "appai-video-subtitle-state-v1";
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      if (!s?.phase || s.phase === "idle") return;
+      if (s.source) setSource(s.source);
+      if (s.trim) setTrim(s.trim);
+      if (Array.isArray(s.targetLangs)) setTargetLangs(s.targetLangs);
+      if (s.style) setStyle(s.style);
+      if (Array.isArray(s.subtitles) && s.subtitles.length)
+        setSubtitles(s.subtitles);
+      if (s.translations) setTranslations(s.translations);
+      if (s.transcribeJobId) setTranscribeJobId(s.transcribeJobId);
+      if (s.renderJobId) setRenderJobId(s.renderJobId);
+      setPhase(s.phase);
+    } catch {
+      /* corrupt state — start fresh */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    try {
+      if (phase === "idle") {
+        localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          phase,
+          source,
+          trim,
+          targetLangs,
+          style,
+          subtitles,
+          translations,
+          transcribeJobId,
+          renderJobId,
+        }),
+      );
+    } catch {
+      /* storage full/unavailable — non-fatal */
+    }
+  }, [
+    phase,
+    source,
+    trim,
+    targetLangs,
+    style,
+    subtitles,
+    translations,
+    transcribeJobId,
+    renderJobId,
+  ]);
+
   const transcribe = useAsyncJob<TranscribeResult>({
     apiBase,
     jobId: transcribeJobId,
@@ -130,8 +196,10 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
     setPrevTStatus(tStatus);
     if (tStatus === "completed" && transcribe.job?.result) {
       const r = transcribe.job.result;
-      setSubtitles(r.segments);
-      setTranslations(r.translations ?? {});
+      // Don't clobber restored/edited subtitles after a page reload.
+      if (subtitles.length === 0) setSubtitles(r.segments);
+      if (Object.keys(translations).length === 0)
+        setTranslations(r.translations ?? {});
       const secondary = Object.keys(r.translations ?? {})[0];
       setStyle((prev) => ({
         ...prev,
@@ -315,6 +383,15 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
                       String(Math.floor(maxDurationSec / 60)),
                     )}
                   </h3>
+                  <YouTubeTrimPicker
+                    url={source.url}
+                    trim={trim}
+                    onChange={setTrim}
+                    maxDurationSec={maxDurationSec}
+                    themeColor={themeColor}
+                    darkMode={darkMode}
+                    disabled={submitting}
+                  />
                   <TimelineTrimmer
                     value={trim}
                     onChange={setTrim}
@@ -397,18 +474,51 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
               {t.editingHeading}
             </h3>
 
-            <StylePreviewPane
-              text={subtitles[0]?.text ?? t.previewSampleText}
-              secondary={
-                style.display === "bilingual" && style.secondary_language
-                  ? translations[style.secondary_language]?.[0]?.text
-                  : undefined
-              }
-              style={style}
-              heading={t.previewHeading}
-              labelColor={subColor}
-              darkMode={darkMode}
-            />
+            {transcribe.job?.result?.clip_url ? (
+              /* Live preview: real clip + subtitle overlay. Scrub the native
+                 controls or click a subtitle row to jump. */
+              <div className="space-y-1">
+                <h4 className={`text-sm font-medium ${subColor}`}>
+                  {t.previewHeading}
+                </h4>
+                <div className="relative rounded-lg overflow-hidden bg-black">
+                  <video
+                    ref={editVideoRef}
+                    src={transcribe.job.result.clip_url}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="w-full"
+                    onTimeUpdate={(e) =>
+                      setEditTimeSec(e.currentTarget.currentTime)
+                    }
+                  />
+                  <SubtitleOverlay
+                    videoRef={editVideoRef}
+                    primary={subtitles}
+                    secondary={
+                      style.display === "bilingual" && style.secondary_language
+                        ? translations[style.secondary_language]
+                        : undefined
+                    }
+                    style={style}
+                  />
+                </div>
+              </div>
+            ) : (
+              <StylePreviewPane
+                text={subtitles[0]?.text ?? t.previewSampleText}
+                secondary={
+                  style.display === "bilingual" && style.secondary_language
+                    ? translations[style.secondary_language]?.[0]?.text
+                    : undefined
+                }
+                style={style}
+                heading={t.previewHeading}
+                labelColor={subColor}
+                darkMode={darkMode}
+              />
+            )}
 
             <div className="space-y-2">
               <h4 className={`text-sm font-medium ${labelColor}`}>
@@ -430,10 +540,13 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
               <SubtitleEditor
                 subtitles={subtitles}
                 onChange={setSubtitles}
-                currentTimeSec={0}
-                onSeek={() => {
-                  // No live preview in MVP — seek is a no-op. Reserved for
-                  // v2 once a preview URL is available.
+                currentTimeSec={editTimeSec}
+                onSeek={(sec) => {
+                  const v = editVideoRef.current;
+                  if (v) {
+                    v.currentTime = sec;
+                    setEditTimeSec(sec);
+                  }
                 }}
                 themeColor={themeColor}
                 darkMode={darkMode}
@@ -482,6 +595,8 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
             description={t.resultDownloadHint}
             resetLabel={t.startOverButton}
             onReset={reset}
+            subtitleFiles={transcribe.job?.result?.subtitle_files}
+            clipUrl={transcribe.job?.result?.clip_url}
           />
         )}
 
@@ -621,6 +736,8 @@ function DonePane({
   description,
   resetLabel,
   onReset,
+  subtitleFiles,
+  clipUrl,
 }: {
   fileUrl: string;
   fileName: string;
@@ -633,6 +750,8 @@ function DonePane({
   description: string;
   resetLabel: string;
   onReset: () => void;
+  subtitleFiles?: Record<string, SubtitleFileUrls>;
+  clipUrl?: string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   return (
@@ -658,7 +777,7 @@ function DonePane({
         />
       </div>
       <DownloadResult
-        fileUrl={fileUrl}
+        fileUrl={`${fileUrl}&dl=${encodeURIComponent(fileName)}`}
         fileName={fileName}
         themeColor={themeColor}
         darkMode={darkMode}
@@ -671,6 +790,197 @@ function DonePane({
           {description}
         </p>
       </DownloadResult>
+
+      {(clipUrl || (subtitleFiles && Object.keys(subtitleFiles).length > 0)) && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+          >
+            Extra downloads:
+          </span>
+          {Object.entries(subtitleFiles ?? {}).flatMap(([lang, files]) =>
+            (
+              [
+                ["srt", files.srt],
+                ["vtt", files.vtt],
+              ] as const
+            )
+              .filter(([, u]) => !!u)
+              .map(([ext, u]) => (
+                <a
+                  key={`${lang}.${ext}`}
+                  // `download` attr is ignored cross-origin; the backend's
+                  // ?dl= adds Content-Disposition: attachment instead.
+                  href={`${u}&dl=${encodeURIComponent(`subtitles.${lang}.${ext}`)}`}
+                  className="px-2 py-1 rounded border text-xs font-medium"
+                  style={{ borderColor: themeColor, color: themeColor }}
+                >
+                  {lang}.{ext}
+                </a>
+              )),
+          )}
+          {clipUrl && (
+            <a
+              href={`${clipUrl}&dl=clip-no-subtitles.mp4`}
+              className="px-2 py-1 rounded border text-xs font-medium"
+              style={{ borderColor: themeColor, color: themeColor }}
+            >
+              clip (no subtitles).mp4
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────── YouTube trim picker ───────────────────────
+
+const YT_ID_RE =
+  /^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/|v\/)|youtu\.be\/)([\w-]{11})/;
+
+function fmtClock(sec: number): string {
+  const s = Math.max(0, sec);
+  const m = Math.floor(s / 60);
+  const r = Math.floor(s % 60);
+  return `${m}:${r.toString().padStart(2, "0")}`;
+}
+
+/**
+ * Embedded YouTube player + "Set start / Set end" buttons.
+ *
+ * Uses the widget postMessage protocol directly (no external script, so it
+ * passes CSP `script-src 'self'`): after a `listening` handshake the iframe
+ * streams `infoDelivery` messages carrying `currentTime`; we also poll
+ * `getCurrentTime` so the value stays fresh while paused.
+ */
+function YouTubeTrimPicker({
+  url,
+  trim,
+  onChange,
+  maxDurationSec,
+  themeColor,
+  darkMode,
+  disabled,
+}: {
+  url: string;
+  trim: TrimValue;
+  onChange: (next: TrimValue) => void;
+  maxDurationSec: number;
+  themeColor: string;
+  darkMode?: boolean;
+  disabled?: boolean;
+}) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const videoId = url.match(YT_ID_RE)?.[1] ?? null;
+
+  // Memoized on videoId only: the 500ms currentTime ticks re-render this
+  // component, and the player element must never be recreated (a recreated
+  // iframe reloads the video — looks like a page refresh).
+  const player = useMemo(
+    () =>
+      videoId ? (
+        <div className="relative w-full overflow-hidden rounded-lg bg-black aspect-video">
+          <iframe
+            ref={iframeRef}
+            src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1`}
+            title="YouTube preview"
+            className="absolute inset-0 h-full w-full"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      ) : null,
+    [videoId],
+  );
+
+  useEffect(() => {
+    if (!videoId) return;
+    const onMsg = (ev: MessageEvent) => {
+      // Whole handler is defensive: window "message" traffic includes
+      // devtools/extensions with exotic origins ("null", "") that would
+      // make `new URL` throw — an uncaught error here pops the Next dev
+      // overlay and looks like a page refresh.
+      try {
+        if (
+          !/(^|\.)youtube(-nocookie)?\.com$/.test(new URL(ev.origin).hostname)
+        )
+          return;
+        const data =
+          typeof ev.data === "string" ? JSON.parse(ev.data) : ev.data;
+        const t = data?.info?.currentTime;
+        if (typeof t === "number" && Number.isFinite(t)) setCurrentTime(t);
+      } catch {
+        /* non-JSON / non-YouTube noise — ignore */
+      }
+    };
+    window.addEventListener("message", onMsg);
+    const post = (payload: object) =>
+      iframeRef.current?.contentWindow?.postMessage(
+        JSON.stringify(payload),
+        "*",
+      );
+    const poll = setInterval(() => {
+      post({ event: "listening", id: "vs-trim", channel: "widget" });
+      post({ event: "command", func: "getCurrentTime", args: [] });
+    }, 500);
+    return () => {
+      window.removeEventListener("message", onMsg);
+      clearInterval(poll);
+    };
+  }, [videoId]);
+
+  if (!videoId) return null;
+
+  const subColor = darkMode ? "text-gray-400" : "text-gray-500";
+  const btnCls = `px-3 py-1.5 rounded-md text-xs font-medium text-white disabled:opacity-50`;
+
+  const setStart = (ev: React.MouseEvent) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const s = Math.round(currentTime * 10) / 10;
+    const end = trim.end_sec > s ? trim.end_sec : s + 60;
+    onChange({ start_sec: s, end_sec: Math.min(end, s + maxDurationSec) });
+  };
+  const setEnd = (ev: React.MouseEvent) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const e = Math.round(currentTime * 10) / 10;
+    const start =
+      trim.start_sec < e ? trim.start_sec : Math.max(0, e - 60);
+    onChange({ start_sec: Math.max(start, e - maxDurationSec), end_sec: e });
+  };
+
+  return (
+    <div className="space-y-2">
+      {player}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className={`text-xs tabular-nums ${subColor}`}>
+          Player at {fmtClock(currentTime)}
+        </span>
+        <button
+          type="button"
+          onClick={setStart}
+          disabled={disabled}
+          className={btnCls}
+          style={{ backgroundColor: themeColor }}
+        >
+          Set start = {fmtClock(currentTime)}
+        </button>
+        <button
+          type="button"
+          onClick={setEnd}
+          disabled={disabled}
+          className={btnCls}
+          style={{ backgroundColor: themeColor }}
+        >
+          Set end = {fmtClock(currentTime)}
+        </button>
+        <span className={`text-xs ${subColor}`}>
+          Play or scrub in the player, then capture the point.
+        </span>
+      </div>
     </div>
   );
 }

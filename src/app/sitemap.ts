@@ -34,11 +34,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     };
   });
 
-  // Published hosted pages (all locales)
-  const pages = await db.hostedPage.findMany({
-    where: { isPublished: true },
-    select: { slug: true, locale: true, isDefault: true, updatedAt: true, privacyPolicy: true, termsOfService: true },
-  });
+  // Published hosted pages (all locales). On local builds without a real
+  // Postgres (ALLOW_LOCAL_HTTP_BACKEND=1) fall back to none instead of
+  // failing the build; production keeps failing loudly.
+  let pages: {
+    slug: string;
+    locale: string;
+    isDefault: boolean;
+    updatedAt: Date;
+    privacyPolicy: string | null;
+    termsOfService: string | null;
+  }[] = [];
+  try {
+    pages = await db.hostedPage.findMany({
+      where: { isPublished: true },
+      select: { slug: true, locale: true, isDefault: true, updatedAt: true, privacyPolicy: true, termsOfService: true },
+    });
+  } catch (e) {
+    if (process.env.ALLOW_LOCAL_HTTP_BACKEND !== "1") throw e;
+  }
 
   // Group pages by slug to build hreflang alternates
   const slugGroups = new Map<string, typeof pages>();
@@ -112,11 +126,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return entries;
   });
 
-  // Approved apps (with locale alternates)
-  const apps = await db.app.findMany({
-    where: { isApproved: true },
-    select: { id: true, updatedAt: true, hostedPageSlug: true },
-  });
+  // Approved apps (with locale alternates). Same local-build fallback.
+  let apps: { id: string; updatedAt: Date; hostedPageSlug: string | null }[] =
+    [];
+  try {
+    apps = await db.app.findMany({
+      where: { isApproved: true },
+      select: { id: true, updatedAt: true, hostedPageSlug: true },
+    });
+  } catch (e) {
+    if (process.env.ALLOW_LOCAL_HTTP_BACKEND !== "1") throw e;
+  }
 
   const appEntries: MetadataRoute.Sitemap = apps
     .filter((app) => !app.hostedPageSlug)
