@@ -22,6 +22,7 @@ import { ToolSection } from "../sections/ToolSection";
 import { PdfViewerSection } from "../sections/PdfViewerSection";
 import { EmbedSection } from "../sections/EmbedSection";
 import { IframeToolSection } from "../sections/IframeToolSection";
+import { VideoSubtitleSection } from "../sections/VideoSubtitleSection";
 interface PageData {
   slug: string;
   template: string;
@@ -120,6 +121,9 @@ function renderSection(
       break;
     case "media-downloader":
       content = <MediaDownloaderSection data={section.data} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} />;
+      break;
+    case "video-subtitle":
+      content = <VideoSubtitleSection data={section.data} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} />;
       break;
     case "tool":
       content = <ToolSection {...props} />;
