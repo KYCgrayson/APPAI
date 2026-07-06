@@ -16,6 +16,9 @@ export async function PlatformHeader() {
           <Link href="/apps" className="text-sm text-gray-400 hover:text-white transition-colors">
             {t("browseApps")}
           </Link>
+          <Link href="/subtitle" className="text-sm text-gray-400 hover:text-white transition-colors">
+            Subtitle Studio
+          </Link>
           <LanguageSwitcher />
           <a
             href="/dashboard"
