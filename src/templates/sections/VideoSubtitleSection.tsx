@@ -129,7 +129,12 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
       const s = JSON.parse(raw);
-      if (!s?.phase || s.phase === "idle") return;
+      // Only resume genuinely in-flight work. A finished ("done") or errored
+      // run should not trap a returning user — they get a fresh start.
+      if (!s?.phase || s.phase === "idle" || s.phase === "done" || s.phase === "error") {
+        localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
       if (s.source) setSource(s.source);
       if (s.trim) setTrim(s.trim);
       if (Array.isArray(s.targetLangs)) setTargetLangs(s.targetLangs);

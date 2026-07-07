@@ -259,14 +259,17 @@ export function PageRenderer({
           const path = page.parentSlug
             ? `/p/${page.parentSlug}/${page.slug}`
             : `/p/${page.slug}`;
+          // Carry the section's anchor id so in-page CTAs (#subtitle) still
+          // scroll here when the tool is replaced by the gate.
           return (
-            <LoginGate
-              key={index}
-              redirectTo={path}
-              heading={section.data?.heading || page.title}
-              description={section.data?.description || page.tagline || undefined}
-              themeColor={themeColor}
-            />
+            <div key={index} id={section.data?.id || undefined}>
+              <LoginGate
+                redirectTo={path}
+                heading={section.data?.heading || page.title}
+                description={section.data?.description || page.tagline || undefined}
+                themeColor={themeColor}
+              />
+            </div>
           );
         }
         return renderSection(section, index, themeColor, themeColorSecondary, darkMode, page);
