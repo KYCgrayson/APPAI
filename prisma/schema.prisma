@@ -221,3 +221,17 @@ model SubtitleUsage {
 
   @@index([userId, createdAt])
 }
+
+// Generic usage log for interactive tools (any connector), replacing
+// per-tool tables. See docs/interactive-tools-architecture.md.
+model UsageEvent {
+  id        String   @id @default(cuid())
+  connector String
+  userId    String?
+  action    String
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([connector, userId, createdAt])
+  @@index([connector, createdAt])
+}
