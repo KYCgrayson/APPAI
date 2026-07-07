@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import { PageRenderer } from "@/templates/shared/PageRenderer";
 import { parsePageSegments, buildPagePath } from "@/lib/parse-page-segments";
 import { checkIframeToolUrl } from "@/lib/iframe-tool-allowlist";
@@ -266,6 +267,9 @@ export default async function HostedPage({ params }: Props) {
   const parsed = parsePageSegments(segments);
   if (!parsed) notFound();
 
+  const session = await auth();
+  const isLoggedIn = !!session?.user?.id;
+
   const { slug, locale: explicitLocale, subpage, childSlug, toolOrder } = parsed;
 
   // Iframe-tool fullscreen view: /p/{slug}/tools/{order}.
@@ -463,7 +467,7 @@ export default async function HostedPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       {page.customCss && <style>{page.customCss}</style>}
-      <PageRenderer page={page} />
+      <PageRenderer page={page} isLoggedIn={isLoggedIn} />
     </>
   );
 }
