@@ -36,8 +36,8 @@ export default async function AdminLayout({
               <Link href="/admin/users" className="text-sm text-gray-300 hover:text-white">
                 Users
               </Link>
-              <Link href="/admin/subtitle-usage" className="text-sm text-gray-300 hover:text-white">
-                Subtitle Usage
+              <Link href="/admin/usage" className="text-sm text-gray-300 hover:text-white">
+                Tool Usage
               </Link>
             </div>
           </div>
