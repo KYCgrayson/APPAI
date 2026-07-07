@@ -4,6 +4,7 @@ import { ScreenshotsSection } from "../app-landing/sections/ScreenshotsSection";
 import { DownloadSection } from "../app-landing/sections/DownloadSection";
 import { FaqSection } from "../app-landing/sections/FaqSection";
 import { VideoSection } from "../sections/VideoSection";
+import { LoginGate } from "./LoginGate";
 import { PricingSection } from "../sections/PricingSection";
 import { TestimonialsSection } from "../sections/TestimonialsSection";
 import { GallerySection } from "../sections/GallerySection";
@@ -185,7 +186,13 @@ function renderSection(
 // Re-export NavItem from the canonical location so existing imports keep working.
 export type { NavItem } from "@/lib/site-nav";
 
-export function PageRenderer({ page }: { page: PageData }) {
+export function PageRenderer({
+  page,
+  isLoggedIn = false,
+}: {
+  page: PageData;
+  isLoggedIn?: boolean;
+}) {
   const themeColor = page.themeColor || "#000000";
   const themeColorSecondary = page.themeColorSecondary || autoSecondaryColor(themeColor);
   const darkMode = page.darkMode ?? false;
@@ -245,9 +252,25 @@ export function PageRenderer({ page }: { page: PageData }) {
   return (
     <div style={wrapperStyle}>
       {fontUrl && <link rel="stylesheet" href={fontUrl} />}
-      {sortedSections.map((section: any, index: number) =>
-        renderSection(section, index, themeColor, themeColorSecondary, darkMode, page)
-      )}
+      {sortedSections.map((section: any, index: number) => {
+        // Gating primitive: a section may declare data.access="login".
+        // Anonymous visitors get a sign-in prompt instead of the section.
+        if (section.data?.access === "login" && !isLoggedIn) {
+          const path = page.parentSlug
+            ? `/p/${page.parentSlug}/${page.slug}`
+            : `/p/${page.slug}`;
+          return (
+            <LoginGate
+              key={index}
+              redirectTo={path}
+              heading={section.data?.heading || page.title}
+              description={section.data?.description || page.tagline || undefined}
+              themeColor={themeColor}
+            />
+          );
+        }
+        return renderSection(section, index, themeColor, themeColorSecondary, darkMode, page);
+      })}
     </div>
   );
 }
