@@ -330,7 +330,7 @@ export const SECTION_DEFS: SectionDef[] = [
     fields: [
       { name: "heading", type: "string", required: false, description: "Section heading (e.g. 'YouTube Subtitle Studio')" },
       { name: "description", type: "string", required: false, description: "Short description below heading" },
-      { name: "apiBase", type: "url", required: true, description: "Base URL of the video-subtitle backend API. On appai.info use \"/api/subtitle\" — the login-gated same-origin proxy that authenticates users and records usage. A direct backend URL (e.g. https://subtitle.myaiapp.uk/v1) only works if that backend accepts anonymous requests." },
+      { name: "apiBase", type: "url", required: true, description: "Base URL of the video-subtitle backend API. On appai.info use \"/api/connect/video-subtitle\" — the generic connector proxy that enforces login + quota, records usage, and injects server auth. A direct backend URL (e.g. https://subtitle.myaiapp.uk/v1) only works if that backend accepts anonymous requests." },
       { name: "maxDurationSec", type: "number", required: false, description: "Cap on the trim window length in seconds. Default 600 (10 minutes). The backend enforces this independently." },
       { name: "supportedLanguages", type: "array", required: false, description: "BCP-47 language codes shown in the translation picker. Default: ['en','ja','ko','zh-Hans','zh-Hant','es','fr','de','hi']. Empty array hides the picker." },
     ],

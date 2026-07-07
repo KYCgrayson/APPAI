@@ -2,7 +2,7 @@ import { auth, signIn } from "@/lib/auth";
 import { VideoSubtitleSection } from "@/templates/sections/VideoSubtitleSection";
 
 // Public production page for the YouTube Subtitle Studio.
-// Login-gated: the tool calls /api/subtitle (a login-checked proxy), so an
+// Login-gated: the tool calls /api/connect/video-subtitle (the connector proxy), so an
 // anonymous visitor sees a sign-in prompt; a signed-in visitor gets the tool.
 // apiBase points at the same-origin proxy — never the backend directly.
 export const dynamic = "force-dynamic";
@@ -55,7 +55,7 @@ export default async function SubtitlePage() {
           heading: "YouTube Subtitle Studio",
           description:
             "Paste a YouTube URL → trim ≤10 min → transcribe → edit → render.",
-          apiBase: "/api/subtitle",
+          apiBase: "/api/connect/video-subtitle",
           maxDurationSec: 600,
           supportedLanguages: ["en", "ja", "ko", "zh-Hans", "zh-Hant"],
         }}
