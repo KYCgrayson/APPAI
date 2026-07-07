@@ -13,6 +13,7 @@ import {
   EMPTY_SOURCE,
   DEFAULT_STYLE,
   MVP_FONT_FAMILY,
+  langLabel,
   type SourceValue,
   type TrimValue,
 } from "../shared/video/types";
@@ -38,17 +39,18 @@ type Phase =
   | "done"
   | "error";
 
+// Default: the world's most-spoken languages, with Chinese split into
+// Simplified + Traditional. Extra languages can still be passed via the
+// section's `supportedLanguages`.
 const DEFAULT_LANGUAGES: LanguageCode[] = [
   "en",
-  "ja",
-  "ko",
   "zh-Hans",
   "zh-Hant",
   "es",
-  "fr",
-  "de",
   "hi",
+  "ar",
 ];
+
 
 const DEFAULT_STRINGS = {
   heading: "YouTube Subtitle Studio",
@@ -426,7 +428,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
                             active ? { backgroundColor: themeColor } : undefined
                           }
                         >
-                          {lc}
+                          {langLabel(lc)}
                         </button>
                       );
                     })}

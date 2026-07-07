@@ -45,3 +45,26 @@ export const DEFAULT_STYLE: StyleSpec = {
 };
 
 export type { Subtitle, StyleSpec };
+
+// Friendly display labels for BCP-47 language codes — users see these,
+// never the raw codes. Shared by the target-language picker and the
+// bilingual secondary-language selector.
+export const LANG_LABELS: Record<string, string> = {
+  en: "English",
+  "zh-Hans": "中文（简体）",
+  "zh-Hant": "中文（繁體）",
+  es: "Español",
+  hi: "हिन्दी",
+  ar: "العربية",
+  ja: "日本語",
+  ko: "한국어",
+  fr: "Français",
+  de: "Deutsch",
+  pt: "Português",
+  ru: "Русский",
+  it: "Italiano",
+};
+
+export function langLabel(code: string): string {
+  return LANG_LABELS[code] ?? code;
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import type { StyleSpec, LanguageCode } from "../jobs/types";
+import { langLabel } from "./types";
 
 export interface SubtitleStyleControlsStrings {
   fontSizeLabel?: string;
@@ -188,7 +189,7 @@ export function SubtitleStyleControls({
             >
               {availableSecondaryLanguages.map((lc) => (
                 <option key={lc} value={lc}>
-                  {lc}
+                  {langLabel(lc)}
                 </option>
               ))}
             </select>
