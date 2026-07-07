@@ -55,6 +55,27 @@ Every section supports optional `backgroundColor` (hex) and `id` (anchor for `#l
 | `embed` | Embed TikTok / Loom / YouTube / Vimeo / Spotify / CodePen / Figma / X / Instagram. Auto-detects provider from URL. |
 | `iframe-tool` | **Host a tool the user vibe-coded.** Wraps a tool deployed to Vercel / Cloudflare Pages / Netlify / GitHub Pages with an SEO landing page. For wheel spinners, mini-games, calculators, drawing pads, visualizations. Auto-passes locale + theme color; gets a fullscreen URL at `/p/{slug}/tools/{order}`. **Use this — not `embed` — when the URL is a tool the user built, not a media post.** |
 
+### Interactive tools that need a backend, login, or quota
+
+Some tool sections talk to a real backend and need login gating, per-user
+quotas, or server-side secrets (e.g. `video-subtitle`). The platform handles
+all of that declaratively — **you never write a proxy, table, or quota
+logic**:
+
+- **Backend calls** go through the generic connector proxy: set the section's
+  `apiBase` to `"/api/connect/{connector}"`. The proxy injects server auth +
+  the caller's identity, records usage, and enforces quota. Connectors are
+  owner-defined in `src/lib/connectors/registry.ts` (they hold secrets, so
+  they are not agent-writable); you reference one by name.
+- **Login gating**: add `"access": "login"` to the section's `data`. Anonymous
+  visitors get a platform sign-in prompt in place of the section.
+- **Quota**: declared on the connector (`per user/ip`, `limit`, `window`);
+  admins are exempt. Enforced automatically by the proxy.
+
+If a tool needs a genuinely new backend, the **owner** adds one connector
+entry; every reuse after that is pure section config. See
+`docs/interactive-tools-architecture.md`.
+
 ### Visual Design Capabilities
 
 - **Section backgrounds:** Any section can have a custom `backgroundColor`. Use tints of your themeColor for visual rhythm.
