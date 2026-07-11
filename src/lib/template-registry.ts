@@ -314,7 +314,7 @@ export const SECTION_DEFS: SectionDef[] = [
   {
     type: "media-downloader",
     name: "Media Downloader",
-    description: "Interactive media download tool. Users paste a URL from YouTube, Instagram, TikTok, Twitter, or 1000+ platforms, choose format (video/MP3/WAV/FLAC) and quality, then download the file. WAV and FLAC are DJ-grade lossless containers at 44.1 kHz with full tags and cover art embedded. Requires a backend API endpoint.",
+    description: "Interactive media download tool. Users paste a URL from YouTube, Instagram, TikTok, Twitter, or 1000+ platforms, choose format (video/MP3) and quality, then download the file. Requires a backend API endpoint.",
     fields: [
       { name: "heading", type: "string", required: false, description: "Section heading (e.g. 'Media Downloader')" },
       { name: "description", type: "string", required: false, description: "Short description below heading" },
