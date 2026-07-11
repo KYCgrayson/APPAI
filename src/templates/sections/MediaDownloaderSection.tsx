@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 
-type Format = "video" | "mp3";
+type Format = "video" | "mp3" | "wav" | "flac";
 type VideoQuality = "2160" | "1080" | "720" | "480";
 type Mp3Quality = "320" | "192" | "128";
 
@@ -14,6 +14,9 @@ export interface MediaDownloaderStrings {
   formatLabel?: string;
   videoLabel?: string;
   mp3Label?: string;
+  wavLabel?: string;
+  flacLabel?: string;
+  losslessNote?: string;
   qualityLabel?: string;
   subtitlesLabel?: string;
   pastedMessage?: string;
@@ -32,6 +35,9 @@ const DEFAULT_STRINGS: Required<MediaDownloaderStrings> = {
   formatLabel: "Format",
   videoLabel: "Video",
   mp3Label: "MP3",
+  wavLabel: "WAV",
+  flacLabel: "FLAC",
+  losslessNote: "WAV / FLAC: DJ-grade lossless container, 44.1 kHz, full tags + cover art",
   qualityLabel: "Quality",
   subtitlesLabel: "Subtitles",
   pastedMessage: "New URL pasted from clipboard — ready to download.",
@@ -91,7 +97,7 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
       const params = new URLSearchParams({
         url: url.trim(),
         format,
-        quality: format === "video" ? videoQuality : mp3Quality,
+        quality: format === "video" ? videoQuality : format === "mp3" ? mp3Quality : "",
         subtitles: subtitles ? "true" : "false",
       });
       const res = await fetch(`${data.apiBase}/download?${params}`, {
@@ -236,7 +242,7 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
               <span className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
                 {t.formatLabel}
               </span>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap justify-end">
                 <button
                   onClick={() => setFormat("video")}
                   className={toggleClass(format === "video")}
@@ -259,9 +265,37 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
                 >
                   {t.mp3Label}
                 </button>
+                <button
+                  onClick={() => setFormat("wav")}
+                  className={toggleClass(format === "wav")}
+                  style={
+                    format === "wav"
+                      ? { backgroundColor: themeColor }
+                      : undefined
+                  }
+                >
+                  {t.wavLabel}
+                </button>
+                <button
+                  onClick={() => setFormat("flac")}
+                  className={toggleClass(format === "flac")}
+                  style={
+                    format === "flac"
+                      ? { backgroundColor: themeColor }
+                      : undefined
+                  }
+                >
+                  {t.flacLabel}
+                </button>
               </div>
             </div>
+            {(format === "wav" || format === "flac") && (
+              <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                {t.losslessNote}
+              </p>
+            )}
 
+            {(format === "video" || format === "mp3") && (
             <div className="flex items-center justify-between">
               <span className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
                 {t.qualityLabel}
@@ -318,6 +352,7 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
                 )}
               </div>
             </div>
+            )}
 
             {format === "video" && (
               <div className="flex items-center justify-between">
