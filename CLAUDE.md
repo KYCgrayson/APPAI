@@ -33,7 +33,7 @@ This is a **public repository**. All files, commits, and history are visible to 
 
 ### Related Repositories
 
-- **my-tools** (Private Repo, github.com/KYCgrayson/my-tools): Standalone tools (media downloader, etc.) deployed separately on Vercel. Source code is private to avoid legal exposure. AIGA creates landing pages that link to the deployed tool URLs.
+- **my-tools** (Private Repo, github.com/KYCgrayson/my-tools): Standalone tools (media downloader, etc.) deployed separately on Vercel. Source code is private to avoid legal exposure. AppAI creates landing pages that link to the deployed tool URLs.
 
 ### Infrastructure
 

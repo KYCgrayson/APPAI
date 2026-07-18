@@ -24,6 +24,7 @@ import { PdfViewerSection } from "../sections/PdfViewerSection";
 import { EmbedSection } from "../sections/EmbedSection";
 import { IframeToolSection } from "../sections/IframeToolSection";
 import { VideoSubtitleSection } from "../sections/VideoSubtitleSection";
+import { SimpleOrderSection } from "../sections/SimpleOrderSection";
 interface PageData {
   slug: string;
   template: string;
@@ -157,6 +158,19 @@ function renderSection(
         <FormSection
           data={section.data}
           themeColor={themeColor}
+          pageSlug={page.slug}
+          parentSlug={page.parentSlug ?? null}
+          locale={page.locale ?? "en"}
+          sectionOrder={section.order}
+        />
+      );
+      break;
+    case "simple-order":
+      content = (
+        <SimpleOrderSection
+          data={section.data}
+          themeColor={themeColor}
+          darkMode={darkMode}
           pageSlug={page.slug}
           parentSlug={page.parentSlug ?? null}
           locale={page.locale ?? "en"}

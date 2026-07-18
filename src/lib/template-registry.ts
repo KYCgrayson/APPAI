@@ -424,6 +424,25 @@ export const SECTION_DEFS: SectionDef[] = [
       { name: "successMessage", type: "markdown", required: false, description: "Message shown after successful submission" },
     ],
   },
+  {
+    type: "simple-order",
+    name: "Simple Order",
+    description: "Native order request section for small shops. Visitors enter free-form items, quantities, unit prices, and preferred date; the section calculates totals, shows a payment/LINE link, then emails the shop owner after the visitor confirms payment. No external app or iframe required.",
+    fields: [
+      { name: "heading", type: "string", required: false, description: "Section heading (e.g. 'Place an order')" },
+      { name: "description", type: "markdown", required: false, description: "Short description above the order form" },
+      { name: "storeName", type: "string", required: false, description: "Shop name shown above the heading and in owner notification emails" },
+      { name: "storeDescription", type: "markdown", required: false, description: "Optional shop intro text. Used when description is omitted." },
+      { name: "notificationEmail", type: "string", required: true, description: "Shop owner email address that receives order notifications. The customer email is used as reply-to." },
+      { name: "paymentUrl", type: "url", required: true, description: "Payment or LINE URL opened during checkout. Supports https:// links and LINE deep links." },
+      { name: "paymentHeading", type: "string", required: false, description: "Heading shown in the payment step (default: 'Please complete payment')" },
+      { name: "paymentInstructions", type: "markdown", required: false, description: "Message shown before the customer submits the paid order. Explain that the owner will confirm quantity and date by email." },
+      { name: "currency", type: "string", required: false, description: "ISO 4217 currency code used for totals (default: 'TWD')" },
+      { name: "submitLabel", type: "string", required: false, description: "Button text for the post-payment submit button (default: 'I paid, send order')" },
+      { name: "successMessage", type: "markdown", required: false, description: "Message shown after the order notification is sent" },
+      { name: "maxItems", type: "number", required: false, description: "Maximum number of line items the customer can add (default: 20, max: 50)" },
+    ],
+  },
 ];
 
 // --- Presets (template shortcuts) ---

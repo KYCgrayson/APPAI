@@ -5,7 +5,7 @@
  * when AI agents supply content via the pages API.
  */
 
-const ALLOWED_URL_PROTOCOLS = /^(https?:\/\/|mailto:|tel:|#)/i;
+const ALLOWED_URL_PROTOCOLS = /^(https?:\/\/|mailto:|tel:|line:|#)/i;
 
 /**
  * Validates a URL string and returns it only if it uses a safe protocol.
