@@ -101,7 +101,7 @@ function handleRateLimit(request: NextRequest): NextResponse | null {
 
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    (request as any).ip ??
+    request.headers.get("x-real-ip") ??
     "unknown";
 
   const key = `${ip}:${pathname}`;
@@ -141,6 +141,14 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith("/api/")) {
     const rateLimitResponse = handleRateLimit(request);
     return rateLimitResponse || NextResponse.next();
+  }
+
+  // Preserve the exact protected native-app path so the server layout can
+  // return unauthenticated users to the requested module after login.
+  if (pathname.startsWith("/app/")) {
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-appai-request-path", `${pathname}${request.nextUrl.search}`);
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   // Skip i18n for non-public routes

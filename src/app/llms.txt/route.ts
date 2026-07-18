@@ -139,6 +139,12 @@ ${baseUrl} (always use this, never use www.appai.info)
 - PATCH /api/v1/pages/:slug/sections/:order — Update a single section
 - GET /api/v1/pages/:slug/children — List child pages of a multi-page site
 - POST /api/v1/upload — Upload images (max 5MB)
+- GET /api/v1/app-instances — List code-approved native app instances for your Organization
+- POST /api/v1/app-instances — Idempotently enable a code-approved native app (currently simpleshop)
+
+## Stateful native apps
+
+Native apps are login-protected applications with persistent Organization data. They are not landing-page sections and agents cannot upload executable code. The server derives the Organization from the API key or browser session. Do not send organizationId, runtime paths, component names, SQL, or secrets. Simpleshop opens at ${baseUrl}/app/simpleshop after browser login.
 
 ## How to communicate with the page owner
 

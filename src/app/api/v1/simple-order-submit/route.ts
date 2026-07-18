@@ -1,5 +1,7 @@
+import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import {
   simpleOrderSectionDataSchema,
   simpleOrderSubmissionSchema,
@@ -9,21 +11,6 @@ import {
 
 const RATE_LIMIT = 5;
 const RATE_WINDOW_MS = 10 * 60 * 1000;
-const ipHits = new Map<string, { count: number; resetAt: number }>();
-
-function rateLimit(ip: string): { ok: true } | { ok: false; retryAfterMs: number } {
-  const now = Date.now();
-  const entry = ipHits.get(ip);
-  if (!entry || entry.resetAt < now) {
-    ipHits.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
-    return { ok: true };
-  }
-  if (entry.count >= RATE_LIMIT) {
-    return { ok: false, retryAfterMs: entry.resetAt - now };
-  }
-  entry.count += 1;
-  return { ok: true };
-}
 
 function getClientIp(request: NextRequest): string {
   const xff = request.headers.get("x-forwarded-for");
@@ -60,7 +47,12 @@ async function findSimpleOrderSection(
   locale: string,
   parentSlug: string | null,
   sectionOrder: number | undefined,
-): Promise<SimpleOrderSectionData | null> {
+): Promise<{
+  config: SimpleOrderSectionData;
+  access: "public" | "login";
+  pageId: string;
+  organizationId: string;
+} | null> {
   const page = await db.hostedPage.findFirst({
     where: {
       slug,
@@ -68,7 +60,7 @@ async function findSimpleOrderSection(
       parentSlug,
       isPublished: true,
     },
-    select: { content: true },
+    select: { id: true, organizationId: true, content: true },
   });
   if (!page) return null;
 
@@ -80,12 +72,48 @@ async function findSimpleOrderSection(
   const matches = sections.filter((s) => s.type === "simple-order");
   if (matches.length === 0) return null;
 
-  const target =
-    sectionOrder !== undefined
-      ? matches.find((s) => s.order === sectionOrder) ?? matches[0]
-      : matches[0];
+  const target = sectionOrder !== undefined
+    ? matches.find((s) => s.order === sectionOrder)
+    : matches[0];
+  if (!target) return null;
   const parsed = simpleOrderSectionDataSchema.safeParse(target.data);
-  return parsed.success ? parsed.data : null;
+  if (!parsed.success) return null;
+  const access = target.data && typeof target.data === "object"
+    && (target.data as { access?: unknown }).access === "login"
+    ? "login"
+    : "public";
+  return {
+    config: parsed.data,
+    access,
+    pageId: page.id,
+    organizationId: page.organizationId,
+  };
+}
+
+async function durableRateLimit({
+  pageId,
+  organizationId,
+  actorId,
+}: {
+  pageId: string;
+  organizationId: string;
+  actorId: string;
+}) {
+  const connector = `simple-order:${pageId}`;
+  const since = new Date(Date.now() - RATE_WINDOW_MS);
+  const count = await db.usageEvent.count({
+    where: { connector, userId: actorId, action: "submit.attempt", createdAt: { gte: since } },
+  });
+  if (count >= RATE_LIMIT) return false;
+  await db.usageEvent.create({
+    data: {
+      connector,
+      organizationId,
+      userId: actorId,
+      action: "submit.attempt",
+    },
+  });
+  return true;
 }
 
 function normalizeSubmission(body: unknown): SimpleOrderSubmission {
@@ -112,7 +140,7 @@ function buildEmail(
   total: number,
 ) {
   const currency = config.currency || "TWD";
-  const storeName = config.storeName || config.heading || "Simple Order";
+  const storeName = cleanText(config.storeName || config.heading || "Simple Order", 200);
 
   const itemRows = order.items
     .map((item) => {
@@ -129,10 +157,10 @@ function buildEmail(
     .join("");
 
   const text = [
-    `New paid order: ${storeName}`,
+    `Payment confirmation requested: ${storeName}`,
     "",
-    "The customer has indicated payment is complete.",
-    "Please confirm quantity and date, then reply by email.",
+    "The customer reports that payment was completed; AppAI has not verified it.",
+    "Please verify payment, quantity, and date, then reply by email.",
     "",
     `Customer: ${order.customer.name}`,
     `Email: ${order.customer.email}`,
@@ -152,8 +180,8 @@ function buildEmail(
 
   const html = `
     <div style="font-family:Arial,sans-serif;line-height:1.5;color:#0f172a;">
-      <h1 style="font-size:22px;margin:0 0 12px;">New paid order: ${escapeHtml(storeName)}</h1>
-      <p style="margin:0 0 16px;">The customer has indicated payment is complete. Please confirm quantity and date, then reply by email.</p>
+      <h1 style="font-size:22px;margin:0 0 12px;">Payment confirmation requested: ${escapeHtml(storeName)}</h1>
+      <p style="margin:0 0 16px;">The customer reports that payment was completed; AppAI has not verified it. Please verify payment, quantity, and date, then reply by email.</p>
       <table style="border-collapse:collapse;width:100%;max-width:680px;margin:16px 0;">
         <tbody>
           <tr><td style="padding:6px 0;color:#64748b;">Customer</td><td>${escapeHtml(order.customer.name)}</td></tr>
@@ -195,35 +223,44 @@ async function sendEmail({
   html: string;
 }) {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.APPAI_EMAIL_FROM || "AppAI Orders <onboarding@resend.dev>";
+  const from = process.env.APPAI_EMAIL_FROM
+    || (process.env.NODE_ENV === "production" ? "" : "AppAI Orders <onboarding@resend.dev>");
 
-  if (!apiKey) {
+  if (!apiKey || !from) {
     return { ok: false as const, status: 503, error: "Email delivery is not configured." };
   }
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to,
-      reply_to: replyTo,
-      subject,
-      text,
-      html,
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+  let res: Response;
+  try {
+    res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to,
+        reply_to: replyTo,
+        subject,
+        text,
+        html,
+      }),
+      signal: controller.signal,
+    });
+  } catch {
+    return { ok: false as const, status: 502, error: "Email delivery failed." };
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!res.ok) {
-    const detail = await res.json().catch(() => ({}));
     return {
       ok: false as const,
       status: 502,
       error: "Email delivery failed.",
-      detail,
     };
   }
 
@@ -231,15 +268,6 @@ async function sendEmail({
 }
 
 export async function POST(request: NextRequest) {
-  const ip = getClientIp(request);
-  const limit = rateLimit(ip);
-  if (!limit.ok) {
-    return NextResponse.json(
-      { error: `Too many submissions. Try again in ${Math.ceil(limit.retryAfterMs / 1000)} seconds.` },
-      { status: 429 },
-    );
-  }
-
   let order: SimpleOrderSubmission;
   try {
     order = normalizeSubmission(await request.json());
@@ -247,16 +275,34 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid order submission." }, { status: 400 });
   }
 
-  const config = await findSimpleOrderSection(
+  const target = await findSimpleOrderSection(
     order.pageSlug,
     order.locale,
     order.parentSlug ?? null,
     order.sectionOrder,
   );
-  if (!config) {
+  if (!target) {
     return NextResponse.json(
       { error: "No matching simple-order section found on the referenced page." },
       { status: 404 },
+    );
+  }
+  const { config } = target;
+  const session = await auth();
+  if (target.access === "login" && !session?.user?.id) {
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  }
+  const ipHash = createHash("sha256").update(getClientIp(request)).digest("hex").slice(0, 32);
+  const actorId = session?.user?.id || `anonymous:${ipHash}`;
+  const allowed = await durableRateLimit({
+    pageId: target.pageId,
+    organizationId: target.organizationId,
+    actorId,
+  });
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many submissions. Try again later." },
+      { status: 429, headers: { "Retry-After": String(RATE_WINDOW_MS / 1000) } },
     );
   }
 
@@ -280,17 +326,17 @@ export async function POST(request: NextRequest) {
   const result = await sendEmail({
     to: config.notificationEmail,
     replyTo: order.customer.email,
-    subject: `New paid order: ${email.storeName} (${formatMoney(total, config.currency || "TWD")})`,
+    subject: `Payment confirmation requested: ${email.storeName} (${formatMoney(total, config.currency || "TWD")})`,
     text: email.text,
     html: email.html,
   });
 
   if (!result.ok) {
     return NextResponse.json(
-      { error: result.error, detail: "detail" in result ? result.detail : undefined },
+      { error: result.error },
       { status: result.status },
     );
   }
 
-  return NextResponse.json({ ok: true, total });
+  return NextResponse.json({ ok: true, total, paymentStatus: "confirmation_pending" });
 }

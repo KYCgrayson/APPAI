@@ -92,6 +92,17 @@ See the [full Agent Spec](https://appai.info/spec) for the complete interactive 
 | `GET` | `/api/v1/keys` | Session | List API keys |
 | `DELETE` | `/api/v1/keys` | Session | Revoke an API key |
 
+## Stateful Native Apps
+
+AppAI also hosts code-approved, login-protected applications with persistent Organization data. These are separate from landing-page sections: the code registry controls which apps can run, the server derives the Organization from the authenticated user, and every protected API scopes data to that Organization.
+
+The first native app is **Simpleshop**, available at `/app/simpleshop`. Its Phase 1 platform contract, migration requirements, private-file boundary, and verification status are documented in [`docs/apps/simpleshop.md`](docs/apps/simpleshop.md).
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/v1/app-instances` | Bearer | List the caller Organization's native app instances |
+| `POST` | `/api/v1/app-instances` | Bearer | Idempotently enable a code-approved native app |
+
 ## Available Page Sections
 
 Build any page by combining these 26 section types:

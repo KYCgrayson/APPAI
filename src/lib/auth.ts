@@ -20,8 +20,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           where: { id: user.id },
           select: { organizationId: true, role: true },
         });
-        (session as any).organizationId = dbUser?.organizationId ?? null;
-        (session as any).role = dbUser?.role ?? "USER";
+        session.organizationId = dbUser?.organizationId ?? null;
+        session.role = dbUser?.role ?? "USER";
       }
       return session;
     },
@@ -29,20 +29,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   events: {
     async createUser({ user }) {
       if (user.id && user.email) {
+        const userId = user.id;
         // Auto-create Organization when user signs up
         const slug = user.email.split("@")[0].toLowerCase().replace(/[^a-z0-9-]/g, "-");
-        const org = await db.organization.create({
-          data: {
-            name: user.name || slug,
-            slug: `${slug}-${Date.now().toString(36)}`,
-            email: user.email,
-          },
-        });
-        // Auto-promote admin emails
         const role = isAdminEmail(user.email) ? "ADMIN" : "USER";
-        await db.user.update({
-          where: { id: user.id },
-          data: { organizationId: org.id, role },
+        await db.$transaction(async (tx) => {
+          const org = await tx.organization.create({
+            data: {
+              name: user.name || slug,
+              slug: `${slug}-${Date.now().toString(36)}-${userId.slice(-6)}`,
+              email: user.email,
+            },
+          });
+          await tx.user.update({
+            where: { id: userId },
+            data: { organizationId: org.id, role },
+          });
         });
       }
     },

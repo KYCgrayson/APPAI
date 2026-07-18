@@ -15,8 +15,8 @@ interface Props {
     description?: string;
     storeName?: string;
     storeDescription?: string;
-    notificationEmail: string;
-    paymentUrl: string;
+    isConfigured?: boolean;
+    paymentUrl?: string;
     paymentHeading?: string;
     paymentInstructions?: string;
     currency?: string;
@@ -71,7 +71,7 @@ export function SimpleOrderSection({
   locale,
   sectionOrder,
 }: Props) {
-  const isConfigured = Boolean(data.notificationEmail && data.paymentUrl);
+  const isConfigured = Boolean(data.isConfigured && data.paymentUrl);
   const currency = data.currency || "TWD";
   const maxItems = data.maxItems ?? 20;
   const [step, setStep] = useState<Step>("order");
@@ -108,7 +108,7 @@ export function SimpleOrderSection({
         <div className="max-w-2xl mx-auto rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
           <h2 className="text-xl font-bold">Simple Order is not configured</h2>
           <p className="mt-2 text-sm leading-6">
-            Add both <code>notificationEmail</code> and <code>paymentUrl</code> to this section before publishing.
+            Add the private notification recipient and payment URL before publishing.
           </p>
         </div>
       </section>
@@ -141,6 +141,12 @@ export function SimpleOrderSection({
       return "Please enter a valid email address.";
     }
     if (!preferredDate) return "Please enter your preferred date.";
+    const incompleteRow = normalizedItems.find(
+      (item) =>
+        (item.name.trim() || item.unitPrice.trim()) &&
+        !(item.name.trim() && item.quantityNumber > 0 && item.unitPriceNumber > 0),
+    );
+    if (incompleteRow) return "Complete or remove every item row before checkout.";
     if (validItems.length === 0 || total <= 0) {
       return "Please enter at least one item with quantity and unit price.";
     }
@@ -381,7 +387,7 @@ export function SimpleOrderSection({
                     "After payment, submit this order. The shop owner will confirm quantity and date, then reply by email."}
                 </p>
                 <a
-                  href={data.paymentUrl}
+                  href={data.paymentUrl || "#"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-4 block rounded-lg px-4 py-3 text-center text-sm font-bold text-white transition hover:opacity-90"
@@ -396,7 +402,7 @@ export function SimpleOrderSection({
                   className="mt-3 w-full rounded-lg border px-4 py-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60"
                   style={{ borderColor: themeColor, color: themeColor }}
                 >
-                  {state.kind === "submitting" ? "Sending..." : data.submitLabel || "I paid, send order"}
+                  {state.kind === "submitting" ? "Sending..." : data.submitLabel || "I completed payment, request confirmation"}
                 </button>
               </div>
             ) : (

@@ -39,6 +39,9 @@ export default async function AdminLayout({
               <Link href="/admin/usage" className="text-sm text-gray-300 hover:text-white">
                 Tool Usage
               </Link>
+              <Link href="/admin/native-apps" className="text-sm text-gray-300 hover:text-white">
+                Native Apps
+              </Link>
             </div>
           </div>
           <div className="flex items-center gap-4">

@@ -25,6 +25,31 @@ import { EmbedSection } from "../sections/EmbedSection";
 import { IframeToolSection } from "../sections/IframeToolSection";
 import { VideoSubtitleSection } from "../sections/VideoSubtitleSection";
 import { SimpleOrderSection } from "../sections/SimpleOrderSection";
+
+interface PageSectionData extends Record<string, unknown> {
+  access?: string;
+  backgroundColor?: string;
+  description?: string;
+  heading?: string;
+  id?: string;
+}
+
+interface PageSection {
+  type: string;
+  order?: number;
+  id?: string;
+  data?: PageSectionData;
+}
+
+interface PageContent extends Record<string, unknown> {
+  sections?: PageSection[];
+  logo?: string;
+  features?: unknown;
+  appStoreUrl?: string;
+  playStoreUrl?: string;
+  links?: unknown;
+}
+
 interface PageData {
   slug: string;
   template: string;
@@ -32,7 +57,7 @@ interface PageData {
   tagline?: string | null;
   heroImage?: string | null;
   headerLogo?: string | null;
-  content: any;
+  content: unknown;
   themeColor?: string | null;
   themeColorSecondary?: string | null;
   fontFamily?: string | null;
@@ -44,6 +69,12 @@ interface PageData {
   locale?: string;
 }
 
+function asPageContent(value: unknown): PageContent {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as PageContent
+    : {};
+}
+
 function autoSecondaryColor(primary: string): string {
   const r = parseInt(primary.slice(1, 3), 16);
   const g = parseInt(primary.slice(3, 5), 16);
@@ -53,14 +84,14 @@ function autoSecondaryColor(primary: string): string {
 }
 
 function renderSection(
-  section: any,
+  section: PageSection,
   index: number,
   themeColor: string,
   themeColorSecondary: string,
   darkMode: boolean,
   page: PageData,
 ) {
-  const props = { data: section.data, themeColor, themeColorSecondary, darkMode };
+  const props = { data: section.data as never, themeColor, themeColorSecondary, darkMode };
   const darkBg = darkMode ? "#111827" : undefined;
   const darkBgAlt = darkMode ? "#1f2937" : "#f9fafb";
   const bg = section.data?.backgroundColor || (index % 2 === 1 ? darkBgAlt : darkBg);
@@ -122,10 +153,10 @@ function renderSection(
       content = <ActionSection {...props} />;
       break;
     case "media-downloader":
-      content = <MediaDownloaderSection data={section.data} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} />;
+      content = <MediaDownloaderSection data={section.data as never} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} />;
       break;
     case "video-subtitle":
-      content = <VideoSubtitleSection data={section.data} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} />;
+      content = <VideoSubtitleSection data={section.data as never} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} />;
       break;
     case "tool":
       content = <ToolSection {...props} />;
@@ -144,7 +175,7 @@ function renderSection(
       const fullscreenHref = `${pagePath}/tools/${sectionOrder}`;
       content = (
         <IframeToolSection
-          data={section.data}
+          data={section.data as never}
           themeColor={themeColor}
           darkMode={darkMode}
           locale={page.locale ?? "en"}
@@ -156,7 +187,7 @@ function renderSection(
     case "form":
       content = (
         <FormSection
-          data={section.data}
+          data={section.data as never}
           themeColor={themeColor}
           pageSlug={page.slug}
           parentSlug={page.parentSlug ?? null}
@@ -165,10 +196,17 @@ function renderSection(
         />
       );
       break;
-    case "simple-order":
+    case "simple-order": {
+      const {
+        notificationEmail,
+        ...publicData
+      } = (section.data ?? {}) as Record<string, unknown> & { notificationEmail?: string };
       content = (
         <SimpleOrderSection
-          data={section.data}
+          data={{
+            ...publicData,
+            isConfigured: Boolean(notificationEmail && publicData.paymentUrl),
+          } as never}
           themeColor={themeColor}
           darkMode={darkMode}
           pageSlug={page.slug}
@@ -178,6 +216,7 @@ function renderSection(
         />
       );
       break;
+    }
     default:
       return null;
   }
@@ -211,9 +250,10 @@ export function PageRenderer({
   const themeColorSecondary = page.themeColorSecondary || autoSecondaryColor(themeColor);
   const darkMode = page.darkMode ?? false;
   const fontFamily = page.fontFamily || undefined;
-  const sections = page.content?.sections || [];
+  const pageContent = asPageContent(page.content);
+  const sections = pageContent.sections || [];
   const sortedSections = [...sections].sort(
-    (a: any, b: any) => (a.order || 0) - (b.order || 0)
+    (a, b) => (a.order || 0) - (b.order || 0)
   );
 
   // If no sections defined, render a simple default based on available fields
@@ -224,29 +264,29 @@ export function PageRenderer({
           data={{
             headline: page.title,
             subheadline: page.tagline || "",
-            logo: page.content?.logo,
+            logo: pageContent.logo,
             backgroundImage: page.heroImage || undefined,
           }}
           themeColor={themeColor}
         />
-        {page.content?.features && (
+        {Array.isArray(pageContent.features) && (
           <FeaturesSection
-            data={{ items: page.content.features }}
+            data={{ items: pageContent.features } as never}
             themeColor={themeColor}
           />
         )}
-        {(page.content?.appStoreUrl || page.content?.playStoreUrl) && (
+        {(pageContent.appStoreUrl || pageContent.playStoreUrl) && (
           <DownloadSection
             data={{
-              appStoreUrl: page.content.appStoreUrl,
-              playStoreUrl: page.content.playStoreUrl,
-            }}
+              appStoreUrl: pageContent.appStoreUrl,
+              playStoreUrl: pageContent.playStoreUrl,
+            } as never}
             themeColor={themeColor}
           />
         )}
-        {page.content?.links && (
+        {Array.isArray(pageContent.links) && (
           <LinksSection
-            data={{ items: page.content.links }}
+            data={{ items: pageContent.links } as never}
             themeColor={themeColor}
           />
         )}
@@ -266,7 +306,7 @@ export function PageRenderer({
   return (
     <div style={wrapperStyle}>
       {fontUrl && <link rel="stylesheet" href={fontUrl} />}
-      {sortedSections.map((section: any, index: number) => {
+      {sortedSections.map((section, index) => {
         // Gating primitive: a section may declare data.access="login".
         // Anonymous visitors get a sign-in prompt instead of the section.
         if (section.data?.access === "login" && !isLoggedIn) {

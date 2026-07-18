@@ -77,6 +77,21 @@ If a tool needs a genuinely new backend, the **owner** adds one connector
 entry; every reuse after that is pure section config. See
 `docs/interactive-tools-architecture.md`.
 
+### Stateful native apps
+
+Native apps are code-approved, login-protected applications with persistent
+Organization data. They are not page sections or arbitrary uploaded programs.
+
+| Operation | Endpoint | Rule |
+|-----------|----------|------|
+| Discover instances | `GET /api/v1/app-instances` | Bearer API key; current Organization only |
+| Enable an app | `POST /api/v1/app-instances` | Idempotent; `appType` must be in the code registry |
+| Open Simpleshop | `/app/simpleshop` | Browser login required |
+
+For `simpleshop`, agents may provide validated shop settings. Never send an
+`organizationId`, runtime path, component name, SQL, secret, or server code;
+the platform derives identity and executable behavior on the server.
+
 ### Visual Design Capabilities
 
 - **Section backgrounds:** Any section can have a custom `backgroundColor`. Use tints of your themeColor for visual rhythm.
