@@ -8,7 +8,7 @@
 | Platform specifications | AppAI platform changes v1.1; Simpleshop app scope v1.1 |
 | Native app type | `simpleshop` |
 | Runtime | `/app/simpleshop` |
-| Current implementation | AppAI Phase 1 code and production migration complete; application deploy pending on `codex/simpleshop-native-app` |
+| Current implementation | Phase 1 deployed in production at `e251350`; Phase 2 master-data management is in development on `codex/simpleshop-master-data` |
 
 The complete product PRD stays in the Simpleshop repository. This document records only the AppAI integration contract and deployment state.
 
@@ -18,7 +18,7 @@ The complete product PRD stays in the Simpleshop repository. This document recor
 - Authentication uses the existing Google OAuth / NextAuth session.
 - The server derives `userId` and `organizationId`; browser bodies and query strings cannot select an Organization.
 - First access idempotently creates one `OrganizationApp`. `SUSPENDED` instances remain suspended and protected APIs return 403.
-- Organization settings are stored in the validated, versioned `OrganizationApp.config` object during Phase 1. Customer, job-site, item and accounting records will use dedicated Organization-scoped tables from Phase 2 onward.
+- Organization settings are stored in the validated, versioned `OrganizationApp.config` object. Phase 2 customer, job-site, item, alias, unit and price records use dedicated Organization-scoped tables with composite foreign keys.
 - Private files are metadata-owned by `PrivateAsset` and streamed through authenticated AppAI routes. Blob URLs are not returned to clients.
 
 ## Approved APIs
@@ -29,7 +29,13 @@ The complete product PRD stays in the Simpleshop repository. This document recor
 | `POST /api/v1/app-instances` | Bearer API key | Idempotently enable an approved app type |
 | `GET /api/apps/simpleshop/status` | Browser session | Read the current Organization's active instance |
 | `GET/PATCH /api/apps/simpleshop/settings` | Browser session | Read/update validated shop, timezone, currency and print settings |
-| `GET /api/apps/simpleshop/lookups` | Browser session | Phase 1 typed customer/job-site/item lookup boundary |
+| `GET /api/apps/simpleshop/lookups` | Browser session | Search real customer/job-site/item master data |
+| `GET/POST /api/apps/simpleshop/customers` | Browser session | List/search customers and allocate a permanent customer number |
+| `GET/PATCH/DELETE /api/apps/simpleshop/customers/:id` | Browser session | Read/update or soft-disable an Organization-owned customer |
+| `GET/POST /api/apps/simpleshop/job-sites` | Browser session | List/search job sites and allocate the current month's site number |
+| `GET/PATCH/DELETE /api/apps/simpleshop/job-sites/:id` | Browser session | Read/update or soft-disable an Organization-owned job site |
+| `GET/POST /api/apps/simpleshop/items` | Browser session | List/search and create item, category, alias and unit records |
+| `GET/PATCH/DELETE /api/apps/simpleshop/items/:id` | Browser session | Read/update or soft-disable an Organization-owned item |
 | `POST /api/apps/simpleshop/assets` | Browser session | Authorize and upload a private image or PDF |
 | `GET/DELETE /api/apps/simpleshop/assets/:id` | Browser session | Stream or safely delete an Organization-owned asset |
 
@@ -45,6 +51,8 @@ Models added by Phase 1:
 - `App.appType` and `App.runtimePath` for future catalog synchronization; the code registry remains authoritative.
 
 `prisma/native-app-phase1-migration.sql` was applied with the direct, non-pooled production database connection on 2026-07-19 after a successful transaction rollback rehearsal. `npm run build` generates Prisma Client but does not apply database changes.
+
+Phase 2 adds `SimpleshopSequence`, `Customer`, `JobSite`, `JobSiteAlias`, `JobSiteMonthCode`, `ItemCategory`, `Item`, `ItemAlias`, `ItemUnit`, `PriceRecord` and `CustomerContact`. `prisma/simpleshop-phase2-master-data-migration.sql` is transaction-wrapped and carries database checks for status enums, dimensions, prices and effective dates. Organization ownership is part of every relationship foreign key, not only an application-level query filter. The migration was rehearsed with a forced rollback and applied through the direct production Neon connection on 2026-07-19; a post-apply Prisma diff reports no schema difference.
 
 ## Environment and dashboard requirements
 
@@ -67,28 +75,30 @@ Threshold behavior:
 - 95%: reject new large files.
 - 100% projected usage: reject all uploads.
 
-## Phase 1 application surface
+## Application surface
 
-The protected shell exposes three primary modules—Shipping, Monthly Settlement and Customer Contact—and secondary Items, Pricing, Inventory and Settings routes. The settings form is the first persistent management slice. Customer, job-site and item selectors share one dialog contract and explicitly show that Phase 2 master data is not yet available; no fake accounting or catalog data is created.
+The protected shell exposes three primary modules—Shipping, Monthly Settlement and Customer Contact—and secondary Items, Pricing, Inventory and Settings routes. Settings are persistent. Customer Contact now manages customer and job-site master data; Items manages formal item codes, categories, dimensions, aliases and units. The shared selectors query these real records and create no fake accounting or catalog data.
 
 ## Verification status
 
 - Prisma format/validation/generation: passed on 2026-07-19.
-- Native app, redirect, mutation-origin, settings, simple-order and private asset tests: 12 defined; 11 passed and the database integration test skipped without `TEST_DATABASE_URL`.
+- Native app, redirect, mutation-origin, settings, master-data validation, simple-order and private asset tests: 14 defined; 12 passed and two database integration tests skipped without `TEST_DATABASE_URL`.
 - Type check: passed.
 - Production build: passed; all native app pages and APIs appear in the Next.js route manifest.
 - ESLint on every changed TypeScript/TSX path: 0 errors, 2 existing `img` optimization warnings. The repository-wide lint remains blocked by an existing baseline of 80 errors and 44 warnings outside this feature scope.
 - Anonymous browser verification: `/app/simpleshop/shipping` redirects through the locale login page while preserving the exact callback; protected settings, app-instance and asset APIs return 401; browser console has no errors.
 - Production-shape SQL rollback rehearsal and migration: passed against the direct Neon connection. Post-migration verification confirmed all Phase 1 tables, columns, indexes, checks and foreign keys.
 - Two-Organization database isolation: passed in one forced-rollback production transaction for `OrganizationApp` and `PrivateAsset`; no test Organization remained. The persistent test suite still requires a non-production `TEST_DATABASE_URL`.
+- Phase 2 SQL rollback rehearsal, production migration and schema diff: passed. All 11 master-data tables and 56 relevant checks/foreign keys were visible. Separate forced-rollback transactions confirmed cross-Organization relationships are rejected and scoped reads return no foreign rows; no test Organization remained.
 - Private Blob end-to-end upload/download: private store and Vercel OIDC connection are configured; authenticated route verification remains pending.
 - Authenticated desktop/mobile runtime verification: requires two test logins.
 
-Phase 1 must not be declared complete until the final verification results replace these pending entries.
+The Phase 1 platform foundation is deployed. Private Blob acceptance and multi-login browser acceptance remain explicit verification work rather than blockers for additive Phase 2 master data.
 
-## Work remaining before Phase 2 business development
+## Remaining acceptance and Phase 2 work
 
 - Verify authenticated private Blob upload/download and confirm direct Blob URLs remain inaccessible.
 - Run two-Organization authenticated browser acceptance tests.
 - Verify simultaneous upload behavior against the configured Organization quota under expected production concurrency.
-- Begin dedicated `Customer`, `JobSite`, `Item`, alias, unit and price tables only after Phase 1 isolation passes.
+- Deploy and verify the Phase 2 management APIs and screens.
+- Add price-record and customer-contact-log management screens on top of the tables introduced in this slice.

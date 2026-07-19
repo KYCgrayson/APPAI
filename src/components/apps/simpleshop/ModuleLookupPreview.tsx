@@ -18,7 +18,8 @@ export function ModuleLookupPreview() {
         <LookupPicker kind="customer" onSelect={setCustomer} />
         <LookupPicker
           kind="job-site"
-          disabled={!customer}
+          customerId={customer?.kind === "customer" ? customer.id : undefined}
+          disabled={customer?.kind !== "customer"}
           disabledReason="請先選擇客戶"
         />
         <LookupPicker kind="item" />

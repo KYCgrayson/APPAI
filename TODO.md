@@ -7,9 +7,12 @@
 - [x] Add protected `/app/simpleshop` shell, primary modules, settings persistence, and reusable lookup contract
 - [x] Add private image/PDF metadata, authenticated streaming, deletion audit, and quota thresholds
 - [x] Add native-app admin monitoring and API-key instance activation
-- [ ] Rehearse and apply `prisma/native-app-phase1-migration.sql` against a non-production database
-- [ ] Verify two-Organization isolation and private Blob flows with test credentials
-- [ ] Begin Phase 2 Customer, JobSite, Item, alias, unit, and price master data from the Simpleshop PRD
+- [x] Rehearse and apply `prisma/native-app-phase1-migration.sql` against production with the direct Neon connection
+- [x] Verify two-Organization database isolation with a forced-rollback production transaction
+- [ ] Verify authenticated private Blob upload/download and direct-URL denial
+- [x] Begin Phase 2 Customer, JobSite, Item, alias, unit, and price master data from the Simpleshop PRD
+- [x] Rehearse, apply, and verify the Phase 2 master-data migration against production Neon
+- [ ] Deploy and verify the Phase 2 APIs and management screens
 
 Central todolist for all planned features, improvements, and tasks.
 Check items off as they are completed. Add new items with date and description.

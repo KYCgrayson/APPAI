@@ -8,7 +8,7 @@ export default function SimpleshopHomePage() {
   return (
     <div>
       <div className="mb-8">
-        <p className="text-sm font-semibold text-cyan-400">Native app · Phase 1</p>
+        <p className="text-sm font-semibold text-cyan-400">Native app · Phase 2</p>
         <h1 className="mt-2 text-3xl font-bold text-white sm:text-4xl">店務管理首頁</h1>
         <p className="mt-3 max-w-2xl text-slate-400">從日常工作進入，不是行銷頁。所有資料與操作都固定在目前 Organization 範圍內。</p>
       </div>

@@ -13,6 +13,13 @@ import {
 } from "../src/lib/simpleshop/settings-schema.ts";
 import { createAppInstanceSchema } from "../src/lib/validations/app-instance.ts";
 import { isLookupKind } from "../src/lib/simpleshop/lookups.ts";
+import {
+  customerCreateSchema,
+  itemCreateSchema,
+  jobSiteCreateSchema,
+  masterDataListQuerySchema,
+  normalizeMasterDataText,
+} from "../src/lib/simpleshop/master-data-schema.ts";
 import { simpleOrderSubmissionSchema } from "../src/lib/validations/simple-order-section.ts";
 import { hasSameOrigin } from "../src/lib/request-security.ts";
 
@@ -66,6 +73,35 @@ test("lookup contract recognizes only the three approved boundaries", () => {
   assert.equal(isLookupKind("job-site"), true);
   assert.equal(isLookupKind("item"), true);
   assert.equal(isLookupKind("organization"), false);
+});
+
+test("Simpleshop master data inputs are strict and normalize aliases consistently", () => {
+  assert.equal(normalizeMasterDataText("  Ａ級   木 材  "), "a級 木 材");
+  assert.equal(customerCreateSchema.safeParse({ name: "王先生", organizationId: "forged" }).success, false);
+  assert.equal(jobSiteCreateSchema.safeParse({ customerId: "customer-a", name: "北區", organizationId: "forged" }).success, false);
+  assert.equal(masterDataListQuerySchema.safeParse({ q: "木材", organizationId: "forged" }).success, false);
+
+  const baseItem = {
+    itemCode: "WOOD-001",
+    canonicalName: "柳安角材",
+    defaultUnit: "支",
+  };
+  assert.equal(itemCreateSchema.safeParse(baseItem).success, true);
+  assert.equal(itemCreateSchema.safeParse({
+    ...baseItem,
+    dimensionMode: "REQUIRED",
+    length: 2400,
+    width: 30,
+    dimensionUnit: "mm",
+  }).success, false);
+  assert.equal(itemCreateSchema.safeParse({
+    ...baseItem,
+    units: [
+      { unitCode: "box", label: "箱" },
+      { unitCode: "BOX", label: "整箱" },
+    ],
+  }).success, false);
+  assert.equal(itemCreateSchema.safeParse({ ...baseItem, sql: "DROP TABLE Item" }).success, false);
 });
 
 test("simple-order accepts real ISO dates and rejects impossible dates", () => {

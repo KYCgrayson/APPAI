@@ -34,7 +34,7 @@ export type LookupResult = CustomerLookupResult | JobSiteLookupResult | ItemLook
 export interface LookupResponse {
   items: LookupResult[];
   nextCursor: string | null;
-  available: false;
+  available: boolean;
   message: string;
 }
 
