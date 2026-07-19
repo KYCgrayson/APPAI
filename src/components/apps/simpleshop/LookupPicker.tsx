@@ -13,11 +13,13 @@ export function LookupPicker({
   kind,
   disabled = false,
   disabledReason,
+  customerId,
   onSelect,
 }: {
   kind: LookupKind;
   disabled?: boolean;
   disabledReason?: string;
+  customerId?: string;
   onSelect?: (item: LookupResult) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -33,6 +35,7 @@ export function LookupPicker({
     setState({ kind: "loading" });
     try {
       const params = new URLSearchParams({ kind, q: query, limit: "20" });
+      if (kind === "job-site" && customerId) params.set("customerId", customerId);
       const response = await fetch(`/api/apps/simpleshop/lookups?${params}`, {
         credentials: "same-origin",
       });

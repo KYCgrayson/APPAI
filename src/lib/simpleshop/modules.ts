@@ -13,19 +13,19 @@ export const SIMPLESHOP_MODULES = {
   },
   contacts: {
     title: "客戶聯繫",
-    description: "管理客戶與工地聯繫脈絡；主檔 CRUD 將於 Phase 2 啟用。",
+    description: "管理客戶、工地、別名與每月流水號，保留後續聯繫脈絡。",
     accent: "bg-amber-500",
     primary: true,
   },
   items: {
     title: "品項與料號",
-    description: "品項、別名、材質、尺寸與單位的後續管理入口。",
+    description: "管理正式料號、別名、材質、尺寸、分類與換算單位。",
     accent: "bg-emerald-500",
     primary: false,
   },
   pricing: {
     title: "價格設定",
-    description: "價格版本、客戶價與工地價將於主檔階段實作。",
+    description: "價格版本、進貨價、售價、客戶價與工地價的管理入口。",
     accent: "bg-rose-500",
     primary: false,
   },

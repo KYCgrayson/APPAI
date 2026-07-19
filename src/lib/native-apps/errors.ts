@@ -4,7 +4,9 @@ export type NativeAppErrorCode =
   | "ORGANIZATION_REQUIRED"
   | "UNKNOWN_APP_TYPE"
   | "APP_NOT_ENABLED"
-  | "APP_SUSPENDED";
+  | "APP_SUSPENDED"
+  | "RESOURCE_NOT_FOUND"
+  | "CONFLICT";
 
 export class NativeAppError extends Error {
   public readonly code: NativeAppErrorCode;

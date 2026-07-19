@@ -75,13 +75,24 @@ model Organization {
 
   plan String @default("FREE")
 
-  users            User[]
-  apiKeys          ApiKey[]
-  pages            HostedPage[]
-  apps             App[]
-  organizationApps OrganizationApp[]
-  privateAssets    PrivateAsset[]
-  usageEvents      UsageEvent[]
+  users               User[]
+  apiKeys             ApiKey[]
+  pages               HostedPage[]
+  apps                App[]
+  organizationApps    OrganizationApp[]
+  privateAssets       PrivateAsset[]
+  usageEvents         UsageEvent[]
+  simpleshopSequences SimpleshopSequence[]
+  customers           Customer[]
+  jobSites            JobSite[]
+  jobSiteAliases      JobSiteAlias[]
+  jobSiteMonthCodes   JobSiteMonthCode[]
+  itemCategories      ItemCategory[]
+  items               Item[]
+  itemAliases         ItemAlias[]
+  itemUnits           ItemUnit[]
+  priceRecords        PriceRecord[]
+  customerContacts    CustomerContact[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -253,6 +264,236 @@ model PrivateAsset {
 
   @@index([organizationId, appType, status])
   @@index([organizationId, createdAt])
+}
+
+// Organization-local counters keep permanent customer numbers and monthly
+// job-site display codes concurrency-safe without exposing Organization
+// selection to clients.
+model SimpleshopSequence {
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  key            String
+  lastValue      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@id([organizationId, key])
+}
+
+model Customer {
+  id               String       @id @default(cuid())
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customerCode     Int
+  name             String
+  shortName        String?
+  phone            String?
+  address          String?      @db.Text
+  paymentTermsDays Int?
+  status           String       @default("ACTIVE") // ACTIVE | INACTIVE
+  notes            String?      @db.Text
+
+  jobSites     JobSite[]
+  priceRecords PriceRecord[]
+  contacts     CustomerContact[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, customerCode])
+  @@unique([organizationId, id])
+  @@index([organizationId, status, name])
+  @@index([organizationId, phone])
+}
+
+model JobSite {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customerId     String
+  customer       Customer     @relation(fields: [organizationId, customerId], references: [organizationId, id], onDelete: Restrict)
+  name           String
+  keyword        String?
+  address        String?      @db.Text
+  contactName    String?
+  contactPhone   String?
+  status         String       @default("ACTIVE") // ACTIVE | COMPLETED | INACTIVE
+  notes          String?      @db.Text
+
+  aliases      JobSiteAlias[]
+  monthCodes   JobSiteMonthCode[]
+  priceRecords PriceRecord[]
+  contacts     CustomerContact[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, customerId, id])
+  @@index([organizationId, customerId, status])
+  @@index([organizationId, name])
+}
+
+model JobSiteAlias {
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customerId      String
+  jobSiteId       String
+  jobSite         JobSite      @relation(fields: [organizationId, customerId, jobSiteId], references: [organizationId, customerId, id], onDelete: Cascade)
+  alias           String
+  normalizedAlias String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([organizationId, customerId, normalizedAlias])
+  @@index([organizationId, jobSiteId])
+}
+
+model JobSiteMonthCode {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  jobSiteId      String
+  jobSite        JobSite      @relation(fields: [organizationId, jobSiteId], references: [organizationId, id], onDelete: Cascade)
+  month          String // YYYY-MM
+  monthlyCode    Int
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, month, monthlyCode])
+  @@unique([organizationId, month, jobSiteId])
+  @@index([organizationId, jobSiteId, month])
+}
+
+model ItemCategory {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  normalizedName String
+  dimensionMode  String       @default("NONE") // NONE | OPTIONAL | REQUIRED
+  status         String       @default("ACTIVE") // ACTIVE | INACTIVE
+
+  items Item[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, normalizedName])
+  @@unique([organizationId, id])
+  @@index([organizationId, status, name])
+}
+
+model Item {
+  id                String        @id @default(cuid())
+  organizationId    String
+  organization      Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  categoryId        String?
+  category          ItemCategory? @relation(fields: [organizationId, categoryId], references: [organizationId, id], onDelete: Restrict)
+  itemCode          String
+  canonicalName     String
+  material          String?
+  grade             String?
+  dimensionMode     String        @default("NONE") // NONE | OPTIONAL | REQUIRED
+  length            Decimal?      @db.Decimal(14, 4)
+  width             Decimal?      @db.Decimal(14, 4)
+  thickness         Decimal?      @db.Decimal(14, 4)
+  dimensionUnit     String?
+  defaultUnit       String
+  calculationMethod String        @default("QUANTITY") // QUANTITY | CONVERSION | BOARD_MEASURE
+  status            String        @default("ACTIVE") // ACTIVE | PENDING | INACTIVE
+  notes             String?       @db.Text
+
+  aliases      ItemAlias[]
+  units        ItemUnit[]
+  priceRecords PriceRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, itemCode])
+  @@unique([organizationId, id])
+  @@index([organizationId, status, canonicalName])
+  @@index([organizationId, categoryId, status])
+}
+
+model ItemAlias {
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  itemId          String
+  item            Item         @relation(fields: [organizationId, itemId], references: [organizationId, id], onDelete: Cascade)
+  alias           String
+  normalizedAlias String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([organizationId, normalizedAlias])
+  @@index([organizationId, itemId])
+}
+
+model ItemUnit {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           Item         @relation(fields: [organizationId, itemId], references: [organizationId, id], onDelete: Cascade)
+  unitCode       String
+  label          String
+  conversionRate Decimal?     @db.Decimal(18, 6)
+  isDefault      Boolean      @default(false)
+  status         String       @default("ACTIVE") // ACTIVE | INACTIVE
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, itemId, unitCode])
+  @@index([organizationId, itemId, status])
+}
+
+model PriceRecord {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           Item         @relation(fields: [organizationId, itemId], references: [organizationId, id], onDelete: Restrict)
+  priceType      String // PURCHASE | RETAIL | WHOLESALE | CUSTOMER | JOB_SITE
+  customerId     String?
+  customer       Customer?    @relation(fields: [organizationId, customerId], references: [organizationId, id], onDelete: Restrict)
+  jobSiteId      String?
+  jobSite        JobSite?     @relation(fields: [organizationId, jobSiteId], references: [organizationId, id], onDelete: Restrict)
+  unitCode       String
+  amount         Decimal      @db.Decimal(18, 4)
+  effectiveFrom  DateTime
+  effectiveTo    DateTime?
+  status         String       @default("ACTIVE") // ACTIVE | INACTIVE
+  notes          String?      @db.Text
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId, itemId, priceType, effectiveFrom])
+  @@index([organizationId, customerId, status])
+  @@index([organizationId, jobSiteId, status])
+}
+
+model CustomerContact {
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customerId      String
+  customer        Customer     @relation(fields: [organizationId, customerId], references: [organizationId, id], onDelete: Restrict)
+  jobSiteId       String?
+  jobSite         JobSite?     @relation(fields: [organizationId, jobSiteId], references: [organizationId, id], onDelete: Restrict)
+  contactType     String // PHONE | MESSAGE | VISIT | QUOTE | NOTE
+  occurredAt      DateTime
+  subject         String?
+  notes           String       @db.Text
+  createdByUserId String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([organizationId, customerId, occurredAt])
+  @@index([organizationId, jobSiteId, occurredAt])
 }
 
 // Generic usage log for interactive tools (any connector), replacing
