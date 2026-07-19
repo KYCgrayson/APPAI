@@ -2,10 +2,17 @@ import { signIn } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getTranslations } from "next-intl/server";
+import { safeInternalPath } from "@/lib/redirects";
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string; returnTo?: string }>;
+}) {
+  const query = await searchParams;
+  const callbackUrl = safeInternalPath(query.callbackUrl || query.returnTo, "/dashboard");
   const session = await auth();
-  if (session) redirect("/dashboard");
+  if (session) redirect(callbackUrl);
 
   const t = await getTranslations("login");
 
@@ -19,7 +26,7 @@ export default async function LoginPage() {
         <form
           action={async () => {
             "use server";
-            await signIn("google", { redirectTo: "/dashboard" });
+            await signIn("google", { redirectTo: callbackUrl });
           }}
         >
           <button

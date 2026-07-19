@@ -18,8 +18,8 @@ model User {
   image         String?
   role          String    @default("USER") // USER | ADMIN
 
-  accounts       Account[]
-  sessions       Session[]
+  accounts Account[]
+  sessions Session[]
 
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
@@ -75,10 +75,13 @@ model Organization {
 
   plan String @default("FREE")
 
-  users   User[]
-  apiKeys ApiKey[]
-  pages   HostedPage[]
-  apps    App[]
+  users            User[]
+  apiKeys          ApiKey[]
+  pages            HostedPage[]
+  apps             App[]
+  organizationApps OrganizationApp[]
+  privateAssets    PrivateAsset[]
+  usageEvents      UsageEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -107,12 +110,12 @@ model HostedPage {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  template  String @default("APP_LANDING")
-  title     String
-  tagline   String?
-  heroImage   String?
-  headerLogo  String?
-  content     Json
+  template   String  @default("APP_LANDING")
+  title      String
+  tagline    String?
+  heroImage  String?
+  headerLogo String?
+  content    Json
 
   privacyPolicy  String? @db.Text
   termsOfService String? @db.Text
@@ -122,7 +125,7 @@ model HostedPage {
   ogImage         String?
   canonicalUrl    String? // Override canonical URL; lets apps with own domain reuse template while keeping SEO on main site
 
-  customCss   String? @db.Text
+  customCss           String? @db.Text
   themeColor          String? @default("#000000")
   themeColorSecondary String?
   fontFamily          String?
@@ -151,16 +154,16 @@ model HostedPage {
 
 // RFC 8628 OAuth Device Authorization Grant
 model DeviceCode {
-  id             String   @id @default(cuid())
-  deviceCode     String   @unique   // High-entropy (256-bit), used by CLI to poll
-  userCode       String             // Short code "WDJB-MJHT", shown to user
-  status         String   @default("pending") // pending | authorized | denied | expired | consumed
-  apiKey         String?            // Plaintext key, cleared after consumed
+  id             String    @id @default(cuid())
+  deviceCode     String    @unique // High-entropy (256-bit), used by CLI to poll
+  userCode       String // Short code "WDJB-MJHT", shown to user
+  status         String    @default("pending") // pending | authorized | denied | expired | consumed
+  apiKey         String? // Plaintext key, cleared after consumed
   organizationId String?
-  interval       Int      @default(5) // Polling interval in seconds, increases on slow_down
-  lastPolledAt   DateTime?          // Server-side rate limiting for polling
+  interval       Int       @default(5) // Polling interval in seconds, increases on slow_down
+  lastPolledAt   DateTime? // Server-side rate limiting for polling
   expiresAt      DateTime
-  createdAt      DateTime @default(now())
+  createdAt      DateTime  @default(now())
 }
 
 model PageView {
@@ -199,6 +202,8 @@ model App {
   screenshots String[] @default([])
 
   hostedPageSlug String? @unique
+  appType        String? @unique
+  runtimePath    String?
 
   isApproved Boolean @default(false)
   isFeatured Boolean @default(false)
@@ -207,16 +212,62 @@ model App {
   updatedAt DateTime @updatedAt
 }
 
+// A code-approved native app enabled for one Organization. Business data
+// remains in app-owned tables; config is limited to small non-accounting
+// settings validated by the native app registry.
+model OrganizationApp {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  appType        String
+  status         String       @default("ACTIVE") // ACTIVE | SUSPENDED
+  config         Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, appType])
+  @@index([appType, status])
+  @@index([organizationId, status])
+}
+
+// Metadata and authorization boundary for private native-app files. The Blob
+// URL is never exposed to clients; downloads are streamed through an
+// authenticated AppAI route.
+model PrivateAsset {
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  appType         String
+  pathname        String       @unique
+  originalName    String
+  contentType     String
+  sizeBytes       Int
+  status          String       @default("ACTIVE") // ACTIVE | DELETE_PENDING | DELETED
+  createdByUserId String
+  deletedByUserId String?
+  deletedAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, appType, status])
+  @@index([organizationId, createdAt])
+}
+
 // Generic usage log for interactive tools (any connector), replacing
 // per-tool tables. See docs/interactive-tools-architecture.md.
 model UsageEvent {
-  id        String   @id @default(cuid())
-  connector String
-  userId    String?
-  action    String
-  meta      Json?
-  createdAt DateTime @default(now())
+  id             String        @id @default(cuid())
+  connector      String
+  userId         String?
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  action         String
+  meta           Json?
+  createdAt      DateTime      @default(now())
 
   @@index([connector, userId, createdAt])
   @@index([connector, createdAt])
+  @@index([connector, organizationId, createdAt])
 }

@@ -21,7 +21,7 @@ This is a **public repository**. All files, commits, and history are visible to 
 1. AI agent authenticates via Device Authorization flow → gets an API key (`appai_sk_...`)
 2. Agent calls `POST /api/v1/pages` with page content (title, sections, SEO metadata, etc.)
 3. Page is immediately live at `appai.info/p/{slug}` with automatic i18n, SEO, privacy/terms pages
-4. Supports 24 section types (hero, features, pricing, FAQ, gallery, form, media-downloader, iframe-tool, etc.) and 6 templates
+4. Supports 26 section types (hero, features, pricing, FAQ, gallery, form, media-downloader, iframe-tool, etc.) and 6 templates
 5. Visual design system: dark mode, custom Google Fonts, color palettes, hero variants (centered/split/minimal), per-section backgroundColor
 6. Multi-page sites supported (root + child pages like /faq, /contact, /privacy)
 
@@ -33,7 +33,7 @@ This is a **public repository**. All files, commits, and history are visible to 
 
 ### Related Repositories
 
-- **my-tools** (Private Repo, github.com/KYCgrayson/my-tools): Standalone tools (media downloader, etc.) deployed separately on Vercel. Source code is private to avoid legal exposure. AIGA creates landing pages that link to the deployed tool URLs.
+- **my-tools** (Private Repo, github.com/KYCgrayson/my-tools): Standalone tools (media downloader, etc.) deployed separately on Vercel. Source code is private to avoid legal exposure. AppAI creates landing pages that link to the deployed tool URLs.
 
 ### Infrastructure
 
@@ -54,6 +54,7 @@ This is a **public repository**. All files, commits, and history are visible to 
 - `/[locale]/` — Public pages (i18n enabled)
 - `/dashboard/` — Authenticated user area (English only)
 - `/admin/` — Admin panel (English only)
+- `/app/` — Authenticated, Organization-scoped native applications (not localized)
 - `/p/[...segments]` — Hosted pages (own locale system, 30+ languages)
 - `/api/` — API endpoints
 

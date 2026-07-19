@@ -41,6 +41,9 @@ yarn-error.log*
 # video-subtitle handoff docs are tracked so new sessions + the my-tools
 # repo can read the API contract and PRDs (no secrets in these files).
 !/docs/video-subtitle
+# Native-app integration contracts are tracked for cross-repository handoff.
+!/docs/apps
+!/docs/apps/**
 
 # vercel
 .vercel
@@ -48,4 +51,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-

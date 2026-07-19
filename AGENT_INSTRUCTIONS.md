@@ -23,7 +23,7 @@ This platform gives you full control over visual design. Every parameter below i
 | `headerLogo` | URL — separate logo for the light header (when hero logo is white/light). |
 | `ogImage` | URL — Open Graph image for social sharing. Falls back to heroImage if not set. |
 
-### 24 Section Types
+### 26 Section Types
 
 Every section supports optional `backgroundColor` (hex) and `id` (anchor for `#links`).
 
@@ -54,6 +54,7 @@ Every section supports optional `backgroundColor` (hex) and `id` (anchor for `#l
 | `pdf-viewer` | Client-side PDF viewer with password unlock. No backend needed. |
 | `embed` | Embed TikTok / Loom / YouTube / Vimeo / Spotify / CodePen / Figma / X / Instagram. Auto-detects provider from URL. |
 | `iframe-tool` | **Host a tool the user vibe-coded.** Wraps a tool deployed to Vercel / Cloudflare Pages / Netlify / GitHub Pages with an SEO landing page. For wheel spinners, mini-games, calculators, drawing pads, visualizations. Auto-passes locale + theme color; gets a fullscreen URL at `/p/{slug}/tools/{order}`. **Use this — not `embed` — when the URL is a tool the user built, not a media post.** |
+| `simple-order` | Native small-shop order request section. Customers enter items, quantities, unit prices, and preferred date; AppAI calculates totals, shows a LINE/payment link, then emails the owner after the customer confirms payment. Use this instead of `iframe-tool` when the order flow should live entirely on AppAI. |
 
 ### Interactive tools that need a backend, login, or quota
 
@@ -75,6 +76,21 @@ logic**:
 If a tool needs a genuinely new backend, the **owner** adds one connector
 entry; every reuse after that is pure section config. See
 `docs/interactive-tools-architecture.md`.
+
+### Stateful native apps
+
+Native apps are code-approved, login-protected applications with persistent
+Organization data. They are not page sections or arbitrary uploaded programs.
+
+| Operation | Endpoint | Rule |
+|-----------|----------|------|
+| Discover instances | `GET /api/v1/app-instances` | Bearer API key; current Organization only |
+| Enable an app | `POST /api/v1/app-instances` | Idempotent; `appType` must be in the code registry |
+| Open Simpleshop | `/app/simpleshop` | Browser login required |
+
+For `simpleshop`, agents may provide validated shop settings. Never send an
+`organizationId`, runtime path, component name, SQL, secret, or server code;
+the platform derives identity and executable behavior on the server.
 
 ### Visual Design Capabilities
 
@@ -124,7 +140,7 @@ This document has everything you need. Here's where to find it:
 |---------------|-----------------|
 | **Complete page example (light theme)** | [Example 1: Light Theme SaaS Page](#example-1-light-theme-saas-page) (below) |
 | **Complete page example (dark theme)** | [Example 2: Dark Theme Developer Tool](#example-2-dark-theme-developer-tool) (below) |
-| **Section JSON schemas (all 22 types)** | [Section Reference](#section-reference) or call `GET /api/v1/sections` |
+| **Section JSON schemas (all section types)** | [Section Reference](#section-reference) or call `GET /api/v1/sections` |
 | **Authentication flow** | [Authentication](#authentication) |
 | **Page creation API fields** | [Creating a Page](#creating-a-page) |
 | **Multi-language setup** | [Multi-Language Details](#multi-language-details) |
@@ -175,7 +191,7 @@ If the user gives you a `*.vercel.app` / `*.pages.dev` / `*.netlify.app` / `*.gi
 
 ### Rules
 
-- **NEVER** tell the user the platform can't do something. You have 24 section types, dark mode, custom fonts, multi-language, multi-page sites, forms, interactive tools — the platform is highly capable.
+- **NEVER** tell the user the platform can't do something. You have 26 section types, dark mode, custom fonts, multi-language, multi-page sites, forms, interactive tools — the platform is highly capable.
 - **NEVER** present a list of 6 templates and ask the user to pick one. Infer the right sections from context.
 - **NEVER** ask for 10 pieces of information before building. Build first, iterate after.
 - Headlines under 60 characters, subheadlines under 140 characters (mobile readability)
@@ -772,6 +788,23 @@ Auto-detects provider from URL. Supported: YouTube, Vimeo, TikTok, Loom, Spotify
 }}
 ```
 For embedding a tool deployed to a free static host. `src` host must be `*.vercel.app`, `*.pages.dev`, `*.netlify.app`, or `*.github.io` — anything else is rejected. `heading` and `description` are required (iframe content is invisible to crawlers — these get indexed). AppAI auto-passes `?locale=...&color=...&theme=dark` to the iframe so it can match the page. Every section also gets a chrome-less fullscreen URL at `/p/{slug}/tools/{order}` for sharing the tool standalone. The tool can opt-in to auto-resize via `parent.postMessage({type:'resize', height})`.
+
+### simple-order
+```json
+{ "type": "simple-order", "order": 25, "data": {
+    "heading": "Place an order",
+    "description": "Enter your items, complete payment, and the owner will confirm quantity and date by email.",
+    "storeName": "Sunny Bakery",
+    "notificationEmail": "orders@example.com",
+    "paymentUrl": "https://line.me/R/ti/p/@yourline",
+    "paymentHeading": "Please complete payment",
+    "paymentInstructions": "After payment, submit this order. The shop owner will confirm quantity and date, then reply by email.",
+    "currency": "TWD",
+    "submitLabel": "I paid, send order",
+    "successMessage": "Order sent. The owner will confirm quantity and date by email."
+}}
+```
+For small shops that need an order request flow hosted entirely on AppAI. Customers type free-form line items, quantity, unit price, and preferred date. AppAI calculates subtotals and totals in the browser, shows the configured LINE/payment link, and sends an owner notification after the customer confirms payment. This does not automatically verify payment.
 
 ### Link rel (SEO)
 Links in `links` and `cta` sections accept an optional `rel` string. Use `"nofollow"` for sponsored/affiliate/user-supplied links, `"sponsored"` for paid placements, `"nofollow sponsored"` for both. Leaving it unset produces `rel="noopener noreferrer"` for external links (standard dofollow). Example:

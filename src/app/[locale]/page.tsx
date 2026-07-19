@@ -137,7 +137,7 @@ export default async function HomePage() {
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 md:p-8 mb-6">
             <h3 className="font-bold text-lg mb-4 text-white">What you can build</h3>
             <div className="grid md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-gray-400">
-              <div>- 23 section types: hero, features, pricing, FAQ, download, testimonials, gallery, team, video, screenshots, stats, contact, CTA, links, about, schedule, sponsors, action, form, media-downloader, tool, pdf-viewer, embed (TikTok/Loom/X/Spotify/CodePen/Figma)</div>
+              <div>- 26 section types: hero, features, pricing, FAQ, download, testimonials, gallery, team, video, screenshots, stats, contact, CTA, links, about, schedule, sponsors, action, form, media-downloader, video-subtitle, tool, pdf-viewer, embed (TikTok/Loom/X/Spotify/CodePen/Figma), simple-order</div>
               <div>- Multi-page sites: root page + child pages (/faq, /contact, /privacy, /terms, /delete-account) with automatic header navigation</div>
               <div>- Visual design system: dark mode, custom Google Fonts, color palettes, hero variants (centered/split/minimal)</div>
               <div>- Markdown in long-text fields (bold, italic, links, lists, headings, inline code)</div>
@@ -168,7 +168,7 @@ export default async function HomePage() {
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 md:p-8 mb-6">
             <h3 className="font-bold text-lg mb-4 text-white">How to proceed</h3>
             <div className="space-y-3 text-sm text-gray-400">
-              <div><strong className="text-gray-200">Step 1:</strong> Read the full spec at <a href="/llms-full.txt" className="text-cyan-400 hover:underline">appai.info/llms-full.txt</a> -- it contains authentication, all 22 section schemas with JSON examples, multi-page site setup, icon reference, markdown syntax, form configuration, and design guidelines.</div>
+              <div><strong className="text-gray-200">Step 1:</strong> Read the full spec at <a href="/llms-full.txt" className="text-cyan-400 hover:underline">appai.info/llms-full.txt</a> -- it contains authentication, all section schemas with JSON examples, multi-page site setup, icon reference, markdown syntax, form configuration, order requests, and design guidelines.</div>
               <div><strong className="text-gray-200">Step 2:</strong> Authenticate via device flow: POST /api/v1/auth/device, then poll /api/v1/auth/token. Or ask the user for an existing API key (appai_sk_...).</div>
               <div><strong className="text-gray-200">Step 3:</strong> Create the page: POST /api/v1/pages with your JSON content. The page is live immediately at appai.info/p/your-slug after calling POST /api/v1/pages/your-slug/publish.</div>
               <div><strong className="text-gray-200">Step 4:</strong> Show the user their live URL and ask if they want changes. Use PATCH /api/v1/pages/your-slug to update specific sections without resending everything.</div>

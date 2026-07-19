@@ -113,7 +113,7 @@ If you already have an API key (appai_sk_...), skip step 2.
 
 ## What you can build
 
-- 23 section types: hero, features, pricing, faq, download, testimonials, gallery, team, video, screenshots, stats, contact, cta, links, about, schedule, sponsors, action, form, media-downloader, tool, pdf-viewer, embed (TikTok/Loom/X/YouTube/Vimeo/Spotify/CodePen/Figma)
+- 26 section types: hero, features, pricing, faq, download, testimonials, gallery, team, video, screenshots, stats, contact, cta, links, about, schedule, sponsors, action, form, media-downloader, video-subtitle, tool, pdf-viewer, embed (TikTok/Loom/X/YouTube/Vimeo/Spotify/CodePen/Figma), simple-order
 - Multi-page sites with automatic header navigation (root page + child pages like /faq, /contact, /privacy)
 - Contact and account-deletion forms that work on any device
 - Markdown-formatted long text (bold, italic, links, lists)
@@ -131,7 +131,7 @@ ${baseUrl} (always use this, never use www.appai.info)
 
 - POST /api/v1/auth/device — Start authentication
 - POST /api/v1/auth/token — Poll for API key
-- GET /api/v1/sections — All 23 section schemas (add ?format=jsonschema for JSON Schema)
+- GET /api/v1/sections — All 26 section schemas (add ?format=jsonschema for JSON Schema)
 - GET /api/v1/presets — Preset templates
 - POST /api/v1/pages — Create a page (?upsert=true to overwrite)
 - PATCH /api/v1/pages/:slug — Partial update with deep section merge
@@ -139,6 +139,12 @@ ${baseUrl} (always use this, never use www.appai.info)
 - PATCH /api/v1/pages/:slug/sections/:order — Update a single section
 - GET /api/v1/pages/:slug/children — List child pages of a multi-page site
 - POST /api/v1/upload — Upload images (max 5MB)
+- GET /api/v1/app-instances — List code-approved native app instances for your Organization
+- POST /api/v1/app-instances — Idempotently enable a code-approved native app (currently simpleshop)
+
+## Stateful native apps
+
+Native apps are login-protected applications with persistent Organization data. They are not landing-page sections and agents cannot upload executable code. The server derives the Organization from the API key or browser session. Do not send organizationId, runtime paths, component names, SQL, or secrets. Simpleshop opens at ${baseUrl}/app/simpleshop after browser login.
 
 ## How to communicate with the page owner
 
