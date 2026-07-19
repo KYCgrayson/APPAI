@@ -8,7 +8,7 @@
 | Platform specifications | AppAI platform changes v1.1; Simpleshop app scope v1.1 |
 | Native app type | `simpleshop` |
 | Runtime | `/app/simpleshop` |
-| Current implementation | AppAI Phase 1 code and rollback rehearsal complete; production migration/deploy pending on `codex/simpleshop-native-app` |
+| Current implementation | AppAI Phase 1 code and production migration complete; application deploy pending on `codex/simpleshop-native-app` |
 
 The complete product PRD stays in the Simpleshop repository. This document records only the AppAI integration contract and deployment state.
 
@@ -44,7 +44,7 @@ Models added by Phase 1:
 - Optional `UsageEvent.organizationId` for native-app monitoring.
 - `App.appType` and `App.runtimePath` for future catalog synchronization; the code registry remains authoritative.
 
-Review and apply `prisma/native-app-phase1-migration.sql` with the direct, non-pooled production database connection before deploying application code. `npm run build` generates Prisma Client but does not apply database changes.
+`prisma/native-app-phase1-migration.sql` was applied with the direct, non-pooled production database connection on 2026-07-19 after a successful transaction rollback rehearsal. `npm run build` generates Prisma Client but does not apply database changes.
 
 ## Environment and dashboard requirements
 
@@ -73,23 +73,22 @@ The protected shell exposes three primary modules—Shipping, Monthly Settlement
 
 ## Verification status
 
-- Prisma format/validation/generation: passed on 2026-07-18.
+- Prisma format/validation/generation: passed on 2026-07-19.
 - Native app, redirect, mutation-origin, settings, simple-order and private asset tests: 12 defined; 11 passed and the database integration test skipped without `TEST_DATABASE_URL`.
 - Type check: passed.
 - Production build: passed; all native app pages and APIs appear in the Next.js route manifest.
 - ESLint on every changed TypeScript/TSX path: 0 errors, 2 existing `img` optimization warnings. The repository-wide lint remains blocked by an existing baseline of 80 errors and 44 warnings outside this feature scope.
 - Anonymous browser verification: `/app/simpleshop/shipping` redirects through the locale login page while preserving the exact callback; protected settings, app-instance and asset APIs return 401; browser console has no errors.
-- Production-shape SQL rollback rehearsal: passed against the direct Neon connection; the transaction rolled back and schema verification confirmed no residual Phase 1 objects.
-- Two-Organization database isolation: requires the applied migration; the persistent test suite still requires a non-production `TEST_DATABASE_URL`.
+- Production-shape SQL rollback rehearsal and migration: passed against the direct Neon connection. Post-migration verification confirmed all Phase 1 tables, columns, indexes, checks and foreign keys.
+- Two-Organization database isolation: passed in one forced-rollback production transaction for `OrganizationApp` and `PrivateAsset`; no test Organization remained. The persistent test suite still requires a non-production `TEST_DATABASE_URL`.
 - Private Blob end-to-end upload/download: private store and Vercel OIDC connection are configured; authenticated route verification remains pending.
-- Authenticated desktop/mobile runtime verification: requires two test logins after the migration is applied.
+- Authenticated desktop/mobile runtime verification: requires two test logins.
 
 Phase 1 must not be declared complete until the final verification results replace these pending entries.
 
 ## Work remaining before Phase 2 business development
 
-- Apply the rehearsed SQL migration to production and verify the resulting schema.
 - Verify authenticated private Blob upload/download and confirm direct Blob URLs remain inaccessible.
-- Run two-Organization database and browser acceptance tests.
+- Run two-Organization authenticated browser acceptance tests.
 - Verify simultaneous upload behavior against the configured Organization quota under expected production concurrency.
 - Begin dedicated `Customer`, `JobSite`, `Item`, alias, unit and price tables only after Phase 1 isolation passes.
