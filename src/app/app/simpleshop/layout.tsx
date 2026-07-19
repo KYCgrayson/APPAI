@@ -7,6 +7,8 @@ import { ensureOrganizationApp } from "@/lib/native-apps/service";
 import { NativeAppError } from "@/lib/native-apps/errors";
 import { SIMPLESHOP_MODULES } from "@/lib/simpleshop/modules";
 import { safeInternalPath } from "@/lib/redirects";
+import { createUniversalAppLaunch, UniversalAppRuntimeError } from "@/lib/universal-apps/runtime-session";
+import { mayUseSimpleshopCompatibilityRuntime } from "@/lib/universal-apps/cutover";
 
 export const metadata: Metadata = {
   title: "Simpleshop 店務管理 - AppAI",
@@ -39,6 +41,23 @@ export default async function SimpleshopLayout({ children }: { children: React.R
         </div>
       </main>
     );
+  }
+
+  // This is the reversible cutover gate. An approved release with an active
+  // production deployment launches the isolated runtime; the old UI remains
+  // available only until there is no deployable Universal release at all.
+  try {
+    const launch = await createUniversalAppLaunch({
+      appId: "simpleshop",
+      organizationId: context.organizationId,
+      userId: context.userId,
+      returnPath: returnTo,
+    });
+    redirect(launch.callbackUrl);
+  } catch (error) {
+    if (!(error instanceof UniversalAppRuntimeError) || !mayUseSimpleshopCompatibilityRuntime(error.code)) {
+      throw error;
+    }
   }
 
   return (

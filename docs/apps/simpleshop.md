@@ -74,9 +74,11 @@ Transition order:
 2. Add the isolated artifact build/provisioning worker and app-scoped PostgreSQL credential injection.
 3. Submit, review, build, and deploy the Simpleshop artifact from the Simpleshop repo.
 4. Run identity, two-Organization database isolation, private image/PDF, desktop/mobile, health, and rollback acceptance.
-5. Switch `/app/simpleshop` to the Universal launcher.
+5. Deploy an `APPROVED` Simpleshop release with an `ACTIVE` `PRODUCTION` deployment. The `/app/simpleshop` compatibility layout then redirects to the Universal launcher automatically; until that exact state exists it continues serving the compatibility UI.
 6. Migrate any real compatibility-table data if it exists.
 7. Remove hardcoded Simpleshop code/tables only through a reviewed, recoverable migration.
+
+Release and cutover evidence must satisfy the shared [Universal App Runtime QA gates](universal-app-runtime-qa.md). Simpleshop business acceptance remains in the Simpleshop repo; the shared checklist covers platform/runtime boundaries.
 
 Do not delete the compatibility layer before step 5, and do not allow both runtimes to accept writes at the same time. Production currently has no retained Simpleshop business records from QA, but the cutover still follows the same guarded process.
 
@@ -87,11 +89,13 @@ Implemented on the Universal branch:
 - strict manifest and agent release validation;
 - generic launcher, one-time exchange, introspection, capability grants, and private asset routes;
 - platform-only Prisma schema and transaction-wrapped migration;
+- Universal runtime additive migration rehearsed with rollback, applied on 2026-07-19, and verified with an empty post-apply schema diff;
+- isolated Simpleshop test database verified with separate migration/runtime roles; the runtime role can perform business CRUD but cannot perform DDL;
 - additive compatibility strategy with no destructive production change.
+- reversible `/app/simpleshop` cutover: only `APP_UNAVAILABLE` (no release, or no production deployment for otherwise approved releases) falls back to compatibility. Existing non-approved releases, suspended instances, and invalid/inactive deployments fail closed and never silently bypass the Universal runtime; any approved active production candidate still wins over those records.
 
 Still required before calling the migration complete:
 
-- non-production SQL rehearsal and then approved production migration;
 - isolated build/deployment worker and database provisioning/injection;
 - independent Simpleshop release registration and runtime deployment;
 - end-to-end cutover acceptance;

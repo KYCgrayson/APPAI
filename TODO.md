@@ -6,10 +6,12 @@
 - [x] Add strict `appai.app.json` validation plus versioned release and platform-controlled deployment records
 - [x] Add generic `/app/[appId]` launch, one-time code exchange, opaque runtime sessions, and capability introspection
 - [x] Add generic private image/PDF runtime APIs scoped by app + Organization
+- [x] Rehearse, apply, and schema-diff the additive Universal runtime migration
+- [x] Verify an isolated Simpleshop test database with separate migration and CRUD-only runtime roles
 - [x] Move new Simpleshop customer/job-site implementation and migrations into the Simpleshop repo
 - [ ] Add isolated artifact build/provisioning worker and app-scoped PostgreSQL credential injection
 - [ ] Register, build, deploy, and accept the independent Simpleshop artifact
-- [ ] Switch `/app/simpleshop` from the compatibility layer to the Universal launcher
+- [x] Add reversible `/app/simpleshop` Universal runtime cutover gate: redirect only for an `APPROVED` release with an `ACTIVE` `PRODUCTION` deployment; otherwise retain compatibility UI
 - [ ] Remove hardcoded Simpleshop pages/APIs/services/models only after data migration and rollback acceptance
 
 ### Historical monolith work (compatibility layer)

@@ -4,6 +4,7 @@ import { createHash, randomBytes } from "node:crypto";
 
 import { db } from "@/lib/db";
 import { universalAppIdSchema, universalAppManifestSchema } from "@/lib/universal-apps/manifest";
+import { selectUniversalRuntimeTarget } from "@/lib/universal-apps/cutover";
 
 const LAUNCH_CODE_TTL_MS = 60 * 1000;
 const RUNTIME_SESSION_TTL_MS = 8 * 60 * 60 * 1000;
@@ -45,30 +46,33 @@ export async function createUniversalAppLaunch(input: {
 }) {
   const appId = universalAppIdSchema.parse(input.appId);
   const app = await db.app.findFirst({
-    where: { appType: appId, isApproved: true },
+    where: { appType: appId },
     include: {
       releases: {
-        where: {
-          status: "APPROVED",
-          deployments: { some: { environment: "PRODUCTION", status: "ACTIVE" } },
-        },
         orderBy: { createdAt: "desc" },
-        take: 1,
         include: {
           deployments: {
-            where: { environment: "PRODUCTION", status: "ACTIVE" },
+            where: { environment: "PRODUCTION" },
             orderBy: { createdAt: "desc" },
-            take: 1,
           },
         },
       },
     },
   });
-  const release = app?.releases[0];
-  const deployment = release?.deployments[0];
-  if (!app || !release || !deployment) {
+  if (!app) {
     throw new UniversalAppRuntimeError("APP_UNAVAILABLE", 404, "No active app deployment is available.");
   }
+  const target = selectUniversalRuntimeTarget(app.releases, app.isApproved);
+  if (target.kind === "APP_UNAVAILABLE") {
+    throw new UniversalAppRuntimeError("APP_UNAVAILABLE", 404, "No production deployment has been provisioned.");
+  }
+  if (target.kind === "INVALID_RELEASE") {
+    throw new UniversalAppRuntimeError("INVALID_RELEASE", 503, "No approved app release is available.");
+  }
+  if (target.kind === "INVALID_DEPLOYMENT") {
+    throw new UniversalAppRuntimeError("INVALID_DEPLOYMENT", 503, "Production deployment is not active.");
+  }
+  const { release, deployment } = target;
 
   const manifest = universalAppManifestSchema.parse(release.manifest);
   if (manifest.id !== appId) {
