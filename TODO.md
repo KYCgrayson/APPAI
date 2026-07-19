@@ -1,9 +1,21 @@
 # TODO — AppAI Project Roadmap
 
-## Stateful Native Apps — Simpleshop
+## Universal App Runtime — Simpleshop migration
+
+- [x] Correct the boundary: AppAI is the Universal carrier; app UI/API/business schema stay in each app repo
+- [x] Add strict `appai.app.json` validation plus versioned release and platform-controlled deployment records
+- [x] Add generic `/app/[appId]` launch, one-time code exchange, opaque runtime sessions, and capability introspection
+- [x] Add generic private image/PDF runtime APIs scoped by app + Organization
+- [x] Move new Simpleshop customer/job-site implementation and migrations into the Simpleshop repo
+- [ ] Add isolated artifact build/provisioning worker and app-scoped PostgreSQL credential injection
+- [ ] Register, build, deploy, and accept the independent Simpleshop artifact
+- [ ] Switch `/app/simpleshop` from the compatibility layer to the Universal launcher
+- [ ] Remove hardcoded Simpleshop pages/APIs/services/models only after data migration and rollback acceptance
+
+### Historical monolith work (compatibility layer)
 
 - [x] Protect and commit the existing `simple-order` work before updating from remote main
-- [x] Add code-approved Native App Registry and Organization-scoped `OrganizationApp`
+- [x] Add the original code registry and Organization-scoped `OrganizationApp`
 - [x] Add protected `/app/simpleshop` shell, primary modules, settings persistence, and reusable lookup contract
 - [x] Add private image/PDF metadata, authenticated streaming, deletion audit, and quota thresholds
 - [x] Add native-app admin monitoring and API-key instance activation

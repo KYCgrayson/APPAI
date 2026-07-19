@@ -14,7 +14,7 @@ This is a **public repository**. All files, commits, and history are visible to 
 
 ## Product Overview
 
-**AppAI** (appai.info) is a free hosting platform for AI-built apps. The core value: AI agents can create fully functional, multi-language landing pages with a single API call.
+**AppAI** (appai.info) is a Universal hosting platform for AI-built apps. Agents can publish full app artifacts through a manifest/capability contract or create multi-language hosted landing pages through the existing page API.
 
 ### How It Works
 
@@ -54,7 +54,7 @@ This is a **public repository**. All files, commits, and history are visible to 
 - `/[locale]/` — Public pages (i18n enabled)
 - `/dashboard/` — Authenticated user area (English only)
 - `/admin/` — Admin panel (English only)
-- `/app/` — Authenticated, Organization-scoped native applications (not localized)
+- `/app/[appId]` — Universal launcher for authenticated, Organization-scoped isolated app runtimes (not localized)
 - `/p/[...segments]` — Hosted pages (own locale system, 30+ languages)
 - `/api/` — API endpoints
 

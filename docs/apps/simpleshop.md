@@ -1,104 +1,100 @@
-# Simpleshop native app integration
+# Simpleshop Universal App integration
 
 | Item | Adopted value |
 |---|---|
 | Product source of truth | `Simpleshop/simpleshop-PRD.md` |
-| Product specification | Simpleshop PRD v2.5 |
-| Simpleshop handoff commit | `10a9b75` |
-| Platform specifications | AppAI platform changes v1.1; Simpleshop app scope v1.1 |
-| Native app type | `simpleshop` |
-| Runtime | `/app/simpleshop` |
-| Current implementation | Phase 1 deployed at `e251350`; the Phase 2 customer, job-site and item management slice deployed at `4705bb1` |
+| Product specification | Simpleshop PRD v2.6 |
+| Adopted Simpleshop commit | `94ee18e` |
+| Platform specification | Universal App platform changes v2.0 |
+| App id | `simpleshop` |
+| Public entry | `/app/simpleshop` |
+| App manifest | `Simpleshop/appai.app.json` |
+| Current state | Independent runtime and first customer/job-site slice implemented; platform migration in progress |
 
-The complete product PRD stays in the Simpleshop repository. This document records only the AppAI integration contract and deployment state.
+The complete product PRD stays in the Simpleshop repository. This document records the platform integration and the transition away from the earlier AppAI monolith implementation.
 
-## Platform contract
+## Correct architecture
 
-- `simpleshop` is a code-approved native app. It is not a `HostedPage`, `simple-order` section, connector upload, or arbitrary server program.
-- Authentication uses the existing Google OAuth / NextAuth session.
-- The server derives `userId` and `organizationId`; browser bodies and query strings cannot select an Organization.
-- First access idempotently creates one `OrganizationApp`. `SUSPENDED` instances remain suspended and protected APIs return 403.
-- Organization settings are stored in the validated, versioned `OrganizationApp.config` object. Phase 2 customer, job-site, item, alias, unit and price records use dedicated Organization-scoped tables with composite foreign keys.
-- Private files are metadata-owned by `PrivateAsset` and streamed through authenticated AppAI routes. Blob URLs are not returned to clients.
+- Simpleshop is an independent app artifact. Its UI, API, business rules, Prisma schema, migrations, tests, and release manifest live in the Simpleshop repo.
+- AppAI is the Universal carrier. It owns authentication, Organization identity, app release/deployment state, capability grants, launch sessions, private assets, quota, usage, health, and rollback.
+- AppAI does not import Simpleshop server code or add future Simpleshop business models and routes to its Next.js process.
+- `organizationId` comes only from a short-lived AppAI runtime session. Browser payloads cannot select an Organization.
+- The production app database is app-scoped and provisioned by AppAI, while its schema and migrations remain owned by Simpleshop.
+- Private image/PDF access uses the generic `private-assets` runtime capability; Blob URLs and storage credentials are never returned to the app browser.
 
-## Approved APIs
+## Universal runtime contract
+
+`Simpleshop/appai.app.json` declares the Node build/start commands, health path, entry/callback paths, version, and these capabilities:
+
+- `identity`
+- `database`
+- `private-assets`
 
 | Method and path | Identity | Purpose |
 |---|---|---|
-| `GET /api/v1/app-instances` | Bearer API key | List enabled instances for the key's Organization |
-| `POST /api/v1/app-instances` | Bearer API key | Idempotently enable an approved app type |
-| `GET /api/apps/simpleshop/status` | Browser session | Read the current Organization's active instance |
-| `GET/PATCH /api/apps/simpleshop/settings` | Browser session | Read/update validated shop, timezone, currency and print settings |
-| `GET /api/apps/simpleshop/lookups` | Browser session | Search real customer/job-site/item master data |
-| `GET/POST /api/apps/simpleshop/customers` | Browser session | List/search customers and allocate a permanent customer number |
-| `GET/PATCH/DELETE /api/apps/simpleshop/customers/:id` | Browser session | Read/update or soft-disable an Organization-owned customer |
-| `GET/POST /api/apps/simpleshop/job-sites` | Browser session | List/search job sites and allocate the current month's site number |
-| `GET/PATCH/DELETE /api/apps/simpleshop/job-sites/:id` | Browser session | Read/update or soft-disable an Organization-owned job site |
-| `GET/POST /api/apps/simpleshop/items` | Browser session | List/search and create item, category, alias and unit records |
-| `GET/PATCH/DELETE /api/apps/simpleshop/items/:id` | Browser session | Read/update or soft-disable an Organization-owned item |
-| `POST /api/apps/simpleshop/assets` | Browser session | Authorize and upload a private image or PDF |
-| `GET/DELETE /api/apps/simpleshop/assets/:id` | Browser session | Stream or safely delete an Organization-owned asset |
+| `POST /api/v1/apps/simpleshop/releases` | Agent API key | Submit a strict versioned manifest for review |
+| `GET /app/simpleshop` | Browser session | Select the active deployment and issue a one-time launch code |
+| `POST /api/runtime/sessions/exchange` | One-time launch code | Consume the code and return an opaque eight-hour runtime token |
+| `POST /api/runtime/sessions/introspect` | Runtime token | Resolve app, instance, user, Organization, grants, and expiry |
+| `POST /api/runtime/assets` | Runtime token | Validate and upload a private image/PDF under app + Organization quota |
+| `GET/DELETE /api/runtime/assets/:id` | Runtime token | Stream or delete only an asset owned by that app + Organization |
 
-Agents may enable `simpleshop` and update the documented settings for their own Organization. Agents may not send `organizationId`, choose runtime paths/components, create schemas, execute SQL, upload server code, or change secrets.
+Launch codes and runtime tokens are stored only as SHA-256 hashes. Launch codes expire after one minute and are consumed with a guarded transaction. The runtime token is bound to the approved app release/deployment and becomes invalid when the instance, grant, release, or deployment is suspended.
 
-## Prisma and deployment
+## Platform records
 
-Models added by Phase 1:
+The Universal runtime migration adds only generic platform tables:
 
-- `OrganizationApp` with composite uniqueness on `organizationId + appType`.
-- `PrivateAsset` with Organization/app ownership, byte metadata and auditable deletion state.
-- Optional `UsageEvent.organizationId` for native-app monitoring.
-- `App.appType` and `App.runtimePath` for future catalog synchronization; the code registry remains authoritative.
+- `AppRelease`
+- `AppDeployment`
+- `AppCapabilityGrant`
+- `AppLaunchCode`
+- `AppRuntimeSession`
 
-`prisma/native-app-phase1-migration.sql` was applied with the direct, non-pooled production database connection on 2026-07-19 after a successful transaction rollback rehearsal. `npm run build` generates Prisma Client but does not apply database changes.
+The transaction-wrapped migration is `prisma/universal-app-runtime-migration.sql`. It does not remove or alter the existing Simpleshop compatibility tables.
 
-Phase 2 adds `SimpleshopSequence`, `Customer`, `JobSite`, `JobSiteAlias`, `JobSiteMonthCode`, `ItemCategory`, `Item`, `ItemAlias`, `ItemUnit`, `PriceRecord` and `CustomerContact`. `prisma/simpleshop-phase2-master-data-migration.sql` is transaction-wrapped and carries database checks for status enums, dimensions, prices and effective dates. Organization ownership is part of every relationship foreign key, not only an application-level query filter. The migration was rehearsed with a forced rollback and applied through the direct production Neon connection on 2026-07-19; a post-apply Prisma diff reports no schema difference.
+## Independent Simpleshop runtime
 
-## Environment and dashboard requirements
+The Simpleshop repository now contains:
 
-```text
-# Auto-managed by Vercel after connecting the private store:
-BLOB_STORE_ID=<managed by Vercel>
-# Optional only for local or non-Vercel verification:
-PRIVATE_BLOB_READ_WRITE_TOKEN=
-SIMPLESHOP_PRIVATE_ASSET_MAX_FILE_BYTES=2097152
-SIMPLESHOP_PRIVATE_ASSET_ORG_LIMIT_BYTES=104857600
-SIMPLESHOP_PRIVATE_ASSET_LARGE_FILE_BYTES=524288
-```
+- a standalone Next.js app that builds without importing AppAI code;
+- a strict `appai.app.json`;
+- AppAI launch-code callback and session introspection client;
+- app-owned Prisma schema and initial migration;
+- Organization-scoped customer and job-site CRUD plus a working management UI;
+- validation tests proving browser input cannot inject `organizationId` or permanent customer codes.
 
-The private `appai-simpleshop-private` Blob store is connected to the AppAI Vercel project in `SIN1`. Vercel deployments use short-lived OIDC authentication with the auto-managed `BLOB_STORE_ID`; `PRIVATE_BLOB_READ_WRITE_TOKEN` is an optional fallback only for local or non-Vercel verification. Do not reuse the public landing-page upload token. Provider-level Neon storage/compute and Blob transfer metrics remain checks in their dashboards until dedicated billing API credentials are approved.
+## Safe transition
 
-Threshold behavior:
+The hardcoded Simpleshop pages, APIs, services, and business tables currently deployed in AppAI are a temporary compatibility layer created under the incorrect PRD v2.5 architecture. They are not the target architecture.
 
-- 60%: warning.
-- 80%: review and upgrade planning.
-- 95%: reject new large files.
-- 100% projected usage: reject all uploads.
+Transition order:
 
-## Application surface
+1. Apply and rehearse the additive Universal runtime migration.
+2. Add the isolated artifact build/provisioning worker and app-scoped PostgreSQL credential injection.
+3. Submit, review, build, and deploy the Simpleshop artifact from the Simpleshop repo.
+4. Run identity, two-Organization database isolation, private image/PDF, desktop/mobile, health, and rollback acceptance.
+5. Switch `/app/simpleshop` to the Universal launcher.
+6. Migrate any real compatibility-table data if it exists.
+7. Remove hardcoded Simpleshop code/tables only through a reviewed, recoverable migration.
 
-The protected shell exposes three primary modules—Shipping, Monthly Settlement and Customer Contact—and secondary Items, Pricing, Inventory and Settings routes. Settings are persistent. Customer Contact now manages customer and job-site master data; Items manages formal item codes, categories, dimensions, aliases and units. The shared selectors query these real records and create no fake accounting or catalog data.
+Do not delete the compatibility layer before step 5, and do not allow both runtimes to accept writes at the same time. Production currently has no retained Simpleshop business records from QA, but the cutover still follows the same guarded process.
 
-## Verification status
+## Current verification and remaining work
 
-- Prisma format/validation/generation: passed on 2026-07-19.
-- Native app, redirect, mutation-origin, settings, master-data validation, simple-order and private asset tests: 14 defined; 12 passed and two database integration tests skipped without `TEST_DATABASE_URL`.
-- Type check: passed.
-- Production build: passed; all native app pages and APIs appear in the Next.js route manifest.
-- ESLint on every changed TypeScript/TSX path: 0 errors, 2 existing `img` optimization warnings. The repository-wide lint remains blocked by an existing baseline of 80 errors and 44 warnings outside this feature scope.
-- Anonymous browser verification: `/app/simpleshop/shipping` redirects through the locale login page while preserving the exact callback; protected settings, app-instance and asset APIs return 401; browser console has no errors.
-- Production-shape SQL rollback rehearsal and migration: passed against the direct Neon connection. Post-migration verification confirmed all Phase 1 tables, columns, indexes, checks and foreign keys.
-- Two-Organization database isolation: passed in one forced-rollback production transaction for `OrganizationApp` and `PrivateAsset`; no test Organization remained. The persistent test suite still requires a non-production `TEST_DATABASE_URL`.
-- Phase 2 SQL rollback rehearsal, production migration and schema diff: passed. All 11 master-data tables and 56 relevant checks/foreign keys were visible. Separate forced-rollback transactions confirmed cross-Organization relationships are rejected and scoped reads return no foreign rows; no test Organization remained.
-- Authenticated Phase 2 production acceptance: passed on `appai.info` for customer allocation, current-month job-site allocation, item/category/alias/default-unit creation, customer search and customer-scoped job-site search. The uniquely tagged QA records, empty category and QA-created sequences were removed in one guarded transaction; residual QA customer, job-site and item counts were all zero.
-- Private Blob end-to-end upload/download: private store and Vercel OIDC connection are configured; authenticated route verification remains pending.
-- Authenticated desktop/mobile runtime verification: requires two test logins.
+Implemented on the Universal branch:
 
-The Phase 1 platform foundation is deployed. Private Blob acceptance and multi-login browser acceptance remain explicit verification work rather than blockers for additive Phase 2 master data.
+- strict manifest and agent release validation;
+- generic launcher, one-time exchange, introspection, capability grants, and private asset routes;
+- platform-only Prisma schema and transaction-wrapped migration;
+- additive compatibility strategy with no destructive production change.
 
-## Remaining acceptance and Phase 2 work
+Still required before calling the migration complete:
 
-- Verify authenticated private Blob upload/download and confirm direct Blob URLs remain inaccessible.
-- Run two-Organization authenticated browser acceptance tests.
-- Verify simultaneous upload behavior against the configured Organization quota under expected production concurrency.
-- Add price-record and customer-contact-log management screens on top of the tables introduced in this slice.
+- non-production SQL rehearsal and then approved production migration;
+- isolated build/deployment worker and database provisioning/injection;
+- independent Simpleshop release registration and runtime deployment;
+- end-to-end cutover acceptance;
+- removal of the old AppAI business implementation after rollback criteria pass.
+
+Earlier Phase 1/2 monolith verification remains useful only as evidence that the compatibility layer is stable. It must not be treated as the final Universal architecture.

@@ -77,20 +77,26 @@ If a tool needs a genuinely new backend, the **owner** adds one connector
 entry; every reuse after that is pure section config. See
 `docs/interactive-tools-architecture.md`.
 
-### Stateful native apps
+### Universal apps
 
-Native apps are code-approved, login-protected applications with persistent
-Organization data. They are not page sections or arbitrary uploaded programs.
+Full applications built by agents can run on AppAI without becoming part of
+the AppAI monolith. The app repo owns UI, API, business rules, schema,
+migrations, tests, and `appai.app.json`; AppAI owns review, isolated runtime,
+login, Organization context, app-scoped database, private assets, quota, and
+monitoring.
 
 | Operation | Endpoint | Rule |
 |-----------|----------|------|
-| Discover instances | `GET /api/v1/app-instances` | Bearer API key; current Organization only |
-| Enable an app | `POST /api/v1/app-instances` | Idempotent; `appType` must be in the code registry |
-| Open Simpleshop | `/app/simpleshop` | Browser login required |
+| Submit release | `POST /api/v1/apps/{appId}/releases` | Bearer API key; manifest id must match the path |
+| Open app | `/app/{appId}` | Browser login; AppAI selects the approved deployment |
+| Runtime identity | `POST /api/runtime/sessions/introspect` | Opaque runtime bearer; returns only granted context |
+| Private images/PDFs | `/api/runtime/assets` | Requires the `private-assets` capability |
 
-For `simpleshop`, agents may provide validated shop settings. Never send an
-`organizationId`, runtime path, component name, SQL, secret, or server code;
-the platform derives identity and executable behavior on the server.
+Release submission accepts declarative metadata and a source revision. Agents
+never send `organizationId`, deployment/runtime URL, database credentials,
+raw SQL, or secrets. A platform-controlled isolated build/deploy step binds an
+approved artifact digest to its runtime. Simpleshop is migrating first; the
+old hardcoded routes are temporary compatibility only.
 
 ### Visual Design Capabilities
 

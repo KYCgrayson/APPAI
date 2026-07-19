@@ -219,6 +219,8 @@ model App {
   isApproved Boolean @default(false)
   isFeatured Boolean @default(false)
 
+  releases AppRelease[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -234,12 +236,113 @@ model OrganizationApp {
   status         String       @default("ACTIVE") // ACTIVE | SUSPENDED
   config         Json?
 
+  capabilityGrants AppCapabilityGrant[]
+  launchCodes      AppLaunchCode[]
+  runtimeSessions  AppRuntimeSession[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([organizationId, appType])
   @@index([appType, status])
   @@index([organizationId, status])
+}
+
+// Versioned, immutable release metadata submitted by an app's owning
+// Organization. The manifest describes the isolated artifact; executable app
+// code never becomes part of the AppAI Next.js process.
+model AppRelease {
+  id             String  @id @default(cuid())
+  appId          String
+  app            App     @relation(fields: [appId], references: [id], onDelete: Cascade)
+  version        String
+  manifest       Json
+  sourceRevision String?
+  artifactDigest String?
+  status         String  @default("PENDING") // PENDING | APPROVED | REJECTED | RETIRED
+
+  deployments AppDeployment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([appId, version])
+  @@index([appId, status, createdAt])
+}
+
+// Platform-controlled deployment record. runtimeBaseUrl is operational data
+// stored in PostgreSQL and is never accepted from an app launch request.
+model AppDeployment {
+  id              String     @id @default(cuid())
+  appReleaseId    String
+  appRelease      AppRelease @relation(fields: [appReleaseId], references: [id], onDelete: Cascade)
+  environment     String     @default("PRODUCTION")
+  runtimeBaseUrl  String     @db.Text
+  status          String     @default("PROVISIONING") // PROVISIONING | ACTIVE | FAILED | RETIRED
+  healthCheckedAt DateTime?
+
+  launchCodes     AppLaunchCode[]
+  runtimeSessions AppRuntimeSession[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([appReleaseId, environment])
+  @@index([environment, status, createdAt])
+}
+
+// Per-Organization grants are derived from an approved release manifest and
+// can be suspended independently without changing app-owned business data.
+model AppCapabilityGrant {
+  id                String          @id @default(cuid())
+  organizationAppId String
+  organizationApp   OrganizationApp @relation(fields: [organizationAppId], references: [id], onDelete: Cascade)
+  capability        String
+  status            String          @default("ACTIVE") // ACTIVE | SUSPENDED
+  config            Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationAppId, capability])
+  @@index([capability, status])
+}
+
+// Browser launch codes are short-lived, single-use and stored only as hashes.
+model AppLaunchCode {
+  id                String          @id @default(cuid())
+  codeHash          String          @unique
+  organizationAppId String
+  organizationApp   OrganizationApp @relation(fields: [organizationAppId], references: [id], onDelete: Cascade)
+  deploymentId      String
+  deployment        AppDeployment   @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+  userId            String
+  returnPath        String
+  expiresAt         DateTime
+  consumedAt        DateTime?
+  createdAt         DateTime        @default(now())
+
+  @@index([organizationAppId, expiresAt])
+  @@index([deploymentId, expiresAt])
+}
+
+// Independent runtimes receive an opaque bearer token. AppAI keeps only the
+// hash and resolves identity/capability state on every introspection.
+model AppRuntimeSession {
+  id                String          @id @default(cuid())
+  tokenHash         String          @unique
+  organizationAppId String
+  organizationApp   OrganizationApp @relation(fields: [organizationAppId], references: [id], onDelete: Cascade)
+  deploymentId      String
+  deployment        AppDeployment   @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+  userId            String
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([organizationAppId, expiresAt])
+  @@index([deploymentId, expiresAt])
 }
 
 // Metadata and authorization boundary for private native-app files. The Blob

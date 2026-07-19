@@ -92,16 +92,22 @@ See the [full Agent Spec](https://appai.info/spec) for the complete interactive 
 | `GET` | `/api/v1/keys` | Session | List API keys |
 | `DELETE` | `/api/v1/keys` | Session | Revoke an API key |
 
-## Stateful Native Apps
+## Universal Apps
 
-AppAI also hosts code-approved, login-protected applications with persistent Organization data. These are separate from landing-page sections: the code registry controls which apps can run, the server derives the Organization from the authenticated user, and every protected API scopes data to that Organization.
+AppAI is also a Universal carrier for full applications built by AI agents. Each app keeps its UI, API, business rules, database schema, migrations, tests, and release manifest in its own repository. AppAI validates the manifest, deploys the reviewed artifact to an isolated runtime, and supplies reusable identity, app-scoped database, private image/PDF, quota, and monitoring capabilities.
 
-The first native app is **Simpleshop**, available at `/app/simpleshop`. Its Phase 1 platform contract, migration requirements, private-file boundary, and verification status are documented in [`docs/apps/simpleshop.md`](docs/apps/simpleshop.md).
+Apps open through `/app/{appId}`. AppAI creates a single-use launch code and an opaque, short-lived runtime session; the independent runtime receives `userId`, `organizationId`, instance identity, and only its granted capabilities. App server code is never imported into the AppAI Next.js process.
+
+**Simpleshop** is the first migration to this contract. Its app code now lives in the Simpleshop repository; AppAI's earlier hardcoded implementation remains only as a temporary compatibility layer until the independent deployment passes acceptance. See [`docs/apps/simpleshop.md`](docs/apps/simpleshop.md).
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| `GET` | `/api/v1/app-instances` | Bearer | List the caller Organization's native app instances |
-| `POST` | `/api/v1/app-instances` | Bearer | Idempotently enable a code-approved native app |
+| `POST` | `/api/v1/apps/:appId/releases` | Bearer | Submit a versioned app manifest for platform review |
+| `GET` | `/app/:appId` | Browser session | Launch the active isolated deployment |
+| `POST` | `/api/runtime/sessions/exchange` | One-time code | Exchange a launch code for an opaque runtime session |
+| `POST` | `/api/runtime/sessions/introspect` | Runtime bearer | Resolve Organization identity and capability grants |
+| `POST` | `/api/runtime/assets` | Runtime bearer | Upload a private image or PDF with app/Organization quota |
+| `GET/DELETE` | `/api/runtime/assets/:id` | Runtime bearer | Stream or delete an app-owned private asset |
 
 ## Available Page Sections
 

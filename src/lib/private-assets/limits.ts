@@ -13,9 +13,9 @@ export function getPrivateAssetLimits(
   env: Record<string, string | undefined> = process.env,
 ): PrivateAssetLimits {
   return {
-    maxFileBytes: positiveInt(env.SIMPLESHOP_PRIVATE_ASSET_MAX_FILE_BYTES, 2 * 1024 * 1024),
-    organizationLimitBytes: positiveInt(env.SIMPLESHOP_PRIVATE_ASSET_ORG_LIMIT_BYTES, 100 * 1024 * 1024),
-    largeFileBytes: positiveInt(env.SIMPLESHOP_PRIVATE_ASSET_LARGE_FILE_BYTES, 512 * 1024),
+    maxFileBytes: positiveInt(env.PRIVATE_ASSET_MAX_FILE_BYTES || env.SIMPLESHOP_PRIVATE_ASSET_MAX_FILE_BYTES, 2 * 1024 * 1024),
+    organizationLimitBytes: positiveInt(env.PRIVATE_ASSET_ORG_LIMIT_BYTES || env.SIMPLESHOP_PRIVATE_ASSET_ORG_LIMIT_BYTES, 100 * 1024 * 1024),
+    largeFileBytes: positiveInt(env.PRIVATE_ASSET_LARGE_FILE_BYTES || env.SIMPLESHOP_PRIVATE_ASSET_LARGE_FILE_BYTES, 512 * 1024),
   };
 }
 
