@@ -8,6 +8,7 @@ import {
   safePrivateAssetFilename,
   validatePrivateAssetFile,
 } from "../src/lib/private-assets/file-validation.ts";
+import { getPrivateBlobAuth } from "../src/lib/private-assets/auth.ts";
 
 const limits = getPrivateAssetLimits({
   SIMPLESHOP_PRIVATE_ASSET_MAX_FILE_BYTES: "1000",
@@ -39,4 +40,18 @@ test("private filenames cannot escape their organization prefix", () => {
   assert.equal(filename.includes("/"), false);
   assert.equal(filename.includes(".."), false);
   assert.match(filename, /pdf$/);
+});
+
+test("private Blob authentication prefers short-lived Vercel OIDC", () => {
+  const oidc = getPrivateBlobAuth({ VERCEL: "1", BLOB_STORE_ID: "store_test" });
+  assert.equal(oidc.configured, true);
+  assert.equal(oidc.mode, "oidc");
+  assert.deepEqual(oidc.options, {});
+
+  const local = getPrivateBlobAuth({ PRIVATE_BLOB_READ_WRITE_TOKEN: "local-token" });
+  assert.equal(local.configured, true);
+  assert.equal(local.mode, "static-token");
+  assert.deepEqual(local.options, { token: "local-token" });
+
+  assert.equal(getPrivateBlobAuth({}).configured, false);
 });

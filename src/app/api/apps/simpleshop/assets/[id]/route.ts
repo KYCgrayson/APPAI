@@ -5,6 +5,7 @@ import { requireOrganizationContext } from "@/lib/organization-context";
 import { requireActiveOrganizationApp } from "@/lib/native-apps/service";
 import { nativeAppErrorResponse } from "@/lib/native-apps/responses";
 import { requireSameOrigin } from "@/lib/request-security";
+import { getPrivateBlobAuth } from "@/lib/private-assets/auth";
 
 async function ownedAsset(id: string, organizationId: string) {
   return db.privateAsset.findFirst({
@@ -26,9 +27,13 @@ export async function GET(
       return NextResponse.json({ error: "ASSET_NOT_FOUND" }, { status: 404 });
     }
 
-    const token = process.env.PRIVATE_BLOB_READ_WRITE_TOKEN;
-    if (!token) return NextResponse.json({ error: "PRIVATE_STORAGE_NOT_CONFIGURED" }, { status: 503 });
-    const result = await get(asset.pathname, { access: "private", token, useCache: false });
+    const blobAuth = getPrivateBlobAuth();
+    if (!blobAuth.configured) return NextResponse.json({ error: "PRIVATE_STORAGE_NOT_CONFIGURED" }, { status: 503 });
+    const result = await get(asset.pathname, {
+      access: "private",
+      useCache: false,
+      ...blobAuth.options,
+    });
     if (!result || result.statusCode !== 200) {
       return NextResponse.json({ error: "ASSET_NOT_FOUND" }, { status: 404 });
     }
@@ -61,8 +66,8 @@ export async function DELETE(
       return NextResponse.json({ error: "ASSET_NOT_FOUND" }, { status: 404 });
     }
 
-    const token = process.env.PRIVATE_BLOB_READ_WRITE_TOKEN;
-    if (!token) return NextResponse.json({ error: "PRIVATE_STORAGE_NOT_CONFIGURED" }, { status: 503 });
+    const blobAuth = getPrivateBlobAuth();
+    if (!blobAuth.configured) return NextResponse.json({ error: "PRIVATE_STORAGE_NOT_CONFIGURED" }, { status: 503 });
     await db.privateAsset.update({
       where: { id: asset.id },
       data: {
@@ -73,7 +78,7 @@ export async function DELETE(
     });
 
     try {
-      await del(asset.pathname, { token });
+      await del(asset.pathname, blobAuth.options);
     } catch (error) {
       console.error("Private Blob deletion pending", { assetId: asset.id, error });
       return NextResponse.json({ error: "DELETE_PENDING" }, { status: 502 });

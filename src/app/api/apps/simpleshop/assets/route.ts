@@ -7,6 +7,7 @@ import { requireActiveOrganizationApp } from "@/lib/native-apps/service";
 import { nativeAppErrorResponse } from "@/lib/native-apps/responses";
 import { evaluatePrivateAssetQuota, getPrivateAssetLimits } from "@/lib/private-assets/limits";
 import { safePrivateAssetFilename, validatePrivateAssetFile } from "@/lib/private-assets/file-validation";
+import { getPrivateBlobAuth } from "@/lib/private-assets/auth";
 import { requireSameOrigin } from "@/lib/request-security";
 
 export async function POST(request: NextRequest) {
@@ -14,8 +15,8 @@ export async function POST(request: NextRequest) {
     const context = await requireOrganizationContext();
     requireSameOrigin(request);
     await requireActiveOrganizationApp(context.organizationId, "simpleshop");
-    const token = process.env.PRIVATE_BLOB_READ_WRITE_TOKEN;
-    if (!token) {
+    const blobAuth = getPrivateBlobAuth();
+    if (!blobAuth.configured) {
       return NextResponse.json(
         { error: "PRIVATE_STORAGE_NOT_CONFIGURED" },
         { status: 503 },
@@ -58,9 +59,9 @@ export async function POST(request: NextRequest) {
     const pathname = `simpleshop/${context.organizationId}/${id}/${filename}`;
     const blob = await put(pathname, file, {
       access: "private",
-      token,
       contentType: file.type,
       addRandomSuffix: false,
+      ...blobAuth.options,
     });
 
     try {
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
         },
       }, { status: 201 });
     } catch (error) {
-      await del(blob.pathname, { token }).catch(() => undefined);
+      await del(blob.pathname, blobAuth.options).catch(() => undefined);
       throw error;
     }
   } catch (error) {

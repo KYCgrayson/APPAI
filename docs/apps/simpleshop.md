@@ -4,11 +4,11 @@
 |---|---|
 | Product source of truth | `Simpleshop/simpleshop-PRD.md` |
 | Product specification | Simpleshop PRD v2.5 |
-| Simpleshop handoff commit | `3ca78d1` |
+| Simpleshop handoff commit | `10a9b75` |
 | Platform specifications | AppAI platform changes v1.1; Simpleshop app scope v1.1 |
 | Native app type | `simpleshop` |
 | Runtime | `/app/simpleshop` |
-| Current implementation | AppAI Phase 1 code complete; infrastructure verification pending on `codex/simpleshop-native-app` |
+| Current implementation | AppAI Phase 1 code and rollback rehearsal complete; production migration/deploy pending on `codex/simpleshop-native-app` |
 
 The complete product PRD stays in the Simpleshop repository. This document records only the AppAI integration contract and deployment state.
 
@@ -49,13 +49,16 @@ Review and apply `prisma/native-app-phase1-migration.sql` with the direct, non-p
 ## Environment and dashboard requirements
 
 ```text
+# Auto-managed by Vercel after connecting the private store:
+BLOB_STORE_ID=<managed by Vercel>
+# Optional only for local or non-Vercel verification:
 PRIVATE_BLOB_READ_WRITE_TOKEN=
 SIMPLESHOP_PRIVATE_ASSET_MAX_FILE_BYTES=2097152
 SIMPLESHOP_PRIVATE_ASSET_ORG_LIMIT_BYTES=104857600
 SIMPLESHOP_PRIVATE_ASSET_LARGE_FILE_BYTES=524288
 ```
 
-`PRIVATE_BLOB_READ_WRITE_TOKEN` must belong to a Vercel Blob store configured for private access. Do not reuse the public landing-page upload token. Provider-level Neon storage/compute and Blob transfer metrics remain checks in their dashboards until dedicated billing API credentials are approved.
+The private `appai-simpleshop-private` Blob store is connected to the AppAI Vercel project in `SIN1`. Vercel deployments use short-lived OIDC authentication with the auto-managed `BLOB_STORE_ID`; `PRIVATE_BLOB_READ_WRITE_TOKEN` is an optional fallback only for local or non-Vercel verification. Do not reuse the public landing-page upload token. Provider-level Neon storage/compute and Blob transfer metrics remain checks in their dashboards until dedicated billing API credentials are approved.
 
 Threshold behavior:
 
@@ -71,21 +74,22 @@ The protected shell exposes three primary modules—Shipping, Monthly Settlement
 ## Verification status
 
 - Prisma format/validation/generation: passed on 2026-07-18.
-- Native app, redirect, mutation-origin, settings, simple-order and private asset tests: 11 defined; 10 passed and the database integration test skipped without `TEST_DATABASE_URL`.
+- Native app, redirect, mutation-origin, settings, simple-order and private asset tests: 12 defined; 11 passed and the database integration test skipped without `TEST_DATABASE_URL`.
 - Type check: passed.
 - Production build: passed; all native app pages and APIs appear in the Next.js route manifest.
 - ESLint on every changed TypeScript/TSX path: 0 errors, 2 existing `img` optimization warnings. The repository-wide lint remains blocked by an existing baseline of 80 errors and 44 warnings outside this feature scope.
 - Anonymous browser verification: `/app/simpleshop/shipping` redirects through the locale login page while preserving the exact callback; protected settings, app-instance and asset APIs return 401; browser console has no errors.
-- Two-Organization database isolation: requires a non-production `TEST_DATABASE_URL` and applied migration.
-- Private Blob end-to-end upload/download: requires private Blob credentials.
+- Production-shape SQL rollback rehearsal: passed against the direct Neon connection; the transaction rolled back and schema verification confirmed no residual Phase 1 objects.
+- Two-Organization database isolation: requires the applied migration; the persistent test suite still requires a non-production `TEST_DATABASE_URL`.
+- Private Blob end-to-end upload/download: private store and Vercel OIDC connection are configured; authenticated route verification remains pending.
 - Authenticated desktop/mobile runtime verification: requires two test logins after the migration is applied.
 
 Phase 1 must not be declared complete until the final verification results replace these pending entries.
 
 ## Work remaining before Phase 2 business development
 
-- Apply and rehearse the SQL migration in a non-production database, then production.
-- Configure the private Blob store and verify direct Blob URLs remain inaccessible.
+- Apply the rehearsed SQL migration to production and verify the resulting schema.
+- Verify authenticated private Blob upload/download and confirm direct Blob URLs remain inaccessible.
 - Run two-Organization database and browser acceptance tests.
 - Verify simultaneous upload behavior against the configured Organization quota under expected production concurrency.
 - Begin dedicated `Customer`, `JobSite`, `Item`, alias, unit and price tables only after Phase 1 isolation passes.

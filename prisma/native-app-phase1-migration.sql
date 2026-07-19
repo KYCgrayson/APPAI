@@ -57,7 +57,24 @@ CREATE INDEX IF NOT EXISTS "PrivateAsset_organizationId_appType_status_idx"
 CREATE INDEX IF NOT EXISTS "PrivateAsset_organizationId_createdAt_idx"
   ON "PrivateAsset"("organizationId", "createdAt");
 
+-- UsageEvent was introduced by the connector architecture but older AppAI
+-- production databases may predate that rollout. Create the base table when
+-- absent, then converge both old and new databases on the Phase 1 shape.
+CREATE TABLE IF NOT EXISTS "UsageEvent" (
+  "id" TEXT NOT NULL,
+  "connector" TEXT NOT NULL,
+  "userId" TEXT,
+  "organizationId" TEXT,
+  "action" TEXT NOT NULL,
+  "meta" JSONB,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "UsageEvent_pkey" PRIMARY KEY ("id")
+);
 ALTER TABLE "UsageEvent" ADD COLUMN IF NOT EXISTS "organizationId" TEXT;
+CREATE INDEX IF NOT EXISTS "UsageEvent_connector_userId_createdAt_idx"
+  ON "UsageEvent"("connector", "userId", "createdAt");
+CREATE INDEX IF NOT EXISTS "UsageEvent_connector_createdAt_idx"
+  ON "UsageEvent"("connector", "createdAt");
 CREATE INDEX IF NOT EXISTS "UsageEvent_connector_organizationId_createdAt_idx"
   ON "UsageEvent"("connector", "organizationId", "createdAt");
 
