@@ -12,7 +12,7 @@
 - [ ] Verify authenticated private Blob upload/download and direct-URL denial
 - [x] Begin Phase 2 Customer, JobSite, Item, alias, unit, and price master data from the Simpleshop PRD
 - [x] Rehearse, apply, and verify the Phase 2 master-data migration against production Neon
-- [ ] Deploy and verify the Phase 2 APIs and management screens
+- [x] Deploy and verify the Phase 2 APIs and management screens on `appai.info`
 
 Central todolist for all planned features, improvements, and tasks.
 Check items off as they are completed. Add new items with date and description.

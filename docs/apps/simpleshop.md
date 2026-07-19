@@ -8,7 +8,7 @@
 | Platform specifications | AppAI platform changes v1.1; Simpleshop app scope v1.1 |
 | Native app type | `simpleshop` |
 | Runtime | `/app/simpleshop` |
-| Current implementation | Phase 1 deployed in production at `e251350`; Phase 2 master-data management is in development on `codex/simpleshop-master-data` |
+| Current implementation | Phase 1 deployed at `e251350`; the Phase 2 customer, job-site and item management slice deployed at `4705bb1` |
 
 The complete product PRD stays in the Simpleshop repository. This document records only the AppAI integration contract and deployment state.
 
@@ -90,6 +90,7 @@ The protected shell exposes three primary modules—Shipping, Monthly Settlement
 - Production-shape SQL rollback rehearsal and migration: passed against the direct Neon connection. Post-migration verification confirmed all Phase 1 tables, columns, indexes, checks and foreign keys.
 - Two-Organization database isolation: passed in one forced-rollback production transaction for `OrganizationApp` and `PrivateAsset`; no test Organization remained. The persistent test suite still requires a non-production `TEST_DATABASE_URL`.
 - Phase 2 SQL rollback rehearsal, production migration and schema diff: passed. All 11 master-data tables and 56 relevant checks/foreign keys were visible. Separate forced-rollback transactions confirmed cross-Organization relationships are rejected and scoped reads return no foreign rows; no test Organization remained.
+- Authenticated Phase 2 production acceptance: passed on `appai.info` for customer allocation, current-month job-site allocation, item/category/alias/default-unit creation, customer search and customer-scoped job-site search. The uniquely tagged QA records, empty category and QA-created sequences were removed in one guarded transaction; residual QA customer, job-site and item counts were all zero.
 - Private Blob end-to-end upload/download: private store and Vercel OIDC connection are configured; authenticated route verification remains pending.
 - Authenticated desktop/mobile runtime verification: requires two test logins.
 
@@ -100,5 +101,4 @@ The Phase 1 platform foundation is deployed. Private Blob acceptance and multi-l
 - Verify authenticated private Blob upload/download and confirm direct Blob URLs remain inaccessible.
 - Run two-Organization authenticated browser acceptance tests.
 - Verify simultaneous upload behavior against the configured Organization quota under expected production concurrency.
-- Deploy and verify the Phase 2 management APIs and screens.
 - Add price-record and customer-contact-log management screens on top of the tables introduced in this slice.
