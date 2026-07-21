@@ -57,3 +57,24 @@ test("public contract includes a valid generic database application release exam
     assert.match(content, /Never accept[\s\S]{0,40}userId[\s\S]{0,40}organizationId/i);
   }
 });
+
+test("public contract requires generic Universal App auth chrome and safe logout", () => {
+  const instructions = read("AGENT_INSTRUCTIONS.md");
+  const quickstart = read("src/app/llms.txt/route.ts");
+
+  for (const content of [instructions, quickstart]) {
+    assert.match(content, /\/app\/\{appId\}.*(?:SSO|login gate)/i);
+    assert.match(content, /POST \/api\/runtime\/sessions\/exchange/);
+    assert.match(content, /POST \/api\/runtime\/sessions\/introspect/);
+    assert.match(content, /top-right(?:\s+app)? header/i);
+    assert.match(content, /Return to AppAI/);
+    assert.match(content, /app logout\s+action/i);
+    assert.match(content, /POST \/api\/runtime\/sessions\/revoke/);
+    assert.match(content, /strict matching.{0,5}appId/i);
+    assert.match(content, /HttpOnly runtime-session cookie/i);
+    assert.match(content, /\/logout\?callbackUrl=\//);
+    assert.match(content, /runtime token/i);
+    assert.match(content, /userId/i);
+    assert.match(content, /organizationId/i);
+  }
+});

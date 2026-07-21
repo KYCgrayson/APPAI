@@ -6,7 +6,10 @@
     "agentSpec": "एजेंट स्पेक",
     "github": "GitHub",
     "feedback": "प्रतिक्रिया",
-    "browse": "ब्राउज़ करें"
+    "browse": "ब्राउज़ करें",
+    "signIn": "साइन इन करें",
+    "signOut": "साइन आउट करें",
+    "account": "खाता"
   },
   "home": {
     "heroTitle1": "आपकी AI ऐप को मिलना चाहिए",
@@ -57,7 +60,9 @@
     "title": "ऐप्स ब्राउज़ करें",
     "noAppsTitle": "अभी कोई ऐप नहीं",
     "noAppsCategory": "{category} में कोई ऐप नहीं मिला। कोई और श्रेणी आज़माएं।",
-    "noAppsDefault": "अपनी ऐप सबमिट करने वाले पहले व्यक्ति बनें!"
+    "noAppsDefault": "अपनी ऐप सबमिट करने वाले पहले व्यक्ति बनें!",
+    "universalApp": "यूनिवर्सल ऐप",
+    "loginRequired": "साइन इन आवश्यक"
   },
   "appDetail": {
     "apps": "ऐप्स",
@@ -65,12 +70,19 @@
     "googlePlay": "Google Play",
     "website": "वेबसाइट",
     "screenshots": "स्क्रीनशॉट",
-    "viewHostedPage": "होस्ट किया गया लैंडिंग पेज देखें"
+    "viewHostedPage": "होस्ट किया गया लैंडिंग पेज देखें",
+    "launchApp": "ऐप खोलें"
   },
   "login": {
-    "signInDescription": "अपने ऐप पेज प्रबंधित करने के लिए साइन इन करें",
+    "signInDescription": "अपने पेज और ऐप्स का उपयोग व प्रबंधन करने के लिए साइन इन करें",
     "signInGoogle": "Google से साइन इन करें",
     "termsNotice": "साइन इन करके, आप हमारी सेवा की शर्तों से सहमत होते हैं"
+  },
+  "logout": {
+    "title": "AppAI से साइन आउट करें?",
+    "description": "इससे आप AppAI और सभी कनेक्ट किए गए ऐप्स से साइन आउट हो जाएंगे। आप कभी भी फिर से साइन इन कर सकते हैं।",
+    "cancel": "रद्द करें",
+    "confirm": "साइन आउट करें"
   },
   "deviceAuth": {
     "invalidLink": "अमान्य लिंक",

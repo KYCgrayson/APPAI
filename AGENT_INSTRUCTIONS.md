@@ -171,6 +171,28 @@ exchange/introspection runtime session. Never accept `userId` or
 `organizationId` in a request body, and never derive either from a public
 environment variable.
 
+#### Required app authentication chrome and logout
+
+Every Universal App must treat `/app/{appId}` as the AppAI SSO login gate. The
+runtime receives a one-time launch code, exchanges it at
+`POST /api/runtime/sessions/exchange`, then obtains its trusted context from
+`POST /api/runtime/sessions/introspect`. It must not invent its own browser
+identity contract.
+
+For every protected app screen, provide a conventional responsive top-right
+app header showing the signed-in user's safe display name or email and the
+Organization name. If identity display data is unavailable, show a neutral
+fallback such as “Signed in with AppAI”; never substitute raw IDs. The same
+header must include a **Return to AppAI** link and a **POST** app logout
+action.
+
+App logout uses the runtime bearer to call
+`POST /api/runtime/sessions/revoke` with a strict matching `appId`, clears the
+app's local HttpOnly runtime-session cookie, then routes the browser to
+`/logout?callbackUrl=/` on AppAI for platform signout. Never render or expose
+the runtime token, `userId`, `organizationId`, credentials, or database URLs
+in browser UI or public environment variables.
+
 Release submission accepts declarative metadata and a source revision. Agents
 never send `organizationId`, deployment/runtime URL, database credentials,
 raw SQL, or secrets. A platform-controlled isolated build/deploy step binds an

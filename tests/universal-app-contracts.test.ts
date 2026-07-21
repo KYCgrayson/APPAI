@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -10,6 +11,13 @@ import {
   canReadUniversalApp,
   mapUniversalAppReleaseStatus,
 } from "../src/lib/universal-apps/release-status.ts";
+import {
+  canRevokeUniversalAppSession,
+  runtimeSessionMatchesApp,
+  runtimeUserBelongsToOrganization,
+  sanitizeUniversalRuntimeIdentity,
+  universalAppUserRevocationScope,
+} from "../src/lib/universal-apps/runtime-session-contract.ts";
 
 const manifest = {
   schemaVersion: 1,
@@ -90,4 +98,47 @@ test("owner release status is generic for a second database app and redacts oper
 test("only the owning organization can read an app release status", () => {
   assert.equal(canReadUniversalApp("org-inventory", "org-inventory"), true);
   assert.equal(canReadUniversalApp("org-other", "org-inventory"), false);
+});
+
+test("runtime identity exposes display values only with the identity capability", () => {
+  const input = {
+    user: { id: "user_1", name: "Ada", email: "ada@example.test" },
+    organization: { id: "org_1", name: "Inventory Co" },
+  };
+  assert.deepEqual(sanitizeUniversalRuntimeIdentity({ ...input, capabilities: ["database", "identity"] }), {
+    user: input.user, organization: input.organization,
+  });
+  assert.deepEqual(sanitizeUniversalRuntimeIdentity({ ...input, capabilities: ["database"] }), {
+    user: { id: "user_1", name: null, email: null }, organization: input.organization,
+  });
+});
+
+test("runtime session validity denies cross-app and revoked sessions", () => {
+  const now = new Date("2026-07-21T00:00:00.000Z");
+  const active = {
+    revokedAt: null, expiresAt: new Date("2026-07-21T01:00:00.000Z"), organizationAppStatus: "ACTIVE",
+    deploymentStatus: "ACTIVE", releaseStatus: "APPROVED", deployedAppId: "inventory-db",
+  };
+  assert.equal(runtimeSessionMatchesApp(active, "inventory-db", now), true);
+  assert.equal(runtimeSessionMatchesApp(active, "simpleshop", now), false);
+  assert.equal(runtimeSessionMatchesApp({ ...active, revokedAt: now }, "inventory-db", now), false);
+  assert.equal(runtimeUserBelongsToOrganization("org_inventory", "org_inventory"), true);
+  assert.equal(runtimeUserBelongsToOrganization("org_other", "org_inventory"), false);
+  assert.equal(canRevokeUniversalAppSession("inventory-db", "inventory-db"), true);
+  assert.equal(canRevokeUniversalAppSession("inventory-db", "simpleshop"), false);
+  // A second revoke is still a successful, secret-free outcome for the same app.
+  assert.equal(canRevokeUniversalAppSession("inventory-db", "inventory-db"), true);
+});
+
+test("platform logout revocation scopes only to the specified user's open sessions", () => {
+  assert.deepEqual(universalAppUserRevocationScope("user_inventory"), {
+    userId: "user_inventory",
+    revokedAt: null,
+  });
+  assert.notDeepEqual(universalAppUserRevocationScope("user_other"), universalAppUserRevocationScope("user_inventory"));
+});
+
+test("release API shares the apps dynamic segment name", () => {
+  assert.equal(existsSync(new URL("../src/app/api/v1/apps/[id]/releases/route.ts", import.meta.url)), true);
+  assert.equal(existsSync(new URL("../src/app/api/v1/apps/[appId]", import.meta.url)), false);
 });

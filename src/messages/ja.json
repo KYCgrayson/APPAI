@@ -6,7 +6,10 @@
     "agentSpec": "エージェント仕様",
     "github": "GitHub",
     "feedback": "フィードバック",
-    "browse": "探す"
+    "browse": "探す",
+    "signIn": "ログイン",
+    "signOut": "ログアウト",
+    "account": "アカウント"
   },
   "home": {
     "heroTitle1": "あなたのAIアプリにふさわしい",
@@ -57,7 +60,9 @@
     "title": "アプリを探す",
     "noAppsTitle": "アプリはまだありません",
     "noAppsCategory": "{category} にアプリが見つかりませんでした。他のカテゴリをお試しください。",
-    "noAppsDefault": "最初のアプリを投稿しましょう！"
+    "noAppsDefault": "最初のアプリを投稿しましょう！",
+    "universalApp": "ユニバーサルアプリ",
+    "loginRequired": "ログインが必要です"
   },
   "appDetail": {
     "apps": "アプリ",
@@ -65,12 +70,19 @@
     "googlePlay": "Google Play",
     "website": "ウェブサイト",
     "screenshots": "スクリーンショット",
-    "viewHostedPage": "ホスティングされたランディングページを見る"
+    "viewHostedPage": "ホスティングされたランディングページを見る",
+    "launchApp": "アプリを起動"
   },
   "login": {
-    "signInDescription": "サインインしてアプリページを管理する",
+    "signInDescription": "サインインしてページとアプリを利用・管理する",
     "signInGoogle": "Googleでサインイン",
     "termsNotice": "サインインすることで、利用規約に同意したものとみなされます"
+  },
+  "logout": {
+    "title": "AppAI からログアウトしますか？",
+    "description": "AppAI と接続済みのすべてのアプリケーションからログアウトします。いつでも再度ログインできます。",
+    "cancel": "キャンセル",
+    "confirm": "ログアウト"
   },
   "deviceAuth": {
     "invalidLink": "無効なリンク",

@@ -6,7 +6,10 @@
     "agentSpec": "Agent 規格",
     "github": "GitHub",
     "feedback": "意見回饋",
-    "browse": "瀏覽"
+    "browse": "瀏覽",
+    "signIn": "登入",
+    "signOut": "登出",
+    "account": "帳號"
   },
   "home": {
     "heroTitle1": "您的 AI 應用程式值得",
@@ -57,7 +60,9 @@
     "title": "瀏覽應用程式",
     "noAppsTitle": "尚無應用程式",
     "noAppsCategory": "在 {category} 中找不到應用程式。請嘗試其他分類。",
-    "noAppsDefault": "成為第一個提交應用程式的人！"
+    "noAppsDefault": "成為第一個提交應用程式的人！",
+    "universalApp": "通用應用程式",
+    "loginRequired": "需要登入"
   },
   "appDetail": {
     "apps": "應用程式",
@@ -65,12 +70,19 @@
     "googlePlay": "Google Play",
     "website": "網站",
     "screenshots": "螢幕截圖",
-    "viewHostedPage": "檢視託管的登陸頁面"
+    "viewHostedPage": "檢視託管的登陸頁面",
+    "launchApp": "啟動應用程式"
   },
   "login": {
-    "signInDescription": "登入以管理您的應用程式頁面",
+    "signInDescription": "登入以存取和管理您的頁面與應用程式",
     "signInGoogle": "使用 Google 登入",
     "termsNotice": "登入即表示您同意我們的服務條款"
+  },
+  "logout": {
+    "title": "要登出 AppAI 嗎？",
+    "description": "這會讓您登出 AppAI 與所有已連接的應用程式。您隨時可以再次登入。",
+    "cancel": "取消",
+    "confirm": "登出"
   },
   "deviceAuth": {
     "invalidLink": "無效的連結",

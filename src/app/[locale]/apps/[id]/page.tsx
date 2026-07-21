@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { db } from "@/lib/db";
-import { Link } from "@/i18n/navigation";
 import { PlatformHeader } from "@/components/PlatformHeader";
+import { getUniversalAppLaunchPath } from "@/lib/universal-apps/directory";
 import type { Metadata } from "next";
 
 interface Props {
@@ -51,6 +51,7 @@ export default async function AppDetailPage({ params }: Props) {
   }
 
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
+  const universalLaunchPath = getUniversalAppLaunchPath(app);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -76,18 +77,7 @@ export default async function AppDetailPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <header className="border-b">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-4">
-          <Link href="/" className="text-xl font-bold flex items-center gap-2">
-            <img src="/appai-logo2.png" alt="AppAI" className="w-7 h-7 rounded" />
-            AppAI
-          </Link>
-          <span className="text-gray-300">/</span>
-          <Link href="/apps" className="text-sm text-gray-600 hover:text-black">
-            {t("apps")}
-          </Link>
-        </div>
-      </header>
+      <PlatformHeader />
 
       <div className="max-w-3xl mx-auto px-6 py-12">
         <div className="flex items-start gap-6 mb-8">
@@ -123,6 +113,7 @@ export default async function AppDetailPage({ params }: Props) {
 
         {/* Download buttons */}
         <div className="flex gap-3 mb-8">
+          {universalLaunchPath && <a href={universalLaunchPath} className="bg-cyan-600 text-white px-6 py-3 rounded-xl hover:bg-cyan-500">{t("launchApp")}</a>}
           {app.iosUrl && (
             <a
               href={app.iosUrl}

@@ -9,6 +9,7 @@ import { SIMPLESHOP_MODULES } from "@/lib/simpleshop/modules";
 import { safeInternalPath } from "@/lib/redirects";
 import { createUniversalAppLaunch, UniversalAppRuntimeError } from "@/lib/universal-apps/runtime-session";
 import { mayUseSimpleshopCompatibilityRuntime } from "@/lib/universal-apps/cutover";
+import { AccountControls } from "@/components/AccountControls";
 
 export const metadata: Metadata = {
   title: "Simpleshop 店務管理 - AppAI",
@@ -68,7 +69,7 @@ export default async function SimpleshopLayout({ children }: { children: React.R
             <Link href="/app/simpleshop" className="text-lg font-bold text-white">Simpleshop</Link>
             <p className="text-xs text-slate-500">{context.organization.name}</p>
           </div>
-          <nav className="flex max-w-full gap-1 overflow-x-auto pb-1 text-sm">
+          <nav aria-label="Simpleshop navigation" className="order-3 flex w-full max-w-full gap-1 overflow-x-auto pb-1 text-sm lg:order-2 lg:w-auto">
             {Object.entries(SIMPLESHOP_MODULES).map(([key, module]) => (
               <Link key={key} href={`/app/simpleshop/${key}`} className="whitespace-nowrap rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-800 hover:text-white">
                 {module.title}
@@ -76,6 +77,9 @@ export default async function SimpleshopLayout({ children }: { children: React.R
             ))}
             <Link href="/app/simpleshop/settings" className="whitespace-nowrap rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-800 hover:text-white">設定</Link>
           </nav>
+          <div className="order-2 lg:order-3">
+            <AccountControls user={{ name: context.userName, email: context.userEmail }} callbackUrl={returnTo} light labels={{ signIn: "登入", dashboard: "控制台", signOut: "登出", account: "帳戶" }} />
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">{children}</main>

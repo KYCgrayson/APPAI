@@ -5,13 +5,13 @@ import { db } from "@/lib/db";
 import { canReadUniversalApp, mapUniversalAppReleaseStatus } from "@/lib/universal-apps/release-status";
 import { universalAppIdSchema } from "@/lib/universal-apps/manifest";
 
-type RouteContext = { params: Promise<{ appId: string; releaseId: string }> };
+type RouteContext = { params: Promise<{ id: string; releaseId: string }> };
 
 export async function GET(request: NextRequest, routeContext: RouteContext) {
   const authResult = await validateApiKey(request.headers.get("authorization"));
   if (!authResult) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { appId: rawAppId, releaseId } = await routeContext.params;
+  const { id: rawAppId, releaseId } = await routeContext.params;
   const parsedAppId = universalAppIdSchema.safeParse(rawAppId);
   if (!parsedAppId.success) return NextResponse.json({ error: "INVALID_APP_ID" }, { status: 400 });
 

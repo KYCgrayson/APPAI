@@ -6,7 +6,10 @@
     "agentSpec": "Agent-Spezifikation",
     "github": "GitHub",
     "feedback": "Feedback",
-    "browse": "Durchsuchen"
+    "browse": "Durchsuchen",
+    "signIn": "Anmelden",
+    "signOut": "Abmelden",
+    "account": "Konto"
   },
   "home": {
     "heroTitle1": "Deine KI-App verdient",
@@ -57,7 +60,9 @@
     "title": "Apps durchsuchen",
     "noAppsTitle": "Noch keine Apps",
     "noAppsCategory": "Keine Apps in {category} gefunden. Versuche eine andere Kategorie.",
-    "noAppsDefault": "Sei der Erste, der seine App einreicht!"
+    "noAppsDefault": "Sei der Erste, der seine App einreicht!",
+    "universalApp": "Universal App",
+    "loginRequired": "Anmeldung erforderlich"
   },
   "appDetail": {
     "apps": "Apps",
@@ -65,12 +70,19 @@
     "googlePlay": "Google Play",
     "website": "Webseite",
     "screenshots": "Screenshots",
-    "viewHostedPage": "Gehostete Landingpage ansehen"
+    "viewHostedPage": "Gehostete Landingpage ansehen",
+    "launchApp": "App starten"
   },
   "login": {
-    "signInDescription": "Melde dich an, um deine App-Seiten zu verwalten",
+    "signInDescription": "Melde dich an, um deine Seiten und Anwendungen zu nutzen und zu verwalten",
     "signInGoogle": "Mit Google anmelden",
     "termsNotice": "Durch die Anmeldung stimmst du unseren Nutzungsbedingungen zu"
+  },
+  "logout": {
+    "title": "Von AppAI abmelden?",
+    "description": "Du wirst von AppAI und allen verbundenen Anwendungen abgemeldet. Du kannst dich jederzeit wieder anmelden.",
+    "cancel": "Abbrechen",
+    "confirm": "Abmelden"
   },
   "deviceAuth": {
     "invalidLink": "Ungültiger Link",

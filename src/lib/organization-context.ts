@@ -6,6 +6,8 @@ import { NativeAppError } from "@/lib/native-apps/errors";
 
 export interface OrganizationContext {
   userId: string;
+  userName: string | null;
+  userEmail: string | null;
   organizationId: string;
   role: string;
   organization: {
@@ -26,6 +28,8 @@ export async function requireOrganizationContext(): Promise<OrganizationContext>
     where: { id: session.user.id },
     select: {
       id: true,
+      name: true,
+      email: true,
       role: true,
       organizationId: true,
       organization: { select: { id: true, name: true, slug: true, plan: true } },
@@ -42,6 +46,8 @@ export async function requireOrganizationContext(): Promise<OrganizationContext>
 
   return {
     userId: user.id,
+    userName: user.name,
+    userEmail: user.email,
     organizationId: user.organizationId,
     role: user.role,
     organization: user.organization,

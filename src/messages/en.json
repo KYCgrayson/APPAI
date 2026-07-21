@@ -6,7 +6,10 @@
     "agentSpec": "Agent Spec",
     "github": "GitHub",
     "feedback": "Feedback",
-    "browse": "Browse"
+    "browse": "Browse",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "account": "Account"
   },
   "home": {
     "heroTitle1": "Your AI App deserves",
@@ -57,7 +60,9 @@
     "title": "Browse Apps",
     "noAppsTitle": "No apps yet",
     "noAppsCategory": "No apps found in {category}. Try another category.",
-    "noAppsDefault": "Be the first to submit your app!"
+    "noAppsDefault": "Be the first to submit your app!",
+    "universalApp": "Universal App",
+    "loginRequired": "Login required"
   },
   "appDetail": {
     "apps": "Apps",
@@ -65,12 +70,19 @@
     "googlePlay": "Google Play",
     "website": "Website",
     "screenshots": "Screenshots",
-    "viewHostedPage": "View hosted landing page"
+    "viewHostedPage": "View hosted landing page",
+    "launchApp": "Launch app"
   },
   "login": {
-    "signInDescription": "Sign in to manage your App pages",
+    "signInDescription": "Sign in to access and manage your pages and applications",
     "signInGoogle": "Sign in with Google",
     "termsNotice": "By signing in, you agree to our Terms of Service"
+  },
+  "logout": {
+    "title": "Sign out of AppAI?",
+    "description": "This signs you out of AppAI and all connected applications. You can sign in again at any time.",
+    "cancel": "Cancel",
+    "confirm": "Sign out"
   },
   "deviceAuth": {
     "invalidLink": "Invalid Link",

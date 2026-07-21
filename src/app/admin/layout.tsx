@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin";
-import { signOut } from "@/lib/auth";
 
 export default async function AdminLayout({
   children,
@@ -55,16 +54,7 @@ export default async function AdminLayout({
             <Link href="/" className="text-sm text-gray-400 hover:text-white">
               Site
             </Link>
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/" });
-              }}
-            >
-              <button type="submit" className="text-sm text-gray-400 hover:text-white">
-                Sign out
-              </button>
-            </form>
+            <Link href="/logout?callbackUrl=/" className="text-sm text-gray-400 hover:text-white">Sign out</Link>
           </div>
         </div>
       </nav>

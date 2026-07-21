@@ -1,7 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { signOut } from "@/lib/auth";
 
 export default async function DashboardLayout({
   children,
@@ -11,7 +10,7 @@ export default async function DashboardLayout({
   const session = await auth();
   if (!session) redirect("/login");
 
-  const isAdmin = (session as any).role === "ADMIN";
+  const isAdmin = session.role === "ADMIN";
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -63,19 +62,7 @@ export default async function DashboardLayout({
             <span className="text-sm text-gray-600">
               {session.user?.email}
             </span>
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/" });
-              }}
-            >
-              <button
-                type="submit"
-                className="text-sm text-gray-500 hover:text-black"
-              >
-                Sign out
-              </button>
-            </form>
+            <Link href="/logout?callbackUrl=/" className="text-sm text-gray-500 hover:text-black">Sign out</Link>
           </div>
         </div>
       </nav>

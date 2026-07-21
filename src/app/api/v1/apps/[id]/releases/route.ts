@@ -6,13 +6,13 @@ import { db } from "@/lib/db";
 import { publishUniversalAppReleaseSchema, universalAppIdSchema } from "@/lib/universal-apps/manifest";
 import { canReadUniversalApp, mapUniversalAppReleaseStatus } from "@/lib/universal-apps/release-status";
 
-type RouteContext = { params: Promise<{ appId: string }> };
+type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(request: NextRequest, routeContext: RouteContext) {
   const authResult = await validateApiKey(request.headers.get("authorization"));
   if (!authResult) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const pathAppId = universalAppIdSchema.safeParse((await routeContext.params).appId);
+  const pathAppId = universalAppIdSchema.safeParse((await routeContext.params).id);
   const input = publishUniversalAppReleaseSchema.safeParse(await request.json().catch(() => null));
   if (!pathAppId.success || !input.success || pathAppId.data !== input.data.manifest.id) {
     return NextResponse.json({ error: "INVALID_RELEASE" }, { status: 400 });
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest, routeContext: RouteContext) {
   const authResult = await validateApiKey(request.headers.get("authorization"));
   if (!authResult) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const parsedAppId = universalAppIdSchema.safeParse((await routeContext.params).appId);
+  const parsedAppId = universalAppIdSchema.safeParse((await routeContext.params).id);
   if (!parsedAppId.success) return NextResponse.json({ error: "INVALID_APP_ID" }, { status: 400 });
 
   const app = await db.app.findUnique({

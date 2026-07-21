@@ -6,7 +6,10 @@
     "agentSpec": "Especificación del agente",
     "github": "GitHub",
     "feedback": "Comentarios",
-    "browse": "Explorar"
+    "browse": "Explorar",
+    "signIn": "Iniciar sesión",
+    "signOut": "Cerrar sesión",
+    "account": "Cuenta"
   },
   "home": {
     "heroTitle1": "Tu app de IA merece",
@@ -57,7 +60,9 @@
     "title": "Explorar apps",
     "noAppsTitle": "Aún no hay apps",
     "noAppsCategory": "No se encontraron apps en {category}. Prueba otra categoría.",
-    "noAppsDefault": "¡Sé el primero en enviar tu app!"
+    "noAppsDefault": "¡Sé el primero en enviar tu app!",
+    "universalApp": "Aplicación universal",
+    "loginRequired": "Inicio de sesión obligatorio"
   },
   "appDetail": {
     "apps": "Apps",
@@ -65,12 +70,19 @@
     "googlePlay": "Google Play",
     "website": "Sitio web",
     "screenshots": "Capturas de pantalla",
-    "viewHostedPage": "Ver página de inicio alojada"
+    "viewHostedPage": "Ver página de inicio alojada",
+    "launchApp": "Abrir aplicación"
   },
   "login": {
-    "signInDescription": "Inicia sesión para gestionar tus páginas de app",
+    "signInDescription": "Inicia sesión para acceder y gestionar tus páginas y aplicaciones",
     "signInGoogle": "Iniciar sesión con Google",
     "termsNotice": "Al iniciar sesión, aceptas nuestros términos de servicio"
+  },
+  "logout": {
+    "title": "¿Cerrar sesión en AppAI?",
+    "description": "Se cerrará tu sesión en AppAI y en todas las aplicaciones conectadas. Puedes volver a iniciar sesión en cualquier momento.",
+    "cancel": "Cancelar",
+    "confirm": "Cerrar sesión"
   },
   "deviceAuth": {
     "invalidLink": "Enlace inválido",

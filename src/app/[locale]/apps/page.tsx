@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { db } from "@/lib/db";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { getExternalCanonical } from "@/lib/canonical";
+import { getUniversalAppLaunchPath } from "@/lib/universal-apps/directory";
 import {
   getNativeAppDefinition,
   listNativeAppDefinitions,
@@ -116,10 +117,11 @@ export default async function AppsPage({
               const canonical = app.hostedPageSlug
                 ? getExternalCanonical(canonicalBySlug.get(app.hostedPageSlug))
                 : null;
+              const universalLaunchPath = getUniversalAppLaunchPath(app);
               return (
               <a
                 key={app.id}
-                href={app.hostedPageSlug ? `/p/${app.hostedPageSlug}` : `/apps/${app.id}`}
+                href={universalLaunchPath ?? (app.hostedPageSlug ? `/p/${app.hostedPageSlug}` : `/apps/${app.id}`)}
                 className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors block"
               >
                 <div className="flex items-start gap-4">
@@ -141,6 +143,10 @@ export default async function AppsPage({
                       <span className="text-xs text-gray-600">{app.category}</span>
                       {app.iosUrl && <span className="text-xs text-blue-400">iOS</span>}
                       {app.androidUrl && <span className="text-xs text-green-400">Android</span>}
+                      {universalLaunchPath && <>
+                        <span className="rounded border border-violet-600/50 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-violet-300">{t("universalApp")}</span>
+                        <span className="text-[10px] text-cyan-300">{t("loginRequired")}</span>
+                      </>}
                       {canonical && (
                         <span
                           className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border border-amber-600/40 text-amber-400"

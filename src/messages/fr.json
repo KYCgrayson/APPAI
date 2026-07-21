@@ -6,7 +6,10 @@
     "agentSpec": "Spécification Agent",
     "github": "GitHub",
     "feedback": "Feedback",
-    "browse": "Parcourir"
+    "browse": "Parcourir",
+    "signIn": "Se connecter",
+    "signOut": "Se déconnecter",
+    "account": "Compte"
   },
   "home": {
     "heroTitle1": "Votre app IA mérite",
@@ -57,7 +60,9 @@
     "title": "Parcourir les apps",
     "noAppsTitle": "Aucune app pour le moment",
     "noAppsCategory": "Aucune app trouvée dans {category}. Essayez une autre catégorie.",
-    "noAppsDefault": "Soyez le premier à soumettre votre app !"
+    "noAppsDefault": "Soyez le premier à soumettre votre app !",
+    "universalApp": "Application universelle",
+    "loginRequired": "Connexion requise"
   },
   "appDetail": {
     "apps": "Apps",
@@ -65,12 +70,19 @@
     "googlePlay": "Google Play",
     "website": "Site web",
     "screenshots": "Captures d'écran",
-    "viewHostedPage": "Voir la page d'accueil hébergée"
+    "viewHostedPage": "Voir la page d'accueil hébergée",
+    "launchApp": "Lancer l’application"
   },
   "login": {
-    "signInDescription": "Connectez-vous pour gérer vos pages d'app",
+    "signInDescription": "Connectez-vous pour accéder à vos pages et applications et les gérer",
     "signInGoogle": "Se connecter avec Google",
     "termsNotice": "En vous connectant, vous acceptez nos conditions d'utilisation"
+  },
+  "logout": {
+    "title": "Se déconnecter d’AppAI ?",
+    "description": "Vous serez déconnecté d’AppAI et de toutes les applications connectées. Vous pourrez vous reconnecter à tout moment.",
+    "cancel": "Annuler",
+    "confirm": "Se déconnecter"
   },
   "deviceAuth": {
     "invalidLink": "Lien invalide",

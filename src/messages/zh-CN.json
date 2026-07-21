@@ -6,7 +6,10 @@
     "agentSpec": "Agent 规范",
     "github": "GitHub",
     "feedback": "意见反馈",
-    "browse": "浏览"
+    "browse": "浏览",
+    "signIn": "登录",
+    "signOut": "退出登录",
+    "account": "账户"
   },
   "home": {
     "heroTitle1": "您的 AI 应用值得",
@@ -57,7 +60,9 @@
     "title": "浏览应用",
     "noAppsTitle": "暂无应用",
     "noAppsCategory": "在 {category} 中未找到应用，请尝试其他分类。",
-    "noAppsDefault": "成为第一个提交应用的人！"
+    "noAppsDefault": "成为第一个提交应用的人！",
+    "universalApp": "通用应用",
+    "loginRequired": "需要登录"
   },
   "appDetail": {
     "apps": "应用",
@@ -65,12 +70,19 @@
     "googlePlay": "Google Play",
     "website": "网站",
     "screenshots": "截图",
-    "viewHostedPage": "查看托管的落地页"
+    "viewHostedPage": "查看托管的落地页",
+    "launchApp": "启动应用"
   },
   "login": {
-    "signInDescription": "登录以管理您的应用页面",
+    "signInDescription": "登录以访问和管理您的页面与应用",
     "signInGoogle": "使用 Google 登录",
     "termsNotice": "登录即表示您同意我们的服务条款"
+  },
+  "logout": {
+    "title": "要退出 AppAI 吗？",
+    "description": "这会让您退出 AppAI 和所有已连接的应用。您随时可以再次登录。",
+    "cancel": "取消",
+    "confirm": "退出登录"
   },
   "deviceAuth": {
     "invalidLink": "无效链接",

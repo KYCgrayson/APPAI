@@ -168,6 +168,24 @@ User and Organization context comes only from launch-code exchange and runtime
 session introspection. Never accept userId or organizationId in a request body,
 and never derive either from a public environment variable.
 
+### Required app authentication chrome and logout
+
+Every Universal App treats /app/{appId} as the AppAI SSO login gate. Exchange
+the one-time launch code at POST /api/runtime/sessions/exchange and obtain the
+trusted runtime context from POST /api/runtime/sessions/introspect; do not
+invent a separate browser identity contract.
+
+Every protected app screen needs a conventional responsive top-right header:
+show a safe signed-in user name or email plus Organization name, or the neutral
+fallback "Signed in with AppAI" if identity display is unavailable. Include
+Return to AppAI and a POST app logout action. Do not show raw userId,
+organizationId, runtime token, credentials, or database URLs in browser UI.
+
+App logout calls POST /api/runtime/sessions/revoke using the runtime bearer and
+a strict matching appId, clears the app's local HttpOnly runtime-session cookie,
+then routes to AppAI /logout?callbackUrl=/ for platform signout. Do not put any
+of these values in a public environment variable.
+
 ## What you can build
 
 - 26 section types: hero, features, pricing, faq, download, testimonials, gallery, team, video, screenshots, stats, contact, cta, links, about, schedule, sponsors, action, form, media-downloader, video-subtitle, tool, pdf-viewer, embed (TikTok/Loom/X/YouTube/Vimeo/Spotify/CodePen/Figma), simple-order

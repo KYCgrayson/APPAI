@@ -111,6 +111,10 @@ For a copyable `appai.app.json` and release request for a generic database-backe
 
 When an app requests `database`, AppAI provisions app-scoped PostgreSQL and injects server-only `DATABASE_URL`, `APPAI_PLATFORM_URL`, and `APPAI_APP_ID` into its approved runtime. Schema and migrations remain in the app repository; AppAI runs migrations with a separate migration role. User and Organization context is obtained only through runtime-session exchange/introspection, never from a request body or public environment variable.
 
+### Required Universal App auth chrome
+
+`/app/{appId}` is the AppAI SSO login gate. The runtime exchanges the one-time launch code and introspects its trusted session; every protected screen then provides a responsive top-right header with safe user/Organization display (or a neutral AppAI sign-in fallback), Return to AppAI, and a POST logout action. App logout revokes the runtime session with a strict `appId`, clears the local HttpOnly cookie, and routes to AppAI `/logout?callbackUrl=/`. Tokens, raw user/Organization IDs, credentials, and database URLs never appear in the browser UI.
+
 Apps open through `/app/{appId}`. AppAI creates a single-use launch code and an opaque, short-lived runtime session; the independent runtime receives `userId`, `organizationId`, instance identity, and only its granted capabilities. App server code is never imported into the AppAI Next.js process.
 
 **Simpleshop** is the first migration to this contract. Its app code now lives in the Simpleshop repository; AppAI's earlier hardcoded implementation remains only as a temporary compatibility layer until the independent deployment passes acceptance. See [`docs/apps/simpleshop.md`](docs/apps/simpleshop.md).

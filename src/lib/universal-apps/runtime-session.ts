@@ -5,6 +5,21 @@ import { createHash, randomBytes } from "node:crypto";
 import { db } from "@/lib/db";
 import { universalAppIdSchema, universalAppManifestSchema } from "@/lib/universal-apps/manifest";
 import { selectUniversalRuntimeTarget } from "@/lib/universal-apps/cutover";
+import {
+  canRevokeUniversalAppSession,
+  runtimeSessionMatchesApp,
+  runtimeUserBelongsToOrganization,
+  sanitizeUniversalRuntimeIdentity,
+  universalAppUserRevocationScope,
+} from "@/lib/universal-apps/runtime-session-contract";
+
+export {
+  canRevokeUniversalAppSession,
+  runtimeSessionMatchesApp,
+  runtimeUserBelongsToOrganization,
+  sanitizeUniversalRuntimeIdentity,
+  universalAppUserRevocationScope,
+} from "@/lib/universal-apps/runtime-session-contract";
 
 const LAUNCH_CODE_TTL_MS = 60 * 1000;
 const RUNTIME_SESSION_TTL_MS = 8 * 60 * 60 * 1000;
@@ -22,6 +37,14 @@ function opaqueToken() {
 
 export function hashRuntimeSecret(value: string) {
   return createHash("sha256").update(value).digest("hex");
+}
+
+/** Platform logout hook: invalidate every still-open isolated-app session for one user. */
+export async function revokeUniversalAppSessionsForUser(userId: string) {
+  return db.appRuntimeSession.updateMany({
+    where: universalAppUserRevocationScope(userId),
+    data: { revokedAt: new Date() },
+  });
 }
 
 function runtimeCallbackUrl(baseUrl: string, callbackPath: string, code: string, returnPath: string) {
@@ -172,20 +195,37 @@ export async function introspectUniversalAppSession(rawToken: string, requestedA
   const session = await db.appRuntimeSession.findUnique({
     where: { tokenHash: hashRuntimeSecret(rawToken) },
     include: {
-      organizationApp: { include: { capabilityGrants: true } },
+      organizationApp: {
+        include: {
+          capabilityGrants: true,
+          organization: { select: { id: true, name: true } },
+        },
+      },
       deployment: { include: { appRelease: { include: { app: true } } } },
     },
   });
   const now = new Date();
-  if (
-    !session || session.revokedAt || session.expiresAt <= now ||
-    session.organizationApp.status !== "ACTIVE" ||
-    session.deployment.status !== "ACTIVE" ||
-    session.deployment.appRelease.status !== "APPROVED" ||
-    session.deployment.appRelease.app.appType !== appId
-  ) {
+  if (!session || !runtimeSessionMatchesApp({
+    revokedAt: session.revokedAt,
+    expiresAt: session.expiresAt,
+    organizationAppStatus: session.organizationApp.status,
+    deploymentStatus: session.deployment.status,
+    releaseStatus: session.deployment.appRelease.status,
+    deployedAppId: session.deployment.appRelease.app.appType,
+  }, appId, now)) {
     return null;
   }
+
+  const user = await db.user.findUnique({
+    where: { id: session.userId },
+    select: { id: true, name: true, email: true, organizationId: true },
+  });
+  if (!user || !runtimeUserBelongsToOrganization(user.organizationId, session.organizationApp.organizationId)) return null;
+
+  const capabilities = session.organizationApp.capabilityGrants
+    .filter((grant) => grant.status === "ACTIVE")
+    .map((grant) => grant.capability)
+    .sort();
 
   return {
     active: true as const,
@@ -193,12 +233,26 @@ export async function introspectUniversalAppSession(rawToken: string, requestedA
     instanceId: session.organizationAppId,
     userId: session.userId,
     organizationId: session.organizationApp.organizationId,
-    capabilities: session.organizationApp.capabilityGrants
-      .filter((grant) => grant.status === "ACTIVE")
-      .map((grant) => grant.capability)
-      .sort(),
+    ...sanitizeUniversalRuntimeIdentity({ user, organization: session.organizationApp.organization, capabilities }),
+    capabilities,
     expiresAt: session.expiresAt.toISOString(),
   };
+}
+
+export async function revokeUniversalAppSession(rawToken: string, requestedAppId: string) {
+  const appId = universalAppIdSchema.parse(requestedAppId);
+  const now = new Date();
+  const session = await db.appRuntimeSession.findUnique({
+    where: { tokenHash: hashRuntimeSecret(rawToken) },
+    include: { deployment: { include: { appRelease: { include: { app: true } } } } },
+  });
+  if (!session || !canRevokeUniversalAppSession(session.deployment.appRelease.app.appType, appId)) return false;
+
+  await db.appRuntimeSession.updateMany({
+    where: { id: session.id, tokenHash: hashRuntimeSecret(rawToken), revokedAt: null },
+    data: { revokedAt: now },
+  });
+  return true;
 }
 
 export function bearerToken(authorization: string | null) {
