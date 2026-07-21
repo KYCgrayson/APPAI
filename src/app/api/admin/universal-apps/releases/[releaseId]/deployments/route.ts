@@ -16,6 +16,7 @@ import {
   createVercelSandboxFactory,
   runIsolatedMigration,
 } from "@/lib/universal-apps/vercel-sandbox-worker";
+import { getVercelOidcToken } from "@/lib/universal-apps/vercel-oidc";
 
 export const maxDuration = 800;
 
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest, routeContext: RouteContext) {
   const prepared = await prepareDeployment((await routeContext.params).releaseId);
   if ("error" in prepared) return NextResponse.json({ error: prepared.error }, { status: prepared.status });
 
-  const oidcToken = process.env.VERCEL_OIDC_TOKEN;
+  const oidcToken = getVercelOidcToken(request.headers);
   if (!oidcToken) {
     await db.appDeployment.update({ where: { id: prepared.id }, data: { status: "FAILED" } });
     await db.appManagedRuntime.update({ where: { appDeploymentId: prepared.id }, data: { failureCode: "PROVIDER_CREDENTIALS_UNAVAILABLE", failureMessage: "Managed provider credentials are not configured." } });
