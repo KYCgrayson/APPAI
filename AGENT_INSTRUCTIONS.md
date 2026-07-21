@@ -88,17 +88,18 @@ monitoring.
 | Operation | Endpoint | Rule |
 |-----------|----------|------|
 | Submit release | `POST /api/v1/apps/{appId}/releases` | Bearer API key; manifest id must match the path |
-| Open app | `/app/{appId}` | Browser login; AppAI selects the approved deployment |
+| Open app | `/app/{appId}` | Browser login; AppAI selects the approved deployment and hands off once to `https://{appId}.appai.info` |
 | Runtime identity | `POST /api/runtime/sessions/introspect` | Opaque runtime bearer; returns only granted context |
 | Private images/PDFs | `/api/runtime/assets` | Requires the `private-assets` capability |
 
 #### Natural release flow
 
 1. **Authenticate** through the device flow or with an existing API key.
-2. **Add `appai.app.json`** to the application's own repository. It declares the id, version, Node build/start commands, health path, entry/callback paths, and requested capabilities. The repo keeps its UI, API, business rules, schema, migrations, and tests.
-3. **Submit:** `POST /api/v1/apps/{appId}/releases`, with a manifest whose `id` exactly matches `{appId}`, release metadata, and an optional source revision. This automatically reserves the AppAI slot and returns `PENDING`.
-4. **Poll:** `GET /api/v1/apps/{appId}/releases/{releaseId}` with the `releaseId` returned by submission for review/deployment state. A `PENDING` release is not launchable.
-5. **Launch:** after AppAI reviews, builds, and provisions the approved capabilities, users open `/app/{appId}`. AppAI supplies browser login plus an opaque, short-lived runtime session.
+2. **Add `appai.app.json`** to the application's own repository. It declares the id, version, a lockfile-strict install command (`npm ci`, `pnpm install --frozen-lockfile`, or `yarn install --immutable`), safe build/start commands, health path, entry/callback paths, optional migration command, and requested capabilities. The repository's `package.json` must define `test` and `typecheck` scripts. The repo keeps its UI, API, business rules, schema, migrations, and tests.
+3. **Submit:** `POST /api/v1/apps/{appId}/releases`, with a manifest whose `id` exactly matches `{appId}`, a credential-free public GitHub repository URL (`https://github.com/{owner}/{repo}`), and the exact 40-character Git commit SHA in `sourceRevision`. Other Git or HTTPS hosts are not accepted. This creates a `PENDING` managed release receipt.
+4. **Await platform review:** A `PENDING` receipt means the release has been accepted for AppAI review; it does not start infrastructure work by itself. An AppAI administrator approves the release and starts the managed validation and delivery pipeline.
+5. **AppAI manages validation and delivery after approval:** AppAI verifies the source revision, validates the manifest, installs dependencies, and requires the repository's `test`, `typecheck`, and declared build command to pass in an isolated sandbox. It provisions an app-scoped database with separate migration/runtime roles when requested, runs the declared migration command in the migration context, deploys the isolated runtime, performs a health check, and records the immutable artifact/deployment evidence.
+6. **Poll:** `GET /api/v1/apps/{appId}/releases/{releaseId}` while the release awaits review and then until it is `APPROVED` with an `ACTIVE` production deployment and current health evidence. Only then do users launch `/app/{appId}`; AppAI supplies browser login plus an opaque, short-lived runtime session.
 
 #### Copyable database app example
 
@@ -113,9 +114,11 @@ application commits this `appai.app.json` at its repository root:
   "version": "1.0.0",
   "runtime": {
     "type": "node",
+    "installCommand": "npm ci",
     "buildCommand": "npm run build",
     "startCommand": "npm run start",
-    "healthPath": "/api/health"
+    "healthPath": "/api/health",
+    "migrationCommand": "npm run migrate"
   },
   "entryPath": "/app/inventory",
   "callbackPath": "/api/appai/callback",
@@ -136,7 +139,7 @@ curl -X POST https://appai.info/api/v1/apps/inventory/releases \
       "id": "inventory",
       "name": "Inventory Manager",
       "version": "1.0.0",
-      "runtime": { "type": "node", "buildCommand": "npm run build", "startCommand": "npm run start", "healthPath": "/api/health" },
+      "runtime": { "type": "node", "installCommand": "npm ci", "buildCommand": "npm run build", "startCommand": "npm run start", "healthPath": "/api/health", "migrationCommand": "npm run migrate" },
       "entryPath": "/app/inventory",
       "callbackPath": "/api/appai/callback",
       "capabilities": ["identity", "database"]
@@ -145,26 +148,29 @@ curl -X POST https://appai.info/api/v1/apps/inventory/releases \
     "description": "A database-backed inventory workflow for teams.",
     "category": "INVENTORY",
     "repoUrl": "https://github.com/example/inventory-manager",
-    "sourceRevision": "a1b2c3d"
+    "sourceRevision": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
   }'
 ```
 
 The accepted response is a receipt such as
 `{ "appId": "inventory", "releaseId": "...", "version": "1.0.0", "status": "PENDING" }`.
 Store `releaseId` and poll `GET /api/v1/apps/inventory/releases/{releaseId}`.
-`PENDING` reserves the slot only: source stays in the repository and the
-platform-controlled review/build/provisioning process must finish before any
-deployment is active or `/app/inventory` can launch.
+`PENDING` means the release is awaiting AppAI platform review. After an AppAI
+administrator starts the managed pipeline, AppAI performs validation, build,
+database provisioning, migration, deployment, health verification, and
+activation. Agents never choose a runtime URL, database URL, provider
+credential, artifact digest, deployment state, or health result. Poll the
+release until AppAI has activated the verified production deployment.
 
 #### Database runtime contract
 
 Requesting the `database` capability asks AppAI to provision an app-scoped
-PostgreSQL database. AppAI injects its server-only `DATABASE_URL` into the
-approved isolated runtime; never expose it to the browser or place it in a
-public environment variable. The app repository owns its schema and migrations,
-while AppAI runs migrations with a separate migration role rather than the
-runtime credential. AppAI also injects `APPAI_PLATFORM_URL` and `APPAI_APP_ID`
-so the runtime can identify its platform and app.
+PostgreSQL schema and deployment-scoped credentials. AppAI injects the
+server-only runtime `DATABASE_URL` only into the approved isolated runtime;
+never expose it to browser code or a public environment variable. The app repo
+owns schema/migrations, while AppAI runs `migrationCommand` with a separate
+migration role and gives the runtime role only its target-schema DML/sequence
+permissions. AppAI also injects `APPAI_PLATFORM_URL` and `APPAI_APP_ID`.
 
 User and Organization context comes only from the AppAI launch-code
 exchange/introspection runtime session. Never accept `userId` or
@@ -173,11 +179,13 @@ environment variable.
 
 #### Required app authentication chrome and logout
 
-Every Universal App must treat `/app/{appId}` as the AppAI SSO login gate. The
-runtime receives a one-time launch code, exchanges it at
+Every Universal App must treat `/app/{appId}` as the AppAI SSO login gate. After
+login, AppAI hands the browser off once to the platform-managed
+`https://{appId}.appai.info` subdomain. The isolated runtime receives a
+one-time launch code, exchanges it at
 `POST /api/runtime/sessions/exchange`, then obtains its trusted context from
 `POST /api/runtime/sessions/introspect`. It must not invent its own browser
-identity contract.
+identity contract. Agents cannot choose a runtime domain.
 
 For every protected app screen, provide a conventional responsive top-right
 app header showing the signed-in user's safe display name or email and the
@@ -193,10 +201,12 @@ app's local HttpOnly runtime-session cookie, then routes the browser to
 the runtime token, `userId`, `organizationId`, credentials, or database URLs
 in browser UI or public environment variables.
 
-Release submission accepts declarative metadata and a source revision. Agents
-never send `organizationId`, deployment/runtime URL, database credentials,
-raw SQL, or secrets. A platform-controlled isolated build/deploy step binds an
-approved artifact digest to its runtime. Simpleshop is the first example of this generic contract; it has no special publishing API.
+Release submission accepts declarative metadata plus a pinned source revision.
+External agents never send `organizationId`, deployment/runtime URL, database
+credentials, provider/OIDC/CLI credentials, raw SQL, secrets, or artifact
+digests. AppAI owns the isolated validation/build/migration/deploy/health/
+activation sequence. Simpleshop is the first example of this generic contract;
+it has no special publishing API.
 
 ### Visual Design Capabilities
 

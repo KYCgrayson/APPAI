@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   approveUniversalAppDeploymentSchema,
   publishUniversalAppReleaseSchema,
+  universalAppIdSchema,
   universalAppManifestSchema,
 } from "../src/lib/universal-apps/manifest.ts";
 import {
@@ -41,11 +42,25 @@ test("Universal App manifest accepts Simpleshop without business-specific fields
   assert.deepEqual(parsed.capabilities, ["identity", "database", "private-assets"]);
 });
 
+test("Universal App ids cannot claim AppAI platform subdomains", () => {
+  for (const id of ["www", "api", "admin", "auth", "login", "dashboard", "mail"]) {
+    assert.equal(universalAppIdSchema.safeParse(id).success, false, id);
+  }
+});
+
+test("Universal App ids are valid DNS labels for managed subdomains", () => {
+  assert.equal(universalAppIdSchema.safeParse("ab").success, true);
+  assert.equal(universalAppIdSchema.safeParse(`a${"b".repeat(61)}c`).success, true);
+  for (const id of ["a-", `a${"b".repeat(63)}`]) assert.equal(universalAppIdSchema.safeParse(id).success, false, id);
+});
+
 test("agent release input cannot select deployment URLs, secrets or SQL", () => {
   const release = {
     manifest,
     tagline: "店務管理",
     description: "獨立執行的店務管理 app",
+    repoUrl: "https://github.com/example/simpleshop",
+    sourceRevision: "a".repeat(40),
   };
   assert.equal(publishUniversalAppReleaseSchema.safeParse(release).success, true);
   for (const field of ["runtimeBaseUrl", "databaseUrl", "secret", "sql"]) {
@@ -58,9 +73,10 @@ test("agent release repository URL must be credential-free HTTPS", () => {
     manifest,
     tagline: "庫存管理",
     description: "獨立執行的資料庫型 app",
+    sourceRevision: "a".repeat(40),
   };
   assert.equal(publishUniversalAppReleaseSchema.safeParse({ ...release, repoUrl: "https://github.com/example/inventory" }).success, true);
-  for (const repoUrl of ["http://github.com/example/inventory", "javascript:alert(1)", "https://user:pass@github.com/example/inventory"]) {
+  for (const repoUrl of ["http://github.com/example/inventory", "javascript:alert(1)", "https://user:pass@github.com/example/inventory", "https://localhost/example/inventory", "https://127.0.0.1/example/inventory", "https://example.com/example/inventory"]) {
     assert.equal(publishUniversalAppReleaseSchema.safeParse({ ...release, repoUrl }).success, false, repoUrl);
   }
 });
@@ -83,16 +99,34 @@ test("owner release status is generic for a second database app and redacts oper
     id: "release_inventory", version: "1.2.3", status: "APPROVED", sourceRevision: "1234567",
     artifactDigest: `sha256:${"b".repeat(64)}`, createdAt, updatedAt: createdAt,
     deployments: [
-      { environment: "PRODUCTION", status: "ACTIVE", runtimeBaseUrl: "https://inventory.example.test/internal?token=secret", healthCheckedAt: createdAt, createdAt, updatedAt: createdAt },
-      { environment: "PREVIEW", status: "FAILED", runtimeBaseUrl: "https://preview.example.test/private", healthCheckedAt: null, createdAt, updatedAt: createdAt },
+      { environment: "PRODUCTION", status: "ACTIVE", healthCheckedAt: createdAt, createdAt, updatedAt: createdAt, managedRuntime: { failureCode: "UNEXPOSED", failureMessage: "not a failed deployment" } },
+      { environment: "PREVIEW", status: "FAILED", healthCheckedAt: null, createdAt, updatedAt: createdAt, managedRuntime: { failureCode: "HEALTH_CHECK_FAILED", failureMessage: "Health check did not return the managed contract." } },
     ],
   });
   assert.equal(mapped.releaseId, "release_inventory");
   assert.equal(mapped.artifactDigest, `sha256:${"b".repeat(64)}`);
-  assert.equal("runtimePublicOrigin" in mapped.deployments[0], false);
-  assert.equal(JSON.stringify(mapped).includes("token=secret"), false);
-  assert.equal(JSON.stringify(mapped).includes("inventory.example.test"), false);
-  assert.equal(JSON.stringify(mapped).includes("/private"), false);
+  assert.equal("failure" in mapped.deployments[0], false);
+  assert.deepEqual(mapped.deployments[1].failure, {
+    code: "HEALTH_CHECK_FAILED",
+    message: "Health check did not return the managed contract.",
+  });
+  assert.equal(JSON.stringify(mapped).includes("runtimeBaseUrl"), false);
+  assert.equal(JSON.stringify(mapped).includes("publicRuntimeUrl"), false);
+  assert.equal(JSON.stringify(mapped).includes("providerProjectId"), false);
+  assert.equal(JSON.stringify(mapped).includes("databaseProvision"), false);
+});
+
+test("failed deployment status keeps the failure object even when no worker evidence was recorded", () => {
+  const createdAt = new Date("2026-07-21T00:00:00.000Z");
+  const mapped = mapUniversalAppReleaseStatus({
+    id: "release_failed", version: "1.2.3", status: "PENDING", sourceRevision: null,
+    artifactDigest: null, createdAt, updatedAt: createdAt,
+    deployments: [{
+      environment: "PRODUCTION", status: "FAILED", healthCheckedAt: null, createdAt, updatedAt: createdAt,
+      managedRuntime: null,
+    }],
+  });
+  assert.deepEqual(mapped.deployments[0].failure, { code: null, message: null });
 });
 
 test("only the owning organization can read an app release status", () => {

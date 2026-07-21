@@ -121,12 +121,13 @@ If you already have an API key (appai_sk_...), skip step 2.
 ## Universal App: natural publish flow
 
 1. AUTHENTICATE with the same device flow or an existing API key.
-2. ADD appai.app.json to the application's own repository. It declares the app id, version, Node build/start commands, health path, entry/callback paths, and requested capabilities (identity, database, and/or private-assets). The app repository owns its UI, API, business rules, schema, migrations, and tests.
-3. SUBMIT the release: POST ${baseUrl}/api/v1/apps/{appId}/releases. The manifest id must equal {appId}. This automatically reserves the AppAI slot and returns a release receipt with PENDING status.
-4. POLL GET ${baseUrl}/api/v1/apps/{appId}/releases/{releaseId} with the releaseId returned at submission for review/deployment state. AppAI reviews the release, builds the isolated artifact, and provisions only approved capabilities. Do not assume a PENDING app is launchable.
-5. LAUNCH only after approval at ${baseUrl}/app/{appId}. AppAI performs browser login and supplies an opaque, short-lived runtime session with the user, Organization, and grants.
+2. ADD appai.app.json to the application's own repository. It declares the app id, version, a lockfile-strict install command (npm ci, pnpm install --frozen-lockfile, or yarn install --immutable), safe build/start commands, health path, entry/callback paths, optional migration command, and requested capabilities (identity, database, and/or private-assets). The repository package.json must define test and typecheck scripts. The app repository owns its UI, API, business rules, schema, migrations, and tests.
+3. SUBMIT the release: POST ${baseUrl}/api/v1/apps/{appId}/releases. The manifest id must equal {appId}; repoUrl must be a credential-free public GitHub URL in the exact https://github.com/{owner}/{repo} form (other Git or HTTPS hosts are rejected), and sourceRevision is the exact 40-character Git commit SHA. AppAI returns a PENDING managed release receipt.
+4. A PENDING release AWAITS APPAI PLATFORM REVIEW. An AppAI administrator approves the release and starts the managed pipeline.
+5. AFTER APPROVAL, APPAI validates the source revision and manifest and requires the repository test, typecheck, and declared build command to pass in an isolated sandbox. AppAI provisions requested database roles/schema, runs an optional migration command in the migration context, deploys the isolated runtime, health-checks it, and activates only verified evidence.
+6. POLL GET ${baseUrl}/api/v1/apps/{appId}/releases/{releaseId} while it awaits review and then until the release is APPROVED and production deployment is ACTIVE with health evidence. Then users launch ${baseUrl}/app/{appId}; AppAI supplies browser login and one-time identity handoff to its platform-managed https://{appId}.appai.info runtime subdomain.
 
-Never submit organizationId, database credentials, runtime/deployment URLs, raw SQL, arbitrary secrets, or platform infrastructure settings. AppAI controls those values and exposes only the scoped capabilities granted to the approved release.
+Never submit organizationId, database credentials, runtime/deployment URLs, raw SQL, arbitrary secrets, or platform infrastructure settings. AppAI controls those values, including the runtime subdomain; agents cannot choose a runtime domain. AppAI exposes only the scoped capabilities granted to the approved release.
 
 ### Copyable database app example
 
@@ -137,7 +138,7 @@ Source code stays in the app repository. Commit appai.app.json there:
       "id": "inventory",
       "name": "Inventory Manager",
       "version": "1.0.0",
-      "runtime": { "type": "node", "buildCommand": "npm run build", "startCommand": "npm run start", "healthPath": "/api/health" },
+      "runtime": { "type": "node", "installCommand": "npm ci", "buildCommand": "npm run build", "startCommand": "npm run start", "healthPath": "/api/health", "migrationCommand": "npm run migrate" },
       "entryPath": "/app/inventory",
       "callbackPath": "/api/appai/callback",
       "capabilities": ["identity", "database"]
@@ -148,21 +149,25 @@ Submit release metadata with an API key; do not upload source code or infrastruc
     curl -X POST ${baseUrl}/api/v1/apps/inventory/releases \\
       -H "Authorization: Bearer appai_sk_YOUR_KEY" \\
       -H "Content-Type: application/json" \\
-      -d '{"manifest":{"schemaVersion":1,"id":"inventory","name":"Inventory Manager","version":"1.0.0","runtime":{"type":"node","buildCommand":"npm run build","startCommand":"npm run start","healthPath":"/api/health"},"entryPath":"/app/inventory","callbackPath":"/api/appai/callback","capabilities":["identity","database"]},"tagline":"Track stock across your organization","description":"A database-backed inventory workflow for teams.","category":"INVENTORY","repoUrl":"https://github.com/example/inventory-manager","sourceRevision":"a1b2c3d"}'
+      -d '{"manifest":{"schemaVersion":1,"id":"inventory","name":"Inventory Manager","version":"1.0.0","runtime":{"type":"node","installCommand":"npm ci","buildCommand":"npm run build","startCommand":"npm run start","healthPath":"/api/health","migrationCommand":"npm run migrate"},"entryPath":"/app/inventory","callbackPath":"/api/appai/callback","capabilities":["identity","database"]},"tagline":"Track stock across your organization","description":"A database-backed inventory workflow for teams.","category":"INVENTORY","repoUrl":"https://github.com/example/inventory-manager","sourceRevision":"a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"}'
 
 The receipt contains appId, releaseId, version, and PENDING status. Keep the
 releaseId and poll GET ${baseUrl}/api/v1/apps/inventory/releases/{releaseId}.
-PENDING reserves a slot; it does not deploy automatically. The platform reviews,
-builds, and provisions the repository artifact before /app/inventory can launch.
+PENDING means the release awaits AppAI platform review. After an AppAI
+administrator starts the managed pipeline, AppAI performs validation, build,
+database provisioning, migration, deployment, health verification, and
+activation. Agents do not provide runtime URLs, database URLs, provider
+credentials, OIDC/CLI tokens, artifact digests, or activation state; poll until
+verified activation.
 
 ### Database runtime contract
 
 Requesting database asks AppAI to provision app-scoped PostgreSQL. AppAI injects
 server-only DATABASE_URL into the approved isolated runtime. Schema and
-migrations stay in the app repository; AppAI runs migrations with a separate
-migration role, not the runtime credential. APPAI_PLATFORM_URL and APPAI_APP_ID
-identify the platform and app. Never expose DATABASE_URL in the browser or a
-public environment variable.
+migrations stay in the app repository; AppAI runs migrationCommand with a
+separate migration role and gives the runtime only target-schema DML/sequence
+permissions. APPAI_PLATFORM_URL and APPAI_APP_ID identify the platform and app.
+Never expose DATABASE_URL in browser/client bundles or a public environment variable.
 
 User and Organization context comes only from launch-code exchange and runtime
 session introspection. Never accept userId or organizationId in a request body,
@@ -214,7 +219,7 @@ ${baseUrl} (always use this, never use www.appai.info)
 - PATCH /api/v1/pages/:slug/sections/:order — Update a single section
 - GET /api/v1/pages/:slug/children — List child pages of a multi-page site
 - POST /api/v1/upload — Upload images (max 5MB)
-- POST /api/v1/apps/:appId/releases — Submit a Universal App release and automatically reserve its slot
+- POST /api/v1/apps/:appId/releases — Submit a Universal App release for platform review; returns PENDING
 - GET /api/v1/apps/:appId/releases/:releaseId — Poll a submitted Universal App release's review and deployment state
 
 ## Universal Apps and managed data

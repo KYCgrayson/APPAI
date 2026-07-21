@@ -7,11 +7,11 @@
 | Adopted Simpleshop commit | `94ee18e` |
 | Platform specification | Universal App platform changes v2.0 |
 | App id | `simpleshop` |
-| Public entry | `/app/simpleshop` |
+| Public entry | `/app/simpleshop` → platform-managed `https://simpleshop.appai.info` |
 | App manifest | `Simpleshop/appai.app.json` |
 | Current state | Independent runtime and first customer/job-site slice implemented; platform migration in progress |
 
-The complete product PRD stays in the Simpleshop repository. This document records the platform integration and the transition away from the earlier AppAI monolith implementation.
+The complete product PRD stays in the Simpleshop repository. This document records the platform integration.
 
 ## Correct architecture
 
@@ -32,7 +32,7 @@ The complete product PRD stays in the Simpleshop repository. This document recor
 
 | Method and path | Identity | Purpose |
 |---|---|---|
-| `POST /api/v1/apps/simpleshop/releases` | Agent API key | Submit a strict versioned manifest for review |
+| `POST /api/v1/apps/simpleshop/releases` | Agent API key | Submit a strict versioned manifest; receipt remains `PENDING` awaiting platform review |
 | `GET /app/simpleshop` | Browser session | Select the active deployment and issue a one-time launch code |
 | `POST /api/runtime/sessions/exchange` | One-time launch code | Consume the code and return an opaque eight-hour runtime token |
 | `POST /api/runtime/sessions/introspect` | Runtime token | Resolve app, instance, user, Organization, grants, and expiry |
@@ -51,7 +51,7 @@ The Universal runtime migration adds only generic platform tables:
 - `AppLaunchCode`
 - `AppRuntimeSession`
 
-The transaction-wrapped migration is `prisma/universal-app-runtime-migration.sql`. It does not remove or alter the existing Simpleshop compatibility tables.
+The transaction-wrapped migration is `prisma/universal-app-runtime-migration.sql`. Historical business tables remain retained but are not used by AppAI runtime code.
 
 ## Independent Simpleshop runtime
 
@@ -64,23 +64,22 @@ The Simpleshop repository now contains:
 - Organization-scoped customer and job-site CRUD plus a working management UI;
 - validation tests proving browser input cannot inject `organizationId` or permanent customer codes.
 
-## Safe transition
+## Universal launch
 
-The hardcoded Simpleshop pages, APIs, services, and business tables currently deployed in AppAI are a temporary compatibility layer created under the incorrect PRD v2.5 architecture. They are not the target architecture.
-
-Transition order:
-
-1. Apply and rehearse the additive Universal runtime migration.
-2. Add the isolated artifact build/provisioning worker and app-scoped PostgreSQL credential injection.
-3. Submit, review, build, and deploy the Simpleshop artifact from the Simpleshop repo.
-4. Run identity, two-Organization database isolation, private image/PDF, desktop/mobile, health, and rollback acceptance.
-5. Deploy an `APPROVED` Simpleshop release with an `ACTIVE` `PRODUCTION` deployment. The `/app/simpleshop` compatibility layout then redirects to the Universal launcher automatically; until that exact state exists it continues serving the compatibility UI.
-6. Migrate any real compatibility-table data if it exists.
-7. Remove hardcoded Simpleshop code/tables only through a reviewed, recoverable migration.
+`/app/simpleshop` and nested bookmarks such as `/app/simpleshop/items` use the generic Universal launcher. After AppAI login, the launcher supplies a one-time identity handoff to the platform-managed `https://simpleshop.appai.info` runtime. The app remains an isolated deployment, but it is visibly hosted on the AppAI subdomain rather than an app-supplied domain. An approved `ACTIVE` production deployment is required; otherwise AppAI fails closed and does not serve a compatibility UI. Verify identity, two-Organization database isolation, private assets, health, and runtime acceptance against the independent application.
 
 Release and cutover evidence must satisfy the shared [Universal App Runtime QA gates](universal-app-runtime-qa.md). Simpleshop business acceptance remains in the Simpleshop repo; the shared checklist covers platform/runtime boundaries.
 
-Do not delete the compatibility layer before step 5, and do not allow both runtimes to accept writes at the same time. Production currently has no retained Simpleshop business records from QA, but the cutover still follows the same guarded process.
+An external agent submits only the credential-free public GitHub repository URL
+in `https://github.com/{owner}/{repo}` form, exact commit,
+manifest, and release metadata. It never supplies a runtime URL, database
+credentials, provider credentials, raw SQL, or infrastructure settings. An
+AppAI administrator reviews the `PENDING` release and starts the generic
+validation, build, database, migration, deployment, health, and activation
+pipeline; the agent polls the release status rather than controlling that work.
+Like every Universal App, Simpleshop's `package.json` must define `test` and
+`typecheck` scripts; both scripts and the declared build command must pass
+before the managed pipeline can deploy it.
 
 ## Current verification and remaining work
 
@@ -91,14 +90,11 @@ Implemented on the Universal branch:
 - platform-only Prisma schema and transaction-wrapped migration;
 - Universal runtime additive migration rehearsed with rollback, applied on 2026-07-19, and verified with an empty post-apply schema diff;
 - isolated Simpleshop test database verified with separate migration/runtime roles; the runtime role can perform business CRUD but cannot perform DDL;
-- additive compatibility strategy with no destructive production change.
-- reversible `/app/simpleshop` cutover: only `APP_UNAVAILABLE` (no release, or no production deployment for otherwise approved releases) falls back to compatibility. Existing non-approved releases, suspended instances, and invalid/inactive deployments fail closed and never silently bypass the Universal runtime; any approved active production candidate still wins over those records.
+- historical business tables retained without destructive production change.
+- `/app/simpleshop` fails closed for a missing, suspended, unapproved, or inactive release; no compatibility runtime exists.
 
 Still required before calling the migration complete:
 
 - isolated build/deployment worker and database provisioning/injection;
 - independent Simpleshop release registration and runtime deployment;
 - end-to-end cutover acceptance;
-- removal of the old AppAI business implementation after rollback criteria pass.
-
-Earlier Phase 1/2 monolith verification remains useful only as evidence that the compatibility layer is stable. It must not be treated as the final Universal architecture.

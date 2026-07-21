@@ -6,10 +6,6 @@ import { db } from "@/lib/db";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { getExternalCanonical } from "@/lib/canonical";
 import { getUniversalAppLaunchPath } from "@/lib/universal-apps/directory";
-import {
-  getNativeAppDefinition,
-  listNativeAppDefinitions,
-} from "@/lib/native-apps/registry";
 
 export default async function AppsPage({
   searchParams,
@@ -19,9 +15,6 @@ export default async function AppsPage({
   const t = await getTranslations("apps");
   const { category } = await searchParams;
   const activeCategory = category || "ALL";
-  const nativeApps = listNativeAppDefinitions().filter(
-    (app) => activeCategory === "ALL" || app.category === activeCategory,
-  );
 
   const apps = await db.app.findMany({
     where: {
@@ -30,9 +23,7 @@ export default async function AppsPage({
     },
     orderBy: { createdAt: "desc" },
   });
-  const directoryApps = apps.filter(
-    (app) => !app.appType || !getNativeAppDefinition(app.appType),
-  );
+  const directoryApps = apps;
 
   const hostedSlugs = directoryApps.map((a) => a.hostedPageSlug).filter((s): s is string => !!s);
   const hostedPages = hostedSlugs.length
@@ -73,36 +64,7 @@ export default async function AppsPage({
           ))}
         </div>
 
-        {nativeApps.length > 0 ? (
-          <section className="mb-10">
-            <div className="mb-4 flex items-end justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">Approved native apps</p>
-                <h2 className="mt-1 text-xl font-semibold text-white">AppAI 原生應用</h2>
-              </div>
-              <span className="text-xs text-gray-500">受登入與 Organization 隔離保護</span>
-            </div>
-            <div className="grid gap-6 md:grid-cols-3">
-              {nativeApps.map((app) => (
-                <a
-                  key={app.type}
-                  href={app.runtimePath}
-                  className="rounded-xl border border-cyan-900/70 bg-gradient-to-br from-gray-900 to-cyan-950/30 p-6 transition hover:border-cyan-500"
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-500 text-lg font-black text-gray-950">S</div>
-                  <h3 className="mt-5 font-semibold text-white">{app.displayName}</h3>
-                  <p className="mt-2 text-sm leading-6 text-gray-400">{app.description}</p>
-                  <div className="mt-5 flex items-center justify-between text-xs">
-                    <span className="rounded-full border border-cyan-700 px-2 py-1 text-cyan-300">Native · {app.version}</span>
-                    <span className="font-semibold text-cyan-400">開啟應用 →</span>
-                  </div>
-                </a>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        {directoryApps.length === 0 && nativeApps.length === 0 ? (
+        {directoryApps.length === 0 ? (
           <div className="text-center py-20">
             <h2 className="text-xl font-semibold mb-2 text-white">{t("noAppsTitle")}</h2>
             <p className="text-gray-400">
@@ -126,6 +88,8 @@ export default async function AppsPage({
               >
                 <div className="flex items-start gap-4">
                   {app.logoUrl ? (
+                    // Logo URLs are app-supplied and not restricted to configured image hosts.
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={app.logoUrl}
                       alt={app.name}

@@ -16,6 +16,40 @@ You are a **designer**, not a form-filler. Given a product description, you:
 
 Do NOT ask the user 10 setup questions. Build a first draft and show them the URL.
 
+## When the request is a full database application
+
+Use the Universal App flow—not the Pages API—when the product owns server-side
+business logic, persistent Organization data, private assets, or an app-specific
+UI/API. Keep all source, schema, migrations, and tests in that app's repository.
+
+1. Commit `appai.app.json` with a lockfile-strict `installCommand` (`npm ci`,
+   `pnpm install --frozen-lockfile`, or `yarn install --immutable`), safe
+   package-manager build/start commands, health path, and
+   optional `migrationCommand` such as `npm run migrate`. The repository's
+   `package.json` must define `test` and `typecheck` scripts.
+2. Submit a credential-free public GitHub `repoUrl` in the exact
+   `https://github.com/{owner}/{repo}` form and the 40-character Git commit SHA
+   as `sourceRevision` to `POST /api/v1/apps/{appId}/releases`. Other Git or
+   HTTPS source hosts are not accepted.
+3. The accepted release is `PENDING` and awaits AppAI platform review. An AppAI
+   administrator approves it and starts the managed pipeline; poll
+   `GET /api/v1/apps/{appId}/releases/{releaseId}` for its state.
+4. After approval, AppAI validates the source and manifest and requires the
+   repository's `test`, `typecheck`, and declared build command to pass in an
+   isolated sandbox. It provisions app-scoped DB schema/roles, runs migrations,
+   deploys, health-checks, and activates the verified runtime.
+5. Launch only through `/app/{appId}` once the release is `APPROVED` and the
+   production deployment is `ACTIVE`. AppAI performs the one-time identity handoff
+   to its managed `https://{appId}.appai.info` isolated runtime
+   subdomain.
+
+Never send a runtime URL, database URL/secret, provider/OIDC/CLI credential,
+artifact digest, raw SQL, or `organizationId`, and never choose a runtime
+domain. Agents cannot choose a runtime domain. The app runtime receives
+server-only DB credentials and trusted Organization identity only from AppAI.
+Its protected screens need responsive top-right account/Organization chrome,
+Return to AppAI, and the platform-compatible logout flow.
+
 ## The flow
 
 ### 1. Authenticate (one time per user)

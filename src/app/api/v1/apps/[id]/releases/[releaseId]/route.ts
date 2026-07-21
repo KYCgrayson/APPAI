@@ -25,7 +25,31 @@ export async function GET(request: NextRequest, routeContext: RouteContext) {
 
   const release = await db.appRelease.findFirst({
     where: { id: releaseId, appId: app.id },
-    include: { deployments: { orderBy: { createdAt: "desc" } } },
+    select: {
+      id: true,
+      version: true,
+      status: true,
+      sourceRevision: true,
+      artifactDigest: true,
+      createdAt: true,
+      updatedAt: true,
+      deployments: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          environment: true,
+          status: true,
+          healthCheckedAt: true,
+          createdAt: true,
+          updatedAt: true,
+          managedRuntime: {
+            select: {
+              failureCode: true,
+              failureMessage: true,
+            },
+          },
+        },
+      },
+    },
   });
   if (!release) return NextResponse.json({ error: "RELEASE_NOT_FOUND" }, { status: 404 });
 

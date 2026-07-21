@@ -3,6 +3,19 @@ export type ReleaseReviewState = {
   tone: "neutral" | "warning" | "success" | "danger";
 };
 
+/** Mirrors the trusted deployment route's retry gate for the admin UI. */
+export function canStartManagedProductionDeployment(input: {
+  releaseStatus: string;
+  deployments: Array<{ environment: string; status: string }>;
+}): boolean {
+  if (input.releaseStatus !== "PENDING") return false;
+
+  const productionDeployment = input.deployments.find(
+    (deployment) => deployment.environment === "PRODUCTION",
+  );
+  return !productionDeployment || productionDeployment.status === "FAILED";
+}
+
 /**
  * Produces browser-safe review status from platform records only. This helper
  * intentionally never returns runtime commands, credentials, or manifest data

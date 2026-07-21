@@ -6,12 +6,25 @@ export const UNIVERSAL_APP_CAPABILITIES = [
   "private-assets",
 ] as const;
 
-export const universalAppIdSchema = z.string().regex(/^[a-z][a-z0-9-]{1,62}$/);
+const reservedAppHosts = new Set(["www", "api", "admin", "auth", "login", "dashboard", "mail"]);
+export const universalAppIdSchema = z.string().regex(/^[a-z](?:[a-z0-9-]{0,61}[a-z0-9])$/).refine(
+  (value) => !reservedAppHosts.has(value),
+  "This app id is reserved by the AppAI platform.",
+);
+const packageScriptCommand = z.string().regex(/^(npm|pnpm|yarn) (run )?[A-Za-z0-9:_-]+$/);
 
-const credentialFreeHttpsUrl = z.url().max(500).refine((value) => {
-  const url = new URL(value);
-  return url.protocol === "https:" && !url.username && !url.password;
-}, "Repository URL must be credential-free HTTPS.");
+export function isAllowedSourceRepositoryUrl(value: string) {
+  try {
+    const url = new URL(value);
+    // Public GitHub is the supported source host for managed checkouts. This
+    // intentionally excludes localhost, IP literals, internal DNS and arbitrary
+    // HTTPS targets from the sandbox source boundary.
+    return url.protocol === "https:" && !url.username && !url.password && url.hostname.toLowerCase() === "github.com" && url.pathname.split("/").filter(Boolean).length >= 2;
+  } catch {
+    return false;
+  }
+}
+const credentialFreeHttpsUrl = z.url().max(500).refine(isAllowedSourceRepositoryUrl, "Repository URL must be a credential-free public GitHub repository URL.");
 
 export const universalAppManifestSchema = z.object({
   schemaVersion: z.literal(1),
@@ -20,9 +33,13 @@ export const universalAppManifestSchema = z.object({
   version: z.string().regex(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/),
   runtime: z.object({
     type: z.enum(["node"]),
-    buildCommand: z.string().trim().min(1).max(200),
-    startCommand: z.string().trim().min(1).max(200),
+    // Validation/migration must be reproducible from a checked-in lockfile.
+    installCommand: z.enum(["npm ci", "pnpm install --frozen-lockfile", "yarn install --immutable"]).default("npm ci"),
+    buildCommand: packageScriptCommand,
+    startCommand: packageScriptCommand,
     healthPath: z.string().startsWith("/").max(200),
+    // Runs only in the platform's isolated build sandbox, never in AppAI.
+    migrationCommand: packageScriptCommand.optional(),
   }).strict(),
   entryPath: z.string().startsWith("/").max(200),
   callbackPath: z.string().startsWith("/").max(200),
@@ -38,8 +55,8 @@ export const publishUniversalAppReleaseSchema = z.object({
   tagline: z.string().trim().min(1).max(160),
   description: z.string().trim().min(1).max(5000),
   category: z.string().trim().regex(/^[A-Z][A-Z0-9_]{1,39}$/).default("OTHER"),
-  repoUrl: credentialFreeHttpsUrl.optional(),
-  sourceRevision: z.string().trim().regex(/^[0-9a-f]{7,64}$/i).optional(),
+  repoUrl: credentialFreeHttpsUrl,
+  sourceRevision: z.string().trim().regex(/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/i),
 }).strict();
 
 export const approveUniversalAppDeploymentSchema = z.object({
