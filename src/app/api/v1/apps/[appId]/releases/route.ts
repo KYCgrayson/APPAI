@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { validateApiKey } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { publishUniversalAppReleaseSchema, universalAppIdSchema } from "@/lib/universal-apps/manifest";
+import { canReadUniversalApp, mapUniversalAppReleaseStatus } from "@/lib/universal-apps/release-status";
 
 type RouteContext = { params: Promise<{ appId: string }> };
 
@@ -73,4 +74,30 @@ export async function POST(request: NextRequest, routeContext: RouteContext) {
     }
     throw error;
   }
+}
+
+export async function GET(request: NextRequest, routeContext: RouteContext) {
+  const authResult = await validateApiKey(request.headers.get("authorization"));
+  if (!authResult) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const parsedAppId = universalAppIdSchema.safeParse((await routeContext.params).appId);
+  if (!parsedAppId.success) return NextResponse.json({ error: "INVALID_APP_ID" }, { status: 400 });
+
+  const app = await db.app.findUnique({
+    where: { appType: parsedAppId.data },
+    select: { id: true, organizationId: true },
+  });
+  if (!app || !canReadUniversalApp(authResult.organizationId, app.organizationId)) {
+    return NextResponse.json({ error: "APP_NOT_FOUND" }, { status: 404 });
+  }
+
+  const releases = await db.appRelease.findMany({
+    where: { appId: app.id },
+    include: { deployments: { orderBy: { createdAt: "desc" } } },
+    orderBy: { createdAt: "desc" },
+  });
+  return NextResponse.json({
+    appId: parsedAppId.data,
+    releases: releases.map(mapUniversalAppReleaseStatus),
+  });
 }

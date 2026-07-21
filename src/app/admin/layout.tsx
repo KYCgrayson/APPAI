@@ -30,6 +30,9 @@ export default async function AdminLayout({
               <Link href="/admin/apps" className="text-sm text-gray-300 hover:text-white">
                 Apps
               </Link>
+              <Link href="/admin/universal-apps" className="text-sm text-gray-300 hover:text-white">
+                Universal Releases
+              </Link>
               <Link href="/admin/pages" className="text-sm text-gray-300 hover:text-white">
                 Pages
               </Link>

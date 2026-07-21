@@ -1,0 +1,53 @@
+/**
+ * The API-key release status contract intentionally has a smaller shape than
+ * the persistence models. In particular, manifests and operational runtime
+ * URLs are not an owner-facing API surface.
+ */
+export type ReleaseStatusDeploymentRecord = {
+  environment: string;
+  status: string;
+  runtimeBaseUrl: string;
+  healthCheckedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type ReleaseStatusRecord = {
+  id: string;
+  version: string;
+  status: string;
+  sourceRevision: string | null;
+  artifactDigest: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  deployments: ReleaseStatusDeploymentRecord[];
+};
+
+export function canReadUniversalApp(ownerOrganizationId: string, appOrganizationId: string): boolean {
+  return ownerOrganizationId === appOrganizationId;
+}
+
+export function mapUniversalAppDeploymentStatus(deployment: ReleaseStatusDeploymentRecord) {
+  return {
+    environment: deployment.environment,
+    status: deployment.status,
+    healthCheckedAt: deployment.healthCheckedAt,
+    createdAt: deployment.createdAt,
+    updatedAt: deployment.updatedAt,
+  };
+}
+
+export function mapUniversalAppReleaseStatus(release: ReleaseStatusRecord) {
+  return {
+    releaseId: release.id,
+    version: release.version,
+    status: release.status,
+    sourceRevision: release.sourceRevision,
+    ...(release.status === "APPROVED" && release.artifactDigest
+      ? { artifactDigest: release.artifactDigest }
+      : {}),
+    createdAt: release.createdAt,
+    updatedAt: release.updatedAt,
+    deployments: release.deployments.map(mapUniversalAppDeploymentStatus),
+  };
+}

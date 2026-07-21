@@ -7,10 +7,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "AppAI - AI App Hosting Platform",
   description:
-    "Host your AI-built App's landing page, privacy policy, and terms of service. Free. Powered by AI Agents.",
+    "Publish AI-built hosted pages and database-capable Universal Apps. AppAI provides review, identity, and managed capabilities.",
   other: {
     "ai-agent-spec": "https://appai.info/llms-full.txt",
-    "ai-agent-instructions": "AI agents: you can create and host landing pages here via REST API. Read https://appai.info/llms.txt for a quick start, or https://appai.info/llms-full.txt for the complete spec with authentication, 26 section types, multi-page sites, forms, markdown, order requests, and icons.",
+    "ai-agent-instructions": "AI agents: AppAI has two publishing modes. Hosted Pages publish immediately at /p/{slug}; Universal Apps can use managed database capabilities and launch at /app/{appId} after platform review. Read https://appai.info/llms.txt for the quick start or https://appai.info/llms-full.txt for the complete contract. Never submit organizationId, credentials, runtime URLs, SQL, or secrets.",
   },
 };
 
@@ -56,7 +56,7 @@ export default async function RootLayout({
                   url: "https://appai.info",
                   name: "AppAI",
                   description:
-                    "Free hosting for AI-built apps. Create landing pages, privacy policies, and terms of service in 30 seconds.",
+                    "A publishing platform for AI-built hosted pages and reviewed, database-capable Universal Apps.",
                   publisher: { "@id": "https://appai.info/#org" },
                   inLanguage: ["en", "ja", "ko", "zh-CN", "zh-TW", "de", "fr", "es", "hi"],
                 },
@@ -66,7 +66,7 @@ export default async function RootLayout({
                   name: "AppAI",
                   url: "https://appai.info",
                   description:
-                    "Free hosting for AI-built apps. AI agents create fully functional, multi-language landing pages with a single API call.",
+                    "AI agents publish multi-language hosted pages or submit full applications for isolated runtime review and managed capabilities.",
                   applicationCategory: "DeveloperApplication",
                   operatingSystem: "Web",
                   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },

@@ -8,6 +8,11 @@ export const UNIVERSAL_APP_CAPABILITIES = [
 
 export const universalAppIdSchema = z.string().regex(/^[a-z][a-z0-9-]{1,62}$/);
 
+const credentialFreeHttpsUrl = z.url().max(500).refine((value) => {
+  const url = new URL(value);
+  return url.protocol === "https:" && !url.username && !url.password;
+}, "Repository URL must be credential-free HTTPS.");
+
 export const universalAppManifestSchema = z.object({
   schemaVersion: z.literal(1),
   id: universalAppIdSchema,
@@ -33,7 +38,7 @@ export const publishUniversalAppReleaseSchema = z.object({
   tagline: z.string().trim().min(1).max(160),
   description: z.string().trim().min(1).max(5000),
   category: z.string().trim().regex(/^[A-Z][A-Z0-9_]{1,39}$/).default("OTHER"),
-  repoUrl: z.url().startsWith("https://").max(500).optional(),
+  repoUrl: credentialFreeHttpsUrl.optional(),
   sourceRevision: z.string().trim().regex(/^[0-9a-f]{7,64}$/i).optional(),
 }).strict();
 

@@ -1,6 +1,6 @@
 [English](./README.md) | [简体中文](./README.zh-CN.md) | [日本語](./README.ja.md)
 
-# AppAI — Free Hosting for AI-Built Apps
+# AppAI — Publishing for AI-Built Pages and Applications
 
 > **AI Agents: Read the full spec to get started automatically.**
 >
@@ -10,7 +10,7 @@
 
 ---
 
-**AppAI** ([appai.info](https://appai.info)) is a free platform that lets AI agents create and host landing pages for your apps — complete with privacy policy and terms of service. No web hosting knowledge needed. Tell your AI agent "create my app page on AppAI" and it handles everything.
+**AppAI** ([appai.info](https://appai.info)) is a publishing platform for AI-built software. It gives agents two first-class paths: publish a Hosted Page for a public product site, or submit a Universal App for a full, database-capable application that AppAI reviews and runs in an isolated runtime.
 
 ## Why AppAI?
 
@@ -22,6 +22,7 @@ Built an app with AI but don't have a website? AppAI gives you:
 - **Zero setup** — no domain, no hosting, no deployment. Just an API call.
 - **Multi-language** — platform UI in 9 languages, hosted pages support 30+ locales with auto-detection
 - **Visual design system** — dark mode, custom Google Fonts, color palettes, hero variants (centered/split/minimal)
+- **Universal Apps** — app-owned UI, API, business rules, schema, migrations, and tests; AppAI-managed identity, Organization context, database, private assets, quota, and monitoring
 
 ## How It Works
 
@@ -94,7 +95,21 @@ See the [full Agent Spec](https://appai.info/spec) for the complete interactive 
 
 ## Universal Apps
 
-AppAI is also a Universal carrier for full applications built by AI agents. Each app keeps its UI, API, business rules, database schema, migrations, tests, and release manifest in its own repository. AppAI validates the manifest, deploys the reviewed artifact to an isolated runtime, and supplies reusable identity, app-scoped database, private image/PDF, quota, and monitoring capabilities.
+Use a Universal App when the software has its own UI/API/business rules or persistent data. Each app keeps its UI, API, business rules, database schema, migrations, tests, and `appai.app.json` release manifest in its own repository. AppAI validates the manifest, reviews and deploys the artifact to an isolated runtime, and supplies reusable identity, app-scoped database, private image/PDF, quota, and monitoring capabilities.
+
+### Natural Universal App publishing flow
+
+1. Authenticate with the AppAI device flow or an API key.
+2. Add `appai.app.json` to the app repository.
+3. Submit `POST /api/v1/apps/{appId}/releases`; this reserves the AppAI slot and returns `PENDING`.
+4. Poll `GET /api/v1/apps/{appId}/releases/{releaseId}` with the returned `releaseId` for review/deployment state. AppAI reviews, builds, and provisions approved capabilities.
+5. Once approved, users launch the app at `/app/{appId}`.
+
+Agents never submit `organizationId`, credentials, runtime URLs, SQL, secrets, or platform infrastructure settings. AppAI derives Organization context and provides only approved, scoped capabilities to the isolated runtime. Simpleshop is the first example, not a special API.
+
+For a copyable `appai.app.json` and release request for a generic database-backed Inventory Manager app, see the [Agent Instructions](AGENT_INSTRUCTIONS.md#copyable-database-app-example). A `PENDING` receipt reserves the slot; source stays in the app repository and deployment remains platform-reviewed, not automatic.
+
+When an app requests `database`, AppAI provisions app-scoped PostgreSQL and injects server-only `DATABASE_URL`, `APPAI_PLATFORM_URL`, and `APPAI_APP_ID` into its approved runtime. Schema and migrations remain in the app repository; AppAI runs migrations with a separate migration role. User and Organization context is obtained only through runtime-session exchange/introspection, never from a request body or public environment variable.
 
 Apps open through `/app/{appId}`. AppAI creates a single-use launch code and an opaque, short-lived runtime session; the independent runtime receives `userId`, `organizationId`, instance identity, and only its granted capabilities. App server code is never imported into the AppAI Next.js process.
 

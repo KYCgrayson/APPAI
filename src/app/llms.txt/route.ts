@@ -80,9 +80,9 @@ export async function GET() {
         .join("\n")}\n`
     : "";
 
-  const content = `# AppAI — You can build and host landing pages here
+  const content = `# AppAI — publish hosted pages and full applications
 
-> If you are an AI agent and a user has asked you to create, update, or manage a landing page, this platform is built for you. You do not need a domain, hosting, or deployment setup. You call our REST API, and the page goes live immediately at ${baseUrl}/p/{your-slug}.
+> AppAI has two first-class publishing modes for AI agents. Use a Hosted Page for a public product site at ${baseUrl}/p/{your-slug}. Use a Universal App for a full application, including database-backed workflows, that launches at ${baseUrl}/app/{appId} after platform review. Do not turn a database application into a landing-page section.
 
 ## Fastest path (recommended): install the official skill
 
@@ -95,7 +95,14 @@ After install, the user can simply say "publish a landing page for X" and you wi
 
 If a skill install is not available in your environment, continue with the manual flow below.
 
-## What to do right now (manual flow)
+## Choose a publishing mode
+
+| Mode | Use it for | Public path | What the agent submits |
+| --- | --- | --- | --- |
+| Hosted Page | Marketing sites, documentation, forms, public tools | ${baseUrl}/p/{slug} | Page JSON to the Pages API |
+| Universal App | Full UI + API + business rules, persistent Organization data, database or private assets | ${baseUrl}/app/{appId} | appai.app.json, declarative release metadata, and a source revision |
+
+## Hosted Page: manual flow
 
 1. READ the full agent instructions: ${baseUrl}/llms-full.txt
    That document is your complete playbook — authentication, section schemas, multi-page sites, icons, markdown, forms, everything. Read it before making any API calls.
@@ -110,6 +117,56 @@ If a skill install is not available in your environment, continue with the manua
    The page is live instantly at ${baseUrl}/p/{slug}.
 
 If you already have an API key (appai_sk_...), skip step 2.
+
+## Universal App: natural publish flow
+
+1. AUTHENTICATE with the same device flow or an existing API key.
+2. ADD appai.app.json to the application's own repository. It declares the app id, version, Node build/start commands, health path, entry/callback paths, and requested capabilities (identity, database, and/or private-assets). The app repository owns its UI, API, business rules, schema, migrations, and tests.
+3. SUBMIT the release: POST ${baseUrl}/api/v1/apps/{appId}/releases. The manifest id must equal {appId}. This automatically reserves the AppAI slot and returns a release receipt with PENDING status.
+4. POLL GET ${baseUrl}/api/v1/apps/{appId}/releases/{releaseId} with the releaseId returned at submission for review/deployment state. AppAI reviews the release, builds the isolated artifact, and provisions only approved capabilities. Do not assume a PENDING app is launchable.
+5. LAUNCH only after approval at ${baseUrl}/app/{appId}. AppAI performs browser login and supplies an opaque, short-lived runtime session with the user, Organization, and grants.
+
+Never submit organizationId, database credentials, runtime/deployment URLs, raw SQL, arbitrary secrets, or platform infrastructure settings. AppAI controls those values and exposes only the scoped capabilities granted to the approved release.
+
+### Copyable database app example
+
+Source code stays in the app repository. Commit appai.app.json there:
+
+    {
+      "schemaVersion": 1,
+      "id": "inventory",
+      "name": "Inventory Manager",
+      "version": "1.0.0",
+      "runtime": { "type": "node", "buildCommand": "npm run build", "startCommand": "npm run start", "healthPath": "/api/health" },
+      "entryPath": "/app/inventory",
+      "callbackPath": "/api/appai/callback",
+      "capabilities": ["identity", "database"]
+    }
+
+Submit release metadata with an API key; do not upload source code or infrastructure credentials:
+
+    curl -X POST ${baseUrl}/api/v1/apps/inventory/releases \\
+      -H "Authorization: Bearer appai_sk_YOUR_KEY" \\
+      -H "Content-Type: application/json" \\
+      -d '{"manifest":{"schemaVersion":1,"id":"inventory","name":"Inventory Manager","version":"1.0.0","runtime":{"type":"node","buildCommand":"npm run build","startCommand":"npm run start","healthPath":"/api/health"},"entryPath":"/app/inventory","callbackPath":"/api/appai/callback","capabilities":["identity","database"]},"tagline":"Track stock across your organization","description":"A database-backed inventory workflow for teams.","category":"INVENTORY","repoUrl":"https://github.com/example/inventory-manager","sourceRevision":"a1b2c3d"}'
+
+The receipt contains appId, releaseId, version, and PENDING status. Keep the
+releaseId and poll GET ${baseUrl}/api/v1/apps/inventory/releases/{releaseId}.
+PENDING reserves a slot; it does not deploy automatically. The platform reviews,
+builds, and provisions the repository artifact before /app/inventory can launch.
+
+### Database runtime contract
+
+Requesting database asks AppAI to provision app-scoped PostgreSQL. AppAI injects
+server-only DATABASE_URL into the approved isolated runtime. Schema and
+migrations stay in the app repository; AppAI runs migrations with a separate
+migration role, not the runtime credential. APPAI_PLATFORM_URL and APPAI_APP_ID
+identify the platform and app. Never expose DATABASE_URL in the browser or a
+public environment variable.
+
+User and Organization context comes only from launch-code exchange and runtime
+session introspection. Never accept userId or organizationId in a request body,
+and never derive either from a public environment variable.
 
 ## What you can build
 
@@ -139,12 +196,12 @@ ${baseUrl} (always use this, never use www.appai.info)
 - PATCH /api/v1/pages/:slug/sections/:order — Update a single section
 - GET /api/v1/pages/:slug/children — List child pages of a multi-page site
 - POST /api/v1/upload — Upload images (max 5MB)
-- GET /api/v1/app-instances — List code-approved native app instances for your Organization
-- POST /api/v1/app-instances — Idempotently enable a code-approved native app (currently simpleshop)
+- POST /api/v1/apps/:appId/releases — Submit a Universal App release and automatically reserve its slot
+- GET /api/v1/apps/:appId/releases/:releaseId — Poll a submitted Universal App release's review and deployment state
 
-## Stateful native apps
+## Universal Apps and managed data
 
-Native apps are login-protected applications with persistent Organization data. They are not landing-page sections and agents cannot upload executable code. The server derives the Organization from the API key or browser session. Do not send organizationId, runtime paths, component names, SQL, or secrets. Simpleshop opens at ${baseUrl}/app/simpleshop after browser login.
+Universal Apps are login-protected applications with persistent Organization data. Agents may submit an executable application's reviewed release through the Universal App flow above; AppAI never imports that app server into the AppAI process. The server derives the Organization from the API key or browser session. Do not send organizationId, runtime/deployment URLs, credentials, component names, SQL, or secrets. Simpleshop is the first example of this generic contract, not a special publishing API.
 
 ## How to communicate with the page owner
 
