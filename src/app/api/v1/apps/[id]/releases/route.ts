@@ -55,6 +55,7 @@ export async function POST(request: NextRequest, routeContext: RouteContext) {
           appId: app.id,
           version: input.data.manifest.version,
           manifest: input.data.manifest as Prisma.InputJsonValue,
+          sourceRepoUrl: input.data.repoUrl,
           sourceRevision: input.data.sourceRevision,
           status: "PENDING",
         },
@@ -93,7 +94,31 @@ export async function GET(request: NextRequest, routeContext: RouteContext) {
 
   const releases = await db.appRelease.findMany({
     where: { appId: app.id },
-    include: { deployments: { orderBy: { createdAt: "desc" } } },
+    select: {
+      id: true,
+      version: true,
+      status: true,
+      sourceRevision: true,
+      artifactDigest: true,
+      createdAt: true,
+      updatedAt: true,
+      deployments: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          environment: true,
+          status: true,
+          healthCheckedAt: true,
+          createdAt: true,
+          updatedAt: true,
+          managedRuntime: {
+            select: {
+              failureCode: true,
+              failureMessage: true,
+            },
+          },
+        },
+      },
+    },
     orderBy: { createdAt: "desc" },
   });
   return NextResponse.json({

@@ -257,6 +257,9 @@ model AppRelease {
   app            App     @relation(fields: [appId], references: [id], onDelete: Cascade)
   version        String
   manifest       Json
+  // Immutable deployment source captured at publication time. App.repoUrl is
+  // directory metadata and may change for later releases.
+  sourceRepoUrl  String? @db.Text
   sourceRevision String?
   artifactDigest String?
   status         String  @default("PENDING") // PENDING | APPROVED | REJECTED | RETIRED
@@ -277,18 +280,45 @@ model AppDeployment {
   appReleaseId    String
   appRelease      AppRelease @relation(fields: [appReleaseId], references: [id], onDelete: Cascade)
   environment     String     @default("PRODUCTION")
-  runtimeBaseUrl  String     @db.Text
+  runtimeBaseUrl  String?    @db.Text
   status          String     @default("PROVISIONING") // PROVISIONING | ACTIVE | FAILED | RETIRED
   healthCheckedAt DateTime?
 
   launchCodes     AppLaunchCode[]
   runtimeSessions AppRuntimeSession[]
+  managedRuntime  AppManagedRuntime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([appReleaseId, environment])
   @@index([environment, status, createdAt])
+}
+
+// Platform-owned orchestration metadata. Secrets are never stored in cleartext;
+// databaseProvision is encrypted metadata (key reference, schema and role ids),
+// not a connection string.
+model AppManagedRuntime {
+  id                    String        @id @default(cuid())
+  appDeploymentId       String        @unique
+  appDeployment         AppDeployment @relation(fields: [appDeploymentId], references: [id], onDelete: Cascade)
+  provider              String        @default("VERCEL")
+  providerProjectId     String?
+  providerDeploymentId  String?
+  publicRuntimeUrl      String?       @db.Text
+  failureCode           String?
+  failureMessage        String?       @db.Text
+  // Platform policy snapshot. A manifest requests capabilities; only a
+  // verified activation may populate this allowlist.
+  approvedCapabilities  String[]      @default([])
+  databaseProvision     Json?
+  provisionedAt         DateTime?
+  reconciledAt          DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  @@index([provider, providerProjectId])
+  @@index([provider, providerDeploymentId])
 }
 
 // Per-Organization grants are derived from an approved release manifest and

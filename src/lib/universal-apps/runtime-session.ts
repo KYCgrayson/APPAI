@@ -5,6 +5,11 @@ import { createHash, randomBytes } from "node:crypto";
 import { db } from "@/lib/db";
 import { universalAppIdSchema, universalAppManifestSchema } from "@/lib/universal-apps/manifest";
 import { selectUniversalRuntimeTarget } from "@/lib/universal-apps/cutover";
+import { mapPlatformRouteToRuntimePath } from "@/lib/universal-apps/launcher-path";
+import {
+  reconcileFutureOrganizationAppCapabilities,
+  type ManagedRuntimeActivationStore,
+} from "@/lib/universal-apps/activation";
 import {
   canRevokeUniversalAppSession,
   runtimeSessionMatchesApp,
@@ -96,11 +101,17 @@ export async function createUniversalAppLaunch(input: {
     throw new UniversalAppRuntimeError("INVALID_DEPLOYMENT", 503, "Production deployment is not active.");
   }
   const { release, deployment } = target;
+  if (!deployment.runtimeBaseUrl) {
+    throw new UniversalAppRuntimeError("INVALID_DEPLOYMENT", 503, "Production deployment has no verified runtime URL.");
+  }
 
   const manifest = universalAppManifestSchema.parse(release.manifest);
   if (manifest.id !== appId) {
     throw new UniversalAppRuntimeError("INVALID_RELEASE", 503, "Release manifest does not match the app.");
   }
+  // `returnPath` is an AppAI URL (`/app/{id}/...`), while the isolated app may
+  // expose a different entry path. Only this mapping crosses the boundary.
+  const runtimeReturnPath = mapPlatformRouteToRuntimePath(appId, input.returnPath, manifest.entryPath);
 
   const rawCode = opaqueToken();
   const expiresAt = new Date(Date.now() + LAUNCH_CODE_TTL_MS);
@@ -113,18 +124,19 @@ export async function createUniversalAppLaunch(input: {
     if (instance.status !== "ACTIVE") {
       throw new UniversalAppRuntimeError("APP_SUSPENDED", 403, "This app instance is suspended.");
     }
-    await Promise.all(manifest.capabilities.map((capability) => transaction.appCapabilityGrant.upsert({
-      where: { organizationAppId_capability: { organizationAppId: instance.id, capability } },
-      create: { organizationAppId: instance.id, capability, status: "ACTIVE" },
-      update: {},
-    })));
+    // Capability grants are derived from the reconciled active managed runtime,
+    // never from a launch request carrying an untrusted manifest.
+    await reconcileFutureOrganizationAppCapabilities(
+      transaction as unknown as Pick<ManagedRuntimeActivationStore, "appDeployment" | "appCapabilityGrant">,
+      { appId, organizationAppId: instance.id },
+    );
     await transaction.appLaunchCode.create({
       data: {
         codeHash: hashRuntimeSecret(rawCode),
         organizationAppId: instance.id,
         deploymentId: deployment.id,
         userId: input.userId,
-        returnPath: input.returnPath || manifest.entryPath,
+        returnPath: runtimeReturnPath,
         expiresAt,
       },
     });
@@ -139,7 +151,7 @@ export async function createUniversalAppLaunch(input: {
       deployment.runtimeBaseUrl,
       manifest.callbackPath,
       rawCode,
-      input.returnPath || manifest.entryPath,
+      runtimeReturnPath,
     ),
   };
 }

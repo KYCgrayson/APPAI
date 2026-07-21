@@ -2,9 +2,14 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 
+import { ManagedReleaseDeploymentAction } from "@/components/admin/ManagedReleaseDeploymentAction";
 import { db } from "@/lib/db";
 import { universalAppManifestSchema } from "@/lib/universal-apps/manifest";
-import { getReleaseReviewState, getSafeRepositoryUrl } from "@/lib/universal-apps/review";
+import {
+  canStartManagedProductionDeployment,
+  getReleaseReviewState,
+  getSafeRepositoryUrl,
+} from "@/lib/universal-apps/review";
 
 const RELEASE_STATUSES = ["PENDING", "APPROVED", "REJECTED", "RETIRED"] as const;
 
@@ -79,10 +84,17 @@ export default async function UniversalAppReleasesPage({
           {releases.map((release) => {
             const parsedManifest = universalAppManifestSchema.safeParse(release.manifest);
             const capabilities = parsedManifest.success ? parsedManifest.data.capabilities : [];
-            const repositoryUrl = getSafeRepositoryUrl(release.app.repoUrl);
+            const repositoryUrl = getSafeRepositoryUrl(release.sourceRepoUrl);
             const reviewState = getReleaseReviewState({
               releaseStatus: release.status,
               deploymentStatuses: release.deployments.map((deployment) => deployment.status),
+            });
+            const productionDeployment = release.deployments.find(
+              (deployment) => deployment.environment === "PRODUCTION",
+            );
+            const canStartDeployment = canStartManagedProductionDeployment({
+              releaseStatus: release.status,
+              deployments: release.deployments,
             });
             return (
               <article key={release.id} className="rounded-xl bg-white p-5 shadow-sm">
@@ -96,7 +108,10 @@ export default async function UniversalAppReleasesPage({
                     </div>
                     <p className="mt-1 text-sm text-gray-500">Owner: {release.app.organization.name} · Category: {release.app.category}</p>
                   </div>
-                  <time className="text-xs text-gray-400" dateTime={release.createdAt.toISOString()}>{release.createdAt.toLocaleString()}</time>
+                  <div className="flex flex-wrap items-center justify-end gap-3">
+                    {canStartDeployment && <ManagedReleaseDeploymentAction releaseId={release.id} retry={productionDeployment?.status === "FAILED"} />}
+                    <time className="text-xs text-gray-400" dateTime={release.createdAt.toISOString()}>{release.createdAt.toLocaleString()}</time>
+                  </div>
                 </div>
 
                 <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">

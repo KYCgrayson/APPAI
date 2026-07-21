@@ -6,10 +6,13 @@
 export type ReleaseStatusDeploymentRecord = {
   environment: string;
   status: string;
-  runtimeBaseUrl: string;
   healthCheckedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  managedRuntime: {
+    failureCode: string | null;
+    failureMessage: string | null;
+  } | null;
 };
 
 export type ReleaseStatusRecord = {
@@ -34,6 +37,14 @@ export function mapUniversalAppDeploymentStatus(deployment: ReleaseStatusDeploym
     healthCheckedAt: deployment.healthCheckedAt,
     createdAt: deployment.createdAt,
     updatedAt: deployment.updatedAt,
+    ...(deployment.status === "FAILED"
+      ? {
+          failure: {
+            code: deployment.managedRuntime?.failureCode ?? null,
+            message: deployment.managedRuntime?.failureMessage ?? null,
+          },
+        }
+      : {}),
   };
 }
 

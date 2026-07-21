@@ -1,12 +1,3 @@
-/**
- * The compatibility UI is a deliberate rollback path, not a catch-all error
- * page. Keep this decision independent from database/runtime code so it can be
- * tested without issuing a launch code.
- */
-export function mayUseSimpleshopCompatibilityRuntime(errorCode: string): boolean {
-  return errorCode === "APP_UNAVAILABLE";
-}
-
 type ReleaseLike<TRelease, TDeployment> = TRelease & {
   status: string;
   deployments: Array<TDeployment & { environment: string; status: string }>;

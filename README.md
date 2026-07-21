@@ -100,24 +100,25 @@ Use a Universal App when the software has its own UI/API/business rules or persi
 ### Natural Universal App publishing flow
 
 1. Authenticate with the AppAI device flow or an API key.
-2. Add `appai.app.json` to the app repository.
-3. Submit `POST /api/v1/apps/{appId}/releases`; this reserves the AppAI slot and returns `PENDING`.
-4. Poll `GET /api/v1/apps/{appId}/releases/{releaseId}` with the returned `releaseId` for review/deployment state. AppAI reviews, builds, and provisions approved capabilities.
-5. Once approved, users launch the app at `/app/{appId}`.
+2. Add `appai.app.json` to the app repository, including a lockfile-strict `installCommand`: `npm ci`, `pnpm install --frozen-lockfile`, or `yarn install --immutable`. The repository's `package.json` must define `test` and `typecheck` scripts.
+3. Submit `POST /api/v1/apps/{appId}/releases` with a credential-free public GitHub repository URL (`https://github.com/{owner}/{repo}`) and exact 40-character Git commit SHA; AppAI returns `PENDING`.
+4. The `PENDING` release awaits AppAI platform review. An AppAI administrator approves it and starts the managed pipeline.
+5. After approval, AppAI validates the pinned source/manifest and requires the repository's `test`, `typecheck`, and declared build command to pass in an isolated sandbox. It then provisions requested database schema/roles, runs an optional migration command, deploys, health-checks, and activates verified evidence.
+6. Poll `GET /api/v1/apps/{appId}/releases/{releaseId}` while it awaits review and then until `APPROVED` with an `ACTIVE` healthy production deployment; users then launch `/app/{appId}`.
 
-Agents never submit `organizationId`, credentials, runtime URLs, SQL, secrets, or platform infrastructure settings. AppAI derives Organization context and provides only approved, scoped capabilities to the isolated runtime. Simpleshop is the first example, not a special API.
+External agents never submit `organizationId`, runtime URLs, database secrets, provider/OIDC/CLI credentials, raw SQL, artifact digests, or platform infrastructure settings. AppAI derives Organization context and provides only approved, scoped capabilities to the isolated runtime. Simpleshop is the first example, not a special API.
 
-For a copyable `appai.app.json` and release request for a generic database-backed Inventory Manager app, see the [Agent Instructions](AGENT_INSTRUCTIONS.md#copyable-database-app-example). A `PENDING` receipt reserves the slot; source stays in the app repository and deployment remains platform-reviewed, not automatic.
+For a copyable `appai.app.json` and release request for a generic database-backed Inventory Manager app, see the [Agent Instructions](AGENT_INSTRUCTIONS.md#copyable-database-app-example). A `PENDING` receipt awaits platform review; after an AppAI administrator starts it, AppAI performs the managed validation/build/provision/deploy/health flow. Source stays in the app repository.
 
-When an app requests `database`, AppAI provisions app-scoped PostgreSQL and injects server-only `DATABASE_URL`, `APPAI_PLATFORM_URL`, and `APPAI_APP_ID` into its approved runtime. Schema and migrations remain in the app repository; AppAI runs migrations with a separate migration role. User and Organization context is obtained only through runtime-session exchange/introspection, never from a request body or public environment variable.
+When an app requests `database`, AppAI provisions app-scoped PostgreSQL and injects server-only `DATABASE_URL`, `APPAI_PLATFORM_URL`, and `APPAI_APP_ID` into its approved runtime. Schema and migrations remain in the app repository; AppAI runs an optional migration command with a separate migration role and gives the runtime only target-schema DML/sequence access. User and Organization context is obtained only through runtime-session exchange/introspection, never from a request body or public environment variable.
 
 ### Required Universal App auth chrome
 
-`/app/{appId}` is the AppAI SSO login gate. The runtime exchanges the one-time launch code and introspects its trusted session; every protected screen then provides a responsive top-right header with safe user/Organization display (or a neutral AppAI sign-in fallback), Return to AppAI, and a POST logout action. App logout revokes the runtime session with a strict `appId`, clears the local HttpOnly cookie, and routes to AppAI `/logout?callbackUrl=/`. Tokens, raw user/Organization IDs, credentials, and database URLs never appear in the browser UI.
+`/app/{appId}` is the AppAI SSO login gate. After login, AppAI redirects with a single-use identity handoff to the platform-managed `https://{appId}.appai.info` runtime. The runtime exchanges the one-time launch code and introspects its trusted session; every protected screen then provides a responsive top-right header with safe user/Organization display (or a neutral AppAI sign-in fallback), Return to AppAI, and a POST logout action. App logout revokes the runtime session with a strict `appId`, clears the local HttpOnly cookie, and routes to AppAI `/logout?callbackUrl=/`. Tokens, raw user/Organization IDs, credentials, and database URLs never appear in the browser UI.
 
-Apps open through `/app/{appId}`. AppAI creates a single-use launch code and an opaque, short-lived runtime session; the independent runtime receives `userId`, `organizationId`, instance identity, and only its granted capabilities. App server code is never imported into the AppAI Next.js process.
+Apps open through `/app/{appId}` and then run at the AppAI-managed `https://{appId}.appai.info` subdomain. AppAI creates a single-use launch code and an opaque, short-lived runtime session; the independent runtime receives `userId`, `organizationId`, instance identity, and only its granted capabilities. An app cannot supply or select its own runtime domain, and app server code is never imported into the AppAI Next.js process.
 
-**Simpleshop** is the first migration to this contract. Its app code now lives in the Simpleshop repository; AppAI's earlier hardcoded implementation remains only as a temporary compatibility layer until the independent deployment passes acceptance. See [`docs/apps/simpleshop.md`](docs/apps/simpleshop.md).
+**Simpleshop** is an example of this contract. Its app code lives in the Simpleshop repository and launches through the same Universal App runtime as every other database application. See [`docs/apps/simpleshop.md`](docs/apps/simpleshop.md).
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
