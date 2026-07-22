@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { getExternalCanonical } from "@/lib/canonical";
 import { getUniversalAppLaunchPath } from "@/lib/universal-apps/directory";
+import { UNIVERSAL_APP_CATEGORIES } from "@/lib/universal-apps/manifest";
 
 export default async function AppsPage({
   searchParams,
@@ -34,12 +35,7 @@ export default async function AppsPage({
     : [];
   const canonicalBySlug = new Map(hostedPages.map((h) => [h.slug, h.canonicalUrl]));
 
-  const categories = [
-    "ALL", "WRITING", "CODING", "DESIGN", "AUTOMATION",
-    "PRODUCTIVITY", "SOCIAL", "FINANCE", "HEALTH", "EDUCATION",
-    "FOOD", "TRAVEL", "ENTERTAINMENT", "GAMES", "MEDIA",
-    "UTILITIES", "COMMERCE", "OTHER",
-  ];
+  const categories = ["ALL", ...UNIVERSAL_APP_CATEGORIES];
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">

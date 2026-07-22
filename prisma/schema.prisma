@@ -81,6 +81,7 @@ model Organization {
   apps                App[]
   organizationApps    OrganizationApp[]
   privateAssets       PrivateAsset[]
+  releasePackages     AppReleasePackage[]
   usageEvents         UsageEvent[]
   simpleshopSequences SimpleshopSequence[]
   customers           Customer[]
@@ -261,7 +262,9 @@ model AppRelease {
   // directory metadata and may change for later releases.
   sourceRepoUrl  String? @db.Text
   sourceRevision String?
+  sourceType     String  @default("REPOSITORY") // REPOSITORY | PACKAGE
   artifactDigest String?
+  releasePackage AppReleasePackage?
   status         String  @default("PENDING") // PENDING | APPROVED | REJECTED | RETIRED
 
   deployments AppDeployment[]
@@ -271,6 +274,32 @@ model AppRelease {
 
   @@unique([appId, version])
   @@index([appId, status, createdAt])
+}
+
+// A private, short-lived upload intent for an immutable application release
+// package. The blob pathname is deliberately never returned by release status
+// APIs, and a package may only be claimed once by a release.
+model AppReleasePackage {
+  id                String       @id @default(cuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  appType           String
+  pathname          String       @unique
+  originalName      String
+  expectedSizeBytes Int
+  actualSizeBytes   Int?
+  sourceDigest      String?
+  contentType       String
+  status            String       @default("UPLOADING") // UPLOADING | CONSUMED | EXPIRED
+  expiresAt         DateTime
+  consumedAt        DateTime?
+  releaseId         String?      @unique
+  release           AppRelease?  @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, appType, status, expiresAt])
 }
 
 // Platform-controlled deployment record. runtimeBaseUrl is operational data

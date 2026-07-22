@@ -1,16 +1,23 @@
 import { createHash } from "node:crypto";
 
 import { isAllowedSourceRepositoryUrl, universalAppManifestSchema, type UniversalAppManifest } from "./manifest.ts";
+import { assertReleasePackageDigest, inspectReleasePackageArchive } from "./release-package-archive.ts";
 
 export type SandboxCommand = { cmd: string; args: string[]; cwd?: string; env?: Record<string, string> };
 export type SandboxRun = {
   run(command: SandboxCommand): Promise<{ exitCode: number; stdout: string; stderr: string }>;
+  /** Required for immutable package sources; the production adapter writes the
+   * bytes directly and never exposes storage credentials to the sandbox. */
+  writeFiles?(files: Array<{ path: string; content: Uint8Array }>): Promise<void>;
   /** The concrete platform adapter supplies this; test doubles may omit it. */
   stop?(): Promise<void>;
 };
+export type RepositoryReleaseSource = { type: "repository"; repoUrl: string; revision: string };
+export type PackageReleaseSource = { type: "package"; bytes: Uint8Array; digest: string };
+export type ImmutableReleaseSource = RepositoryReleaseSource | PackageReleaseSource;
 export type SandboxFactory = { create(input: { phase: "validation" | "provider" | "migration"; source?: { repoUrl: string; revision: string }; persistent: false; timeoutMs: number; tags: Record<string, string> }): Promise<SandboxRun> };
 
-export type ReleaseSnapshot = { appId: string; version: string; repoUrl: string; sourceRevision: string; manifest: unknown };
+export type ReleaseSnapshot = { appId: string; version: string; source: ImmutableReleaseSource; manifest: unknown };
 
 const SHA = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/i;
 const VERCEL_CLI = "vercel@56.4.1";
@@ -40,8 +47,36 @@ function parseManifest(value: unknown): UniversalAppManifest {
 }
 
 export function assertPinnedSnapshot(snapshot: ReleaseSnapshot) {
-  if (!SHA.test(snapshot.sourceRevision)) throw new Error("SOURCE_REVISION_MUST_BE_EXACT_SHA");
-  if (!isAllowedSourceRepositoryUrl(snapshot.repoUrl)) throw new Error("INVALID_REPOSITORY_URL");
+  if (snapshot.source.type === "repository") {
+    if (!SHA.test(snapshot.source.revision)) throw new Error("SOURCE_REVISION_MUST_BE_EXACT_SHA");
+    if (!isAllowedSourceRepositoryUrl(snapshot.source.repoUrl)) throw new Error("INVALID_REPOSITORY_URL");
+    return;
+  }
+  assertReleasePackageDigest(snapshot.source.bytes, snapshot.source.digest);
+  inspectReleasePackageArchive(snapshot.source.bytes);
+}
+
+function sandboxSource(source: ImmutableReleaseSource) {
+  return source.type === "repository" ? { repoUrl: source.repoUrl, revision: source.revision } : undefined;
+}
+
+/** Hydrates a pre-validated immutable package into an otherwise empty sandbox. */
+export async function hydratePackageSource(sandbox: SandboxRun, source: ImmutableReleaseSource) {
+  if (source.type !== "package") return;
+  // Recheck immediately before the bytes cross the isolation boundary. This
+  // binds each validation/migration/provider phase to the same immutable blob.
+  assertReleasePackageDigest(source.bytes, source.digest);
+  inspectReleasePackageArchive(source.bytes);
+  if (!sandbox.writeFiles) throw new Error("SANDBOX_PACKAGE_WRITE_UNAVAILABLE");
+  await sandbox.writeFiles([{ path: "/tmp/appai-release.tgz", content: source.bytes }]);
+  const extracted = await sandbox.run({
+    cmd: "tar",
+    args: [
+      "--extract", "--gzip", "--file=/tmp/appai-release.tgz", "--directory=/vercel/sandbox",
+      "--no-same-owner", "--no-same-permissions", "--numeric-owner", "--no-overwrite-dir",
+    ],
+  });
+  if (extracted.exitCode) throw new Error("PACKAGE_ARCHIVE_EXTRACTION_FAILED");
 }
 
 /** Validates the full manifest from source against the canonical stored snapshot. */
@@ -60,7 +95,13 @@ export function parseValidatedManifest(value: string, snapshot: ReleaseSnapshot)
   // Evidence is bound to the immutable checkout identity as well as the
   // reviewed manifest. Two revisions with identical manifests are different
   // executable artifacts and must never share an activation digest.
-  return `sha256:${createHash("sha256").update(canonicalJson({ repoUrl: snapshot.repoUrl, sourceRevision: snapshot.sourceRevision.toLowerCase(), manifest: source })).digest("hex")}`;
+  // Keep repository evidence byte-for-byte compatible with existing managed
+  // releases. Package evidence binds the uploaded archive digest to precisely
+  // the same reviewed manifest without introducing a repository dependency.
+  const evidence = snapshot.source.type === "repository"
+    ? { repoUrl: snapshot.source.repoUrl, sourceRevision: snapshot.source.revision.toLowerCase(), manifest: source }
+    : { packageDigest: snapshot.source.digest.toLowerCase(), manifest: source };
+  return `sha256:${createHash("sha256").update(canonicalJson(evidence)).digest("hex")}`;
 }
 
 export function assertProviderUrl(value: string, appId: string) {
@@ -157,8 +198,10 @@ async function inspectAliasedDeployment(
 
 export async function validateRelease(factory: SandboxFactory, snapshot: ReleaseSnapshot) {
   assertPinnedSnapshot(snapshot);
-  const sandbox = await factory.create({ phase: "validation", source: { repoUrl: snapshot.repoUrl, revision: snapshot.sourceRevision }, persistent: false, timeoutMs: 10 * 60_000, tags: { appId: snapshot.appId, phase: "validation" } });
+  const source = sandboxSource(snapshot.source);
+  const sandbox = await factory.create({ phase: "validation", ...(source ? { source } : {}), persistent: false, timeoutMs: 10 * 60_000, tags: { appId: snapshot.appId, phase: "validation" } });
   try {
+    await hydratePackageSource(sandbox, snapshot.source);
     const manifest = await sandbox.run({ cmd: "cat", args: ["appai.app.json"] });
     if (manifest.exitCode) throw new Error(redactProviderLog(manifest.stderr));
     const manifestDigest = parseValidatedManifest(manifest.stdout, snapshot);
@@ -180,9 +223,10 @@ export async function validateRelease(factory: SandboxFactory, snapshot: Release
   }
 }
 
-export async function deployValidatedRelease(factory: SandboxFactory, input: { appId: string; repoUrl: string; revision: string; oidcToken: string; platformUrl: string; databaseUrl?: string; inspectWait?: (ms: number) => Promise<void> }) {
-  assertPinnedSnapshot({ appId: input.appId, version: "0.0.0", repoUrl: input.repoUrl, sourceRevision: input.revision, manifest: {} });
-  const sandbox = await factory.create({ phase: "provider", source: { repoUrl: input.repoUrl, revision: input.revision }, persistent: false, timeoutMs: 10 * 60_000, tags: { appId: input.appId, phase: "provider" } });
+export async function deployValidatedRelease(factory: SandboxFactory, input: { appId: string; source: ImmutableReleaseSource; oidcToken: string; platformUrl: string; databaseUrl?: string; inspectWait?: (ms: number) => Promise<void> }) {
+  assertPinnedSnapshot({ appId: input.appId, version: "0.0.0", source: input.source, manifest: {} });
+  const source = sandboxSource(input.source);
+  const sandbox = await factory.create({ phase: "provider", ...(source ? { source } : {}), persistent: false, timeoutMs: 10 * 60_000, tags: { appId: input.appId, phase: "provider" } });
   const env = {
     VERCEL_OIDC_TOKEN: input.oidcToken,
     APPAI_PROJECT: `appai-app-${input.appId}`,
@@ -198,6 +242,7 @@ export async function deployValidatedRelease(factory: SandboxFactory, input: { a
   // Install outside the application checkout so repository npm configuration and
   // lifecycle scripts cannot influence the privileged provider CLI.
   try {
+    await hydratePackageSource(sandbox, input.source);
     const tools = await sandbox.run({ cmd: "npm", args: ["install", "--prefix", PROVIDER_TOOLS_DIR, "--ignore-scripts", VERCEL_CLI], cwd: "/tmp" });
     if (tools.exitCode) throw new Error(redactProviderLog(tools.stderr || tools.stdout));
     const trusted = async (script: string) => sandbox.run({ cmd: "sh", args: ["-c", script], env });

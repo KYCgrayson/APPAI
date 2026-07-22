@@ -8,8 +8,10 @@ import { provisionAppDatabaseFromEnvironment } from "@/lib/universal-apps/databa
 import { checkManagedRuntimeHealthWithRetry } from "@/lib/universal-apps/managed-health";
 import { orchestrateManagedDeployment } from "@/lib/universal-apps/managed-orchestrator";
 import { universalAppManifestSchema } from "@/lib/universal-apps/manifest";
+import { loadPrivateReleasePackage } from "@/lib/universal-apps/release-package-loader";
 import {
   deployValidatedRelease,
+  type ImmutableReleaseSource,
   validateRelease,
 } from "@/lib/universal-apps/vercel-sandbox-provider";
 import {
@@ -26,8 +28,7 @@ type PreparedDeployment = {
   id: string;
   appId: string;
   version: string;
-  repoUrl: string;
-  sourceRevision: string;
+  source: { type: "repository"; repoUrl: string; revision: string } | { type: "package"; pathname: string; digest: string; sizeBytes: number };
   manifest: ReturnType<typeof universalAppManifestSchema.parse>;
 };
 
@@ -35,13 +36,12 @@ async function prepareDeployment(releaseId: string): Promise<PreparedDeployment 
   return db.$transaction(async (transaction) => {
     const release = await transaction.appRelease.findUnique({
       where: { id: releaseId },
-      include: { app: true, deployments: { where: { environment: "PRODUCTION" }, select: { id: true, status: true } } },
+      include: { app: true, releasePackage: true, deployments: { where: { environment: "PRODUCTION" }, select: { id: true, status: true } } },
     });
     if (!release) return { error: "RELEASE_NOT_FOUND", status: 404 };
     if (!release.app.appType || release.status !== "PENDING") return { error: "RELEASE_NOT_DEPLOYABLE", status: 409 };
     const manifest = universalAppManifestSchema.safeParse(release.manifest);
     if (!manifest.success || manifest.data.id !== release.app.appType) return { error: "INVALID_RELEASE_MANIFEST", status: 409 };
-    if (!release.sourceRepoUrl || !release.sourceRevision) return { error: "RELEASE_SOURCE_REQUIRED", status: 409 };
 
     // Serialize production transitions per app. The deployment is marked
     // PROVISIONING in this same transaction, which blocks a second worker once
@@ -49,7 +49,7 @@ async function prepareDeployment(releaseId: string): Promise<PreparedDeployment 
     await transaction.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${release.app.appType}))`;
     const lockedRelease = await transaction.appRelease.findUnique({
       where: { id: release.id },
-      include: { app: true, deployments: { where: { environment: "PRODUCTION" }, select: { id: true, status: true } } },
+      include: { app: true, releasePackage: true, deployments: { where: { environment: "PRODUCTION" }, select: { id: true, status: true } } },
     });
     if (!lockedRelease || !lockedRelease.app.appType || lockedRelease.status !== "PENDING") {
       return { error: "RELEASE_NOT_DEPLOYABLE", status: 409 };
@@ -58,6 +58,16 @@ async function prepareDeployment(releaseId: string): Promise<PreparedDeployment 
     if (existing && !["FAILED"].includes(existing.status)) {
       return { error: "DEPLOYMENT_ALREADY_IN_PROGRESS", status: 409 };
     }
+    const source = lockedRelease.sourceType === "PACKAGE"
+      ? lockedRelease.releasePackage && lockedRelease.releasePackage.status === "CONSUMED" && lockedRelease.releasePackage.releaseId === lockedRelease.id && lockedRelease.releasePackage.sourceDigest && lockedRelease.releasePackage.actualSizeBytes
+        ? { type: "package" as const, pathname: lockedRelease.releasePackage.pathname, digest: lockedRelease.releasePackage.sourceDigest, sizeBytes: lockedRelease.releasePackage.actualSizeBytes }
+        : undefined
+      : lockedRelease.sourceRepoUrl && lockedRelease.sourceRevision
+        ? { type: "repository" as const, repoUrl: lockedRelease.sourceRepoUrl, revision: lockedRelease.sourceRevision }
+        : undefined;
+    // Do this before creating/updating the deployment. A malformed or
+    // incomplete source must not leave a permanent PROVISIONING record.
+    if (!source) return { error: "RELEASE_SOURCE_REQUIRED", status: 409 };
     const deployment = await transaction.appDeployment.upsert({
       where: { appReleaseId_environment: { appReleaseId: lockedRelease.id, environment: "PRODUCTION" } },
       create: { appReleaseId: lockedRelease.id, environment: "PRODUCTION", runtimeBaseUrl: null, status: "PROVISIONING" },
@@ -79,8 +89,7 @@ async function prepareDeployment(releaseId: string): Promise<PreparedDeployment 
       id: deployment.id,
       appId: lockedRelease.app.appType,
       version: lockedRelease.version,
-      repoUrl: lockedRelease.sourceRepoUrl!,
-      sourceRevision: lockedRelease.sourceRevision!,
+      source,
       manifest: manifest.data,
     };
   });
@@ -110,6 +119,30 @@ export async function POST(request: NextRequest, routeContext: RouteContext) {
     return NextResponse.json({ error: "MANAGED_DEPLOYMENT_FAILED" }, { status: 502 });
   }
 
+  // The private blob is read and cryptographically bound before a sandbox is
+  // created. It is deliberately kept as bytes; no Blob URL/token can enter an
+  // untrusted build or provider sandbox.
+  let source: ImmutableReleaseSource;
+  try {
+    source = prepared.source.type === "repository"
+      ? prepared.source
+      : {
+        type: "package",
+        digest: prepared.source.digest,
+        bytes: await loadPrivateReleasePackage({
+          pathname: prepared.source.pathname,
+          digest: prepared.source.digest,
+          sizeBytes: prepared.source.sizeBytes,
+        }),
+      };
+  } catch {
+    await db.$transaction([
+      db.appDeployment.update({ where: { id: prepared.id }, data: { status: "FAILED" } }),
+      db.appManagedRuntime.update({ where: { appDeploymentId: prepared.id }, data: { failureCode: "RELEASE_PACKAGE_UNAVAILABLE", failureMessage: "The immutable release package could not be verified." } }),
+    ]);
+    return NextResponse.json({ error: "MANAGED_DEPLOYMENT_FAILED", deploymentId: prepared.id }, { status: 502 });
+  }
+
   const sandboxFactory = createVercelSandboxFactory();
   let runtimeUrl: string | undefined;
   const result = await orchestrateManagedDeployment({
@@ -120,8 +153,7 @@ export async function POST(request: NextRequest, routeContext: RouteContext) {
       const { manifestDigest } = await validateRelease(sandboxFactory, {
         appId: prepared.appId,
         version: prepared.version,
-        repoUrl: prepared.repoUrl,
-        sourceRevision: prepared.sourceRevision,
+        source,
         manifest: prepared.manifest,
       });
       return { artifactDigest: manifestDigest, capabilities: [...prepared.manifest.capabilities] };
@@ -134,8 +166,7 @@ export async function POST(request: NextRequest, routeContext: RouteContext) {
     async runMigration(migrationUrl) {
       await runIsolatedMigration(sandboxFactory, {
         appId: prepared.appId,
-        repoUrl: prepared.repoUrl,
-        sourceRevision: prepared.sourceRevision,
+        source,
         manifest: prepared.manifest,
         migrationUrl,
       });
@@ -143,8 +174,7 @@ export async function POST(request: NextRequest, routeContext: RouteContext) {
     async deploy(databaseUrl) {
       const provider = await deployValidatedRelease(sandboxFactory, {
         appId: prepared.appId,
-        repoUrl: prepared.repoUrl,
-        revision: prepared.sourceRevision,
+        source,
         oidcToken,
         platformUrl: process.env.NEXTAUTH_URL || "https://appai.info",
         ...(databaseUrl ? { databaseUrl } : {}),
