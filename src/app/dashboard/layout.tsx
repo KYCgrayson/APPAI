@@ -14,14 +14,14 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-8">
+      <nav className="bg-white border-b px-4 py-3 sm:px-6 sm:py-4">
+        <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2 sm:gap-x-8">
             <Link href="/" className="text-xl font-bold flex items-center gap-2">
               <img src="/appai-logo2.png" alt="AppAI" className="w-7 h-7 rounded" />
               AppAI
             </Link>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
               <Link
                 href="/dashboard"
                 className="text-sm text-gray-600 hover:text-black"
@@ -33,6 +33,12 @@ export default async function DashboardLayout({
                 className="text-sm text-gray-600 hover:text-black"
               >
                 Pages
+              </Link>
+              <Link
+                href="/dashboard/publisher"
+                className="text-sm text-gray-600 hover:text-black"
+              >
+                Publisher
               </Link>
               <Link
                 href="/dashboard/settings"
@@ -58,8 +64,8 @@ export default async function DashboardLayout({
               )}
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">
+          <div className="ml-auto flex min-w-0 items-center gap-3 sm:gap-4">
+            <span className="max-w-40 truncate text-sm text-gray-600 sm:max-w-64" title={session.user?.email ?? undefined}>
               {session.user?.email}
             </span>
             <Link href="/logout?callbackUrl=/" className="text-sm text-gray-500 hover:text-black">Sign out</Link>

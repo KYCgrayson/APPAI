@@ -32,8 +32,7 @@ const manifestObject = {
 const snapshot = {
   appId: "inventory-db",
   version: "1.0.0",
-  repoUrl: "https://github.com/acme/inventory",
-  sourceRevision: "a".repeat(40),
+  source: { type: "repository" as const, repoUrl: "https://github.com/acme/inventory", revision: "a".repeat(40) },
   manifest: manifestObject,
 };
 const manifest = JSON.stringify(manifestObject);
@@ -53,17 +52,17 @@ function recordingFactory(respond: (command: SandboxCommand) => { exitCode: numb
 
 test("provider requires exact SHA and credential-free source", () => {
   assert.doesNotThrow(() => assertPinnedSnapshot(snapshot));
-  assert.throws(() => assertPinnedSnapshot({ ...snapshot, sourceRevision: "main" }));
-  assert.throws(() => assertPinnedSnapshot({ ...snapshot, repoUrl: "https://token@github.com/acme/inventory" }));
-  assert.throws(() => assertPinnedSnapshot({ ...snapshot, repoUrl: "https://127.0.0.1/internal/repo" }));
-  assert.throws(() => assertPinnedSnapshot({ ...snapshot, repoUrl: "https://example.com/acme/inventory" }));
+  assert.throws(() => assertPinnedSnapshot({ ...snapshot, source: { ...snapshot.source, revision: "main" } }));
+  assert.throws(() => assertPinnedSnapshot({ ...snapshot, source: { ...snapshot.source, repoUrl: "https://token@github.com/acme/inventory" } }));
+  assert.throws(() => assertPinnedSnapshot({ ...snapshot, source: { ...snapshot.source, repoUrl: "https://127.0.0.1/internal/repo" } }));
+  assert.throws(() => assertPinnedSnapshot({ ...snapshot, source: { ...snapshot.source, repoUrl: "https://example.com/acme/inventory" } }));
 });
 
 test("full canonical manifest validation rejects nested and capability mismatches", () => {
   const reordered = JSON.stringify({ ...manifestObject, capabilities: ["database", "identity"], runtime: { healthPath: "/health", startCommand: "pnpm run start", buildCommand: "pnpm run build", installCommand: "pnpm install --frozen-lockfile", type: "node" } });
   const digest = parseValidatedManifest(reordered, snapshot);
   assert.match(digest, /^sha256:[0-9a-f]{64}$/);
-  assert.notEqual(digest, parseValidatedManifest(reordered, { ...snapshot, sourceRevision: "b".repeat(40) }));
+  assert.notEqual(digest, parseValidatedManifest(reordered, { ...snapshot, source: { ...snapshot.source, revision: "b".repeat(40) } }));
   assert.throws(() => parseValidatedManifest(JSON.stringify({ ...manifestObject, runtime: { ...manifestObject.runtime, healthPath: "/other" } }), snapshot), /MANIFEST_MISMATCH/);
   assert.throws(() => parseValidatedManifest(JSON.stringify({ ...manifestObject, capabilities: ["database"] }), snapshot), /MANIFEST_MISMATCH/);
   assert.throws(() => parseValidatedManifest(JSON.stringify({ ...manifestObject, runtime: { ...manifestObject.runtime, installCommand: "npm install --ignore-scripts" } }), snapshot), /MANIFEST_MISMATCH/);
@@ -76,7 +75,7 @@ test("full canonical manifest validation rejects nested and capability mismatche
 test("validation uses the pinned source and only schema-approved package commands", async () => {
   const record = recordingFactory((command) => command.cmd === "cat" ? { ...success, stdout: manifest } : success);
   await validateRelease(record.factory, snapshot);
-  assert.deepEqual(record.created, [{ phase: "validation", source: { repoUrl: snapshot.repoUrl, revision: snapshot.sourceRevision }, persistent: false, timeoutMs: 600_000, tags: { appId: snapshot.appId, phase: "validation" } }]);
+  assert.deepEqual(record.created, [{ phase: "validation", source: { repoUrl: snapshot.source.repoUrl, revision: snapshot.source.revision }, persistent: false, timeoutMs: 600_000, tags: { appId: snapshot.appId, phase: "validation" } }]);
   assert.deepEqual(record.commands.map(({ cmd, args }) => [cmd, ...args]), [
     ["cat", "appai.app.json"],
     ["pnpm", "install", "--frozen-lockfile"],
@@ -95,9 +94,9 @@ test("provider creates and verifies its project before adding secrets with a pin
     if (line.includes("deploy")) return { ...success, stdout: "https://appai-app-inventory-db.vercel.app\n" };
     return success;
   });
-  const result = await deployValidatedRelease(record.factory, { appId: "inventory-db", repoUrl: snapshot.repoUrl, revision: snapshot.sourceRevision, oidcToken: "oidc-secret", platformUrl: "https://appai.info", databaseUrl: "postgresql://user:pass@db.example/app" });
+  const result = await deployValidatedRelease(record.factory, { appId: "inventory-db", source: snapshot.source, oidcToken: "oidc-secret", platformUrl: "https://appai.info", databaseUrl: "postgresql://user:pass@db.example/app" });
   assert.deepEqual(result, { providerProjectId: "prj_1", providerDeploymentId: "dpl_1", publicRuntimeUrl: "https://inventory-db.appai.info" });
-  assert.deepEqual(record.created[0]?.source, { repoUrl: snapshot.repoUrl, revision: snapshot.sourceRevision });
+  assert.deepEqual(record.created[0]?.source, { repoUrl: snapshot.source.repoUrl, revision: snapshot.source.revision });
   const projectAdd = record.commands.findIndex((command) => command.args.join(" ").includes("project add"));
   const projectList = record.commands.find((command) => command.args.join(" ").includes("project ls"));
   const deploy = record.commands.findIndex((command) => command.args.join(" ").includes(" deploy "));
@@ -120,7 +119,7 @@ test("provider rejects ambiguous or non-Vercel deploy output before aliasing", a
     if (line.includes("deploy")) return { ...success, stdout: "https://one.vercel.app\nhttps://two.vercel.app" };
     return success;
   });
-  await assert.rejects(() => deployValidatedRelease(record.factory, { appId: "inventory-db", repoUrl: snapshot.repoUrl, revision: snapshot.sourceRevision, oidcToken: "oidc", platformUrl: "https://appai.info" }), /INVALID_PROVIDER_RESPONSE/);
+  await assert.rejects(() => deployValidatedRelease(record.factory, { appId: "inventory-db", source: snapshot.source, oidcToken: "oidc", platformUrl: "https://appai.info" }), /INVALID_PROVIDER_RESPONSE/);
   assert.equal(record.commands.some((command) => command.args.join(" ").includes("alias set")), false);
 });
 
@@ -136,7 +135,7 @@ test("provider retries inspect until the custom alias is reflected", async () =>
     }
     return success;
   });
-  await deployValidatedRelease(record.factory, { appId: "inventory-db", repoUrl: snapshot.repoUrl, revision: snapshot.sourceRevision, oidcToken: "oidc", platformUrl: "https://appai.info", inspectWait: async () => {} });
+  await deployValidatedRelease(record.factory, { appId: "inventory-db", source: snapshot.source, oidcToken: "oidc", platformUrl: "https://appai.info", inspectWait: async () => {} });
   assert.equal(inspections, 2);
 });
 
@@ -149,7 +148,7 @@ test("a failed project add is tolerated only for a verified existing project", a
     if (line.includes("deploy")) return { ...success, stdout: "https://appai-app-inventory-db.vercel.app" };
     return success;
   });
-  await assert.doesNotReject(() => deployValidatedRelease(existing.factory, { appId: "inventory-db", repoUrl: snapshot.repoUrl, revision: snapshot.sourceRevision, oidcToken: "oidc", platformUrl: "https://appai.info", databaseUrl: "postgresql://db" }));
+  await assert.doesNotReject(() => deployValidatedRelease(existing.factory, { appId: "inventory-db", source: snapshot.source, oidcToken: "oidc", platformUrl: "https://appai.info", databaseUrl: "postgresql://db" }));
 
   const failed = recordingFactory((command) => {
     const line = [command.cmd, ...command.args].join(" ");
@@ -157,7 +156,7 @@ test("a failed project add is tolerated only for a verified existing project", a
     if (line.includes("project ls")) return { ...success, stdout: JSON.stringify([{ name: "appai-app-inventory-db", id: "prj_1" }]) };
     return success;
   });
-  await assert.rejects(() => deployValidatedRelease(failed.factory, { appId: "inventory-db", repoUrl: snapshot.repoUrl, revision: snapshot.sourceRevision, oidcToken: "oidc", platformUrl: "https://appai.info", databaseUrl: "postgresql://db" }), /network unavailable/);
+  await assert.rejects(() => deployValidatedRelease(failed.factory, { appId: "inventory-db", source: snapshot.source, oidcToken: "oidc", platformUrl: "https://appai.info", databaseUrl: "postgresql://db" }), /network unavailable/);
 });
 
 test("provider logs redact database and OIDC credentials", () => {

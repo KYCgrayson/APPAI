@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { validateApiKey } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { canReadUniversalApp, mapUniversalAppReleaseStatus } from "@/lib/universal-apps/release-status";
 import { universalAppIdSchema } from "@/lib/universal-apps/manifest";
+import { requirePublisherOrganization } from "@/lib/universal-apps/publisher-auth";
 
 type RouteContext = { params: Promise<{ id: string; releaseId: string }> };
 
 export async function GET(request: NextRequest, routeContext: RouteContext) {
-  const authResult = await validateApiKey(request.headers.get("authorization"));
+  const authResult = await requirePublisherOrganization(request);
+  if (authResult && "error" in authResult) return NextResponse.json({ error: authResult.error }, { status: 403 });
   if (!authResult) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id: rawAppId, releaseId } = await routeContext.params;
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest, routeContext: RouteContext) {
       id: true,
       version: true,
       status: true,
+      sourceType: true,
       sourceRevision: true,
       artifactDigest: true,
       createdAt: true,

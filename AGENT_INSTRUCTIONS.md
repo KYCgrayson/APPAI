@@ -80,14 +80,15 @@ entry; every reuse after that is pure section config. See
 ### Universal apps
 
 Full applications built by agents can run on AppAI without becoming part of
-the AppAI monolith. The app repo owns UI, API, business rules, schema,
+the AppAI monolith. The app workspace owns UI, API, business rules, schema,
 migrations, tests, and `appai.app.json`; AppAI owns review, isolated runtime,
 login, Organization context, app-scoped database, private assets, quota, and
 monitoring.
 
 | Operation | Endpoint | Rule |
 |-----------|----------|------|
-| Submit release | `POST /api/v1/apps/{appId}/releases` | Bearer API key; manifest id must match the path |
+| Create package upload | `POST /api/v1/apps/{appId}/release-packages` | Bearer API key; returns a single-use private upload intent |
+| Submit release | `POST /api/v1/apps/{appId}/releases` | Bearer API key; manifest id must match the path; package source is primary |
 | Open app | `/app/{appId}` | Browser login; AppAI selects the approved deployment and hands off once to `https://{appId}.appai.info` |
 | Runtime identity | `POST /api/runtime/sessions/introspect` | Opaque runtime bearer; returns only granted context |
 | Private images/PDFs | `/api/runtime/assets` | Requires the `private-assets` capability |
@@ -95,16 +96,17 @@ monitoring.
 #### Natural release flow
 
 1. **Authenticate** through the device flow or with an existing API key.
-2. **Add `appai.app.json`** to the application's own repository. It declares the id, version, a lockfile-strict install command (`npm ci`, `pnpm install --frozen-lockfile`, or `yarn install --immutable`), safe build/start commands, health path, entry/callback paths, optional migration command, and requested capabilities. The repository's `package.json` must define `test` and `typecheck` scripts. The repo keeps its UI, API, business rules, schema, migrations, and tests.
-3. **Submit:** `POST /api/v1/apps/{appId}/releases`, with a manifest whose `id` exactly matches `{appId}`, a credential-free public GitHub repository URL (`https://github.com/{owner}/{repo}`), and the exact 40-character Git commit SHA in `sourceRevision`. Other Git or HTTPS hosts are not accepted. This creates a `PENDING` managed release receipt.
+2. **Add `appai.app.json`** at the application root. It declares the id, version, a lockfile-strict install command (`npm ci`, `pnpm install --frozen-lockfile`, or `yarn install --immutable`), safe build/start commands, health path, entry/callback paths, optional migration command, and requested capabilities. The workspace `package.json` must define `test` and `typecheck` scripts.
+3. **Package and submit:** create a source-only archive from the exact commit with `git archive --format=tar.gz --output=appai-release.tar.gz HEAD`. Exclude `node_modules`, build output, `.git`, environment files except a values-free `.env.example`, and secrets. Call `POST /api/v1/apps/{appId}/release-packages`, upload the archive privately with its short-lived client token, calculate `sha256:<digest>`, then submit `POST /api/v1/apps/{appId}/releases` with `source: { type: "package", uploadId, digest, sizeBytes }`. The manifest `id` must equal `{appId}`. A repository URL is optional provenance metadata, never a requirement. This creates a `PENDING` managed release receipt.
 4. **Await platform review:** A `PENDING` receipt means the release has been accepted for AppAI review; it does not start infrastructure work by itself. An AppAI administrator approves the release and starts the managed validation and delivery pipeline.
-5. **AppAI manages validation and delivery after approval:** AppAI verifies the source revision, validates the manifest, installs dependencies, and requires the repository's `test`, `typecheck`, and declared build command to pass in an isolated sandbox. It provisions an app-scoped database with separate migration/runtime roles when requested, runs the declared migration command in the migration context, deploys the isolated runtime, performs a health check, and records the immutable artifact/deployment evidence.
+5. **AppAI manages validation and delivery after approval:** AppAI verifies the immutable package and manifest, installs dependencies, and requires the app's `test`, `typecheck`, and declared build command to pass in an isolated sandbox. It provisions an app-scoped database with separate migration/runtime roles when requested, runs the declared migration command in the migration context, deploys the isolated runtime, performs a health check, and records immutable artifact/deployment evidence.
 6. **Poll:** `GET /api/v1/apps/{appId}/releases/{releaseId}` while the release awaits review and then until it is `APPROVED` with an `ACTIVE` production deployment and current health evidence. Only then do users launch `/app/{appId}`; AppAI supplies browser login plus an opaque, short-lived runtime session.
 
 #### Copyable database app example
 
-Keep source code in the application's repository. For example, an inventory
-application commits this `appai.app.json` at its repository root:
+Keep source code in the application's workspace and package it for release.
+For example, an inventory application includes this `appai.app.json` at its
+package root:
 
 ```json
 {
@@ -126,8 +128,9 @@ application commits this `appai.app.json` at its repository root:
 }
 ```
 
-Submit declarative release metadata, not source code or infrastructure
-credentials:
+Submit declarative release metadata after privately uploading the immutable
+source package. The package source is primary; do not submit infrastructure
+credentials or require a public repository:
 
 ```bash
 curl -X POST https://appai.info/api/v1/apps/inventory/releases \
@@ -147,8 +150,12 @@ curl -X POST https://appai.info/api/v1/apps/inventory/releases \
     "tagline": "Track stock across your organization",
     "description": "A database-backed inventory workflow for teams.",
     "category": "INVENTORY",
-    "repoUrl": "https://github.com/example/inventory-manager",
-    "sourceRevision": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
+    "source": {
+      "type": "package",
+      "uploadId": "UPLOAD_ID_FROM_RELEASE_PACKAGES",
+      "digest": "sha256:LOWERCASE_SHA256_OF_ARCHIVE",
+      "sizeBytes": 12345
+    }
   }'
 ```
 
@@ -167,8 +174,8 @@ release until AppAI has activated the verified production deployment.
 Requesting the `database` capability asks AppAI to provision an app-scoped
 PostgreSQL schema and deployment-scoped credentials. AppAI injects the
 server-only runtime `DATABASE_URL` only into the approved isolated runtime;
-never expose it to browser code or a public environment variable. The app repo
-owns schema/migrations, while AppAI runs `migrationCommand` with a separate
+never expose it to browser code or a public environment variable. The app
+workspace and release package own schema/migrations, while AppAI runs `migrationCommand` with a separate
 migration role and gives the runtime role only its target-schema DML/sequence
 permissions. AppAI also injects `APPAI_PLATFORM_URL` and `APPAI_APP_ID`.
 
@@ -201,7 +208,7 @@ app's local HttpOnly runtime-session cookie, then routes the browser to
 the runtime token, `userId`, `organizationId`, credentials, or database URLs
 in browser UI or public environment variables.
 
-Release submission accepts declarative metadata plus a pinned source revision.
+Release submission accepts declarative metadata plus an immutable package.
 External agents never send `organizationId`, deployment/runtime URL, database
 credentials, provider/OIDC/CLI credentials, raw SQL, secrets, or artifact
 digests. AppAI owns the isolated validation/build/migration/deploy/health/

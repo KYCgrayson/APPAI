@@ -20,25 +20,37 @@ Do NOT ask the user 10 setup questions. Build a first draft and show them the UR
 
 Use the Universal App flow—not the Pages API—when the product owns server-side
 business logic, persistent Organization data, private assets, or an app-specific
-UI/API. Keep all source, schema, migrations, and tests in that app's repository.
+UI/API. Keep all source, schema, migrations, and tests in the app workspace.
+The primary publishing input is an immutable source package; a Git repository
+is optional metadata, never a requirement.
 
-1. Commit `appai.app.json` with a lockfile-strict `installCommand` (`npm ci`,
-   `pnpm install --frozen-lockfile`, or `yarn install --immutable`), safe
-   package-manager build/start commands, health path, and
-   optional `migrationCommand` such as `npm run migrate`. The repository's
-   `package.json` must define `test` and `typecheck` scripts.
-2. Submit a credential-free public GitHub `repoUrl` in the exact
-   `https://github.com/{owner}/{repo}` form and the 40-character Git commit SHA
-   as `sourceRevision` to `POST /api/v1/apps/{appId}/releases`. Other Git or
-   HTTPS source hosts are not accepted.
-3. The accepted release is `PENDING` and awaits AppAI platform review. An AppAI
+1. Add `appai.app.json` at the app root with a lockfile-strict `installCommand`
+   (`npm ci`, `pnpm install --frozen-lockfile`, or `yarn install --immutable`),
+   safe package-manager build/start commands, health path, and optional
+   `migrationCommand`. `package.json` must define `test` and `typecheck`.
+2. Create a source-only package from the exact commit. Never include
+   `node_modules`, build output, `.git`, environment files (except a values-free
+   `.env.example`), credentials, or secrets:
+
+   ```bash
+   git archive --format=tar.gz --output=appai-release.tar.gz HEAD
+   ```
+
+   The archive must contain the same root `appai.app.json` supplied to AppAI.
+   Read `references/universal-apps.md` for the API request sequence.
+3. Authenticate through device flow, then create an upload intent at
+   `POST /api/v1/apps/{appId}/release-packages`, upload the archive privately
+   with the returned short-lived token, compute its SHA-256, and finalize at
+   `POST /api/v1/apps/{appId}/releases` with
+   `source: { type: "package", uploadId, digest, sizeBytes }`.
+4. The accepted release is `PENDING` and awaits AppAI platform review. An AppAI
    administrator approves it and starts the managed pipeline; poll
    `GET /api/v1/apps/{appId}/releases/{releaseId}` for its state.
-4. After approval, AppAI validates the source and manifest and requires the
-   repository's `test`, `typecheck`, and declared build command to pass in an
-   isolated sandbox. It provisions app-scoped DB schema/roles, runs migrations,
-   deploys, health-checks, and activates the verified runtime.
-5. Launch only through `/app/{appId}` once the release is `APPROVED` and the
+5. After approval, AppAI validates the package and manifest and requires the
+   app's `test`, `typecheck`, and declared build command to pass in an isolated
+   sandbox. It provisions app-scoped DB schema/roles, runs migrations, deploys,
+   health-checks, and activates the verified runtime.
+6. Launch only through `/app/{appId}` once the release is `APPROVED` and the
    production deployment is `ACTIVE`. AppAI performs the one-time identity handoff
    to its managed `https://{appId}.appai.info` isolated runtime
    subdomain.
@@ -122,6 +134,7 @@ For a consumer product, ship at least `en`, `ja`, `zh-CN`, `zh-TW`, `ko` on day 
 - `references/i18n.md` — locale codes, translation patterns, child pages
 - `references/seo.md` — canonicalUrl, schema.org, sitemap behavior
 - `references/examples.md` — full JSON payloads for common product types
+- `references/universal-apps.md` — immutable package publishing contract
 
 ## Anti-patterns
 

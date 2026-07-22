@@ -50,6 +50,9 @@ export default async function UniversalAppReleasesPage({
         select: { id: true, environment: true, status: true, healthCheckedAt: true, updatedAt: true },
         orderBy: { updatedAt: "desc" },
       },
+      releasePackage: {
+        select: { sourceDigest: true, actualSizeBytes: true },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -84,7 +87,12 @@ export default async function UniversalAppReleasesPage({
           {releases.map((release) => {
             const parsedManifest = universalAppManifestSchema.safeParse(release.manifest);
             const capabilities = parsedManifest.success ? parsedManifest.data.capabilities : [];
-            const repositoryUrl = getSafeRepositoryUrl(release.sourceRepoUrl);
+            const isPackageSource = release.sourceType === "PACKAGE";
+            const repositoryUrl = isPackageSource ? null : getSafeRepositoryUrl(release.sourceRepoUrl);
+            const packageSize = release.releasePackage?.actualSizeBytes;
+            const packageSource = release.releasePackage?.sourceDigest
+              ? `${release.releasePackage.sourceDigest}${packageSize ? ` · ${packageSize.toLocaleString()} bytes` : ""}`
+              : "Verification pending";
             const reviewState = getReleaseReviewState({
               releaseStatus: release.status,
               deploymentStatuses: release.deployments.map((deployment) => deployment.status),
@@ -114,10 +122,12 @@ export default async function UniversalAppReleasesPage({
                   </div>
                 </div>
 
-                <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-5">
                   <div><dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Capabilities</dt><dd className="mt-1 flex flex-wrap gap-1">{capabilities.length ? capabilities.map((capability) => <span key={capability} className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700">{capability}</span>) : <span className="text-gray-500">Invalid manifest</span>}</dd></div>
-                  <div><dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Source revision</dt><dd className="mt-1 break-all font-mono text-xs text-gray-700">{release.sourceRevision ?? "Not provided"}</dd></div>
-                  <div><dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Repository</dt><dd className="mt-1 break-all text-xs">{repositoryUrl ? <a href={repositoryUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{repositoryUrl}</a> : <span className="text-gray-500">Invalid/unavailable</span>}</dd></div>
+                  <div><dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Source type</dt><dd className="mt-1 text-xs font-medium text-gray-700">{isPackageSource ? "PACKAGE" : "REPOSITORY"}</dd></div>
+                  <div><dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Source revision</dt><dd className="mt-1 break-all font-mono text-xs text-gray-700">{isPackageSource ? "Not required" : (release.sourceRevision ?? "Not provided")}</dd></div>
+                  <div><dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Repository</dt><dd className="mt-1 break-all text-xs">{isPackageSource ? <span className="text-gray-500">Not required</span> : repositoryUrl ? <a href={repositoryUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{repositoryUrl}</a> : <span className="text-gray-500">Invalid/unavailable</span>}</dd></div>
+                  {isPackageSource && <div><dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Verified package</dt><dd className="mt-1 break-all font-mono text-xs text-gray-700">{packageSource}</dd></div>}
                   <div><dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Artifact</dt><dd className="mt-1 break-all font-mono text-xs text-gray-700">{release.artifactDigest ?? "Awaiting platform build"}</dd></div>
                 </dl>
 

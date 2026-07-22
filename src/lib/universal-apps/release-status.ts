@@ -19,6 +19,7 @@ export type ReleaseStatusRecord = {
   id: string;
   version: string;
   status: string;
+  sourceType?: string;
   sourceRevision: string | null;
   artifactDigest: string | null;
   createdAt: Date;
@@ -53,6 +54,7 @@ export function mapUniversalAppReleaseStatus(release: ReleaseStatusRecord) {
     releaseId: release.id,
     version: release.version,
     status: release.status,
+    sourceType: release.sourceType ?? "REPOSITORY",
     sourceRevision: release.sourceRevision,
     ...(release.status === "APPROVED" && release.artifactDigest
       ? { artifactDigest: release.artifactDigest }

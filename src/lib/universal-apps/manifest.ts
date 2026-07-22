@@ -6,6 +6,30 @@ export const UNIVERSAL_APP_CAPABILITIES = [
   "private-assets",
 ] as const;
 
+// These are the categories AppAI presents to publishers and in the public
+// directory. The release contract deliberately remains compatible with any
+// valid uppercase category value so existing integrations are not narrowed.
+export const UNIVERSAL_APP_CATEGORIES = [
+  "WRITING",
+  "CODING",
+  "DESIGN",
+  "AUTOMATION",
+  "PRODUCTIVITY",
+  "SOCIAL",
+  "FINANCE",
+  "HEALTH",
+  "EDUCATION",
+  "FOOD",
+  "TRAVEL",
+  "ENTERTAINMENT",
+  "GAMES",
+  "MEDIA",
+  "UTILITIES",
+  "COMMERCE",
+  "INVENTORY",
+  "OTHER",
+] as const;
+
 const reservedAppHosts = new Set(["www", "api", "admin", "auth", "login", "dashboard", "mail"]);
 export const universalAppIdSchema = z.string().regex(/^[a-z](?:[a-z0-9-]{0,61}[a-z0-9])$/).refine(
   (value) => !reservedAppHosts.has(value),
@@ -50,13 +74,35 @@ export const universalAppManifestSchema = z.object({
   }
 });
 
-export const publishUniversalAppReleaseSchema = z.object({
+const releaseMetadataSchema = z.object({
   manifest: universalAppManifestSchema,
   tagline: z.string().trim().min(1).max(160),
   description: z.string().trim().min(1).max(5000),
   category: z.string().trim().regex(/^[A-Z][A-Z0-9_]{1,39}$/).default("OTHER"),
-  repoUrl: credentialFreeHttpsUrl,
-  sourceRevision: z.string().trim().regex(/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/i),
+});
+
+const sourceRevisionSchema = z.string().trim().regex(/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/i);
+export const packageDigestSchema = z.string().trim().regex(/^sha256:[0-9a-f]{64}$/i);
+
+export const publishUniversalAppReleaseSchema = z.union([
+  releaseMetadataSchema.extend({
+    repoUrl: credentialFreeHttpsUrl,
+    sourceRevision: sourceRevisionSchema,
+  }).strict(),
+  releaseMetadataSchema.extend({
+    source: z.object({
+      type: z.literal("package"),
+      uploadId: z.string().cuid(),
+      digest: packageDigestSchema,
+      sizeBytes: z.number().int().positive().max(20 * 1024 * 1024),
+    }).strict(),
+  }).strict(),
+]);
+
+export const createReleasePackageSchema = z.object({
+  filename: z.string().trim().min(1).max(240).refine((value) => /\.(?:tgz|tar\.gz)$/i.test(value), "Package must be a .tgz or .tar.gz archive."),
+  sizeBytes: z.number().int().positive().max(20 * 1024 * 1024),
+  contentType: z.enum(["application/gzip", "application/x-gzip", "application/octet-stream"]),
 }).strict();
 
 export const approveUniversalAppDeploymentSchema = z.object({

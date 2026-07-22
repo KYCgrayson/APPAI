@@ -18,7 +18,7 @@ test("migration installs before receiving the scoped DB URL, restricts egress, a
     },
   };
   await runIsolatedMigration(factory, {
-    appId: "inventory-db", repoUrl: "https://github.com/acme/inventory", sourceRevision: "a".repeat(40), migrationUrl: "postgresql://migration:secret@db.example/app",
+    appId: "inventory-db", source: { type: "repository", repoUrl: "https://github.com/acme/inventory", revision: "a".repeat(40) }, migrationUrl: "postgresql://migration:secret@db.example/app",
     manifest: { schemaVersion: 1, id: "inventory-db", name: "Inventory", version: "1.0.0", runtime: { type: "node", installCommand: "npm ci", buildCommand: "npm run build", startCommand: "npm run start", healthPath: "/health", migrationCommand: "npm run migrate" }, entryPath: "/", callbackPath: "/callback", capabilities: ["database"] },
   });
   assert.deepEqual(calls.map((call) => call.kind), ["run", "network", "run", "stop"]);

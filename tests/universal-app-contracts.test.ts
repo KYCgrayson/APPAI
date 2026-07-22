@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
   approveUniversalAppDeploymentSchema,
   publishUniversalAppReleaseSchema,
+  UNIVERSAL_APP_CATEGORIES,
   universalAppIdSchema,
   universalAppManifestSchema,
 } from "../src/lib/universal-apps/manifest.ts";
@@ -42,6 +43,15 @@ test("Universal App manifest accepts Simpleshop without business-specific fields
   assert.deepEqual(parsed.capabilities, ["identity", "database", "private-assets"]);
 });
 
+test("every Publisher category is browseable in the public directory", () => {
+  const publisher = readFileSync("src/components/publisher/PublisherReleaseForm.tsx", "utf8");
+  const directory = readFileSync("src/app/[locale]/apps/page.tsx", "utf8");
+
+  assert.equal(UNIVERSAL_APP_CATEGORIES.includes("INVENTORY"), true);
+  assert.match(publisher, /UNIVERSAL_APP_CATEGORIES\.map/);
+  assert.match(directory, /\["ALL", \.\.\.UNIVERSAL_APP_CATEGORIES\]/);
+});
+
 test("Universal App ids cannot claim AppAI platform subdomains", () => {
   for (const id of ["www", "api", "admin", "auth", "login", "dashboard", "mail"]) {
     assert.equal(universalAppIdSchema.safeParse(id).success, false, id);
@@ -63,7 +73,7 @@ test("agent release input cannot select deployment URLs, secrets or SQL", () => 
     sourceRevision: "a".repeat(40),
   };
   assert.equal(publishUniversalAppReleaseSchema.safeParse(release).success, true);
-  for (const field of ["runtimeBaseUrl", "databaseUrl", "secret", "sql"]) {
+  for (const field of ["runtimeBaseUrl", "databaseUrl", "secret", "sql", "organizationId"]) {
     assert.equal(publishUniversalAppReleaseSchema.safeParse({ ...release, [field]: "forged" }).success, false, field);
   }
 });
@@ -73,13 +83,21 @@ test("agent release repository URL must be credential-free HTTPS", () => {
     manifest,
     tagline: "庫存管理",
     description: "獨立執行的資料庫型 app",
-    sourceRevision: "a".repeat(40),
+    sourceRevision: "a".repeat(40), repoUrl: "https://github.com/example/inventory",
   };
-  assert.equal(publishUniversalAppReleaseSchema.safeParse({ ...release, repoUrl: "https://github.com/example/inventory" }).success, true);
+  assert.equal(publishUniversalAppReleaseSchema.safeParse(release).success, true);
   for (const repoUrl of ["http://github.com/example/inventory", "javascript:alert(1)", "https://user:pass@github.com/example/inventory", "https://localhost/example/inventory", "https://127.0.0.1/example/inventory", "https://example.com/example/inventory"]) {
     assert.equal(publishUniversalAppReleaseSchema.safeParse({ ...release, repoUrl }).success, false, repoUrl);
   }
 });
+
+test("agent release source is a strict repository-or-package union", () => {
+  const metadata = { manifest, tagline: "資料庫", description: "帶有資料庫的 app" };
+  assert.equal(publishUniversalAppReleaseSchema.safeParse({ ...metadata, source: { type: "package", uploadId: "cmrv12sey0001jp04aec90twu", digest: `sha256:${"a".repeat(64)}`, sizeBytes: 1024 } }).success, true);
+  assert.equal(publishUniversalAppReleaseSchema.safeParse({ ...metadata, source: { type: "package", uploadId: "cmrv12sey0001jp04aec90twu", digest: `sha256:${"a".repeat(64)}`, sizeBytes: 1024, repoUrl: "https://github.com/example/repo" } }).success, false);
+  assert.equal(publishUniversalAppReleaseSchema.safeParse({ ...metadata, repoUrl: "https://github.com/example/repo", sourceRevision: "a".repeat(40) }).success, true);
+});
+
 
 test("only the platform approval input can bind an artifact to a deployment", () => {
   const parsed = approveUniversalAppDeploymentSchema.parse({

@@ -5,7 +5,9 @@ import {
   redactProviderLog,
   type SandboxCommand,
   type SandboxFactory,
+  type ImmutableReleaseSource,
   type SandboxRun,
+  hydratePackageSource,
 } from "./vercel-sandbox-provider.ts";
 
 type VercelSandbox = {
@@ -16,6 +18,7 @@ type VercelSandbox = {
   }>;
   stop(input?: { blocking?: boolean }): Promise<unknown>;
   updateNetworkPolicy(policy: NetworkPolicy): Promise<unknown>;
+  writeFiles(files: Array<{ path: string; content: Uint8Array }>): Promise<void>;
 };
 
 export type MigrationSandboxRun = SandboxRun & {
@@ -51,6 +54,9 @@ function toRun(sandbox: VercelSandbox): MigrationSandboxRun {
       // or arbitrary application-controlled destinations.
       await sandbox.updateNetworkPolicy({ allow: [hostname] });
     },
+    async writeFiles(files) {
+      await sandbox.writeFiles(files);
+    },
     async stop() {
       await sandbox.stop({ blocking: true });
     },
@@ -58,7 +64,8 @@ function toRun(sandbox: VercelSandbox): MigrationSandboxRun {
 }
 
 /**
- * Production adapter. Sandboxes always use a checked-out exact git revision;
+ * Production adapter. Repository sources use an exact git revision. Package
+ * sources start empty and are written by AppAI after digest/archive validation;
  * phase tags are operational metadata only and never influence source/env.
  */
 export function createVercelSandboxFactory(): MigrationSandboxFactory {
@@ -86,13 +93,13 @@ function commandArgv(command: string) {
 }
 
 /**
- * Runs repository migrations with an app-scoped migration URL. Dependencies
+ * Runs immutable-source migrations with an app-scoped migration URL. Dependencies
  * are installed before the URL exists in the sandbox, then network egress is
  * narrowed to the database host and no provider credential is ever supplied.
  */
 export async function runIsolatedMigration(
   factory: MigrationSandboxFactory,
-  input: { appId: string; repoUrl: string; sourceRevision: string; manifest: UniversalAppManifest; migrationUrl: string },
+  input: { appId: string; source: ImmutableReleaseSource; manifest: UniversalAppManifest; migrationUrl: string },
 ) {
   const migrationCommand = input.manifest.runtime.migrationCommand;
   if (!migrationCommand) return;
@@ -102,12 +109,13 @@ export async function runIsolatedMigration(
   }
   const sandbox = await factory.create({
     phase: "migration",
-    source: { repoUrl: input.repoUrl, revision: input.sourceRevision },
+    ...(input.source.type === "repository" ? { source: { repoUrl: input.source.repoUrl, revision: input.source.revision } } : {}),
     persistent: false,
     timeoutMs: 10 * 60_000,
     tags: { appId: input.appId, phase: "migration" },
   });
   try {
+    await hydratePackageSource(sandbox, input.source);
     const [installCmd, ...installArgs] = commandArgv(input.manifest.runtime.installCommand);
     const installed = await sandbox.run({ cmd: installCmd, args: installArgs });
     if (installed.exitCode) throw new Error(redactProviderLog(installed.stderr || installed.stdout));
