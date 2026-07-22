@@ -17,6 +17,7 @@ export const UNIVERSAL_APP_CATEGORIES = [
   "PRODUCTIVITY",
   "SOCIAL",
   "FINANCE",
+  "DATABASE",
   "HEALTH",
   "EDUCATION",
   "FOOD",
