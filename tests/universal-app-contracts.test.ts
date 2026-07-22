@@ -48,6 +48,12 @@ test("every Publisher category is browseable in the public directory", () => {
   const directory = readFileSync("src/app/[locale]/apps/page.tsx", "utf8");
 
   assert.equal(UNIVERSAL_APP_CATEGORIES.includes("INVENTORY"), true);
+  assert.equal(UNIVERSAL_APP_CATEGORIES.includes("DATABASE"), true);
+  assert.ok(
+    UNIVERSAL_APP_CATEGORIES.indexOf("DATABASE") > UNIVERSAL_APP_CATEGORIES.indexOf("FINANCE")
+      && UNIVERSAL_APP_CATEGORIES.indexOf("DATABASE") < UNIVERSAL_APP_CATEGORIES.indexOf("HEALTH"),
+    "DATABASE remains in the published category ordering",
+  );
   assert.match(publisher, /UNIVERSAL_APP_CATEGORIES\.map/);
   assert.match(directory, /\["ALL", \.\.\.UNIVERSAL_APP_CATEGORIES\]/);
 });
