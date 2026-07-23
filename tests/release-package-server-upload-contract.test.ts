@@ -75,3 +75,11 @@ test("Publisher uses same-origin server upload for small packages and bounds dir
   assert.match(form, /abortSignal: controller\.signal/);
   assert.match(form, /Private package upload timed out/);
 });
+
+test("Publisher captures its form before asynchronous publishing and never dereferences the deferred event target", () => {
+  const form = read("src/components/publisher/PublisherReleaseForm.tsx");
+
+  assert.match(form, /event\.preventDefault\(\);\s*\n\s*const form = event\.currentTarget;/);
+  assert.match(form, /form\.elements\.namedItem\("package"\)/);
+  assert.doesNotMatch(form, /await[\s\S]*event\.currentTarget\.elements/);
+});

@@ -91,6 +91,7 @@ export function PublisherReleaseForm() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = event.currentTarget;
     if (!file) {
       setState("error");
       setMessage("Choose a .tgz or .tar.gz release package first.");
@@ -163,7 +164,7 @@ export function PublisherReleaseForm() {
       setManifestText("");
       setTagline("");
       setDescription("");
-      const packageInput = event.currentTarget.elements.namedItem("package") as HTMLInputElement | null;
+      const packageInput = form.elements.namedItem("package") as HTMLInputElement | null;
       if (packageInput) packageInput.value = "";
       router.refresh();
     } catch (error) {
