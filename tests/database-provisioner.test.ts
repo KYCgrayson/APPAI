@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   databaseNamesForDeployment,
+  databaseMigrationExecutorRoleRevokeSql,
   databaseProvisionSql,
   retireManagedDatabaseAccess,
   databaseUrlForRole,
@@ -23,11 +24,46 @@ test("schema and migration owner are app-stable while runtime roles are deployme
 });
 
 test("runtime grants contain DML and sequences but no DDL or role authority", () => {
-  const sql = databaseProvisionSql(databaseNamesForDeployment("inventory", "deployment_a"), { migration: "migration-secret", runtime: "runtime-secret" });
+  const names = databaseNamesForDeployment("inventory", "deployment_a");
+  const sql = databaseProvisionSql(names, { migration: "migration-secret", runtime: "runtime-secret" });
   const runtimeGrants = sql.filter((statement) => statement.startsWith("GRANT") || statement.startsWith("ALTER DEFAULT"));
   assert.match(runtimeGrants.join("\n"), /GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES/);
   assert.match(runtimeGrants.join("\n"), /GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES/);
   assert.doesNotMatch(runtimeGrants.join("\n"), /GRANT CREATE|GRANT USAGE ON DATABASE|CREATEROLE|SUPERUSER/);
+  assert.doesNotMatch(sql.join("\n"), new RegExp(`GRANT "${names.runtimeRole}" TO CURRENT_USER|ALTER ROLE "${names.runtimeRole}" (?:CREATEROLE|SUPERUSER)`));
+});
+
+test("provisioning temporarily grants the executor SET ROLE ability for the migration owner, then removes it", () => {
+  const names = databaseNamesForDeployment("inventory", "deployment_a");
+  const sql = databaseProvisionSql(names, { migration: "migration-secret", runtime: "runtime-secret" });
+  const grant = `GRANT "${names.migrationRole}" TO CURRENT_USER;`;
+  const revoke = `REVOKE "${names.migrationRole}" FROM CURRENT_USER;`;
+  const grantIndex = sql.indexOf(grant);
+  const ownerTransferIndex = sql.indexOf(`ALTER SCHEMA "${names.schema}" OWNER TO "${names.migrationRole}";`);
+  const defaultPrivilegesIndex = sql.findIndex((statement) => statement.startsWith(`ALTER DEFAULT PRIVILEGES FOR ROLE "${names.migrationRole}"`));
+  const revokeIndex = sql.indexOf(revoke);
+
+  assert.ok(grantIndex >= 0, "executor receives membership needed to SET ROLE to the migration owner");
+  assert.ok(grantIndex < ownerTransferIndex, "membership exists before schema ownership transfer");
+  assert.ok(grantIndex < defaultPrivilegesIndex, "membership exists before migration-owner default privileges");
+  assert.ok(revokeIndex > defaultPrivilegesIndex, "temporary membership is removed after provisioning");
+});
+
+test("failed provisioning best-effort revokes temporary migration-role membership", async () => {
+  const names = databaseNamesForDeployment("inventory", "deployment_failure");
+  const commands: string[] = [];
+  await assert.rejects(() => provisionAppDatabase({ appId: "inventory", deploymentId: "deployment_failure", adminDatabaseUrl: "postgresql://admin:pw@db.example/platform" }, {
+    executor: {
+      execute: async (sql) => {
+        commands.push(sql);
+        if (sql.startsWith("ALTER SCHEMA")) throw new Error("must be able to SET ROLE");
+      },
+    },
+    store: { get: async () => null, save: async () => undefined },
+    encryptSecret: (value) => `cipher:${value.length}`,
+    randomPassword: () => "generated-secret",
+  }), /SET ROLE/);
+  assert.equal(commands.at(-1), databaseMigrationExecutorRoleRevokeSql(names));
 });
 
 test("a retry after metadata persistence failed resets both pre-created role passwords", async () => {

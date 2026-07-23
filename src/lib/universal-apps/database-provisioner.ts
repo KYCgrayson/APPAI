@@ -106,6 +106,14 @@ export function databaseUrlForRole(adminDatabaseUrl: string, role: string, passw
   return url.toString();
 }
 
+export function databaseMigrationExecutorRoleGrantSql(names: AppDatabaseNames) {
+  return `GRANT ${quotedIdentifier(names.migrationRole)} TO CURRENT_USER;`;
+}
+
+export function databaseMigrationExecutorRoleRevokeSql(names: AppDatabaseNames) {
+  return `REVOKE ${quotedIdentifier(names.migrationRole)} FROM CURRENT_USER;`;
+}
+
 /**
  * Administrative executor for DATABASE_URL_UNPOOLED. `$executeRawUnsafe` is
  * confined to SQL emitted by `databaseProvisionSql`; no caller SQL enters it.
@@ -132,6 +140,12 @@ export function databaseProvisionSql(names: AppDatabaseNames, passwords: { migra
     // both passwords explicitly before returning new credentials.
     `ALTER ROLE ${migrationRole} LOGIN PASSWORD ${quotedLiteral(passwords.migration)};`,
     `ALTER ROLE ${runtimeRole} LOGIN PASSWORD ${quotedLiteral(passwords.runtime)};`,
+    // The platform executor creates this role, but PostgreSQL still requires
+    // explicit membership before it may transfer schema ownership or alter the
+    // migration owner's default privileges. Grant only for this provisioning
+    // sequence, then revoke it below so the platform login does not retain app
+    // schema authority after setup.
+    databaseMigrationExecutorRoleGrantSql(names),
     `CREATE SCHEMA IF NOT EXISTS ${schema} AUTHORIZATION ${migrationRole};`,
     `ALTER SCHEMA ${schema} OWNER TO ${migrationRole};`,
     `ALTER ROLE ${migrationRole} SET search_path = ${schema};`,
@@ -142,6 +156,7 @@ export function databaseProvisionSql(names: AppDatabaseNames, passwords: { migra
     `GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA ${schema} TO ${runtimeRole};`,
     `ALTER DEFAULT PRIVILEGES FOR ROLE ${migrationRole} IN SCHEMA ${schema} GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${runtimeRole};`,
     `ALTER DEFAULT PRIVILEGES FOR ROLE ${migrationRole} IN SCHEMA ${schema} GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO ${runtimeRole};`,
+    databaseMigrationExecutorRoleRevokeSql(names),
   ];
 }
 
@@ -280,8 +295,16 @@ export async function provisionAppDatabase(input: {
   if (existing) {
     await dependencies.executor.execute(databaseRuntimeRotationSql(names, runtimePassword));
   } else {
-    for (const statement of databaseProvisionSql(names, { migration: migrationPassword, runtime: runtimePassword })) {
-      await dependencies.executor.execute(statement);
+    try {
+      for (const statement of databaseProvisionSql(names, { migration: migrationPassword, runtime: runtimePassword })) {
+        await dependencies.executor.execute(statement);
+      }
+    } catch (error) {
+      // If setup fails after temporary membership was granted, make a
+      // best-effort removal before surfacing the original provisioning error.
+      // The revoke is harmless when the grant was never reached.
+      await dependencies.executor.execute(databaseMigrationExecutorRoleRevokeSql(names)).catch(() => undefined);
+      throw error;
     }
   }
 
