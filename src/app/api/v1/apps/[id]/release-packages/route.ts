@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
+import { getPrivateBlobAuth } from "@/lib/private-assets/auth";
 import { createReleasePackageSchema, universalAppIdSchema } from "@/lib/universal-apps/manifest";
 import { requirePublisherOrganization } from "@/lib/universal-apps/publisher-auth";
-import { createReleasePackageUploadToken, isReleasePackagePrivateStorageNotConfiguredError, RELEASE_PACKAGE_MAX_BYTES, RELEASE_PACKAGE_TTL_MS, releasePackagePath } from "@/lib/universal-apps/release-package";
+import { createReleasePackageUploadToken, isReleasePackagePrivateStorageNotConfiguredError, RELEASE_PACKAGE_MAX_BYTES, RELEASE_PACKAGE_SERVER_UPLOAD_MAX_BYTES, RELEASE_PACKAGE_TTL_MS, ReleasePackagePrivateStorageNotConfiguredError, releasePackagePath } from "@/lib/universal-apps/release-package";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -15,6 +16,9 @@ export async function POST(request: NextRequest, routeContext: RouteContext) {
   const appId = universalAppIdSchema.safeParse((await routeContext.params).id);
   const input = createReleasePackageSchema.safeParse(await request.json().catch(() => null));
   if (!appId.success || !input.success) return NextResponse.json({ error: "INVALID_RELEASE_PACKAGE" }, { status: 400 });
+  if (input.data.uploadMethod === "server" && input.data.sizeBytes > RELEASE_PACKAGE_SERVER_UPLOAD_MAX_BYTES) {
+    return NextResponse.json({ error: "SERVER_UPLOAD_TOO_LARGE", maxServerUploadBytes: RELEASE_PACKAGE_SERVER_UPLOAD_MAX_BYTES }, { status: 400 });
+  }
 
   try {
     const existing = await db.app.findUnique({ where: { appType: appId.data }, select: { organizationId: true } });
@@ -35,16 +39,21 @@ export async function POST(request: NextRequest, routeContext: RouteContext) {
         expiresAt,
       },
     });
-    let clientToken: string;
     try {
-      clientToken = await createReleasePackageUploadToken({ pathname, sizeBytes: input.data.sizeBytes, expiresAt });
+      if (input.data.uploadMethod === "server") {
+        if (!getPrivateBlobAuth().configured) throw new ReleasePackagePrivateStorageNotConfiguredError();
+        // The server transport intentionally omits Blob transport values.
+        return NextResponse.json({ uploadId: upload.id, expiresAt, maxSizeBytes: RELEASE_PACKAGE_MAX_BYTES, maxServerUploadBytes: RELEASE_PACKAGE_SERVER_UPLOAD_MAX_BYTES }, { status: 201 });
+      }
+
+      const clientToken = await createReleasePackageUploadToken({ pathname, sizeBytes: input.data.sizeBytes, expiresAt });
+      return NextResponse.json({ uploadId: upload.id, pathname, clientToken, expiresAt, maxSizeBytes: RELEASE_PACKAGE_MAX_BYTES }, { status: 201 });
     } catch (error) {
-      // A token was not handed to the caller, so this intent cannot become a
-      // usable upload. Expire it rather than leaving an apparently active row.
+      // A token was not handed to the caller, or the server transport cannot
+      // access private storage. This intent cannot become a usable upload.
       await db.appReleasePackage.updateMany({ where: { id: upload.id, status: "UPLOADING" }, data: { status: "EXPIRED" } }).catch(() => undefined);
       throw error;
     }
-    return NextResponse.json({ uploadId: upload.id, pathname, clientToken, expiresAt, maxSizeBytes: RELEASE_PACKAGE_MAX_BYTES }, { status: 201 });
   } catch (error) {
     if (isReleasePackagePrivateStorageNotConfiguredError(error)) {
       console.error("Release package upload intent unavailable: private storage is not configured");

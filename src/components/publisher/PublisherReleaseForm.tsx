@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation";
 import { UNIVERSAL_APP_CATEGORIES } from "@/lib/universal-apps/manifest";
 
 const MAX_PACKAGE_BYTES = 20 * 1024 * 1024;
+const SERVER_UPLOAD_MAX_BYTES = 4 * 1024 * 1024;
+const DIRECT_UPLOAD_TIMEOUT_MS = 90_000;
 const ACCEPTED_PACKAGE_NAMES = /\.(tgz|tar\.gz)$/i;
 
 type UploadIntent = {
   uploadId: string;
-  pathname: string;
-  clientToken: string;
+  pathname?: string;
+  clientToken?: string;
 };
 
 type Manifest = { id: string; version: string; name: string };
@@ -35,6 +37,38 @@ function parseManifest(value: string): Manifest {
 
 function categoryLabel(category: string) {
   return category.charAt(0) + category.slice(1).toLowerCase();
+}
+
+async function uploadSmallPackageThroughAppAI(appId: string, uploadId: string, file: File) {
+  const normalizedFile = file.type ? file : new File([file], file.name, { type: "application/gzip" });
+  const formData = new FormData();
+  formData.append("file", normalizedFile);
+  const response = await fetch(`/api/v1/apps/${encodeURIComponent(appId)}/release-packages/${encodeURIComponent(uploadId)}/upload`, {
+    method: "POST",
+    credentials: "same-origin",
+    body: formData,
+  });
+  const result = await response.json().catch(() => null) as { error?: string } | null;
+  if (!response.ok) throw new Error(result?.error || "AppAI could not store the private package.");
+}
+
+async function uploadLargePackageDirectly(intent: Required<Pick<UploadIntent, "pathname" | "clientToken">>, file: File) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), DIRECT_UPLOAD_TIMEOUT_MS);
+  try {
+    await put(intent.pathname, file, {
+      access: "private",
+      contentType: file.type || "application/gzip",
+      token: intent.clientToken,
+      multipart: file.size >= 5 * 1024 * 1024,
+      abortSignal: controller.signal,
+    });
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error("Private package upload timed out. Please retry the publish request.");
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
 }
 
 export function PublisherReleaseForm() {
@@ -81,6 +115,7 @@ export function PublisherReleaseForm() {
     setMessage("Preparing a private, immutable package upload…");
     try {
       const digest = await digestHex(await file.arrayBuffer());
+      const useServerUpload = file.size <= SERVER_UPLOAD_MAX_BYTES;
       const intentResponse = await fetch(`/api/v1/apps/${encodeURIComponent(manifest.id)}/release-packages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -89,20 +124,22 @@ export function PublisherReleaseForm() {
           filename: file.name,
           sizeBytes: file.size,
           contentType: file.type || "application/gzip",
+          uploadMethod: useServerUpload ? "server" : "client",
         }),
       });
       const intent = await intentResponse.json().catch(() => null) as UploadIntent | { error?: string } | null;
-      if (!intentResponse.ok || !intent || !("clientToken" in intent)) {
+      if (!intentResponse.ok || !intent || !("uploadId" in intent)) {
         throw new Error((intent && "error" in intent && intent.error) || "AppAI could not prepare the package upload.");
       }
 
       setMessage("Uploading the private package…");
-      await put(intent.pathname, file, {
-        access: "private",
-        contentType: file.type || "application/gzip",
-        token: intent.clientToken,
-        multipart: file.size >= 5 * 1024 * 1024,
-      });
+      if (useServerUpload) {
+        await uploadSmallPackageThroughAppAI(manifest.id, intent.uploadId, file);
+      } else if (intent.pathname && intent.clientToken) {
+        await uploadLargePackageDirectly({ pathname: intent.pathname, clientToken: intent.clientToken }, file);
+      } else {
+        throw new Error("AppAI could not prepare the direct private package upload.");
+      }
 
       setMessage("Finalizing the immutable release receipt…");
       const releaseResponse = await fetch(`/api/v1/apps/${encodeURIComponent(manifest.id)}/releases`, {

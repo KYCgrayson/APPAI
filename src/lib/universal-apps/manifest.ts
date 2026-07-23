@@ -104,6 +104,10 @@ export const createReleasePackageSchema = z.object({
   filename: z.string().trim().min(1).max(240).refine((value) => /\.(?:tgz|tar\.gz)$/i.test(value), "Package must be a .tgz or .tar.gz archive."),
   sizeBytes: z.number().int().positive().max(20 * 1024 * 1024),
   contentType: z.enum(["application/gzip", "application/x-gzip", "application/octet-stream"]),
+  // Browser publishers may request the same-origin transport for packages
+  // small enough to stay below Vercel's request-body ceiling. Agents retain
+  // the existing direct-to-Blob transport by omitting this field.
+  uploadMethod: z.enum(["client", "server"]).optional(),
 }).strict();
 
 export const approveUniversalAppDeploymentSchema = z.object({

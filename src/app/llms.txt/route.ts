@@ -138,7 +138,7 @@ contract.
        Authorization: Bearer appai_sk_...
        {"filename":"appai-release.tar.gz","sizeBytes":12345,"contentType":"application/gzip"}
 
-   The response contains uploadId, pathname, and clientToken. Use @vercel/blob/client put(pathname, packageFile, { access: "private", token: clientToken }); do not log, expose, or reuse these short-lived transport values.
+   The default response contains uploadId, pathname, and clientToken. Use @vercel/blob/client put(pathname, packageFile, { access: "private", token: clientToken }); do not log, expose, or reuse these short-lived transport values. The signed-in Publisher Portal may instead request "uploadMethod":"server" for a package of 4 MiB or less, then POST that file as same-origin multipart form data to /api/v1/apps/{appId}/release-packages/{uploadId}/upload. That server transport never returns a Blob pathname, URL, or token. The public package limit remains 20 MiB; larger packages use the direct private upload.
 5. COMPUTE lowercase SHA-256 of the exact package bytes and FINALIZE:
 
        POST ${baseUrl}/api/v1/apps/{appId}/releases
