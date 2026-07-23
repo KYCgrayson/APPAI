@@ -114,6 +114,44 @@ export function databaseMigrationExecutorRoleRevokeSql(names: AppDatabaseNames) 
   return `REVOKE ${quotedIdentifier(names.migrationRole)} FROM CURRENT_USER;`;
 }
 
+function databaseNameFromAdminUrl(adminDatabaseUrl: string) {
+  const url = new URL(adminDatabaseUrl);
+  if (url.protocol !== "postgres:" && url.protocol !== "postgresql:") throw new Error("Database administrator URL must use PostgreSQL.");
+  const databaseName = decodeURIComponent(url.pathname.replace(/^\//, ""));
+  if (!/^[A-Za-z_][A-Za-z0-9_$]{0,62}$/.test(databaseName)) throw new Error("Database administrator URL must select a safe PostgreSQL database.");
+  return `"${databaseName}"`;
+}
+
+export function databaseMigrationDatabaseCreateGrantSql(names: AppDatabaseNames, adminDatabaseUrl: string) {
+  return `GRANT CREATE ON DATABASE ${databaseNameFromAdminUrl(adminDatabaseUrl)} TO ${quotedIdentifier(names.migrationRole)};`;
+}
+
+export function databaseMigrationDatabaseCreateRevokeSql(names: AppDatabaseNames, adminDatabaseUrl: string) {
+  return `REVOKE CREATE ON DATABASE ${databaseNameFromAdminUrl(adminDatabaseUrl)} FROM ${quotedIdentifier(names.migrationRole)};`;
+}
+
+/**
+ * A migration may need CREATE on the database itself (for example, Prisma's
+ * standard `CREATE SCHEMA IF NOT EXISTS "public"`). Keep that authority out
+ * of the runtime credential and expose it only around the isolated migration.
+ */
+export async function withAppMigrationDatabaseCreateWindow<T>(input: {
+  appId: string;
+  deploymentId: string;
+  adminDatabaseUrl: string;
+}, executor: DatabaseSqlExecutor, runMigration: () => Promise<T>) {
+  const names = databaseNamesForDeployment(universalAppId(input.appId), input.deploymentId);
+  await executor.execute(databaseMigrationDatabaseCreateGrantSql(names, input.adminDatabaseUrl));
+  try {
+    return await runMigration();
+  } finally {
+    // Do not leave database-level CREATE available after a successful or
+    // failed sandbox run. If this revoke fails, fail the deployment rather
+    // than silently proceeding with excess privilege.
+    await executor.execute(databaseMigrationDatabaseCreateRevokeSql(names, input.adminDatabaseUrl));
+  }
+}
+
 /**
  * Administrative executor for DATABASE_URL_UNPOOLED. `$executeRawUnsafe` is
  * confined to SQL emitted by `databaseProvisionSql`; no caller SQL enters it.
@@ -338,6 +376,21 @@ export async function provisionAppDatabaseFromEnvironment(input: {
       executor,
       store: prismaManagedRuntimeStore(),
     });
+  } finally {
+    await executor.disconnect?.();
+  }
+}
+
+/** Grants database-level CREATE only for the callback's isolated migration. */
+export async function withAppMigrationDatabaseCreateWindowFromEnvironment<T>(input: {
+  appId: string;
+  deploymentId: string;
+}, runMigration: () => Promise<T>) {
+  const adminDatabaseUrl = process.env.DATABASE_URL_UNPOOLED;
+  if (!adminDatabaseUrl) throw new Error("Database provisioning is not configured.");
+  const executor = createPrismaAdminSqlExecutor(adminDatabaseUrl);
+  try {
+    return await withAppMigrationDatabaseCreateWindow({ ...input, adminDatabaseUrl }, executor, runMigration);
   } finally {
     await executor.disconnect?.();
   }

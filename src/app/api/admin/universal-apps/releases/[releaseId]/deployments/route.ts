@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { requireSameOrigin } from "@/lib/request-security";
 import { activateVerifiedManagedRuntimeInDatabase } from "@/lib/universal-apps/activation";
-import { provisionAppDatabaseFromEnvironment } from "@/lib/universal-apps/database-provisioner";
+import { provisionAppDatabaseFromEnvironment, withAppMigrationDatabaseCreateWindowFromEnvironment } from "@/lib/universal-apps/database-provisioner";
 import { checkManagedRuntimeHealthWithRetry } from "@/lib/universal-apps/managed-health";
 import { orchestrateManagedDeployment } from "@/lib/universal-apps/managed-orchestrator";
 import { universalAppManifestSchema } from "@/lib/universal-apps/manifest";
@@ -164,11 +164,13 @@ export async function POST(request: NextRequest, routeContext: RouteContext) {
       return { migrationUrl: provision.migrationUrl, runtimeUrl: provision.runtimeUrl };
     },
     async runMigration(migrationUrl) {
-      await runIsolatedMigration(sandboxFactory, {
-        appId: prepared.appId,
-        source,
-        manifest: prepared.manifest,
-        migrationUrl,
+      await withAppMigrationDatabaseCreateWindowFromEnvironment({ appId: prepared.appId, deploymentId: prepared.id }, async () => {
+        await runIsolatedMigration(sandboxFactory, {
+          appId: prepared.appId,
+          source,
+          manifest: prepared.manifest,
+          migrationUrl,
+        });
       });
     },
     async deploy(databaseUrl) {

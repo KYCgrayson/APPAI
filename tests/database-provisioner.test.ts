@@ -3,11 +3,14 @@ import test from "node:test";
 
 import {
   databaseNamesForDeployment,
+  databaseMigrationDatabaseCreateGrantSql,
+  databaseMigrationDatabaseCreateRevokeSql,
   databaseMigrationExecutorRoleRevokeSql,
   databaseProvisionSql,
   retireManagedDatabaseAccess,
   databaseUrlForRole,
   provisionAppDatabase,
+  withAppMigrationDatabaseCreateWindow,
 } from "../src/lib/universal-apps/database-provisioner.ts";
 
 test("schema and migration owner are app-stable while runtime roles are deployment-distinct and safe", () => {
@@ -64,6 +67,28 @@ test("failed provisioning best-effort revokes temporary migration-role membershi
     randomPassword: () => "generated-secret",
   }), /SET ROLE/);
   assert.equal(commands.at(-1), databaseMigrationExecutorRoleRevokeSql(names));
+});
+
+test("isolated migration receives database CREATE only inside a success or failure window", async () => {
+  const adminDatabaseUrl = "postgresql://admin:pw@db.example/neondb";
+  const names = databaseNamesForDeployment("inventory", "deployment_migration");
+  const calls: string[] = [];
+  const executor = { execute: async (sql: string) => { calls.push(sql); } };
+  await withAppMigrationDatabaseCreateWindow({ appId: "inventory", deploymentId: "deployment_migration", adminDatabaseUrl }, executor, async () => {
+    calls.push("migration");
+  });
+  assert.deepEqual(calls, [
+    databaseMigrationDatabaseCreateGrantSql(names, adminDatabaseUrl),
+    "migration",
+    databaseMigrationDatabaseCreateRevokeSql(names, adminDatabaseUrl),
+  ]);
+  assert.doesNotMatch(calls.join("\n"), new RegExp(names.runtimeRole));
+
+  const failureCalls: string[] = [];
+  await assert.rejects(() => withAppMigrationDatabaseCreateWindow({ appId: "inventory", deploymentId: "deployment_migration", adminDatabaseUrl }, {
+    execute: async (sql) => { failureCalls.push(sql); },
+  }, async () => { throw new Error("migration failed"); }), /migration failed/);
+  assert.equal(failureCalls.at(-1), databaseMigrationDatabaseCreateRevokeSql(names, adminDatabaseUrl));
 });
 
 test("a retry after metadata persistence failed resets both pre-created role passwords", async () => {
