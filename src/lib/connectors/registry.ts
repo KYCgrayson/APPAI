@@ -30,8 +30,21 @@ export interface Connector {
   allowPaths: RegExp;
   /** Whether anonymous callers may use this connector. */
   gating: GatingMode;
-  /** Optional per-caller quota, enforced by the generic proxy. */
-  quota?: { per: "user" | "ip"; limit: number; window: "24h" | "1h" };
+  /**
+   * Optional per-caller quota, enforced by the generic proxy.
+   *
+   * `countActions` narrows which logged actions consume quota. Without it every
+   * recorded action counts, which is wrong whenever one unit of user-visible
+   * work spans several requests: video-subtitle means to bill a video, but a
+   * video is a transcribe job followed by a render job, so `limit: 1` rejected
+   * the render of the very job it had just allowed. Omit to count everything.
+   */
+  quota?: {
+    per: "user" | "ip";
+    limit: number;
+    window: "24h" | "1h";
+    countActions?: string[];
+  };
   /**
    * Maps a proxied request to a usage `action` label (for UsageEvent), or
    * null to not record. Keeps usage semantics with the connector.
@@ -49,7 +62,14 @@ const CONNECTORS: Record<string, Connector> = {
     forwardIdentity: true,
     allowPaths: /^jobs(\/[A-Za-z0-9-]+)?(\/file)?$/,
     gating: "login",
-    quota: { per: "user", limit: 1, window: "24h" },
+    // One video per day. Only the transcribe job counts — the render (and any
+    // re-render after restyling) is part of the same video, not a new one.
+    quota: {
+      per: "user",
+      limit: 1,
+      window: "24h",
+      countActions: ["job.transcribe"],
+    },
     usageAction: (method, path, body) => {
       if (method === "POST" && path === "jobs") {
         const kind = (body as { kind?: string } | null)?.kind ?? "job";

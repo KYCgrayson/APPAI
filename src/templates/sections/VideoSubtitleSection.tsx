@@ -589,13 +589,6 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
                 ? `${transcribe.job.result.metadata.title}.mp4`
                 : "subtitled.mp4"
             }
-            primary={subtitles}
-            secondary={
-              style.display === "bilingual" && style.secondary_language
-                ? translations[style.secondary_language]
-                : undefined
-            }
-            style={style}
             themeColor={themeColor}
             darkMode={darkMode}
             heading={t.resultHeading}
@@ -734,9 +727,6 @@ function StylePreviewPane({
 function DonePane({
   fileUrl,
   fileName,
-  primary,
-  secondary,
-  style,
   themeColor,
   darkMode,
   heading,
@@ -748,9 +738,6 @@ function DonePane({
 }: {
   fileUrl: string;
   fileName: string;
-  primary: Subtitle[];
-  secondary?: Subtitle[];
-  style: StyleSpec;
   themeColor: string;
   darkMode?: boolean;
   heading: string;
@@ -768,6 +755,11 @@ function DonePane({
       >
         {heading}
       </h3>
+      {/* No SubtitleOverlay here, deliberately. This plays the *rendered*
+          video, so its subtitles must come from the burn itself — drawing a
+          DOM overlay on top made a broken burn look fine in the preview while
+          the downloaded file had no subtitles at all. What you see here is
+          exactly what the download contains. */}
       <div className="relative rounded-lg overflow-hidden bg-black">
         <video
           ref={videoRef}
@@ -775,12 +767,6 @@ function DonePane({
           controls
           playsInline
           className="w-full"
-        />
-        <SubtitleOverlay
-          videoRef={videoRef}
-          primary={primary}
-          secondary={secondary}
-          style={style}
         />
       </div>
       <DownloadResult

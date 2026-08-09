@@ -1,4 +1,6 @@
 import { db } from "@/lib/db";
+import { auth } from "@/lib/auth";
+import { AccountControls } from "@/components/AccountControls";
 import { parsePageSegments, buildPagePath } from "@/lib/parse-page-segments";
 import { LocaleLink } from "./LocaleLink";
 import { PageViewTracker } from "@/components/PageViewTracker";
@@ -106,6 +108,13 @@ export default async function HostedPageLayout({ params, children }: Props) {
   const isDemo = slug.startsWith("demo-");
   const externalCanonical = getExternalCanonical((page as any).canonicalUrl);
 
+  // Account state in the header. Hosted pages carry the interactive tools, and
+  // several of them are login-gated, so "am I signed in?" has to be answerable
+  // without leaving the page for the platform chrome at /[locale].
+  // Returning here after sign-in means the exact URL, child pages included.
+  const session = await auth();
+  const currentPath = `/p/${segments.join("/")}`;
+
   // Build site nav once, for rendering inline in the sticky header. Nav is
   // derived from sibling child pages (deduped by locale + filtered by
   // hideFromNav + sorted by navOrder) or from an explicit content.nav[] on
@@ -139,6 +148,20 @@ export default async function HostedPageLayout({ params, children }: Props) {
     mobileUtilityLinks.push({
       label: "Terms",
       href: buildPagePath(slug, locale, "terms", page.isDefault),
+    });
+  }
+  // The drawer is the only chrome left on narrow screens, so the account
+  // actions have to be reachable from it too.
+  if (session?.user) {
+    mobileUtilityLinks.push({ label: "Dashboard", href: "/dashboard" });
+    mobileUtilityLinks.push({
+      label: "Sign out",
+      href: `/logout?callbackUrl=${encodeURIComponent(currentPath)}`,
+    });
+  } else {
+    mobileUtilityLinks.push({
+      label: "Sign in",
+      href: `/login?callbackUrl=${encodeURIComponent(currentPath)}`,
     });
   }
 
@@ -252,6 +275,22 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 Download
               </a>
             )}
+
+            {/* Account state. Unlike the links above it has no
+                group-data-[cramped]/chrome:!hidden — being able to see at a
+                glance that you are signed in is the point, so it survives
+                every breakpoint. AccountControls truncates the name and drops
+                its Dashboard link below sm to stay narrow. */}
+            <AccountControls
+              user={session?.user}
+              callbackUrl={currentPath}
+              labels={{
+                signIn: "Sign in",
+                dashboard: "Dashboard",
+                signOut: "Sign out",
+                account: "Account",
+              }}
+            />
 
             {/* Hamburger wrapper: shown when either (a) below md breakpoint OR
                 (b) AdaptiveChrome reports cramped=true at any breakpoint. */}
