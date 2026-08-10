@@ -83,6 +83,34 @@ const DEFAULT_STRINGS = {
   stageFinalizing: "Finalizing...",
 } as const;
 
+/**
+ * A YouTube title turned into a filename the OS will actually accept.
+ *
+ * Titles routinely carry `/ \ : * ? " < > |`, which Windows rejects outright
+ * and which the browser's `download` attribute treats as a path separator —
+ * a title like "Ep 4: A/B testing" saved as "B testing.mp4", losing the rest.
+ * Emoji and RTL marks survive fine and are left alone; only the characters
+ * that break a save are touched.
+ */
+const FILENAME_MAX_STEM = 120;
+
+export function downloadFileName(title: string | null | undefined): string {
+  const stem = (title ?? "")
+    .normalize("NFC")
+    .replace(/[\u0000-\u001f\u007f]/g, " ") // control chars, incl. newlines
+    .replace(/[/\\:*?"<>|]/g, " ") // reserved on Windows / path separators
+    .replace(/\s+/g, " ")
+    .trim()
+    // Windows rejects a trailing dot or space, and a leading dot hides the file.
+    .replace(/^\.+/, "")
+    .replace(/[. ]+$/, "")
+    .slice(0, FILENAME_MAX_STEM)
+    .trim()
+    .replace(/[. ]+$/, "");
+
+  return stem ? `${stem}.mp4` : "subtitled.mp4";
+}
+
 interface SectionData {
   heading?: string;
   description?: string;
@@ -131,7 +159,10 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
   // ── Persistence: survive page reloads (dev-server restarts force a full
   // reload and used to wipe the in-flight job → user came back to a blank
   // idle page while the backend had actually finished the work).
-  const STORAGE_KEY = "appai-video-subtitle-state-v1";
+  // v2: font_size_px changed meaning (now px on a 1080-tall reference
+  // canvas, not the source height), so a v1 style would restore a size
+  // that no longer means what the user picked.
+  const STORAGE_KEY = "appai-video-subtitle-state-v2";
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -600,11 +631,9 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
         {phase === "done" && render.job?.result && (
           <DonePane
             fileUrl={render.job.result.file_url}
-            fileName={
-              transcribe.job?.result?.metadata?.title
-                ? `${transcribe.job.result.metadata.title}.mp4`
-                : "subtitled.mp4"
-            }
+            fileName={downloadFileName(
+              transcribe.job?.result?.metadata?.title,
+            )}
             themeColor={themeColor}
             darkMode={darkMode}
             heading={t.resultHeading}

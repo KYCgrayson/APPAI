@@ -2,6 +2,7 @@
 
 import { type RefObject, useEffect, useState } from "react";
 import type { Subtitle, StyleSpec } from "../jobs/types";
+import { SECONDARY_FONT_RATIO, SUBTITLE_REFERENCE_HEIGHT } from "./types";
 
 interface Props {
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -34,6 +35,21 @@ function hexToRgba(hex: string, alpha: number): string {
  */
 export function SubtitleOverlay({ videoRef, primary, secondary, style }: Props) {
   const [time, setTime] = useState(0);
+  // Rendered height of the <video> box, so px sizes authored against the
+  // reference canvas land at the same fraction of the frame here as they do
+  // in the burn. Without this the preview silently uses its own scale.
+  const [boxHeight, setBoxHeight] = useState(0);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver((entries) => {
+      const h = entries[0]?.contentRect.height ?? 0;
+      if (h > 0) setBoxHeight(h);
+    });
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, [videoRef]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -95,18 +111,34 @@ export function SubtitleOverlay({ videoRef, primary, secondary, style }: Props) 
     }
   })();
 
+  // Until the box is measured, fall back to 1:1 rather than collapsing to 0.
+  const scale = boxHeight > 0 ? boxHeight / SUBTITLE_REFERENCE_HEIGHT : 1;
+  const primarySize = style.font_size_px * scale;
+  const secondarySize =
+    (style.secondary_font_size_px ?? style.font_size_px * SECONDARY_FONT_RATIO) *
+    scale;
+
   const bg = style.background ?? { shape: "none" };
   const bgColor = bg.color ?? "#000000";
   const bgOpacity = bg.opacity ?? 0.5;
+  // Radius and shadow are authored against the reference canvas too, so they
+  // shrink with the box instead of looking three times too heavy in preview.
   const borderRadius =
-    bg.shape === "rounded" ? "8px" : bg.shape === "box" ? "2px" : "0";
+    bg.shape === "rounded"
+      ? `${12 * scale}px`
+      : bg.shape === "box"
+        ? `${3 * scale}px`
+        : "0";
   const padding = bg.shape && bg.shape !== "none" ? "0.25em 0.6em" : "0";
   const background =
     bg.shape && bg.shape !== "none" ? hexToRgba(bgColor, bgOpacity) : "transparent";
 
-  const outline = style.outline_color
-    ? `0 0 2px ${style.outline_color}, 0 0 4px ${style.outline_color}, 1px 1px 2px ${style.outline_color}`
-    : "1px 1px 2px rgba(0,0,0,0.8)";
+  const outlineColor = style.outline_color ?? "rgba(0,0,0,0.8)";
+  const outline = [
+    `0 0 ${3 * scale}px ${outlineColor}`,
+    `0 0 ${6 * scale}px ${outlineColor}`,
+    `${1.5 * scale}px ${1.5 * scale}px ${3 * scale}px ${outlineColor}`,
+  ].join(", ");
 
   const animationClass =
     style.animation === "fade"
@@ -116,8 +148,10 @@ export function SubtitleOverlay({ videoRef, primary, secondary, style }: Props) 
         : "";
 
   const lineStyle: React.CSSProperties = {
-    fontFamily: `"${style.font_family}", system-ui, sans-serif`,
-    fontSize: `${style.font_size_px}px`,
+    // PingFang first: it is what the backend burns in when the requested
+    // family cannot render the text, which for CJK subtitles is the norm.
+    fontFamily: `"${style.font_family}", "PingFang TC", "Microsoft JhengHei", "Noto Sans CJK TC", system-ui, sans-serif`,
+    fontSize: `${primarySize}px`,
     color: style.color,
     background,
     borderRadius,
@@ -151,7 +185,7 @@ export function SubtitleOverlay({ videoRef, primary, secondary, style }: Props) 
             className={animationClass}
             style={{
               ...lineStyle,
-              fontSize: `${style.secondary_font_size_px ?? style.font_size_px * 0.85}px`,
+              fontSize: `${secondarySize}px`,
             }}
             key={`s-${activeSecondary.start}`}
           >

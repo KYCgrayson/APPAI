@@ -1,7 +1,7 @@
 "use client";
 
 import type { StyleSpec, LanguageCode } from "../jobs/types";
-import { langLabel } from "./types";
+import { DEFAULT_STYLE, SECONDARY_FONT_RATIO, langLabel } from "./types";
 
 export interface SubtitleStyleControlsStrings {
   fontSizeLabel?: string;
@@ -79,14 +79,23 @@ export function SubtitleStyleControls({
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <label className="flex flex-col gap-1">
         <span className={`text-xs ${subColor}`}>{t.fontSizeLabel}</span>
+        {/* Sizes are px on a 1080-tall reference canvas (see
+            SUBTITLE_REFERENCE_HEIGHT), so the floor is 24 — roughly 2% of the
+            frame, already marginal. The contract still accepts 12. */}
         <input
           type="number"
-          min={12}
+          min={24}
           max={96}
-          step={1}
+          step={2}
           value={value.font_size_px}
           onChange={(e) =>
-            set("font_size_px", Math.max(12, Math.min(96, Number(e.target.value) || 28)))
+            set(
+              "font_size_px",
+              Math.max(
+                24,
+                Math.min(96, Number(e.target.value) || DEFAULT_STYLE.font_size_px),
+              ),
+            )
           }
           disabled={disabled}
           className={`${inputCls} w-24`}
@@ -205,7 +214,7 @@ export function SubtitleStyleControls({
               step={1}
               value={
                 value.secondary_font_size_px ??
-                Math.round(value.font_size_px * 0.85)
+                Math.round(value.font_size_px * SECONDARY_FONT_RATIO)
               }
               onChange={(e) =>
                 set(
