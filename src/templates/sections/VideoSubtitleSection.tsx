@@ -73,6 +73,14 @@ const DEFAULT_STRINGS = {
   errorHeading: "Something went wrong",
   errorRetryButton: "Try again",
   cancelButton: "Cancel",
+  // Progress stage labels. These live here, not in the backend, so a page can
+  // localize them like every other string in this section.
+  stageQueued: "Waiting in queue...",
+  stageDownloading: "Downloading video...",
+  stageTranscribing: "Transcribing audio...",
+  stageTranslating: "Translating subtitles...",
+  stageRendering: "Adding subtitles to the video...",
+  stageFinalizing: "Finalizing...",
 } as const;
 
 interface SectionData {
@@ -470,7 +478,15 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
             onCancel={
               phase === "transcribing" ? transcribe.cancel : render.cancel
             }
-            strings={{ cancel: t.cancelButton }}
+            strings={{
+              cancel: t.cancelButton,
+              queued: t.stageQueued,
+              downloading: t.stageDownloading,
+              transcribing: t.stageTranscribing,
+              translating: t.stageTranslating,
+              rendering: t.stageRendering,
+              uploading: t.stageFinalizing,
+            }}
           />
         )}
 
