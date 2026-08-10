@@ -81,6 +81,9 @@ const DEFAULT_STRINGS = {
   stageTranslating: "Translating subtitles...",
   stageRendering: "Adding subtitles to the video...",
   stageFinalizing: "Finalizing...",
+  recentHeading: "Recent projects",
+  recentHint: "Reopen to restyle and render again — no new transcription, so it does not use your daily video.",
+  recentSubtitleCount: "subtitles",
 } as const;
 
 /**
@@ -109,6 +112,76 @@ export function downloadFileName(title: string | null | undefined): string {
     .replace(/[. ]+$/, "");
 
   return stem ? `${stem}.mp4` : "subtitled.mp4";
+}
+
+/* ──────────── Recent projects ────────────
+ *
+ * A finished run used to be deleted: the restore path treated `done` as
+ * nothing worth keeping. That made restyling expensive in the one way that
+ * matters — the connector bills `job.transcribe` and nothing else (1 video /
+ * user / 24h), so re-rendering is free, but the only route back to the
+ * subtitles was a fresh transcribe, which spends the day's quota on work
+ * already done.
+ *
+ * Keeping the transcript locally turns "change the font and burn again" into
+ * a free operation: reopen → restyle → render. The backend re-downloads the
+ * clip if its 24h artifact TTL has passed; ASR and translation never re-run.
+ */
+const RECENTS_KEY = "appai-video-subtitle-recents-v1";
+const RECENTS_MAX = 5;
+/** Backend artifact TTL (redis_repo.JOB_TTL). Past it the job id is a 410. */
+const BACKEND_TTL_MS = 24 * 60 * 60 * 1000;
+
+interface RecentProject {
+  id: string;
+  savedAt: number;
+  title: string | null;
+  url: string;
+  trim: TrimValue;
+  targetLangs: LanguageCode[];
+  style: StyleSpec;
+  subtitles: Subtitle[];
+  translations: Record<string, Subtitle[]>;
+  transcribeJobId: string | null;
+}
+
+function loadRecents(): RecentProject[] {
+  try {
+    const raw = localStorage.getItem(RECENTS_KEY);
+    if (!raw) return [];
+    const list = JSON.parse(raw);
+    if (!Array.isArray(list)) return [];
+    return list.filter(
+      (r): r is RecentProject =>
+        Boolean(r?.id && r?.url && Array.isArray(r?.subtitles) && r.subtitles.length),
+    );
+  } catch {
+    return [];
+  }
+}
+
+function saveRecent(entry: RecentProject): RecentProject[] {
+  // Upsert by id so re-rendering the same clip updates its entry (with the
+  // latest style) instead of pushing a near-duplicate.
+  const next = [entry, ...loadRecents().filter((r) => r.id !== entry.id)].slice(
+    0,
+    RECENTS_MAX,
+  );
+  try {
+    localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
+  } catch {
+    /* quota exceeded — the list is a convenience, not state we must keep */
+  }
+  return next;
+}
+
+function relativeTime(ms: number): string {
+  const mins = Math.round((Date.now() - ms) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
 }
 
 interface SectionData {
@@ -155,6 +228,31 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
   // with subtitles overlaid; the subtitle list follows / seeks the video.
   const editVideoRef = useRef<HTMLVideoElement>(null);
   const [editTimeSec, setEditTimeSec] = useState(0);
+
+  // Read on mount only: localStorage is not available during SSR, and the
+  // list only changes through saveRecent()/restoreRecent() below.
+  const [recents, setRecents] = useState<RecentProject[]>([]);
+  useEffect(() => setRecents(loadRecents()), []);
+
+  const restoreRecent = (r: RecentProject) => {
+    setSource({ url: r.url, isValid: true, preview: null });
+    setTrim(r.trim);
+    setTargetLangs(r.targetLangs);
+    setStyle(r.style);
+    setSubtitles(r.subtitles);
+    setTranslations(r.translations);
+    setRenderJobId(null);
+    setError(null);
+    setSubmitError(null);
+    // Re-attach to the transcribe job only while its artifacts can still
+    // exist. Past the TTL the poll returns 410 and would drop the user into
+    // the error phase; without it the editor falls back to a static preview,
+    // which is the graceful outcome.
+    const stillLive =
+      r.transcribeJobId && Date.now() - r.savedAt < BACKEND_TTL_MS;
+    setTranscribeJobId(stillLive ? r.transcribeJobId : null);
+    setPhase("editing");
+  };
 
   // ── Persistence: survive page reloads (dev-server restarts force a full
   // reload and used to wipe the in-flight job → user came back to a blank
@@ -247,12 +345,32 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
       if (Object.keys(translations).length === 0)
         setTranslations(r.translations ?? {});
       const secondary = Object.keys(r.translations ?? {})[0];
-      setStyle((prev) => ({
-        ...prev,
+      const nextStyle = {
+        ...style,
         primary_language: r.language,
         secondary_language: secondary,
-      }));
+      };
+      setStyle(nextStyle);
       setPhase("editing");
+      // Bank the transcript as soon as it exists, not at "done": the ASR and
+      // translation are what cost quota, and an abandoned run should not
+      // throw them away.
+      setRecents(
+        saveRecent({
+          id: transcribeJobId ?? `${source.url}|${trim.start_sec}|${trim.end_sec}`,
+          savedAt: Date.now(),
+          title: r.metadata?.title ?? null,
+          url: source.url,
+          trim,
+          targetLangs,
+          style: nextStyle,
+          subtitles: subtitles.length ? subtitles : r.segments,
+          translations: Object.keys(translations).length
+            ? translations
+            : (r.translations ?? {}),
+          transcribeJobId,
+        }),
+      );
     } else if (tStatus === "failed" && transcribe.job?.error) {
       setError(transcribe.job.error);
       setPhase("error");
@@ -419,6 +537,42 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
               darkMode={darkMode}
               disabled={submitting}
             />
+
+            {recents.length > 0 && (
+              <div className="space-y-2">
+                <h3 className={`text-sm font-medium ${labelColor}`}>
+                  {t.recentHeading}
+                </h3>
+                <p className={`text-xs ${subColor}`}>{t.recentHint}</p>
+                <ul className="space-y-1">
+                  {recents.map((r) => (
+                    <li key={r.id}>
+                      <button
+                        type="button"
+                        onClick={() => restoreRecent(r)}
+                        disabled={submitting}
+                        className={`w-full text-left px-3 py-2 rounded-md border text-sm transition-colors disabled:opacity-50 ${
+                          darkMode
+                            ? "bg-gray-800 border-gray-700 hover:border-gray-500 text-gray-200"
+                            : "bg-white border-gray-200 hover:border-gray-400 text-gray-800"
+                        }`}
+                      >
+                        <span className="block truncate font-medium">
+                          {r.title || r.url}
+                        </span>
+                        <span className={`block text-xs ${subColor}`}>
+                          {fmtClock(r.trim.start_sec)}–{fmtClock(r.trim.end_sec)}
+                          {" · "}
+                          {r.subtitles.length} {t.recentSubtitleCount}
+                          {" · "}
+                          {relativeTime(r.savedAt)}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {source.isValid && (
               <>
