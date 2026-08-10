@@ -129,16 +129,25 @@ export function SubtitleOverlay({ videoRef, primary, secondary, style }: Props) 
       : bg.shape === "box"
         ? `${3 * scale}px`
         : "0";
-  const padding = bg.shape && bg.shape !== "none" ? "0.25em 0.6em" : "0";
+  // 0.28em matches the burn, where `Outline` doubles as the plate's padding
+  // and is set to font_size_px * 0.28.
+  const padding = bg.shape && bg.shape !== "none" ? "0.28em 0.28em" : "0";
   const background =
     bg.shape && bg.shape !== "none" ? hexToRgba(bgColor, bgOpacity) : "transparent";
 
+  // With a plate, the burn cannot also outline the text: ASS BorderStyle 3
+  // fills the box from OutlineColour, so the plate and the outline compete for
+  // one colour slot and the plate wins. Drawing an outline here anyway would
+  // put the preview back out of step with the download.
+  const hasPlate = Boolean(bg.shape && bg.shape !== "none");
   const outlineColor = style.outline_color ?? "rgba(0,0,0,0.8)";
-  const outline = [
-    `0 0 ${3 * scale}px ${outlineColor}`,
-    `0 0 ${6 * scale}px ${outlineColor}`,
-    `${1.5 * scale}px ${1.5 * scale}px ${3 * scale}px ${outlineColor}`,
-  ].join(", ");
+  const outline = hasPlate
+    ? "none"
+    : [
+        `0 0 ${3 * scale}px ${outlineColor}`,
+        `0 0 ${6 * scale}px ${outlineColor}`,
+        `${1.5 * scale}px ${1.5 * scale}px ${3 * scale}px ${outlineColor}`,
+      ].join(", ");
 
   const animationClass =
     style.animation === "fade"
