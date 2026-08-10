@@ -59,10 +59,6 @@ security:
 tags:
   - name: jobs
     description: Async job lifecycle (AIP-151)
-  - name: sources
-    description: Source inspection (pre-download)
-  - name: subtitles
-    description: Subtitle compilation / preview
   - name: ops
     description: Operational endpoints (health, metrics)
 
@@ -166,58 +162,12 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "410": { $ref: "#/components/responses/Gone" }
 
-  /sources:inspect:
-    post:
-      tags: [sources]
-      summary: Inspect a source before downloading
-      operationId: inspectSource
-      description: |
-        Probes a YouTube URL without downloading the video. Returns metadata
-        and the list of available subtitle tracks so the frontend can offer
-        "use original subtitles" vs "transcribe with Whisper" at preview time.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [url]
-              properties:
-                url: { type: string, format: uri }
-      responses:
-        "200":
-          description: Source metadata.
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/SourceInfo" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "422": { $ref: "#/components/responses/UnprocessableEntity" }
-
-  /subtitles:compile:
-    post:
-      tags: [subtitles]
-      summary: Compile styled subtitles for preview
-      operationId: compileSubtitles
-      description: |
-        Given subtitles + style, returns a signed URL to a styled `.ass`
-        file. The frontend renders it in-browser with libass (WASM) for a
-        WYSIWYG preview that matches the final FFmpeg/libass burn exactly.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/CompileSubtitlesRequest" }
-      responses:
-        "200":
-          description: Compiled subtitle artifact.
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [ass_url]
-                properties:
-                  ass_url: { type: string, format: uri }
-        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+  # NOTE: `/sources:inspect` and `/subtitles:compile` were specified here but
+  # never routed, so calling them returned 404. They are removed rather than
+  # implemented: the frontend resolves source metadata itself (YouTube oEmbed +
+  # the embed player) and previews subtitles with a DOM overlay, so neither is
+  # needed. Their request/response models still exist in app/models.py should
+  # they ever be built. This spec describes only what the service actually serves.
 
   /healthz:
     get:
@@ -260,7 +210,7 @@ components:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
     UnprocessableEntity:
-      description: Validation failed (e.g. trim > 300s, unsupported language).
+      description: Validation failed (e.g. trim > 600s, unsupported language).
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
@@ -354,10 +304,13 @@ components:
         font_family:
           type: string
           description: |
-            MVP: the frontend sends "Noto Sans" but the backend may treat
-            font as fixed. Backend resolves it via fontconfig (auto-
-            substitutes "Noto Sans CJK JP/SC/TC" for CJK glyphs). Installed
-            on macOS via `brew install --cask font-noto-sans font-noto-sans-cjk`.
+            Advisory. Honoured only when the family resolves on the render
+            host *and* covers the subtitle text; otherwise the backend
+            substitutes a covering family (PingFang TC / PingFang SC /
+            Heiti TC / Arial Unicode MS, in that order) and logs it. No
+            install step is needed on macOS — PingFang is a system font.
+            The job fails with `render_failed` only when none of them can
+            draw the text. See `fonts/README.md`.
         font_size_px: { type: integer, minimum: 12, maximum: 96 }
         secondary_font_size_px:
           type: integer
@@ -601,6 +554,8 @@ components:
             - upstream_timeout
 
     # ─────────────────── Source inspection / preview ───────────────────
+    # Unreferenced by any path — kept in step with the models in
+    # app/models.py for whenever those endpoints are actually built.
     SourceInfo:
       type: object
       required: [duration_sec]

@@ -301,14 +301,26 @@ Cloudflare Tunnel: create a named tunnel `subtitle`, map hostname
 
 ## 14. Open questions for the my-tools owner
 
+All five are settled. Each entry now records what the service actually runs
+and where that value lives, so this reads as a description rather than a
+question list.
+
 1. ~~Hostname.~~ **Resolved**: `subtitle.myaiapp.uk` (Cloudflare Tunnel → iMac).
 2. ~~iMac chip.~~ **Resolved**: **M4** (Apple Silicon). Use `mlx-whisper`.
 3. ~~Whisper model size.~~ **Resolved**: default `large-v3-turbo`
    (M4 handles it comfortably). Override via env if needed.
-4. **Concurrency cap** — how many simultaneous jobs should the worker
-   run? Start with 1–2 RQ workers; tune based on observed M4 utilisation.
-5. **Redis** — fresh `brew install redis`, or reuse an existing Redis if
-   another my-tools service already runs one?
+   Source of truth: `app/config.py` → `WHISPER_MODEL`.
+4. ~~Concurrency cap.~~ **Resolved**: **5** RQ `SimpleWorker` processes, not
+   the 1–2 suggested here originally — the owner raised it on 2026-07-03 and
+   the M4 carries it. Set by `WORKER_COUNT` in `scripts/run-workers.sh`
+   (default 5) and supervised as a single launchd job (`…subtitle.workers`),
+   so the group restarts together. `SimpleWorker` is mandatory on macOS: a
+   forked child touching Metal/mlx aborts with an objc fork error.
+5. ~~Redis.~~ **Resolved**: a **dedicated instance**, not a shared one.
+   `…subtitle.redis` runs its own `redis-server` on 127.0.0.1 under launchd
+   with persistence off (job state is disposable). `install-launchd.sh` skips
+   this agent when something else already supervises Redis — two servers
+   cannot bind the same port.
 
 ---
 
