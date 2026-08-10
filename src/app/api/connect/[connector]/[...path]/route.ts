@@ -63,7 +63,13 @@ async function proxy(
   const action = connector.usageAction?.(req.method, rel, parsedBody) ?? null;
 
   // ---- quota (admins exempt) ----
-  if (connector.quota && !isAdmin && action) {
+  // Only the actions a connector bills for consume quota, and only those are
+  // counted against it. Counting every logged action makes a multi-request
+  // workflow spend its own allowance partway through — video-subtitle's
+  // limit of 1/day rejected the render of the job it had just admitted.
+  const countActions = connector.quota?.countActions;
+  const billable = !countActions || (action !== null && countActions.includes(action));
+  if (connector.quota && !isAdmin && action && billable) {
     const who =
       connector.quota.per === "user" ? userId : ipHash(req);
     if (who) {
@@ -71,6 +77,7 @@ async function proxy(
         where: {
           connector: name,
           userId: connector.quota.per === "user" ? who : undefined,
+          ...(countActions ? { action: { in: countActions } } : {}),
           createdAt: { gte: windowStart(connector.quota.window) },
         },
       });
