@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { db } from "@/lib/db";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { pickByLocale } from "@/lib/locale-match";
-import { getUniversalAppLaunchPath } from "@/lib/universal-apps/directory";
+import { canLaunchUniversalApp, getUniversalAppLaunchPath } from "@/lib/universal-apps/directory";
 import type { Metadata } from "next";
 
 interface Props {
@@ -74,7 +74,24 @@ export default async function AppDetailPage({ params }: Props) {
     : app.category;
 
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
-  const universalLaunchPath = getUniversalAppLaunchPath(app);
+  // Only offer "Launch" when a production runtime is actually active.
+  const releases = app.appType
+    ? await db.appRelease.findMany({
+        where: { appId: app.id },
+        orderBy: { createdAt: "desc" },
+        select: {
+          status: true,
+          deployments: {
+            where: { environment: "PRODUCTION" },
+            orderBy: { createdAt: "desc" },
+            select: { environment: true, status: true },
+          },
+        },
+      })
+    : [];
+  const universalLaunchPath = canLaunchUniversalApp(app, releases)
+    ? getUniversalAppLaunchPath(app)
+    : null;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",

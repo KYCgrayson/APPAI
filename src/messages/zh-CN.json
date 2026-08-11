@@ -119,5 +119,13 @@
     "authorized": "已授权！",
     "authorizedMessage": "您可以关闭此窗口。您的 Agent 已成功连接。",
     "error": "错误"
+  },
+  "universalRuntime": {
+    "title": "此应用尚不可用",
+    "notFound": "找不到与此地址对应的应用。",
+    "appUnavailable": "此应用尚未部署。请等待发布者上线版本后再来查看。",
+    "invalidRelease": "此应用目前没有已批准的版本。",
+    "invalidDeployment": "此应用的运行环境当前未启用，请稍后再试。",
+    "appSuspended": "此应用的访问已被暂停。"
   }
 }

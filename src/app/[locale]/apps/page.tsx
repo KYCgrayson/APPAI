@@ -7,7 +7,7 @@ import { AppCard } from "@/components/AppCard";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { getExternalCanonical } from "@/lib/canonical";
 import { groupByKey, pickByLocale } from "@/lib/locale-match";
-import { getUniversalAppLaunchPath } from "@/lib/universal-apps/directory";
+import { canLaunchUniversalApp, getUniversalAppLaunchPath } from "@/lib/universal-apps/directory";
 import { UNIVERSAL_APP_CATEGORIES } from "@/lib/universal-apps/manifest";
 
 export default async function AppsPage({
@@ -57,6 +57,26 @@ export default async function AppsPage({
     hostedPages.filter((h) => h.isDefault).map((h) => [h.slug, h.canonicalUrl]),
   );
 
+  // Approved is not the same as deployed. Ask the same question the launcher
+  // asks, so a card never advertises a launch that ends on an error page.
+  const universalAppIds = directoryApps.filter((a) => a.appType).map((a) => a.id);
+  const releases = universalAppIds.length
+    ? await db.appRelease.findMany({
+        where: { appId: { in: universalAppIds } },
+        orderBy: { createdAt: "desc" },
+        select: {
+          appId: true,
+          status: true,
+          deployments: {
+            where: { environment: "PRODUCTION" },
+            orderBy: { createdAt: "desc" },
+            select: { environment: true, status: true },
+          },
+        },
+      })
+    : [];
+  const releasesByApp = groupByKey(releases, (r) => r.appId);
+
   const categories = ["ALL", ...UNIVERSAL_APP_CATEGORIES];
   const categoryLabel = (cat: string) =>
     t.has(`categories.${cat}`) ? t(`categories.${cat}`) : cat;
@@ -99,7 +119,9 @@ export default async function AppsPage({
               const canonical = app.hostedPageSlug
                 ? getExternalCanonical(canonicalBySlug.get(app.hostedPageSlug))
                 : null;
-              const universalLaunchPath = getUniversalAppLaunchPath(app);
+              const universalLaunchPath = canLaunchUniversalApp(app, releasesByApp.get(app.id))
+                ? getUniversalAppLaunchPath(app)
+                : null;
               const variant = app.hostedPageSlug
                 ? pickByLocale(variantsBySlug.get(app.hostedPageSlug) ?? [], locale)
                 : undefined;

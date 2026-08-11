@@ -119,5 +119,13 @@
     "authorized": "Autorisé !",
     "authorizedMessage": "Vous pouvez fermer cette fenêtre. Votre agent est maintenant connecté.",
     "error": "Erreur"
+  },
+  "universalRuntime": {
+    "title": "Cette app n'est pas encore disponible",
+    "notFound": "Aucune app ne correspond à cette adresse.",
+    "appUnavailable": "Cette app n'a pas encore été déployée. Revenez lorsque son éditeur aura publié une version.",
+    "invalidRelease": "Cette app n'a actuellement aucune version approuvée.",
+    "invalidDeployment": "L'environnement d'exécution de cette app n'est pas actif pour le moment. Réessayez dans quelques instants.",
+    "appSuspended": "L'accès à cette app a été suspendu."
   }
 }

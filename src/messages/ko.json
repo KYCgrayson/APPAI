@@ -119,5 +119,13 @@
     "authorized": "인증 완료!",
     "authorizedMessage": "이 창을 닫으셔도 됩니다. 에이전트가 연결되었습니다.",
     "error": "오류"
+  },
+  "universalRuntime": {
+    "title": "이 앱은 아직 사용할 수 없습니다",
+    "notFound": "이 주소에 해당하는 앱이 없습니다.",
+    "appUnavailable": "이 앱은 아직 배포되지 않았습니다. 게시자가 릴리스할 때까지 기다려 주세요.",
+    "invalidRelease": "현재 승인된 릴리스가 없습니다.",
+    "invalidDeployment": "이 앱의 런타임이 현재 활성 상태가 아닙니다. 잠시 후 다시 시도해 주세요.",
+    "appSuspended": "이 앱에 대한 접근이 중지되었습니다."
   }
 }

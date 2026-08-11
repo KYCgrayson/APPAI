@@ -11,7 +11,11 @@ Recorded so future work stops re-deriving them. The boundary itself lives in
 | D2 | Where does localized app copy live? | **`HostedPage` rows now, `App.translations` later.** `HostedPage` is already one row per locale, so apps with a hosted page get localized copy for free. Apps without one stay single-language until D2b ships. |
 | D3 | Platform has 9 locales, hosted pages accept any BCP 47 code | **Keep them different.** Platform UI is ours to translate; hosted-page locales come from the publishing agent. Resolve across the gap with `pickByLocale` (exact → primary subtag → default) rather than unifying. |
 
+| D7 | Does the directory treat "approved" as "runnable"? | **No — they are separate.** A card only advertises a launch when `canLaunchUniversalApp` confirms an `APPROVED` release with an `ACTIVE` `PRODUCTION` deployment, reusing the launcher's own `selectUniversalRuntimeTarget`. Approved-but-undeployed apps stay listed and link to their detail page instead of a launcher that errors. |
+
 ### Open decisions (need an owner call)
+
+- [ ] **Remove the `Runtime Contract Test` record from production.** A leftover integration-test app, created through the API and marked approved, so it lists publicly. Deferred by owner — it no longer offers a broken launch (D7), it is just noise in the directory. Needs a production data change, not a code change.
 
 - [ ] **D2b — add `App.translations`** JSON column + `createAppSchema` support + `AGENT_INSTRUCTIONS.md`, so agents can publish multi-language name/tagline for apps with no hosted page. Needs a Prisma migration against production.
 - [ ] **D4 — locale in the Universal App runtime contract.** An artifact is someone else's code; AppAI cannot translate it. Proposal: pass the visitor locale as runtime context and declare it in `appai.app.json`, artifact owns its strings. Decide before more artifacts ship or they all hardcode English.
@@ -22,7 +26,9 @@ Recorded so future work stops re-deriving them. The boundary itself lives in
 
 - [x] Translate app categories + landing-page badge across all 9 platform locales
 - [x] Add `pickByLocale` (`src/lib/locale-match.ts`) and source directory copy from the visitor's `HostedPage` locale variant
+- [x] Localize the Universal runtime launcher — `/app/{appId}` keeps a locale-free URL but reads in the visitor's language via `getPlatformLocale()` (NEXT_LOCALE cookie → Accept-Language → default)
 - [ ] Audit remaining platform surfaces for publisher-supplied English (D2b covers apps with no hosted page)
+- [ ] Minor: `zh-HK` / `zh-MO` resolve to `zh-CN` (first shipped `zh-*` in `routing.locales`) though those regions read Traditional. Fixable by ordering or an explicit script rule — not worth reordering the language switcher for right now
 
 ## Universal App Runtime — Simpleshop migration
 

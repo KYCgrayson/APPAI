@@ -119,5 +119,13 @@
     "authorized": "已授權！",
     "authorizedMessage": "您可以關閉此視窗。您的 Agent 已成功連線。",
     "error": "錯誤"
+  },
+  "universalRuntime": {
+    "title": "此應用程式尚未可用",
+    "notFound": "找不到與此網址對應的應用程式。",
+    "appUnavailable": "此應用程式尚未部署。請等發佈者上線版本後再回來查看。",
+    "invalidRelease": "此應用程式目前沒有已核准的版本。",
+    "invalidDeployment": "此應用程式的執行環境目前未啟用，請稍後再試。",
+    "appSuspended": "此應用程式的存取已暫停。"
   }
 }

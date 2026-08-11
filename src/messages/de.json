@@ -119,5 +119,13 @@
     "authorized": "Autorisiert!",
     "authorizedMessage": "Du kannst dieses Fenster schließen. Dein Agent ist jetzt verbunden.",
     "error": "Fehler"
+  },
+  "universalRuntime": {
+    "title": "Diese App ist noch nicht verfügbar",
+    "notFound": "Zu dieser Adresse gibt es keine App.",
+    "appUnavailable": "Diese App wurde noch nicht bereitgestellt. Schau wieder vorbei, sobald der Herausgeber ein Release veröffentlicht.",
+    "invalidRelease": "Für diese App gibt es derzeit kein freigegebenes Release.",
+    "invalidDeployment": "Die Laufzeitumgebung dieser App ist derzeit nicht aktiv. Bitte versuche es in Kürze erneut.",
+    "appSuspended": "Der Zugriff auf diese App wurde ausgesetzt."
   }
 }

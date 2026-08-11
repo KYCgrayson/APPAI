@@ -78,7 +78,7 @@ without going through a connector or a reviewed Universal App release.
 - `/[locale]/` — Public pages (i18n enabled)
 - `/dashboard/` — Authenticated user area (English only)
 - `/admin/` — Admin panel (English only)
-- `/app/[appId]` — Universal launcher for authenticated, Organization-scoped isolated app runtimes (not localized)
+- `/app/[appId]` — Universal launcher for authenticated, Organization-scoped isolated app runtimes. The **URL** is locale-free (one stable address per app) but the **page** follows the visitor's language via `getPlatformLocale()` — a locale-free URL is a routing choice, not a reason to show everyone English. Note `middleware.ts` skips next-intl for `/app/`, so `getTranslations()` alone would silently fall back to `en` here
 - `/p/[...segments]` — Hosted pages (own locale system; accepts any BCP 47 `xx` / `xx-XX` code, 20 have display labels in the switcher)
 - `/api/` — API endpoints
 

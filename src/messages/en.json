@@ -119,5 +119,13 @@
     "authorized": "Authorized!",
     "authorizedMessage": "You can close this window. Your agent is now connected.",
     "error": "Error"
+  },
+  "universalRuntime": {
+    "title": "This app is not available yet",
+    "notFound": "No app matches this address.",
+    "appUnavailable": "This app has not been deployed yet. Check back once its publisher ships a release.",
+    "invalidRelease": "This app has no approved release right now.",
+    "invalidDeployment": "This app's runtime is not active right now. Please try again shortly.",
+    "appSuspended": "Access to this app has been suspended."
   }
 }
