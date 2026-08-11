@@ -62,7 +62,30 @@
     "noAppsCategory": "{category} にアプリが見つかりませんでした。他のカテゴリをお試しください。",
     "noAppsDefault": "最初のアプリを投稿しましょう！",
     "universalApp": "ユニバーサルアプリ",
-    "loginRequired": "ログインが必要です"
+    "loginRequired": "ログインが必要です",
+    "landingPage": "ランディングページ",
+    "categories": {
+      "ALL": "すべて",
+      "WRITING": "ライティング",
+      "CODING": "コーディング",
+      "DESIGN": "デザイン",
+      "AUTOMATION": "自動化",
+      "PRODUCTIVITY": "生産性",
+      "SOCIAL": "ソーシャル",
+      "FINANCE": "金融",
+      "DATABASE": "データベース",
+      "HEALTH": "健康",
+      "EDUCATION": "教育",
+      "FOOD": "フード",
+      "TRAVEL": "旅行",
+      "ENTERTAINMENT": "エンタメ",
+      "GAMES": "ゲーム",
+      "MEDIA": "メディア",
+      "UTILITIES": "ユーティリティ",
+      "COMMERCE": "コマース",
+      "INVENTORY": "在庫管理",
+      "OTHER": "その他"
+    }
   },
   "appDetail": {
     "apps": "アプリ",

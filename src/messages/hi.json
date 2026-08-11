@@ -62,7 +62,30 @@
     "noAppsCategory": "{category} में कोई ऐप नहीं मिला। कोई और श्रेणी आज़माएं।",
     "noAppsDefault": "अपनी ऐप सबमिट करने वाले पहले व्यक्ति बनें!",
     "universalApp": "यूनिवर्सल ऐप",
-    "loginRequired": "साइन इन आवश्यक"
+    "loginRequired": "साइन इन आवश्यक",
+    "landingPage": "लैंडिंग पेज",
+    "categories": {
+      "ALL": "सभी",
+      "WRITING": "लेखन",
+      "CODING": "कोडिंग",
+      "DESIGN": "डिज़ाइन",
+      "AUTOMATION": "स्वचालन",
+      "PRODUCTIVITY": "उत्पादकता",
+      "SOCIAL": "सोशल",
+      "FINANCE": "वित्त",
+      "DATABASE": "डेटाबेस",
+      "HEALTH": "स्वास्थ्य",
+      "EDUCATION": "शिक्षा",
+      "FOOD": "खानपान",
+      "TRAVEL": "यात्रा",
+      "ENTERTAINMENT": "मनोरंजन",
+      "GAMES": "गेम्स",
+      "MEDIA": "मीडिया",
+      "UTILITIES": "उपयोगिताएँ",
+      "COMMERCE": "वाणिज्य",
+      "INVENTORY": "इन्वेंटरी",
+      "OTHER": "अन्य"
+    }
   },
   "appDetail": {
     "apps": "ऐप्स",

@@ -62,7 +62,30 @@
     "noAppsCategory": "在 {category} 中未找到应用，请尝试其他分类。",
     "noAppsDefault": "成为第一个提交应用的人！",
     "universalApp": "通用应用",
-    "loginRequired": "需要登录"
+    "loginRequired": "需要登录",
+    "landingPage": "落地页",
+    "categories": {
+      "ALL": "全部",
+      "WRITING": "写作",
+      "CODING": "编程",
+      "DESIGN": "设计",
+      "AUTOMATION": "自动化",
+      "PRODUCTIVITY": "效率",
+      "SOCIAL": "社交",
+      "FINANCE": "金融",
+      "DATABASE": "数据库",
+      "HEALTH": "健康",
+      "EDUCATION": "教育",
+      "FOOD": "美食",
+      "TRAVEL": "旅行",
+      "ENTERTAINMENT": "娱乐",
+      "GAMES": "游戏",
+      "MEDIA": "媒体",
+      "UTILITIES": "实用工具",
+      "COMMERCE": "电商",
+      "INVENTORY": "库存管理",
+      "OTHER": "其他"
+    }
   },
   "appDetail": {
     "apps": "应用",

@@ -62,7 +62,30 @@
     "noAppsCategory": "{category}에서 앱을 찾을 수 없습니다. 다른 카테고리를 시도해 보세요.",
     "noAppsDefault": "첫 번째로 앱을 제출해 보세요!",
     "universalApp": "유니버설 앱",
-    "loginRequired": "로그인 필요"
+    "loginRequired": "로그인 필요",
+    "landingPage": "랜딩 페이지",
+    "categories": {
+      "ALL": "전체",
+      "WRITING": "글쓰기",
+      "CODING": "코딩",
+      "DESIGN": "디자인",
+      "AUTOMATION": "자동화",
+      "PRODUCTIVITY": "생산성",
+      "SOCIAL": "소셜",
+      "FINANCE": "금융",
+      "DATABASE": "데이터베이스",
+      "HEALTH": "건강",
+      "EDUCATION": "교육",
+      "FOOD": "음식",
+      "TRAVEL": "여행",
+      "ENTERTAINMENT": "엔터테인먼트",
+      "GAMES": "게임",
+      "MEDIA": "미디어",
+      "UTILITIES": "유틸리티",
+      "COMMERCE": "커머스",
+      "INVENTORY": "재고 관리",
+      "OTHER": "기타"
+    }
   },
   "appDetail": {
     "apps": "앱",

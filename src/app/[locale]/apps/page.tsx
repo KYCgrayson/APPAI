@@ -1,10 +1,12 @@
 export const dynamic = "force-dynamic";
 
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { db } from "@/lib/db";
+import { AppCard } from "@/components/AppCard";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { getExternalCanonical } from "@/lib/canonical";
+import { groupByKey, pickByLocale } from "@/lib/locale-match";
 import { getUniversalAppLaunchPath } from "@/lib/universal-apps/directory";
 import { UNIVERSAL_APP_CATEGORIES } from "@/lib/universal-apps/manifest";
 
@@ -13,7 +15,7 @@ export default async function AppsPage({
 }: {
   searchParams: Promise<{ category?: string }>;
 }) {
-  const t = await getTranslations("apps");
+  const [t, locale] = await Promise.all([getTranslations("apps"), getLocale()]);
   const { category } = await searchParams;
   const activeCategory = category || "ALL";
 
@@ -26,16 +28,38 @@ export default async function AppsPage({
   });
   const directoryApps = apps;
 
+  // Every locale variant, not just the default one: an app that published a
+  // page in the visitor's language already has a tagline written in it, and the
+  // directory is where that copy is worth showing. One query either way.
   const hostedSlugs = directoryApps.map((a) => a.hostedPageSlug).filter((s): s is string => !!s);
   const hostedPages = hostedSlugs.length
     ? await db.hostedPage.findMany({
-        where: { slug: { in: hostedSlugs }, isDefault: true },
-        select: { slug: true, canonicalUrl: true },
+        where: { slug: { in: hostedSlugs } },
+        select: {
+          slug: true,
+          locale: true,
+          isDefault: true,
+          isPublished: true,
+          title: true,
+          tagline: true,
+          canonicalUrl: true,
+        },
       })
     : [];
-  const canonicalBySlug = new Map(hostedPages.map((h) => [h.slug, h.canonicalUrl]));
+  // Draft variants keep their canonical behaviour but must not leak unpublished
+  // copy into the directory.
+  const variantsBySlug = groupByKey(
+    hostedPages.filter((h) => h.isPublished),
+    (h) => h.slug,
+  );
+  // The canonical stays on the default row so per-locale variants never move it.
+  const canonicalBySlug = new Map(
+    hostedPages.filter((h) => h.isDefault).map((h) => [h.slug, h.canonicalUrl]),
+  );
 
   const categories = ["ALL", ...UNIVERSAL_APP_CATEGORIES];
+  const categoryLabel = (cat: string) =>
+    t.has(`categories.${cat}`) ? t(`categories.${cat}`) : cat;
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
@@ -55,7 +79,7 @@ export default async function AppsPage({
                   : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200"
               }`}
             >
-              {cat}
+              {categoryLabel(cat)}
             </Link>
           ))}
         </div>
@@ -65,7 +89,7 @@ export default async function AppsPage({
             <h2 className="text-xl font-semibold mb-2 text-white">{t("noAppsTitle")}</h2>
             <p className="text-gray-400">
               {activeCategory !== "ALL"
-                ? t("noAppsCategory", { category: activeCategory })
+                ? t("noAppsCategory", { category: categoryLabel(activeCategory) })
                 : t("noAppsDefault")}
             </p>
           </div>
@@ -76,49 +100,22 @@ export default async function AppsPage({
                 ? getExternalCanonical(canonicalBySlug.get(app.hostedPageSlug))
                 : null;
               const universalLaunchPath = getUniversalAppLaunchPath(app);
+              const variant = app.hostedPageSlug
+                ? pickByLocale(variantsBySlug.get(app.hostedPageSlug) ?? [], locale)
+                : undefined;
               return (
-              <a
-                key={app.id}
-                href={universalLaunchPath ?? (app.hostedPageSlug ? `/p/${app.hostedPageSlug}` : `/apps/${app.id}`)}
-                className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors block"
-              >
-                <div className="flex items-start gap-4">
-                  {app.logoUrl ? (
-                    // Logo URLs are app-supplied and not restricted to configured image hosts.
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={app.logoUrl}
-                      alt={app.name}
-                      className="w-12 h-12 rounded-xl object-cover"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-xl bg-gray-800 flex items-center justify-center text-lg font-bold text-gray-400">
-                      {app.name[0]}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold truncate text-white">{app.name}</h3>
-                    <p className="text-sm text-gray-400 line-clamp-2">{app.tagline}</p>
-                    <div className="flex gap-2 mt-2 items-center flex-wrap">
-                      <span className="text-xs text-gray-600">{app.category}</span>
-                      {app.iosUrl && <span className="text-xs text-blue-400">iOS</span>}
-                      {app.androidUrl && <span className="text-xs text-green-400">Android</span>}
-                      {universalLaunchPath && <>
-                        <span className="rounded border border-violet-600/50 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-violet-300">{t("universalApp")}</span>
-                        <span className="text-[10px] text-cyan-300">{t("loginRequired")}</span>
-                      </>}
-                      {canonical && (
-                        <span
-                          className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border border-amber-600/40 text-amber-400"
-                          title={`Landing page for ${canonical.host}`}
-                        >
-                          Landing page
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </a>
+                <AppCard
+                  key={app.id}
+                  app={app}
+                  href={
+                    universalLaunchPath ??
+                    (app.hostedPageSlug ? `/p/${app.hostedPageSlug}` : `/apps/${app.id}`)
+                  }
+                  localizedName={variant?.title}
+                  localizedTagline={variant?.tagline}
+                  isUniversalApp={!!universalLaunchPath}
+                  canonicalHost={canonical?.host ?? null}
+                />
               );
             })}
           </div>

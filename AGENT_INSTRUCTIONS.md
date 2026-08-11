@@ -8,6 +8,31 @@ You are an **AppAI publisher**. AppAI (appai.info) has two first-class publishin
 
 ---
 
+## Pick the rung first (30 seconds, before anything else)
+
+AppAI exists so a user who built something does not have to register a domain or
+run infrastructure. Capability is a ladder. **Place the request on the lowest
+rung that satisfies it** — going heavier costs the user review time and buys
+nothing.
+
+| The user has / wants | Rung | What you write |
+|---|---|---|
+| A product to describe, no running software | **Hosted Page** | `POST /api/v1/pages` with sections |
+| A tool they already deployed (`*.vercel.app`, `*.pages.dev`, `*.netlify.app`, `*.github.io`) | **Wrapped tool** | Hero + `iframe-tool` + 1-2 supporting sections. Their deploy keeps running where it is; AppAI adds the SEO shell, login state, locale and theme |
+| A tool that needs a server, a secret, login, or rate limits | **Connected tool** | Same as above, plus `apiBase: "/api/connect/{connector}"` and `"access": "login"` on the section |
+| Persistent data, own schema, business rules (inventory, orders, settlement) | **Universal App** | `appai.app.json` manifest → `POST /api/v1/apps/{appId}/releases` → review → `/app/{appId}` |
+
+Two limits worth knowing up front, so you never promise them:
+
+- **AppAI does not host arbitrary code.** There is no "upload my repo and run it"
+  path. Either the tool runs on the user's own free host and you wrap it, or it
+  becomes a reviewed Universal App with a declared manifest.
+- **You cannot add a new backend.** Connectors hold secrets and are
+  owner-maintained. You reference one by name; you never create one. If a tool
+  needs a backend that does not exist yet, say so — that is an owner task.
+
+Everything below is detail for the rung you picked.
+
 ## What You Can Build (read this first)
 
 This platform gives you full control over visual design. Every parameter below is available for you to use.
@@ -284,16 +309,19 @@ This document has everything you need. Here's where to find it:
 3. **Build the first draft.** Authenticate, create the page, publish it. Show the user the live URL.
 4. **Iterate.** The user will request changes — different colors, more sections, different copy. Use PATCH to update.
 
-### Two intents, two flows
+### Page shape per intent
 
-Detect which one the user is asking for and don't mix them up:
+Pick the rung first (see the table at the top of this file), then the shape:
 
-| User intent | Signal | Page shape |
-|---|---|---|
-| **Landing page for an app/product** | "Make me a landing page for [my app/SaaS/startup]" | Hero + features + pricing + testimonials + faq + cta. Standard SaaS template. |
-| **Host a vibe-coded tool** | "I built a [wheel spinner / calculator / mini-game / visualization]…", "I deployed my tool to [vercel.app / pages.dev / netlify.app / github.io]", "Put my tool on AppAI" | Hero (short tagline) + `iframe-tool` (the tool itself) + 1-2 supporting sections (about / faq / cta). The tool is the page. |
+| User intent | Page shape |
+|---|---|
+| **Landing page for an app/product** | Hero + features + pricing + testimonials + faq + cta. Standard SaaS template. |
+| **Host a vibe-coded tool** | Hero (short tagline) + `iframe-tool` (the tool itself) + 1-2 supporting sections (about / faq / cta). The tool is the page. |
 
-If the user gives you a `*.vercel.app` / `*.pages.dev` / `*.netlify.app` / `*.github.io` URL and describes it as their own tool, the section is `iframe-tool` — never `embed` (that's for TikTok/YouTube/etc.) and never `tool` (that's for form-input → backend API).
+Three sections look similar — do not confuse them. If the user gives you a
+`*.vercel.app` / `*.pages.dev` / `*.netlify.app` / `*.github.io` URL and calls it
+their own tool, it is `iframe-tool`. `embed` is for media posts (TikTok/YouTube).
+`tool` is for form-input → backend API.
 
 ### What to decide yourself (do NOT ask the user)
 

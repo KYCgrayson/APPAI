@@ -62,7 +62,30 @@
     "noAppsCategory": "Aucune app trouvée dans {category}. Essayez une autre catégorie.",
     "noAppsDefault": "Soyez le premier à soumettre votre app !",
     "universalApp": "Application universelle",
-    "loginRequired": "Connexion requise"
+    "loginRequired": "Connexion requise",
+    "landingPage": "Page de destination",
+    "categories": {
+      "ALL": "Tout",
+      "WRITING": "Rédaction",
+      "CODING": "Développement",
+      "DESIGN": "Design",
+      "AUTOMATION": "Automatisation",
+      "PRODUCTIVITY": "Productivité",
+      "SOCIAL": "Social",
+      "FINANCE": "Finance",
+      "DATABASE": "Base de données",
+      "HEALTH": "Santé",
+      "EDUCATION": "Éducation",
+      "FOOD": "Cuisine",
+      "TRAVEL": "Voyage",
+      "ENTERTAINMENT": "Divertissement",
+      "GAMES": "Jeux",
+      "MEDIA": "Médias",
+      "UTILITIES": "Utilitaires",
+      "COMMERCE": "Commerce",
+      "INVENTORY": "Inventaire",
+      "OTHER": "Autre"
+    }
   },
   "appDetail": {
     "apps": "Apps",

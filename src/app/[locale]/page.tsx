@@ -1,14 +1,17 @@
 export const dynamic = "force-dynamic";
 
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { db } from "@/lib/db";
+import { AppCard } from "@/components/AppCard";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { PlatformFooter } from "@/components/PlatformFooter";
+import { groupByKey, pickByLocale } from "@/lib/locale-match";
 
 export default async function HomePage() {
   const t = await getTranslations("home");
   const tc = await getTranslations("common");
+  const locale = await getLocale();
 
   const [featuredApps, recentApps, totalPages] = await Promise.all([
     db.app.findMany({
@@ -23,6 +26,21 @@ export default async function HomePage() {
     }),
     db.hostedPage.count({ where: { isPublished: true } }),
   ]);
+
+  // Same treatment as the directory: show each app's tagline in the visitor's
+  // language when its hosted page was published in that language.
+  const homeSlugs = [...featuredApps, ...recentApps]
+    .map((a) => a.hostedPageSlug)
+    .filter((s): s is string => !!s);
+  const homeVariants = homeSlugs.length
+    ? await db.hostedPage.findMany({
+        where: { slug: { in: homeSlugs }, isPublished: true },
+        select: { slug: true, locale: true, isDefault: true, title: true, tagline: true },
+      })
+    : [];
+  const variantsBySlug = groupByKey(homeVariants, (h) => h.slug);
+  const localizedFor = (slug: string | null) =>
+    slug ? pickByLocale(variantsBySlug.get(slug) ?? [], locale) : undefined;
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
@@ -218,7 +236,13 @@ export default async function HomePage() {
             <h2 className="text-3xl font-bold mb-8 text-white">{t("featuredApps")}</h2>
             <div className="grid md:grid-cols-3 gap-6">
               {featuredApps.map((app) => (
-                <AppCard key={app.id} app={app} />
+                <AppCard
+                  key={app.id}
+                  app={app}
+                  href={app.hostedPageSlug ? `/p/${app.hostedPageSlug}` : `/apps/${app.id}`}
+                  localizedName={localizedFor(app.hostedPageSlug)?.title}
+                  localizedTagline={localizedFor(app.hostedPageSlug)?.tagline}
+                />
               ))}
             </div>
           </div>
@@ -237,7 +261,13 @@ export default async function HomePage() {
             </div>
             <div className="grid md:grid-cols-3 gap-6">
               {recentApps.map((app) => (
-                <AppCard key={app.id} app={app} />
+                <AppCard
+                  key={app.id}
+                  app={app}
+                  href={app.hostedPageSlug ? `/p/${app.hostedPageSlug}` : `/apps/${app.id}`}
+                  localizedName={localizedFor(app.hostedPageSlug)?.title}
+                  localizedTagline={localizedFor(app.hostedPageSlug)?.tagline}
+                />
               ))}
             </div>
           </div>
@@ -302,32 +332,3 @@ export default async function HomePage() {
   );
 }
 
-function AppCard({ app }: { app: any }) {
-  return (
-    <a
-      href={app.hostedPageSlug ? `/p/${app.hostedPageSlug}` : `/apps/${app.id}`}
-      className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors block"
-    >
-      <div className="flex items-start gap-4">
-        {app.logoUrl ? (
-          <img
-            src={app.logoUrl}
-            alt={app.name}
-            className="w-12 h-12 rounded-xl object-cover"
-          />
-        ) : (
-          <div className="w-12 h-12 rounded-xl bg-gray-800 flex items-center justify-center text-lg font-bold text-gray-400">
-            {app.name[0]}
-          </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold truncate text-white">{app.name}</h3>
-          <p className="text-sm text-gray-400 line-clamp-2">{app.tagline}</p>
-          <span className="text-xs text-gray-600 mt-1 inline-block">
-            {app.category}
-          </span>
-        </div>
-      </div>
-    </a>
-  );
-}

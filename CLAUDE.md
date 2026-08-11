@@ -25,6 +25,30 @@ This is a **public repository**. All files, commits, and history are visible to 
 5. Visual design system: dark mode, custom Google Fonts, color palettes, hero variants (centered/split/minimal), per-section backgroundColor
 6. Multi-page sites supported (root + child pages like /faq, /contact, /privacy)
 
+### Product Boundary (read before adding capability)
+
+**Goal:** anyone who vibe-coded a tool can host, advertise, or run it on
+appai.info without registering their own domain.
+
+**AppAI is deliberately not Vercel.** It does not accept arbitrary user code,
+build tools on the user's behalf, or run infrastructure the user should own.
+Capability is expressed as a ladder — always place a request on the lowest rung
+that satisfies it:
+
+| User wants | Rung | Mechanism |
+|---|---|---|
+| A page describing a product | Hosted Page | `/p/{slug}` sections |
+| A tool they already deployed elsewhere | Wrapped tool | `iframe-tool` section — AppAI supplies the SEO shell, login state, locale and theme; the tool stays on the user's Vercel/CF Pages/Netlify/GH Pages |
+| A tool needing a backend, login, or quota | Connected tool | section + `apiBase: "/api/connect/{connector}"` and `"access": "login"` |
+| Persistent data, business rules, own schema | Universal App | `appai.app.json` manifest → review → isolated runtime at `/app/{appId}` |
+
+**The scope brake:** connectors hold secrets and live in
+`src/lib/connectors/registry.ts`, which is owner-maintained and NOT
+agent-writable. Agents reference a connector by name. Adding a genuinely new
+backend is an owner action, one entry, reused by every section after that.
+Do not propose changes that let published content reach new infrastructure
+without going through a connector or a reviewed Universal App release.
+
 ### Who Uses It
 
 - **AI agents** (primary): Create landing pages programmatically via API. See `AGENT_INSTRUCTIONS.md` for the full agent-facing spec.
@@ -55,7 +79,7 @@ This is a **public repository**. All files, commits, and history are visible to 
 - `/dashboard/` — Authenticated user area (English only)
 - `/admin/` — Admin panel (English only)
 - `/app/[appId]` — Universal launcher for authenticated, Organization-scoped isolated app runtimes (not localized)
-- `/p/[...segments]` — Hosted pages (own locale system, 30+ languages)
+- `/p/[...segments]` — Hosted pages (own locale system; accepts any BCP 47 `xx` / `xx-XX` code, 20 have display labels in the switcher)
 - `/api/` — API endpoints
 
 ## Project Docs
@@ -78,3 +102,11 @@ This file is the most important entry point for external AI agents. Keep it tigh
 - Always `npm run build` before pushing to catch errors
 - Dashboard/admin pages stay in English — do NOT add i18n
 - Hosted pages (`/p/`) have their own locale system — do NOT mix with platform i18n
+- The two locale sets are intentionally different sizes: platform UI is ours to
+  translate (9 locales), hosted-page locales are whatever the publishing agent
+  supplied (any BCP 47 code). Never assume they match — resolve across them with
+  `pickByLocale` in `src/lib/locale-match.ts` (exact → primary subtag → default)
+- Publisher-supplied strings (app name, tagline, section copy) are content, not
+  UI — they never belong in `src/messages/*.json`. They follow the visitor's
+  locale by reading the app's `HostedPage` row for that language (`title` is the
+  name, `tagline` the subtitle), falling back to the `App` columns

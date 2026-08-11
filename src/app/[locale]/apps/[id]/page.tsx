@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { db } from "@/lib/db";
 import { PlatformHeader } from "@/components/PlatformHeader";
+import { pickByLocale } from "@/lib/locale-match";
 import { getUniversalAppLaunchPath } from "@/lib/universal-apps/directory";
 import type { Metadata } from "next";
 
@@ -9,14 +10,29 @@ interface Props {
   params: Promise<{ id: string; locale: string }>;
 }
 
+/**
+ * The app's own copy in the visitor's language, when its hosted page was
+ * published in that language. `App` itself is single-language (TODO.md D2), so
+ * the hosted page is the only place per-locale copy exists today.
+ */
+async function loadLocalizedCopy(hostedPageSlug: string | null, locale: string) {
+  if (!hostedPageSlug) return undefined;
+  const variants = await db.hostedPage.findMany({
+    where: { slug: hostedPageSlug, isPublished: true },
+    select: { locale: true, isDefault: true, title: true, tagline: true, metaDescription: true },
+  });
+  return pickByLocale(variants, locale);
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, locale } = await params;
   const app = await db.app.findUnique({ where: { id } });
   if (!app) return {};
 
+  const localized = await loadLocalizedCopy(app.hostedPageSlug, locale);
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
-  const title = `${app.name} - AppAI`;
-  const description = app.tagline || undefined;
+  const title = `${localized?.title || app.name} - AppAI`;
+  const description = localized?.metaDescription || localized?.tagline || app.tagline || undefined;
   const image = app.logoUrl || undefined;
 
   return {
@@ -42,21 +58,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function AppDetailPage({ params }: Props) {
-  const { id } = await params;
-  const t = await getTranslations("appDetail");
+  const { id, locale } = await params;
+  const [t, ta] = await Promise.all([getTranslations("appDetail"), getTranslations("apps")]);
   const app = await db.app.findUnique({ where: { id } });
 
   if (!app || !app.isApproved) {
     notFound();
   }
 
+  const localized = await loadLocalizedCopy(app.hostedPageSlug, locale);
+  const name = localized?.title || app.name;
+  const tagline = localized?.tagline || app.tagline;
+  const categoryLabel = ta.has(`categories.${app.category}`)
+    ? ta(`categories.${app.category}`)
+    : app.category;
+
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
   const universalLaunchPath = getUniversalAppLaunchPath(app);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    name: app.name,
-    description: app.tagline || app.description || undefined,
+    name,
+    description: localized?.metaDescription || tagline || app.description || undefined,
     url: `${baseUrl}/${id}`,
     image: app.logoUrl || undefined,
     applicationCategory: app.category || "Application",
@@ -84,20 +107,20 @@ export default async function AppDetailPage({ params }: Props) {
           {app.logoUrl ? (
             <img
               src={app.logoUrl}
-              alt={app.name}
+              alt={name}
               className="w-20 h-20 rounded-2xl object-cover"
             />
           ) : (
             <div className="w-20 h-20 rounded-2xl bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-500">
-              {app.name[0]}
+              {name[0]}
             </div>
           )}
           <div>
-            <h1 className="text-3xl font-bold">{app.name}</h1>
-            <p className="text-lg text-gray-600 mt-1">{app.tagline}</p>
+            <h1 className="text-3xl font-bold">{name}</h1>
+            <p className="text-lg text-gray-600 mt-1">{tagline}</p>
             <div className="flex gap-2 mt-2">
               <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
-                {app.category}
+                {categoryLabel}
               </span>
               {app.tags.map((tag) => (
                 <span

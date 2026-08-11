@@ -1,5 +1,29 @@
 # TODO — AppAI Project Roadmap
 
+## Product decisions (settled — do not re-litigate)
+
+Recorded so future work stops re-deriving them. The boundary itself lives in
+`CLAUDE.md` → Product Boundary.
+
+| # | Decision | Ruling |
+|---|---|---|
+| D1 | Are app names translated? | **Yes, when the app published a page in that language.** A visitor reading Traditional Chinese sees the app's Traditional Chinese name — the `HostedPage.title` for that locale. Falls back to `App.name` as submitted when no variant exists. (Considered and rejected: App Store convention of never translating brand names. On AppAI the "name" is publisher-supplied copy, not a trademark, and a directory of English names is unreadable to the audience the hosted page was written for.) |
+| D2 | Where does localized app copy live? | **`HostedPage` rows now, `App.translations` later.** `HostedPage` is already one row per locale, so apps with a hosted page get localized copy for free. Apps without one stay single-language until D2b ships. |
+| D3 | Platform has 9 locales, hosted pages accept any BCP 47 code | **Keep them different.** Platform UI is ours to translate; hosted-page locales come from the publishing agent. Resolve across the gap with `pickByLocale` (exact → primary subtag → default) rather than unifying. |
+
+### Open decisions (need an owner call)
+
+- [ ] **D2b — add `App.translations`** JSON column + `createAppSchema` support + `AGENT_INSTRUCTIONS.md`, so agents can publish multi-language name/tagline for apps with no hosted page. Needs a Prisma migration against production.
+- [ ] **D4 — locale in the Universal App runtime contract.** An artifact is someone else's code; AppAI cannot translate it. Proposal: pass the visitor locale as runtime context and declare it in `appai.app.json`, artifact owns its strings. Decide before more artifacts ship or they all hardcode English.
+- [ ] **D5 — `iframe-tool` depends on infrastructure we do not control.** If the user's Vercel deploy dies the AppAI page shows a broken frame and reads as our outage. Proposal: health check + graceful degradation (keep the landing content, hide the frame, notify the owner). Real scope addition, not free.
+- [ ] **D6 — Universal App review is manual.** Every release needs admin approval. That is the scope brake that keeps AppAI from becoming a general code host, but it is also the growth ceiling. Revisit once more than a handful of artifacts exist.
+
+## Platform i18n — directory localization
+
+- [x] Translate app categories + landing-page badge across all 9 platform locales
+- [x] Add `pickByLocale` (`src/lib/locale-match.ts`) and source directory copy from the visitor's `HostedPage` locale variant
+- [ ] Audit remaining platform surfaces for publisher-supplied English (D2b covers apps with no hosted page)
+
 ## Universal App Runtime — Simpleshop migration
 
 - [x] Correct the boundary: AppAI is the Universal carrier; app UI/API/business schema stay in each app repo

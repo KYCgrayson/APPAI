@@ -62,7 +62,30 @@
     "noAppsCategory": "在 {category} 中找不到應用程式。請嘗試其他分類。",
     "noAppsDefault": "成為第一個提交應用程式的人！",
     "universalApp": "通用應用程式",
-    "loginRequired": "需要登入"
+    "loginRequired": "需要登入",
+    "landingPage": "登陸頁",
+    "categories": {
+      "ALL": "全部",
+      "WRITING": "寫作",
+      "CODING": "程式開發",
+      "DESIGN": "設計",
+      "AUTOMATION": "自動化",
+      "PRODUCTIVITY": "生產力",
+      "SOCIAL": "社群",
+      "FINANCE": "金融",
+      "DATABASE": "資料庫",
+      "HEALTH": "健康",
+      "EDUCATION": "教育",
+      "FOOD": "美食",
+      "TRAVEL": "旅遊",
+      "ENTERTAINMENT": "娛樂",
+      "GAMES": "遊戲",
+      "MEDIA": "媒體",
+      "UTILITIES": "實用工具",
+      "COMMERCE": "電商",
+      "INVENTORY": "庫存管理",
+      "OTHER": "其他"
+    }
   },
   "appDetail": {
     "apps": "應用程式",
