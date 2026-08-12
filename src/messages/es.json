@@ -9,7 +9,8 @@
     "browse": "Explorar",
     "signIn": "Iniciar sesión",
     "signOut": "Cerrar sesión",
-    "account": "Cuenta"
+    "account": "Cuenta",
+    "signedIn": "Sesión iniciada"
   },
   "home": {
     "heroTitle1": "Tu app de IA merece",

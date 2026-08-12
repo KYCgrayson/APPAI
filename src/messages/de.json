@@ -9,7 +9,8 @@
     "browse": "Durchsuchen",
     "signIn": "Anmelden",
     "signOut": "Abmelden",
-    "account": "Konto"
+    "account": "Konto",
+    "signedIn": "Angemeldet"
   },
   "home": {
     "heroTitle1": "Deine KI-App verdient",

@@ -1,48 +1,18 @@
 import { notFound, redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { getTranslations } from "next-intl/server";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { AppAIBadge } from "@/components/AppAIBadge";
 import { PageRenderer } from "@/templates/shared/PageRenderer";
+import { matchPreferredLocale, parseAcceptLanguage } from "@/lib/accept-language";
 import { parsePageSegments, buildPagePath } from "@/lib/parse-page-segments";
 import { checkIframeToolUrl } from "@/lib/iframe-tool-allowlist";
+import { getPlatformLocale } from "@/lib/platform-locale";
 import type { Metadata } from "next";
 
 interface Props {
   params: Promise<{ segments: string[] }>;
-}
-
-/**
- * Parse Accept-Language header and return ordered locale preferences.
- * e.g. "ja,en-US;q=0.9,en;q=0.8" → ["ja", "en-US", "en"]
- */
-function parseAcceptLanguage(header: string | null): string[] {
-  if (!header) return [];
-  return header
-    .split(",")
-    .map((part) => {
-      const [locale, q] = part.trim().split(";q=");
-      return { locale: locale.trim(), quality: q ? parseFloat(q) : 1 };
-    })
-    .sort((a, b) => b.quality - a.quality)
-    .map((item) => item.locale);
-}
-
-/**
- * Match browser language preferences against available locales.
- * Tries exact match first (e.g. "zh-CN"), then base language (e.g. "zh" → "zh-CN").
- */
-function matchLocale(preferred: string[], available: string[]): string | null {
-  for (const pref of preferred) {
-    // Exact match
-    if (available.includes(pref)) return pref;
-    // Base language match: "en-US" → try "en"
-    const base = pref.split("-")[0];
-    if (available.includes(base)) return base;
-    // Reverse: browser sends "zh", we have "zh-CN"
-    const regionMatch = available.find((a) => a.startsWith(base + "-"));
-    if (regionMatch) return regionMatch;
-  }
-  return null;
 }
 
 function extractLogos(page: any): { headerLogo: string | null; heroLogo: string | null } {
@@ -293,6 +263,12 @@ export default async function HostedPage({ params }: Props) {
     url.searchParams.set("color", themeColor);
     if (rootPage.darkMode) url.searchParams.set("theme", "dark");
 
+    // The badge is AppAI's own chrome rather than publisher content, so it
+    // follows the visitor's platform language — the page's own locale system
+    // governs the publisher's copy inside the iframe, not our shell.
+    const chromeLocale = await getPlatformLocale();
+    const tc = await getTranslations({ locale: chromeLocale, namespace: "common" });
+
     return (
       <div style={{ position: "fixed", inset: 0, backgroundColor: rootPage.darkMode ? "#000" : "#fff" }}>
         <iframe
@@ -303,6 +279,18 @@ export default async function HostedPage({ params }: Props) {
           sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-popups allow-popups-to-escape-sandbox"
           referrerPolicy="strict-origin-when-cross-origin"
           style={{ width: "100%", height: "100%", border: 0, display: "block" }}
+        />
+        {/* Without this the fullscreen view has no header and no footer: no way
+            back to the directory, and no signal about whether you are signed in
+            when the tool itself is login-gated. */}
+        <AppAIBadge
+          signedIn={isLoggedIn}
+          dark={rootPage.darkMode}
+          labels={{
+            browse: tc("browseApps"),
+            signIn: tc("signIn"),
+            signedIn: tc("signedIn"),
+          }}
         />
       </div>
     );
@@ -328,7 +316,7 @@ export default async function HostedPage({ params }: Props) {
 
         if (variants.length > 1) {
           const available = variants.map((v) => v.locale);
-          const matched = matchLocale(preferred, available);
+          const matched = matchPreferredLocale(preferred, available);
           const defaultLocale = variants.find((v) => v.isDefault)?.locale || variants[0]?.locale;
 
           // Only redirect if matched locale differs from default

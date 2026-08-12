@@ -9,7 +9,8 @@
     "browse": "Parcourir",
     "signIn": "Se connecter",
     "signOut": "Se déconnecter",
-    "account": "Compte"
+    "account": "Compte",
+    "signedIn": "Connecté"
   },
   "home": {
     "heroTitle1": "Votre app IA mérite",

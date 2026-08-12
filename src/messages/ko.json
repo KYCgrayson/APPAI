@@ -9,7 +9,8 @@
     "browse": "둘러보기",
     "signIn": "로그인",
     "signOut": "로그아웃",
-    "account": "계정"
+    "account": "계정",
+    "signedIn": "로그인됨"
   },
   "home": {
     "heroTitle1": "당신의 AI 앱은",

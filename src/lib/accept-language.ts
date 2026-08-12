@@ -47,3 +47,20 @@ export function matchSupportedLocale<T extends string>(
 
   return supported.find((l) => l.toLowerCase().split("-")[0] === primary) ?? null;
 }
+
+/**
+ * First supported locale matching an ordered preference list, e.g. the output
+ * of `parseAcceptLanguage`. Each preference is tried through all three tiers
+ * before moving on, so a visitor's first choice wins over a closer match to
+ * their second.
+ */
+export function matchPreferredLocale<T extends string>(
+  preferred: readonly string[],
+  supported: readonly T[],
+): T | null {
+  for (const pref of preferred) {
+    const match = matchSupportedLocale(pref, supported);
+    if (match) return match;
+  }
+  return null;
+}

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { AccountControls } from "@/components/AccountControls";
@@ -333,23 +335,31 @@ export default async function HostedPageLayout({ params, children }: Props) {
             )}
           </div>
         )}
+        {/* The header belongs to the publisher, so this is a visitor's only
+            route back to AppAI. It used to be grey micro-text opening a new tab
+            on the marketing home page — which is not "going back" at all. Now
+            it is a same-tab link into the directory, weighted enough to find
+            without hunting, still clearly subordinate to the publisher's own
+            footer links above. */}
         <div className="text-center text-sm text-gray-400">
-          {externalCanonical ? (
-            <span className="inline-flex flex-wrap justify-center items-center gap-x-2">
+          <Link
+            href="/apps"
+            className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-4 py-2 text-gray-600 transition-colors hover:border-gray-300 hover:text-gray-900"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/appai-logo2.png" alt="" aria-hidden className="h-4 w-4 rounded" />
+            <span className="font-medium">AppAI</span>
+            <span aria-hidden className="text-gray-300">|</span>
+            <span>Browse more tools</span>
+          </Link>
+          {externalCanonical && (
+            <div className="mt-3 inline-flex w-full flex-wrap justify-center items-center gap-x-2 text-gray-400">
               <span>Landing page</span>
-              <span aria-hidden>·</span>
-              <a href="https://appai.info" target="_blank" rel="noopener noreferrer" className="hover:text-gray-600">
-                Hosted on AppAI
-              </a>
               <span aria-hidden>·</span>
               <a href={externalCanonical.url} target="_blank" rel="noopener" className="hover:text-gray-600">
                 {externalCanonical.host}
               </a>
-            </span>
-          ) : (
-            <a href="https://appai.info" target="_blank" rel="noopener noreferrer" className="hover:text-gray-600">
-              Hosted on AppAI
-            </a>
+            </div>
           )}
         </div>
       </footer>

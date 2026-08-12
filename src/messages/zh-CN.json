@@ -9,7 +9,8 @@
     "browse": "浏览",
     "signIn": "登录",
     "signOut": "退出登录",
-    "account": "账户"
+    "account": "账户",
+    "signedIn": "已登录"
   },
   "home": {
     "heroTitle1": "您的 AI 应用值得",

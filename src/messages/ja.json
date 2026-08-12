@@ -9,7 +9,8 @@
     "browse": "探す",
     "signIn": "ログイン",
     "signOut": "ログアウト",
-    "account": "アカウント"
+    "account": "アカウント",
+    "signedIn": "ログイン中"
   },
   "home": {
     "heroTitle1": "あなたのAIアプリにふさわしい",

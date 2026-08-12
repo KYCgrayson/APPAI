@@ -9,7 +9,8 @@
     "browse": "Browse",
     "signIn": "Sign in",
     "signOut": "Sign out",
-    "account": "Account"
+    "account": "Account",
+    "signedIn": "Signed in"
   },
   "home": {
     "heroTitle1": "Your AI App deserves",
