@@ -254,6 +254,45 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
     setPhase("editing");
   };
 
+  /**
+   * Write the current run into the recents list.
+   *
+   * Called twice: once when the transcript first exists (so ASR and
+   * translation survive an abandoned run) and again when a render finishes.
+   * The second call is what makes reopening useful — the first one can only
+   * store the default style, since the user has not opened the editor yet,
+   * and without the render-time call a reopened project came back with the
+   * fonts and colours reset no matter what was actually burned.
+   *
+   * `id` must be identical across both calls or the second banks a duplicate
+   * instead of updating the first. `overrides` exists because the transcribe
+   * call runs in the same render that computes the new subtitles and style,
+   * before that state is committed.
+   */
+  const bankRecent = (overrides: Partial<RecentProject> = {}) => {
+    const id =
+      transcribeJobId ?? `${source.url}|${trim.start_sec}|${trim.end_sec}`;
+    // A render can outlive the transcribe job's 24h TTL, at which point the
+    // title is no longer fetchable — keep whatever the earlier call stored
+    // rather than overwriting it with null.
+    const previousTitle = loadRecents().find((r) => r.id === id)?.title ?? null;
+    setRecents(
+      saveRecent({
+        id,
+        savedAt: Date.now(),
+        title: transcribe.job?.result?.metadata?.title ?? previousTitle,
+        url: source.url,
+        trim,
+        targetLangs,
+        style,
+        subtitles,
+        translations,
+        transcribeJobId,
+        ...overrides,
+      }),
+    );
+  };
+
   // ── Persistence: survive page reloads (dev-server restarts force a full
   // reload and used to wipe the in-flight job → user came back to a blank
   // idle page while the backend had actually finished the work).
@@ -354,23 +393,16 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
       setPhase("editing");
       // Bank the transcript as soon as it exists, not at "done": the ASR and
       // translation are what cost quota, and an abandoned run should not
-      // throw them away.
-      setRecents(
-        saveRecent({
-          id: transcribeJobId ?? `${source.url}|${trim.start_sec}|${trim.end_sec}`,
-          savedAt: Date.now(),
-          title: r.metadata?.title ?? null,
-          url: source.url,
-          trim,
-          targetLangs,
-          style: nextStyle,
-          subtitles: subtitles.length ? subtitles : r.segments,
-          translations: Object.keys(translations).length
-            ? translations
-            : (r.translations ?? {}),
-          transcribeJobId,
-        }),
-      );
+      // throw them away. The style stored here is only the default — the
+      // render-completion call below replaces it with what was burned.
+      bankRecent({
+        title: r.metadata?.title ?? null,
+        style: nextStyle,
+        subtitles: subtitles.length ? subtitles : r.segments,
+        translations: Object.keys(translations).length
+          ? translations
+          : (r.translations ?? {}),
+      });
     } else if (tStatus === "failed" && transcribe.job?.error) {
       setError(transcribe.job.error);
       setPhase("error");
@@ -392,6 +424,10 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
     setPrevRStatus(rStatus);
     if (rStatus === "completed") {
       setPhase("done");
+      // Update the entry with the style that was actually burned, so
+      // reopening this project to restyle starts from what you last shipped
+      // rather than from the defaults.
+      bankRecent();
     } else if (rStatus === "failed" && render.job?.error) {
       setError(render.job.error);
       setPhase("error");
