@@ -70,6 +70,7 @@ const DEFAULT_STRINGS = {
   resultHeading: "Done!",
   resultDownloadHint: "Click to save the rendered video.",
   startOverButton: "Start over",
+  editingBackButton: "← Back to recent projects",
   errorHeading: "Something went wrong",
   errorRetryButton: "Try again",
   cancelButton: "Cancel",
@@ -813,6 +814,21 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
                   {submitError}
                 </p>
               )}
+              {/* The only way out of `editing` that is not "render". Without
+                  it this phase is a dead end: it is persisted across reloads
+                  and restored on mount, and the recent-projects list renders
+                  only in `idle` — so a user who left mid-edit came back to
+                  `editing` on every visit with no route back to their own
+                  projects. Reopening a recent project lands here too, which
+                  made using that feature the way to lose access to it. */}
+              <button
+                type="button"
+                onClick={reset}
+                disabled={submitting}
+                className={`mt-3 w-full text-sm underline disabled:opacity-50 hover:opacity-70 ${subColor}`}
+              >
+                {t.editingBackButton}
+              </button>
             </div>
           </div>
         )}
