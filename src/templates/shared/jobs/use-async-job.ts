@@ -7,6 +7,12 @@ import {
   type Problem,
   TERMINAL_STATUSES,
 } from "./types";
+import {
+  POLL_TIMEOUT_MS,
+  isJobStalled,
+  jobProgressKey,
+  jobStatusUrl,
+} from "./polling-policy";
 
 interface UseAsyncJobArgs {
   apiBase: string;
@@ -18,7 +24,9 @@ interface UseAsyncJobResult<TResult> {
   job: Job<TResult> | null;
   error: Problem | null;
   isPolling: boolean;
+  isStalled: boolean;
   cancel: () => Promise<void>;
+  resume: () => void;
 }
 
 const DEFAULT_POLL_MS = 2000;
@@ -42,6 +50,8 @@ export function useAsyncJob<TResult = JobResult>({
   const [job, setJob] = useState<Job<TResult> | null>(null);
   const [error, setError] = useState<Problem | null>(null);
   const [isPolling, setIsPolling] = useState<boolean>(jobId !== null);
+  const [isStalled, setIsStalled] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   // React 19 idiom: reset state when a key prop changes by comparing during
   // render. Avoids `setState`-in-effect cascading renders.
@@ -50,6 +60,7 @@ export function useAsyncJob<TResult = JobResult>({
     setJob(null);
     setError(null);
     setIsPolling(jobId !== null);
+    setIsStalled(false);
   }
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -60,13 +71,20 @@ export function useAsyncJob<TResult = JobResult>({
 
     let unmounted = false;
     let failures = 0;
+    let lastProgressKey: string | null = null;
+    let lastProgressAt = Date.now();
 
     const tick = async () => {
       const controller = new AbortController();
       abortRef.current = controller;
+      let timedOut = false;
+      const timeout = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, POLL_TIMEOUT_MS);
       try {
         const res = await fetch(
-          `${apiBase}/jobs/${encodeURIComponent(jobId)}`,
+          jobStatusUrl(apiBase, jobId),
           { signal: controller.signal },
         );
         if (unmounted) return;
@@ -76,6 +94,15 @@ export function useAsyncJob<TResult = JobResult>({
           setJob(body);
           failures = 0;
           if (TERMINAL_STATUSES.has(body.status)) {
+            setIsPolling(false);
+            return;
+          }
+          const progressKey = jobProgressKey(body);
+          if (progressKey !== lastProgressKey) {
+            lastProgressKey = progressKey;
+            lastProgressAt = Date.now();
+          } else if (isJobStalled(lastProgressAt)) {
+            setIsStalled(true);
             setIsPolling(false);
             return;
           }
@@ -96,11 +123,19 @@ export function useAsyncJob<TResult = JobResult>({
         }
       } catch (e) {
         if (unmounted) return;
-        if (e instanceof DOMException && e.name === "AbortError") return;
+        if (e instanceof DOMException && e.name === "AbortError" && !timedOut)
+          return;
         failures += 1;
+      } finally {
+        clearTimeout(timeout);
       }
 
       if (unmounted) return;
+      if (isJobStalled(lastProgressAt)) {
+        setIsStalled(true);
+        setIsPolling(false);
+        return;
+      }
       const delay =
         failures > 0
           ? Math.min(pollIntervalMs * 2 ** failures, MAX_BACKOFF_MS)
@@ -121,7 +156,7 @@ export function useAsyncJob<TResult = JobResult>({
         abortRef.current = null;
       }
     };
-  }, [apiBase, jobId, pollIntervalMs]);
+  }, [apiBase, jobId, pollIntervalMs, attempt]);
 
   const cancel = useCallback(async () => {
     if (!jobId) return;
@@ -135,7 +170,7 @@ export function useAsyncJob<TResult = JobResult>({
     }
     setIsPolling(false);
     try {
-      await fetch(`${apiBase}/jobs/${encodeURIComponent(jobId)}`, {
+      await fetch(jobStatusUrl(apiBase, jobId), {
         method: "DELETE",
       });
     } catch {
@@ -144,5 +179,13 @@ export function useAsyncJob<TResult = JobResult>({
     setJob((j) => (j ? { ...j, status: "cancelled" } : j));
   }, [apiBase, jobId]);
 
-  return { job, error, isPolling, cancel };
+  const resume = useCallback(() => {
+    if (!jobId) return;
+    setError(null);
+    setIsStalled(false);
+    setIsPolling(true);
+    setAttempt((n) => n + 1);
+  }, [jobId]);
+
+  return { job, error, isPolling, isStalled, cancel, resume };
 }

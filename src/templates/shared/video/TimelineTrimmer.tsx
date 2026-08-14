@@ -14,7 +14,7 @@ export interface TimelineTrimmerStrings {
 interface Props {
   value: TrimValue;
   onChange: (next: TrimValue) => void;
-  maxDurationSec: number;
+  maxDurationSec?: number;
   darkMode?: boolean;
   disabled?: boolean;
   strings?: TimelineTrimmerStrings;
@@ -97,7 +97,7 @@ export function TimelineTrimmer({
   };
 
   const duration = value.end_sec - value.start_sec;
-  const tooLong = duration > maxDurationSec;
+  const tooLong = maxDurationSec !== undefined && duration > maxDurationSec;
   const invalid = duration <= 0;
 
   const inputBase =
@@ -107,7 +107,7 @@ export function TimelineTrimmer({
     : "";
   const labelColor = darkMode ? "text-gray-400" : "text-gray-600";
   const errorMsg = tooLong
-    ? t.rangeTooLong.replace("{max}", String(Math.floor(maxDurationSec / 60)))
+    ? t.rangeTooLong.replace("{max}", String(Math.floor(maxDurationSec! / 60)))
     : invalid
       ? t.rangeInvalid
       : null;

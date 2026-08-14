@@ -56,6 +56,7 @@ const DEFAULT_STRINGS = {
   heading: "YouTube Subtitle Studio",
   description: "Paste a YouTube link, get a translated subtitled video.",
   trimSection: "Trim (≤ {max} min)",
+  trimSectionUnlimited: "Trim",
   translateSection: "Translate into",
   translateHint: "Pick zero or more target languages.",
   startButton: "Start",
@@ -85,6 +86,9 @@ const DEFAULT_STRINGS = {
   recentHeading: "Recent projects",
   recentHint: "Reopen to restyle and render again — no new transcription, so it does not use your daily video.",
   recentSubtitleCount: "subtitles",
+  detectedLanguage: "Detected source language: {language}",
+  stalled: "Progress appears to be stuck. You can cancel or check the same job again.",
+  checkAgain: "Check again",
 } as const;
 
 /**
@@ -201,17 +205,18 @@ interface Props {
   darkMode?: boolean;
 }
 
-export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
+export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = false }: Props & { isAdmin?: boolean }) {
   const t = { ...DEFAULT_STRINGS, ...data.strings };
   const apiBase = data.apiBase.replace(/\/$/, "");
-  const maxDurationSec = data.maxDurationSec ?? 300;
+  const standardMaxDurationSec = data.maxDurationSec ?? 300;
+  const maxDurationSec = isAdmin ? undefined : standardMaxDurationSec;
   const supportedLanguages = data.supportedLanguages ?? DEFAULT_LANGUAGES;
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [source, setSource] = useState<SourceValue>(EMPTY_SOURCE);
   const [trim, setTrim] = useState<TrimValue>({
     start_sec: 0,
-    end_sec: maxDurationSec,
+    end_sec: standardMaxDurationSec,
   });
   const [targetLangs, setTargetLangs] = useState<LanguageCode[]>(["en"]);
 
@@ -325,7 +330,6 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
     } catch {
       /* corrupt state — start fresh */
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
     try {
@@ -407,6 +411,9 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
     } else if (tStatus === "failed" && transcribe.job?.error) {
       setError(transcribe.job.error);
       setPhase("error");
+    } else if (tStatus === "cancelled") {
+      setTranscribeJobId(null);
+      setPhase("idle");
     }
   }
 
@@ -432,6 +439,9 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
     } else if (rStatus === "failed" && render.job?.error) {
       setError(render.job.error);
       setPhase("error");
+    } else if (rStatus === "cancelled") {
+      setRenderJobId(null);
+      setPhase("editing");
     }
   }
 
@@ -521,7 +531,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
   const reset = () => {
     setPhase("idle");
     setSource(EMPTY_SOURCE);
-    setTrim({ start_sec: 0, end_sec: maxDurationSec });
+    setTrim({ start_sec: 0, end_sec: standardMaxDurationSec });
     setTargetLangs(["en"]);
     setTranscribeJobId(null);
     setRenderJobId(null);
@@ -539,7 +549,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
   };
 
   const trimDuration = trim.end_sec - trim.start_sec;
-  const trimValid = trimDuration > 0 && trimDuration <= maxDurationSec;
+  const trimValid = trimDuration > 0 && (maxDurationSec === undefined || trimDuration <= maxDurationSec);
   const canStart =
     phase === "idle" && source.isValid && trimValid && !submitting;
 
@@ -615,10 +625,9 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
               <>
                 <div className="space-y-2">
                   <h3 className={`text-sm font-medium ${labelColor}`}>
-                    {t.trimSection.replace(
-                      "{max}",
-                      String(Math.floor(maxDurationSec / 60)),
-                    )}
+                    {maxDurationSec === undefined
+                      ? t.trimSectionUnlimited
+                      : t.trimSection.replace("{max}", String(Math.floor(maxDurationSec / 60)))}
                   </h3>
                   <YouTubeTrimPicker
                     url={source.url}
@@ -700,6 +709,8 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
             onCancel={
               phase === "transcribing" ? transcribe.cancel : render.cancel
             }
+            isStalled={phase === "transcribing" ? transcribe.isStalled : render.isStalled}
+            onResume={phase === "transcribing" ? transcribe.resume : render.resume}
             strings={{
               cancel: t.cancelButton,
               queued: t.stageQueued,
@@ -708,6 +719,8 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
               translating: t.stageTranslating,
               rendering: t.stageRendering,
               uploading: t.stageFinalizing,
+              stalled: t.stalled,
+              checkAgain: t.checkAgain,
             }}
           />
         )}
@@ -718,6 +731,14 @@ export function VideoSubtitleSection({ data, themeColor, darkMode }: Props) {
             <h3 className={`text-lg font-semibold ${labelColor}`}>
               {t.editingHeading}
             </h3>
+            {transcribe.job?.result?.language && (
+              <p className={`text-sm ${subColor}`}>
+                {t.detectedLanguage.replace(
+                  "{language}",
+                  langLabel(transcribe.job.result.language),
+                )}
+              </p>
+            )}
 
             {transcribe.job?.result?.clip_url ? (
               /* Live preview: real clip + subtitle overlay. Scrub the native
@@ -1110,7 +1131,7 @@ function YouTubeTrimPicker({
   url: string;
   trim: TrimValue;
   onChange: (next: TrimValue) => void;
-  maxDurationSec: number;
+  maxDurationSec?: number;
   themeColor: string;
   darkMode?: boolean;
   disabled?: boolean;
@@ -1185,7 +1206,7 @@ function YouTubeTrimPicker({
     ev.stopPropagation();
     const s = Math.round(currentTime * 10) / 10;
     const end = trim.end_sec > s ? trim.end_sec : s + 60;
-    onChange({ start_sec: s, end_sec: Math.min(end, s + maxDurationSec) });
+    onChange({ start_sec: s, end_sec: maxDurationSec === undefined ? end : Math.min(end, s + maxDurationSec) });
   };
   const setEnd = (ev: React.MouseEvent) => {
     ev.preventDefault();
@@ -1193,7 +1214,7 @@ function YouTubeTrimPicker({
     const e = Math.round(currentTime * 10) / 10;
     const start =
       trim.start_sec < e ? trim.start_sec : Math.max(0, e - 60);
-    onChange({ start_sec: Math.max(start, e - maxDurationSec), end_sec: e });
+    onChange({ start_sec: maxDurationSec === undefined ? start : Math.max(start, e - maxDurationSec), end_sec: e });
   };
 
   return (

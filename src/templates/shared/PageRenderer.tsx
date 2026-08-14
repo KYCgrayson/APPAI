@@ -90,8 +90,9 @@ function renderSection(
   themeColorSecondary: string,
   darkMode: boolean,
   page: PageData,
+  isAdmin = false,
 ) {
-  const props = { data: section.data as never, themeColor, themeColorSecondary, darkMode };
+  const props = { data: section.data as never, themeColor, themeColorSecondary, darkMode, isAdmin };
   const darkBg = darkMode ? "#111827" : undefined;
   const darkBgAlt = darkMode ? "#1f2937" : "#f9fafb";
   const bg = section.data?.backgroundColor || (index % 2 === 1 ? darkBgAlt : darkBg);
@@ -156,7 +157,7 @@ function renderSection(
       content = <MediaDownloaderSection data={section.data as never} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} />;
       break;
     case "video-subtitle":
-      content = <VideoSubtitleSection data={section.data as never} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} />;
+      content = <VideoSubtitleSection data={section.data as never} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} isAdmin={isAdmin} />;
       break;
     case "tool":
       content = <ToolSection {...props} />;
@@ -242,9 +243,11 @@ export type { NavItem } from "@/lib/site-nav";
 export function PageRenderer({
   page,
   isLoggedIn = false,
+  isAdmin = false,
 }: {
   page: PageData;
   isLoggedIn?: boolean;
+  isAdmin?: boolean;
 }) {
   const themeColor = page.themeColor || "#000000";
   const themeColorSecondary = page.themeColorSecondary || autoSecondaryColor(themeColor);
@@ -326,7 +329,7 @@ export function PageRenderer({
             </div>
           );
         }
-        return renderSection(section, index, themeColor, themeColorSecondary, darkMode, page);
+        return renderSection(section, index, themeColor, themeColorSecondary, darkMode, page, isAdmin);
       })}
     </div>
   );

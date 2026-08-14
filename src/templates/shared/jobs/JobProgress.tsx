@@ -12,6 +12,8 @@ export interface JobProgressStrings {
   translating?: string;
   rendering?: string;
   uploading?: string;
+  stalled?: string;
+  checkAgain?: string;
 }
 
 interface Props {
@@ -19,6 +21,8 @@ interface Props {
   themeColor: string;
   darkMode?: boolean;
   onCancel?: () => void;
+  isStalled?: boolean;
+  onResume?: () => void;
   strings?: JobProgressStrings;
 }
 
@@ -38,6 +42,8 @@ export function JobProgress({
   themeColor,
   darkMode,
   onCancel,
+  isStalled,
+  onResume,
   strings,
 }: Props) {
   const stage: ProgressStage = job?.progress?.stage ?? "queued";
@@ -109,6 +115,18 @@ export function JobProgress({
         >
           {strings?.cancel ?? "Cancel"}
         </button>
+      )}
+      {isStalled && onResume && (
+        <div className="text-xs" style={{ color: textColor }}>
+          <span>{strings?.stalled ?? "Progress appears to be stuck."}</span>
+          <button
+            type="button"
+            onClick={onResume}
+            className="ml-3 underline hover:opacity-70"
+          >
+            {strings?.checkAgain ?? "Check again"}
+          </button>
+        </div>
       )}
     </div>
   );

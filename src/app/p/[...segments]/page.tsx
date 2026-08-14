@@ -239,6 +239,8 @@ export default async function HostedPage({ params }: Props) {
 
   const session = await auth();
   const isLoggedIn = !!session?.user?.id;
+  const isAdmin =
+    ((session as unknown as { role?: string })?.role ?? "USER") === "ADMIN";
 
   const { slug, locale: explicitLocale, subpage, childSlug, toolOrder } = parsed;
 
@@ -455,7 +457,7 @@ export default async function HostedPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       {page.customCss && <style>{page.customCss}</style>}
-      <PageRenderer page={page} isLoggedIn={isLoggedIn} />
+      <PageRenderer page={page} isLoggedIn={isLoggedIn} isAdmin={isAdmin} />
     </>
   );
 }

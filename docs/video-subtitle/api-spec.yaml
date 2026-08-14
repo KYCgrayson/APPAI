@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Video Subtitle Service API
-  version: 1.1.0
+  version: 1.1.1
   summary: Async pipeline for transcribing, translating, and burning subtitles into video.
   description: |
     Single source of truth for the contract between `appai.info` (frontend
@@ -210,7 +210,7 @@ components:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
     UnprocessableEntity:
-      description: Validation failed (e.g. trim > 600s, unsupported language).
+      description: Validation failed (e.g. a standard caller trim > 600s, unsupported language).
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
@@ -274,7 +274,8 @@ components:
         start_sec: { type: number, minimum: 0 }
         end_sec:   { type: number, minimum: 1 }
       description: |
-        `end_sec - start_sec` MUST be > 0 and ≤ 600. Server returns
+        `end_sec - start_sec` MUST be > 0. Standard callers are limited to 600;
+        trusted admin callers may exceed this. Server returns
         `422 Problem{code=source_too_long}` if violated.
 
     # ─────────────────────── Subtitle ───────────────────────
@@ -545,7 +546,7 @@ components:
           enum:
             - validation_failed
             - source_unavailable      # YouTube returned 404 / region-locked
-            - source_too_long         # exceeds 600s after trim
+            - source_too_long         # standard caller exceeds 600s after trim
             - asr_failed
             - translation_failed
             - render_failed
