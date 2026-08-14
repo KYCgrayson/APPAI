@@ -325,6 +325,7 @@ export function PageRenderer({
                 heading={section.data?.heading || page.title}
                 description={section.data?.description || page.tagline || undefined}
                 themeColor={themeColor}
+                locale={page.locale ?? "en"}
               />
             </div>
           );

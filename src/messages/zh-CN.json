@@ -100,7 +100,10 @@
   "login": {
     "signInDescription": "登录以访问和管理您的页面与应用",
     "signInGoogle": "使用 Google 登录",
-    "termsNotice": "登录即表示您同意我们的服务条款"
+    "termsNotice": "登录即表示您同意我们的服务条款",
+    "gateHeading": "登录后即可使用「{tool}」",
+    "gateHeadingGeneric": "请先登录",
+    "gateDescription": "使用这项工具需要先登录，完全免费。"
   },
   "logout": {
     "title": "要退出 AppAI 吗？",

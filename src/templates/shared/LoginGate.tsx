@@ -1,21 +1,40 @@
+import { getTranslations } from "next-intl/server";
+
 import { signIn } from "@/lib/auth";
+import { locales, type Locale } from "@/i18n/routing";
 
 /**
  * Platform login gate. Rendered in place of a section that declares
  * `data.access = "login"` when the visitor is anonymous. Part of the
  * interactive-tools gating primitive (docs/interactive-tools-architecture.md).
+ *
+ * The gate follows the *page's* locale rather than the visitor's platform
+ * language: it sits inline on the publisher's page and wraps the publisher's
+ * own heading and description, so borrowing the shell's language would print
+ * a half-translated sentence around them. (The fullscreen AppAIBadge makes the
+ * opposite call for the opposite reason — it frames the tool, it isn't in it.)
  */
-export function LoginGate({
+export async function LoginGate({
   redirectTo,
   heading,
   description,
   themeColor = "#2563eb",
+  locale = "en",
 }: {
   redirectTo: string;
   heading?: string;
   description?: string;
   themeColor?: string;
+  locale?: string;
 }) {
+  // A page may carry a locale the platform has no messages for; next-intl
+  // throws on an unknown locale, which would take the whole page down rather
+  // than just untranslate this card.
+  const resolved: Locale = locales.includes(locale as Locale)
+    ? (locale as Locale)
+    : "en";
+  const t = await getTranslations({ locale: resolved, namespace: "login" });
+
   return (
     <section className="px-4 py-16 min-h-[70vh] flex items-center justify-center">
       <div className="max-w-md w-full mx-auto bg-white rounded-2xl shadow-lg p-8 text-center border border-gray-100">
@@ -24,11 +43,11 @@ export function LoginGate({
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
         </div>
-        <h2 className="text-2xl font-bold mb-2">
-          {heading ? `Sign in to use ${heading}` : "Sign in to continue"}
+        <h2 className="text-2xl font-bold mb-2 text-gray-900">
+          {heading ? t("gateHeading", { tool: heading }) : t("gateHeadingGeneric")}
         </h2>
         <p className="text-gray-600 mb-8">
-          {description ?? "You need to sign in to use this tool. It's free."}
+          {description ?? t("gateDescription")}
         </p>
         <form
           action={async () => {
@@ -47,7 +66,7 @@ export function LoginGate({
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
             </svg>
-            Sign in with Google
+            {t("signInGoogle")}
           </button>
         </form>
       </div>

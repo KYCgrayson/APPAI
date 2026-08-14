@@ -100,7 +100,10 @@
   "login": {
     "signInDescription": "登入以存取和管理您的頁面與應用程式",
     "signInGoogle": "使用 Google 登入",
-    "termsNotice": "登入即表示您同意我們的服務條款"
+    "termsNotice": "登入即表示您同意我們的服務條款",
+    "gateHeading": "登入後即可使用「{tool}」",
+    "gateHeadingGeneric": "請先登入",
+    "gateDescription": "使用這項工具需要先登入，完全免費。"
   },
   "logout": {
     "title": "要登出 AppAI 嗎？",

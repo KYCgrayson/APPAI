@@ -100,7 +100,10 @@
   "login": {
     "signInDescription": "Sign in to access and manage your pages and applications",
     "signInGoogle": "Sign in with Google",
-    "termsNotice": "By signing in, you agree to our Terms of Service"
+    "termsNotice": "By signing in, you agree to our Terms of Service",
+    "gateHeading": "Sign in to use {tool}",
+    "gateHeadingGeneric": "Sign in to continue",
+    "gateDescription": "You need to sign in to use this tool. It's free."
   },
   "logout": {
     "title": "Sign out of AppAI?",

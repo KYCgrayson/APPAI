@@ -100,7 +100,10 @@
   "login": {
     "signInDescription": "Inicia sesión para acceder y gestionar tus páginas y aplicaciones",
     "signInGoogle": "Iniciar sesión con Google",
-    "termsNotice": "Al iniciar sesión, aceptas nuestros términos de servicio"
+    "termsNotice": "Al iniciar sesión, aceptas nuestros términos de servicio",
+    "gateHeading": "Inicia sesión para usar {tool}",
+    "gateHeadingGeneric": "Inicia sesión para continuar",
+    "gateDescription": "Necesitas iniciar sesión para usar esta herramienta. Es gratis."
   },
   "logout": {
     "title": "¿Cerrar sesión en AppAI?",

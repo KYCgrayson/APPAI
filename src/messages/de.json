@@ -100,7 +100,10 @@
   "login": {
     "signInDescription": "Melde dich an, um deine Seiten und Anwendungen zu nutzen und zu verwalten",
     "signInGoogle": "Mit Google anmelden",
-    "termsNotice": "Durch die Anmeldung stimmst du unseren Nutzungsbedingungen zu"
+    "termsNotice": "Durch die Anmeldung stimmst du unseren Nutzungsbedingungen zu",
+    "gateHeading": "Melde dich an, um {tool} zu nutzen",
+    "gateHeadingGeneric": "Melde dich an, um fortzufahren",
+    "gateDescription": "Du musst dich anmelden, um dieses Tool zu nutzen. Es ist kostenlos."
   },
   "logout": {
     "title": "Von AppAI abmelden?",

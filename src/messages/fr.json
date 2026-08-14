@@ -100,7 +100,10 @@
   "login": {
     "signInDescription": "Connectez-vous pour accéder à vos pages et applications et les gérer",
     "signInGoogle": "Se connecter avec Google",
-    "termsNotice": "En vous connectant, vous acceptez nos conditions d'utilisation"
+    "termsNotice": "En vous connectant, vous acceptez nos conditions d'utilisation",
+    "gateHeading": "Connectez-vous pour utiliser {tool}",
+    "gateHeadingGeneric": "Connectez-vous pour continuer",
+    "gateDescription": "Vous devez vous connecter pour utiliser cet outil. C'est gratuit."
   },
   "logout": {
     "title": "Se déconnecter d’AppAI ?",

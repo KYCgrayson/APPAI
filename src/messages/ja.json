@@ -100,7 +100,10 @@
   "login": {
     "signInDescription": "サインインしてページとアプリを利用・管理する",
     "signInGoogle": "Googleでサインイン",
-    "termsNotice": "サインインすることで、利用規約に同意したものとみなされます"
+    "termsNotice": "サインインすることで、利用規約に同意したものとみなされます",
+    "gateHeading": "{tool}を利用するにはサインインしてください",
+    "gateHeadingGeneric": "続けるにはサインインしてください",
+    "gateDescription": "このツールの利用にはサインインが必要です。無料でご利用いただけます。"
   },
   "logout": {
     "title": "AppAI からログアウトしますか？",
