@@ -27,6 +27,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   },
   events: {
+    // Promotion has to run on every sign-in, not only at createUser. An
+    // account that already existed when ADMIN_EMAILS was configured would
+    // otherwise stay USER forever — silently losing the admin exemptions
+    // (uncapped clip length, no daily quota) it is supposed to have.
+    async signIn({ user }) {
+      if (user.id && user.email && isAdminEmail(user.email)) {
+        await db.user.updateMany({
+          where: { id: user.id, role: { not: "ADMIN" } },
+          data: { role: "ADMIN" },
+        });
+      }
+    },
     async createUser({ user }) {
       if (user.id && user.email) {
         const userId = user.id;
