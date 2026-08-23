@@ -271,6 +271,15 @@ export const ANNOTATION_PRESET_ORDER: AnnotationPreset[] = [
   "dark",
 ];
 
+/**
+ * How long a note card stays on screen.
+ *
+ * Fixed rather than inherited from the subtitle line it was created from: a
+ * line can run ten seconds or half of one, and a note that outstays the
+ * moment it explains reads as a card that never leaves.
+ */
+export const NOTE_DURATION_SEC = 3;
+
 /** Matches `_BUBBLE_FONT_RATIO` / `_BUBBLE_MIN_FONT_PX` in the burn. */
 export const BUBBLE_FONT_RATIO = 0.6;
 export const BUBBLE_MIN_FONT_PX = 16;

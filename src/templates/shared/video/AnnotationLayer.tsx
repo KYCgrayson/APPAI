@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import type { Annotation, AnnotationPreset } from "../jobs/types";
+import type { Annotation } from "../jobs/types";
 import {
   ANNOTATION_PRESETS,
   BUBBLE_FONT_RATIO,
@@ -32,7 +32,14 @@ export function AnnotationLayer({
   disabled,
 }: Props) {
   const boxRef = useRef<HTMLDivElement>(null);
-  const [dragging, setDragging] = useState<number | null>(null);
+  // The grab offset is kept alongside the index: without it the card's
+  // anchor snaps to the cursor on the first move, so grabbing a card by its
+  // edge makes it jump before it moves.
+  const [dragging, setDragging] = useState<{
+    index: number;
+    dx: number;
+    dy: number;
+  } | null>(null);
   // Same reference-canvas scaling the subtitle overlay uses, so a card in
   // the preview is the same fraction of the frame as it is in the burn.
   const [boxHeight, setBoxHeight] = useState(0);
@@ -62,16 +69,17 @@ export function AnnotationLayer({
     onChange(next);
   };
 
-  const moveTo = (index: number, clientX: number, clientY: number) => {
+  /** Pointer position as a fraction of the frame, or null before layout. */
+  const pointerFraction = (clientX: number, clientY: number) => {
     const rect = boxRef.current?.getBoundingClientRect();
-    if (!rect || rect.width === 0 || rect.height === 0) return;
-    // Clamped because the contract keeps x/y inside the frame — a card
-    // dragged past the edge would be rejected by the backend rather than
-    // simply looking wrong.
-    const x = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-    const y = Math.min(1, Math.max(0, (clientY - rect.top) / rect.height));
-    update(index, { x, y });
+    if (!rect || rect.width === 0 || rect.height === 0) return null;
+    return {
+      x: (clientX - rect.left) / rect.width,
+      y: (clientY - rect.top) / rect.height,
+    };
   };
+
+  const clamp = (v: number) => Math.min(1, Math.max(0, v));
 
   return (
     <div
@@ -80,21 +88,15 @@ export function AnnotationLayer({
       // Only the cards take pointer events, so the video's own controls
       // stay usable everywhere else.
       style={{ pointerEvents: "none" }}
-      onPointerMove={(e) => {
-        if (dragging === null) return;
-        e.preventDefault();
-        moveTo(dragging, e.clientX, e.clientY);
-      }}
-      onPointerUp={() => setDragging(null)}
-      onPointerLeave={() => setDragging(null)}
     >
       {annotations.map((note, i) => {
-        const active =
-          currentTimeSec >= note.start && currentTimeSec < note.end;
+        // A card shows exactly when the burn shows it. No exemption for the
+        // one being edited: that made a selected card sit on the frame for
+        // the whole video, which read as "notes never stop".
+        if (currentTimeSec < note.start || currentTimeSec >= note.end) {
+          return null;
+        }
         const isSelected = selected === i;
-        // Out of its time range a card is hidden, matching the burn — except
-        // the one being edited, which has to stay reachable while you set it up.
-        if (!active && !isSelected) return null;
         const preset = ANNOTATION_PRESETS[note.preset ?? "note"];
         return (
           <div
@@ -103,14 +105,42 @@ export function AnnotationLayer({
               if (disabled) return;
               e.preventDefault();
               e.stopPropagation();
+              const at = pointerFraction(e.clientX, e.clientY);
+              if (!at) return;
+              // Capture, so every move and the release land here even once
+              // the cursor is off the card. Without it the moves only
+              // arrived while the pointer happened to be over the card,
+              // which is what made dragging stutter.
+              e.currentTarget.setPointerCapture(e.pointerId);
               onSelect(i);
-              setDragging(i);
+              setDragging({ index: i, dx: at.x - note.x, dy: at.y - note.y });
             }}
+            onPointerMove={(e) => {
+              if (!dragging || dragging.index !== i) return;
+              const at = pointerFraction(e.clientX, e.clientY);
+              if (!at) return;
+              // Clamped because the contract bounds x/y — a card dragged
+              // past the edge would be rejected rather than merely look wrong.
+              update(i, {
+                x: clamp(at.x - dragging.dx),
+                y: clamp(at.y - dragging.dy),
+              });
+            }}
+            onPointerUp={(e) => {
+              if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+                e.currentTarget.releasePointerCapture(e.pointerId);
+              }
+              setDragging(null);
+            }}
+            onPointerCancel={() => setDragging(null)}
             className={`absolute whitespace-nowrap rounded ${
-              dragging === i ? "cursor-grabbing" : "cursor-grab"
+              dragging?.index === i ? "cursor-grabbing" : "cursor-grab"
             }`}
             style={{
               pointerEvents: "auto",
+              // Stops the browser panning or scrolling the page instead of
+              // handing us the drag on a touch screen.
+              touchAction: "none",
               // Anchor is the top centre, matching the burn's `\an8`: in ASS
               // one alignment value fixes both how the text centres and
               // which point `\pos` pins, so the drag handle is that point.
@@ -125,7 +155,6 @@ export function AnnotationLayer({
               textAlign: "center",
               outline: isSelected ? "2px solid #fff" : undefined,
               outlineOffset: "2px",
-              opacity: active ? 1 : 0.5,
             }}
           >
             {note.text || "…"}

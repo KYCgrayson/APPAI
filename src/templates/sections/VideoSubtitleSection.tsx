@@ -19,6 +19,7 @@ import {
   swapPrimaryScript,
   ANNOTATION_PRESETS,
   ANNOTATION_PRESET_ORDER,
+  NOTE_DURATION_SEC,
   zhScriptOf,
   zhSiblingOf,
   type SourceValue,
@@ -622,7 +623,10 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
     if (!sub) return;
     const note: Annotation = {
       start: sub.start,
-      end: sub.end,
+      // Fixed length, not the line's: a long line would leave the card on
+      // screen well past the moment it is explaining. Clamped so a note on
+      // the last line cannot run past the end of the clip.
+      end: Math.min(sub.start + NOTE_DURATION_SEC, trim.end_sec - trim.start_sec),
       text: "",
       x: 0.5,
       y: 0.15,
@@ -638,6 +642,17 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
       setEditTimeSec(sub.start);
     }
   };
+
+  // The panel is shown for the selected note only while that note is on
+  // screen, so panel and card appear and disappear together. Derived rather
+  // than cleared on scrub: scrubbing back into range restores the selection.
+  const visibleNote =
+    selectedNote !== null &&
+    annotations[selectedNote] &&
+    editTimeSec >= annotations[selectedNote].start &&
+    editTimeSec < annotations[selectedNote].end
+      ? selectedNote
+      : null;
 
   const updateNote = (index: number, patch: Partial<Annotation>) =>
     setAnnotations((prev) =>
@@ -921,7 +936,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                     annotations={annotations}
                     onChange={setAnnotations}
                     currentTimeSec={editTimeSec}
-                    selected={selectedNote}
+                    selected={visibleNote}
                     onSelect={setSelectedNote}
                     subtitleFontSizePx={style.font_size_px}
                     disabled={submitting}
@@ -978,7 +993,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
               {marking && (
                 <p className={`text-xs ${subColor}`}>{t.markingHint}</p>
               )}
-              {selectedNote !== null && annotations[selectedNote] && (
+              {visibleNote !== null && (
                 <div
                   className={`space-y-2 rounded-lg border p-2 ${
                     darkMode ? "border-gray-700" : "border-gray-200"
@@ -990,7 +1005,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                     </span>
                     <button
                       type="button"
-                      onClick={() => removeNote(selectedNote)}
+                      onClick={() => removeNote(visibleNote)}
                       disabled={submitting}
                       className="text-xs text-red-600 hover:opacity-70"
                     >
@@ -999,9 +1014,9 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                   </div>
                   <input
                     type="text"
-                    value={annotations[selectedNote].text}
+                    value={annotations[visibleNote].text}
                     onChange={(e) =>
-                      updateNote(selectedNote, { text: e.target.value })
+                      updateNote(visibleNote, { text: e.target.value })
                     }
                     placeholder={t.notePlaceholder}
                     disabled={submitting}
@@ -1015,12 +1030,12 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                     {ANNOTATION_PRESET_ORDER.map((preset) => {
                       const look = ANNOTATION_PRESETS[preset];
                       const active =
-                        (annotations[selectedNote].preset ?? "note") === preset;
+                        (annotations[visibleNote].preset ?? "note") === preset;
                       return (
                         <button
                           key={preset}
                           type="button"
-                          onClick={() => updateNote(selectedNote, { preset })}
+                          onClick={() => updateNote(visibleNote, { preset })}
                           disabled={submitting}
                           aria-label={preset}
                           aria-pressed={active}
