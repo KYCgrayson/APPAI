@@ -14,6 +14,10 @@ import {
   DEFAULT_STYLE,
   MVP_FONT_FAMILY,
   langLabel,
+  isScriptSibling,
+  swapPrimaryScript,
+  zhScriptOf,
+  zhSiblingOf,
   type SourceValue,
   type TrimValue,
 } from "../shared/video/types";
@@ -91,6 +95,11 @@ const DEFAULT_STRINGS = {
   recentHint: "Reopen to restyle and render again — no new transcription, so it does not use your daily video.",
   recentSubtitleCount: "subtitles",
   detectedLanguage: "Detected source language: {language}",
+  // Chinese only. Whisper writes whichever script it feels like, so without
+  // this the burned-in original was never the user's to choose.
+  scriptLabel: "Original script",
+  scriptHans: "简体",
+  scriptHant: "繁體",
   stalled: "Progress appears to be stuck. You can cancel or check the same job again.",
   checkAgain: "Check again",
 } as const;
@@ -392,7 +401,13 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
       if (subtitles.length === 0) setSubtitles(r.segments);
       if (Object.keys(translations).length === 0)
         setTranslations(r.translations ?? {});
-      const secondary = Object.keys(r.translations ?? {})[0];
+      // Skip the script sibling: it is the same sentence in the other
+      // Chinese script, so defaulting to it would burn Chinese on both
+      // lines instead of the translation the user actually asked for.
+      const translationLangs = Object.keys(r.translations ?? {});
+      const secondary =
+        translationLangs.find((l) => !isScriptSibling(l, r.language)) ??
+        translationLangs[0];
       const nextStyle = {
         ...style,
         primary_language: r.language,
@@ -550,6 +565,25 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
     setTargetLangs((prev) =>
       prev.includes(lc) ? prev.filter((l) => l !== lc) : [...prev, lc],
     );
+  };
+
+  // ── Original script, Chinese only ───────────────────────────────────
+  //
+  // `subtitles` is the primary track and `translations` holds every other
+  // one, so choosing the other script is a swap between the two — no
+  // re-transcribe, no translation call, no quota. The backend converted the
+  // sibling by table lookup when the job ran.
+  const primaryLang = style.primary_language;
+  const scriptSibling = zhSiblingOf(primaryLang);
+  const canSwapScript =
+    scriptSibling !== null && Array.isArray(translations[scriptSibling]);
+
+  const swapScript = () => {
+    const next = swapPrimaryScript({ subtitles, translations, style });
+    if (!next) return;
+    setSubtitles(next.subtitles);
+    setTranslations(next.translations);
+    setStyle(next.style);
   };
 
   const trimDuration = trim.end_sec - trim.start_sec;
@@ -759,6 +793,38 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
               </p>
             )}
 
+            {canSwapScript && (
+              <div className="flex items-center gap-2">
+                <span className={`text-xs ${subColor}`}>{t.scriptLabel}</span>
+                <div className="flex gap-1">
+                  {(["Hans", "Hant"] as const).map((sc) => {
+                    const active = zhScriptOf(primaryLang) === sc;
+                    return (
+                      <button
+                        key={sc}
+                        type="button"
+                        onClick={active ? undefined : swapScript}
+                        disabled={submitting}
+                        aria-pressed={active}
+                        className={`px-2.5 py-1 rounded-md text-xs border transition-colors disabled:opacity-50 ${
+                          active
+                            ? "text-white border-transparent"
+                            : darkMode
+                              ? "bg-gray-800 text-gray-300 border-gray-600 hover:border-gray-500"
+                              : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
+                        }`}
+                        style={
+                          active ? { backgroundColor: themeColor } : undefined
+                        }
+                      >
+                        {sc === "Hans" ? t.scriptHans : t.scriptHant}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {transcribe.job?.result?.clip_url ? (
               /* Live preview: real clip + subtitle overlay. Scrub the native
                  controls or click a subtitle row to jump. */
@@ -812,7 +878,9 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
               <SubtitleStyleControls
                 value={style}
                 onChange={setStyle}
-                availableSecondaryLanguages={Object.keys(translations)}
+                availableSecondaryLanguages={Object.keys(translations).filter(
+                  (l) => !isScriptSibling(l, style.primary_language),
+                )}
                 darkMode={darkMode}
                 disabled={submitting}
               />
