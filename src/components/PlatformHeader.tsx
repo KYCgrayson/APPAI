@@ -19,7 +19,7 @@ export async function PlatformHeader() {
             {t("browseApps")}
           </Link>
           <LanguageSwitcher />
-          <AccountControls user={session?.user} labels={{ signIn: t("signIn"), dashboard: t("dashboard"), signOut: t("signOut"), account: t("account") }} light />
+          <AccountControls user={session?.user} isAdmin={((session as unknown as { role?: string })?.role ?? "USER") === "ADMIN"} labels={{ signIn: t("signIn"), dashboard: t("dashboard"), signOut: t("signOut"), account: t("account") }} light />
         </div>
       </div>
     </header>

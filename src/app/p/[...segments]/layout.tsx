@@ -285,6 +285,10 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 its Dashboard link below sm to stay narrow. */}
             <AccountControls
               user={session?.user}
+              isAdmin={
+                ((session as unknown as { role?: string })?.role ?? "USER") ===
+                "ADMIN"
+              }
               callbackUrl={currentPath}
               labels={{
                 signIn: "Sign in",

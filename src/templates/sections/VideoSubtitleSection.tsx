@@ -57,6 +57,10 @@ const DEFAULT_STRINGS = {
   description: "Paste a YouTube link, get a translated subtitled video.",
   trimSection: "Trim (≤ {max} min)",
   trimSectionUnlimited: "Trim",
+  // Shown only to admins. Without it the sole hint that the cap is lifted is
+  // the *absence* of "(≤ 5 min)" in the trim label — invisible unless you
+  // already know what the non-admin label looks like.
+  adminBadge: "Admin",
   translateSection: "Translate into",
   translateHint: "Pick zero or more target languages.",
   startButton: "Start",
@@ -572,6 +576,21 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
           <p className={`text-sm text-center ${subColor}`}>
             {data.description ?? t.description}
           </p>
+        )}
+
+        {isAdmin && (
+          <div className="flex justify-center">
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${
+                darkMode
+                  ? "border-amber-400/40 bg-amber-400/10 text-amber-200"
+                  : "border-amber-300 bg-amber-50 text-amber-800"
+              }`}
+            >
+              <span aria-hidden="true">★</span>
+              {t.adminBadge}
+            </span>
+          </div>
         )}
 
         {/* ──────────── Phase: idle (URL + trim + langs) ──────────── */}
