@@ -122,7 +122,7 @@ const DEFAULT_STRINGS = {
   rereadCancel: "Cancel",
   noteAdd: "+ note",
   noteHeading: "Note card",
-  notePlaceholder: "Type the note",
+  notePlaceholder: "Type the note — Enter for a new line",
   noteDelete: "Remove",
   noteHint: "Drag the card on the video to place it.",
   markingHint:
@@ -1131,15 +1131,15 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                       {t.noteDelete}
                     </button>
                   </div>
-                  <input
-                    type="text"
+                  <textarea
                     value={annotations[visibleNote].text}
                     onChange={(e) =>
                       updateNote(visibleNote, { text: e.target.value })
                     }
                     placeholder={t.notePlaceholder}
                     disabled={submitting}
-                    className={`w-full rounded-md border px-2 py-1 text-sm ${
+                    rows={2}
+                    className={`w-full resize-y rounded-md border px-2 py-1 text-sm ${
                       darkMode
                         ? "bg-gray-800 border-gray-600 text-gray-100"
                         : "bg-white border-gray-300 text-gray-900"

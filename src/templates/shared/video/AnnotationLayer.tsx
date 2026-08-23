@@ -133,7 +133,7 @@ export function AnnotationLayer({
               setDragging(null);
             }}
             onPointerCancel={() => setDragging(null)}
-            className={`absolute whitespace-nowrap rounded ${
+            className={`absolute rounded ${
               dragging?.index === i ? "cursor-grabbing" : "cursor-grab"
             }`}
             style={{
@@ -153,6 +153,10 @@ export function AnnotationLayer({
               padding: `${fontSize * 0.4}px ${fontSize * 0.4}px`,
               lineHeight: 1.2,
               textAlign: "center",
+              // `pre` honours the author's newlines and wraps nowhere else,
+              // matching the burn's `\q2`: an automatic wrap here would show
+              // a card the download does not produce.
+              whiteSpace: "pre",
               outline: isSelected ? "2px solid #fff" : undefined,
               outlineOffset: "2px",
             }}
