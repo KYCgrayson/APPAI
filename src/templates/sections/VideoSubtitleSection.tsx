@@ -108,6 +108,18 @@ const DEFAULT_STRINGS = {
   // Learning mode. Off by default and adds nothing to the editor until it
   // is on — the point is emphasis on a word or two, not a permanent mode.
   markingToggle: "Mark key words",
+  // Re-reading the same clip a different way. A disappointing transcript
+  // should not cost the URL, the trim and the language picks.
+  sourceUsedWhisper: "Transcript: heard by Whisper",
+  sourceUsedOriginal: "Transcript: the video's own subtitles ({lang})",
+  sourceUsedAutoCaption: "Transcript: YouTube auto-captions ({lang})",
+  rereadButton: "Read again",
+  rereadHint:
+    "Reads this same clip again — the link and trim are kept. Replaces the current subtitles, marks and notes, and counts as another transcription.",
+  rereadWhisper: "Listen again (Whisper)",
+  rereadTrackManual: "{lang} · uploaded",
+  rereadTrackAuto: "{lang} · auto",
+  rereadCancel: "Cancel",
   noteAdd: "+ note",
   noteHeading: "Note card",
   notePlaceholder: "Type the note",
@@ -263,6 +275,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
   const editVideoRef = useRef<HTMLVideoElement>(null);
   const [editTimeSec, setEditTimeSec] = useState(0);
   const [marking, setMarking] = useState(false);
+  const [rereadOpen, setRereadOpen] = useState(false);
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [selectedNote, setSelectedNote] = useState<number | null>(null);
 
@@ -492,7 +505,16 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
   }
 
   // ──────────── Submit handlers ────────────
-  const startTranscribe = async () => {
+  /**
+   * Submit a transcribe job for the current URL and trim.
+   *
+   * `transcript` lets the editor ask for a different read of the same clip
+   * — the whole point being that a disappointing result should not cost the
+   * user their URL, their trim and their language picks.
+   */
+  const startTranscribe = async (
+    transcript?: TranscribeJobRequest["input"]["transcript"],
+  ) => {
     if (!source.isValid || submitting) return;
     setSubmitting(true);
     setSubmitError(null);
@@ -500,7 +522,8 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
       kind: "transcribe",
       input: {
         source: { type: "youtube_url", url: source.url, trim },
-        asr: { language: "auto" },
+        asr: { language: transcript?.original_language ?? "auto" },
+        transcript,
         translation:
           targetLangs.length > 0
             ? { target_languages: targetLangs }
@@ -664,6 +687,26 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
     setSelectedNote(null);
   };
 
+  const transcribeMeta = transcribe.job?.result?.metadata;
+  const availableTracks = transcribeMeta?.available_subtitles ?? [];
+
+  const reread = (
+    transcript: TranscribeJobRequest["input"]["transcript"],
+  ) => {
+    // Everything derived from the old transcript goes: marks are character
+    // offsets into text that is about to change, and notes are pinned to
+    // times that may not line up. Keeping them would be worse than losing
+    // them — they would land on the wrong words.
+    setRereadOpen(false);
+    setSubtitles([]);
+    setTranslations({});
+    setAnnotations([]);
+    setSelectedNote(null);
+    setMarking(false);
+    setRenderJobId(null);
+    void startTranscribe(transcript);
+  };
+
   const trimDuration = trim.end_sec - trim.start_sec;
   const trimValid = trimDuration > 0 && (maxDurationSec === undefined || trimDuration <= maxDurationSec);
   const canStart =
@@ -813,7 +856,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                 <div>
                   <button
                     type="button"
-                    onClick={startTranscribe}
+                    onClick={() => startTranscribe()}
                     disabled={!canStart}
                     className="w-full text-white px-6 py-3 rounded-lg text-sm font-medium hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
                     style={{ backgroundColor: themeColor }}
@@ -869,6 +912,82 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                   langLabel(transcribe.job.result.language),
                 )}
               </p>
+            )}
+
+            {transcribeMeta?.transcript_origin && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`text-xs ${subColor}`}>
+                  {(transcribeMeta.transcript_origin === "original"
+                    ? t.sourceUsedOriginal
+                    : transcribeMeta.transcript_origin === "auto_caption"
+                      ? t.sourceUsedAutoCaption
+                      : t.sourceUsedWhisper
+                  ).replace(
+                    "{lang}",
+                    langLabel(transcribe.job?.result?.language ?? ""),
+                  )}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setRereadOpen((v) => !v)}
+                  disabled={submitting}
+                  className={`text-xs underline transition-colors ${
+                    darkMode
+                      ? "text-gray-400 hover:text-gray-100"
+                      : "text-gray-500 hover:text-gray-900"
+                  }`}
+                >
+                  {rereadOpen ? t.rereadCancel : t.rereadButton}
+                </button>
+              </div>
+            )}
+
+            {rereadOpen && (
+              <div
+                className={`space-y-2 rounded-lg border p-2 ${
+                  darkMode ? "border-gray-700" : "border-gray-200"
+                }`}
+              >
+                <p className={`text-xs ${subColor}`}>{t.rereadHint}</p>
+                <div className="flex flex-wrap gap-2">
+                  {availableTracks.map((track) => (
+                    <button
+                      key={`${track.kind}-${track.lang}`}
+                      type="button"
+                      onClick={() =>
+                        reread({
+                          source:
+                            track.kind === "manual" ? "original" : "auto_caption",
+                          original_language: track.lang,
+                        })
+                      }
+                      disabled={submitting}
+                      className={`px-2.5 py-1 rounded-md text-xs border transition-colors ${
+                        darkMode
+                          ? "bg-gray-800 text-gray-300 border-gray-600 hover:border-gray-500"
+                          : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
+                      }`}
+                    >
+                      {(track.kind === "manual"
+                        ? t.rereadTrackManual
+                        : t.rereadTrackAuto
+                      ).replace("{lang}", track.name || langLabel(track.lang))}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => reread({ source: "whisper" })}
+                    disabled={submitting}
+                    className={`px-2.5 py-1 rounded-md text-xs border transition-colors ${
+                      darkMode
+                        ? "bg-gray-800 text-gray-300 border-gray-600 hover:border-gray-500"
+                        : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
+                    }`}
+                  >
+                    {t.rereadWhisper}
+                  </button>
+                </div>
+              </div>
             )}
 
             {canSwapScript && (

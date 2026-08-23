@@ -417,17 +417,31 @@ components:
             transcript:
               type: object
               description: |
-                Where the base transcript comes from. `original` pulls the
-                creator-uploaded captions (best quality, skips ASR);
-                `auto_caption` pulls YouTube's auto-generated captions;
-                `whisper` runs local Whisper ASR (default, best when no
-                manual captions exist).
+                Where the base transcript comes from. `auto` (default) reads
+                a human-uploaded track when the video has one and otherwise
+                runs ASR — a track someone typed does not mishear proper
+                nouns, names or numbers, and costs no GPU time. YouTube's
+                *automatic* captions are deliberately not preferred by
+                `auto`: they are the same kind of guess as Whisper's.
+
+                `original` demands a human-uploaded track, `auto_caption`
+                demands a machine one, and `whisper` ignores both. The two
+                demanding values fail the job when the track is absent
+                rather than quietly transcribing instead — which would look
+                identical to the run being replaced.
               properties:
                 source:
                   type: string
-                  enum: [whisper, original, auto_caption]
-                  default: whisper
-                original_language: { $ref: "#/components/schemas/LanguageCode" }
+                  enum: [auto, whisper, original, auto_caption]
+                  default: auto
+                original_language:
+                  allOf: [{ $ref: "#/components/schemas/LanguageCode" }]
+                  description: |
+                    Which of the video's own tracks to read when it carries
+                    several. A named language that is absent is an absence —
+                    another language is never substituted, because subtitles
+                    in a language nobody spoke are a translation, not a
+                    transcript.
             translation:
               type: object
               properties:
@@ -522,7 +536,17 @@ components:
             transcript_origin:
               type: string
               enum: [whisper, original, auto_caption]
-              description: Where the base transcript came from.
+              description: |
+                Where the base transcript actually came from, which is not
+                always what was asked for: `auto` resolves to one of these,
+                and an empty track falls back to ASR.
+            available_subtitles:
+              type: array
+              items: { $ref: "#/components/schemas/SubtitleTrack" }
+              description: |
+                Tracks the video carries. Returned so the caller can offer a
+                different read of the same clip without making the user
+                submit the URL again.
         clip_url:
           type: string
           format: uri

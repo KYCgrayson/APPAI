@@ -85,7 +85,15 @@ export interface StyleSpec {
   animation?: "none" | "fade" | "fade_in" | "fade_out" | "slide_up";
 }
 
-export type TranscriptSource = "whisper" | "original" | "auto_caption";
+/**
+ * `auto` reads a human-uploaded track when the video has one, else runs ASR.
+ * `original` and `auto_caption` demand their kind and fail without it.
+ */
+export type TranscriptSource =
+  | "auto"
+  | "whisper"
+  | "original"
+  | "auto_caption";
 
 export interface TranscribeJobRequest {
   kind: "transcribe";
@@ -129,7 +137,11 @@ export interface TranscribeResult {
     title?: string;
     thumbnail_url?: string;
     source_duration_sec?: number;
+    /** Where the text actually came from — `auto` resolves to one of these. */
     transcript_origin?: TranscriptSource;
+    /** Tracks the video carries, so a different read can be offered without
+     *  making the user submit the URL again. */
+    available_subtitles?: SubtitleTrack[];
   };
   /** Signed URL to the trimmed clean mp4 (no subtitles). */
   clip_url?: string;
