@@ -182,3 +182,63 @@ export function swapPrimaryScript(
 
   return { subtitles: incoming, translations, style };
 }
+
+// ── Highlight ranges ────────────────────────────────────────────────────
+//
+// Character ranges `[start, end)` into a subtitle's text, marking the word
+// or phrase to emphasise. Positions rather than search terms: the same word
+// twice in one line is two separate decisions, and string matching can tell
+// neither them apart nor agree on what a "word" is across Chinese (no
+// boundaries) and English (where `cat` would hit `category`).
+
+export type HighlightRange = [number, number];
+
+export function isHighlighted(
+  ranges: HighlightRange[] | undefined,
+  index: number,
+): boolean {
+  return (ranges ?? []).some(([s, e]) => index >= s && index < e);
+}
+
+/**
+ * Add a range, or clear the one a single-character tap lands in.
+ *
+ * Marking and unmarking are the same gesture, so a tap inside an existing
+ * mark removes it; anything wider adds. The result is kept sorted and
+ * disjoint because that is what the renderer walks and what the backend
+ * validates — overlapping ranges would emit nested spans.
+ */
+export function toggleHighlightRange(
+  ranges: HighlightRange[] | undefined,
+  start: number,
+  end: number,
+): HighlightRange[] {
+  const current: HighlightRange[] = (ranges ?? []).map(([s, e]) => [s, e] as HighlightRange);
+  if (end <= start) return current;
+
+  if (end - start === 1) {
+    const hit = current.findIndex(([s, e]) => start >= s && start < e);
+    if (hit !== -1) {
+      const out = current.slice();
+      out.splice(hit, 1);
+      return out;
+    }
+  }
+
+  const sorted: HighlightRange[] = [
+    ...current,
+    [start, end] as HighlightRange,
+  ].sort((a, b) => a[0] - b[0]);
+  const out: HighlightRange[] = [];
+  for (const [s, e] of sorted) {
+    const last = out[out.length - 1];
+    // `<=` also folds ranges that merely touch: [0,2] and [2,4] render the
+    // same as [0,4] and one range is less to carry around.
+    if (last && s <= last[1]) {
+      last[1] = Math.max(last[1], e);
+    } else {
+      out.push([s, e]);
+    }
+  }
+  return out;
+}

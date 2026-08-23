@@ -100,6 +100,11 @@ const DEFAULT_STRINGS = {
   scriptLabel: "Original script",
   scriptHans: "简体",
   scriptHant: "繁體",
+  // Learning mode. Off by default and adds nothing to the editor until it
+  // is on — the point is emphasis on a word or two, not a permanent mode.
+  markingToggle: "Mark key words",
+  markingHint:
+    "Drag across the characters to underline them. Tap a marked word to clear it. Editing a line clears its marks.",
   stalled: "Progress appears to be stuck. You can cancel or check the same job again.",
   checkAgain: "Check again",
 } as const;
@@ -247,6 +252,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
   // with subtitles overlaid; the subtitle list follows / seeks the video.
   const editVideoRef = useRef<HTMLVideoElement>(null);
   const [editTimeSec, setEditTimeSec] = useState(0);
+  const [marking, setMarking] = useState(false);
 
   // Read on mount only: localStorage is not available during SSR, and the
   // list only changes through saveRecent()/restoreRecent() below.
@@ -586,6 +592,13 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
     setStyle(next.style);
   };
 
+  // The translation being burned as line two. Shown beside the original in
+  // the editor so a word and its translation can be marked together, which
+  // is the whole point of the learning mode.
+  const secondaryLang =
+    style.display === "bilingual" ? style.secondary_language : undefined;
+  const secondaryTrack = secondaryLang ? translations[secondaryLang] : undefined;
+
   const trimDuration = trim.end_sec - trim.start_sec;
   const trimValid = trimDuration > 0 && (maxDurationSec === undefined || trimDuration <= maxDurationSec);
   const canStart =
@@ -887,12 +900,39 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
             </div>
 
             <div className="space-y-2">
-              <h4 className={`text-sm font-medium ${labelColor}`}>
-                {t.subtitleListHeading}
-              </h4>
+              <div className="flex items-center justify-between gap-3">
+                <h4 className={`text-sm font-medium ${labelColor}`}>
+                  {t.subtitleListHeading}
+                </h4>
+                <label
+                  className={`flex items-center gap-1.5 text-xs ${subColor}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={marking}
+                    onChange={(e) => setMarking(e.target.checked)}
+                    disabled={submitting}
+                  />
+                  {t.markingToggle}
+                </label>
+              </div>
+              {marking && (
+                <p className={`text-xs ${subColor}`}>{t.markingHint}</p>
+              )}
               <SubtitleEditor
                 subtitles={subtitles}
                 onChange={setSubtitles}
+                secondary={secondaryTrack}
+                onSecondaryChange={
+                  secondaryLang
+                    ? (next) =>
+                        setTranslations((prev) => ({
+                          ...prev,
+                          [secondaryLang]: next,
+                        }))
+                    : undefined
+                }
+                marking={marking}
                 currentTimeSec={editTimeSec}
                 onSeek={(sec) => {
                   const v = editVideoRef.current;

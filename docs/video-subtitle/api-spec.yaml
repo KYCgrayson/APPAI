@@ -287,6 +287,20 @@ components:
         start: { type: number, description: "Seconds from start of trimmed clip" }
         end:   { type: number }
         text:  { type: string }
+        highlights:
+          type: array
+          description: |
+            Character ranges `[start, end)` into `text` to emphasise, sorted
+            and non-overlapping. Positions rather than search terms: a term
+            appearing twice in one line is two separate decisions, and string
+            matching can tell neither them apart nor agree on what a "word"
+            is across Chinese (no boundaries) and English (where `cat` would
+            hit `category`). Omitted or empty means no emphasis.
+          items:
+            type: array
+            items: { type: integer, minimum: 0 }
+            minItems: 2
+            maxItems: 2
       description: Whisper segment JSON shape.
 
     # ─────────────────────── Style ───────────────────────

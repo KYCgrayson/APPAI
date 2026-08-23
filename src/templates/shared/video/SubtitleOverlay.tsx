@@ -2,7 +2,11 @@
 
 import { type RefObject, useEffect, useState } from "react";
 import type { Subtitle, StyleSpec } from "../jobs/types";
-import { SECONDARY_FONT_RATIO, SUBTITLE_REFERENCE_HEIGHT } from "./types";
+import {
+  SECONDARY_FONT_RATIO,
+  SUBTITLE_REFERENCE_HEIGHT,
+  type HighlightRange,
+} from "./types";
 
 interface Props {
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -156,6 +160,28 @@ export function SubtitleOverlay({ videoRef, primary, secondary, style }: Props) 
         ? "subtitle-slide-up"
         : "";
 
+  // Marked ranges are drawn as underlined spans, matching what the burn
+  // does with `{\u1}`. Split rather than styled per character so the
+  // underline runs unbroken under the whole phrase.
+  const renderMarked = (sub: Subtitle) => {
+    const ranges = (sub.highlights ?? []) as HighlightRange[];
+    if (ranges.length === 0) return sub.text;
+    const chars = Array.from(sub.text);
+    const out: React.ReactNode[] = [];
+    let cursor = 0;
+    ranges.forEach(([start, end], i) => {
+      if (start > cursor) out.push(chars.slice(cursor, start).join(""));
+      out.push(
+        <u key={i} style={{ textUnderlineOffset: "0.15em" }}>
+          {chars.slice(start, end).join("")}
+        </u>,
+      );
+      cursor = end;
+    });
+    if (cursor < chars.length) out.push(chars.slice(cursor).join(""));
+    return out;
+  };
+
   const lineStyle: React.CSSProperties = {
     // PingFang first: it is what the backend burns in when the requested
     // family cannot render the text, which for CJK subtitles is the norm.
@@ -186,7 +212,7 @@ export function SubtitleOverlay({ videoRef, primary, secondary, style }: Props) 
       >
         {activePrimary && (
           <div className={animationClass} style={lineStyle} key={`p-${activePrimary.start}`}>
-            {activePrimary.text}
+            {renderMarked(activePrimary)}
           </div>
         )}
         {showSecondary && activeSecondary && (
@@ -198,7 +224,7 @@ export function SubtitleOverlay({ videoRef, primary, secondary, style }: Props) 
             }}
             key={`s-${activeSecondary.start}`}
           >
-            {activeSecondary.text}
+            {renderMarked(activeSecondary)}
           </div>
         )}
       </div>

@@ -35,6 +35,12 @@ export interface Subtitle {
   start: number;
   end: number;
   text: string;
+  /**
+   * Character ranges `[start, end)` into `text` to emphasise, sorted and
+   * non-overlapping. Positions, not search terms — see `toggleHighlightRange`
+   * in `../video/types`.
+   */
+  highlights?: [number, number][];
 }
 
 export interface Trim {
