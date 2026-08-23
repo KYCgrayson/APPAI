@@ -279,6 +279,39 @@ components:
         `422 Problem{code=source_too_long}` if violated.
 
     # ─────────────────────── Subtitle ───────────────────────
+    Annotation:
+      type: object
+      required: [start, end, text, x, y]
+      description: |
+        A free-text card placed on the frame for a stretch of time. Created
+        from a subtitle line (which is where its times come from) but
+        independent afterwards. Rendered as an opaque rounded card, drawn
+        above the subtitles; the text is always a single line, because
+        libass boxes each line rather than the block and a wrapped note
+        would come out as two offset rectangles.
+      properties:
+        start: { type: number, description: "Seconds from start of trimmed clip" }
+        end:   { type: number }
+        text:  { type: string }
+        x:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Fraction of frame width. Anchor is the card's top centre.
+        y:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Fraction of frame height. Anchor is the card's top centre.
+        preset:
+          type: string
+          enum: [note, warm, cool, dark]
+          default: note
+          description: |
+            Fixed background/text pairing. Not free colours: a bubble has to
+            read as a different kind of object from a subtitle, and the
+            background alone carries that.
+
     Subtitle:
       type: object
       required: [start, end, text]
@@ -428,6 +461,13 @@ components:
                 `style.display=bilingual`; the secondary_language key
                 must exist here.
             style: { $ref: "#/components/schemas/StyleSpec" }
+            annotations:
+              type: array
+              items: { $ref: "#/components/schemas/Annotation" }
+              description: |
+                Free-text cards drawn over the frame, above the subtitles.
+                Authored in the editor and only needed at render time, so
+                they are not part of the transcribe result.
             output:
               type: object
               description: Output / finishing options applied during render.

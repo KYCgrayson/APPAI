@@ -43,6 +43,18 @@ export interface Subtitle {
   highlights?: [number, number][];
 }
 
+export type AnnotationPreset = "note" | "warm" | "cool" | "dark";
+
+export interface Annotation {
+  start: number;
+  end: number;
+  text: string;
+  /** Fractions of frame width/height. Anchor is the card's *top centre*. */
+  x: number;
+  y: number;
+  preset?: AnnotationPreset;
+}
+
 export interface Trim {
   start_sec: number;
   end_sec: number;
@@ -99,6 +111,7 @@ export interface RenderJobRequest {
     subtitles: Subtitle[];
     translations?: Record<string, Subtitle[]>;
     style: StyleSpec;
+    annotations?: Annotation[];
     output?: RenderOutputOptions;
   };
 }

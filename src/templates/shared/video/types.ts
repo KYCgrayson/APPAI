@@ -1,4 +1,4 @@
-import type { Subtitle, StyleSpec } from "../jobs/types";
+import type { Subtitle, StyleSpec, AnnotationPreset } from "../jobs/types";
 
 export interface OEmbedData {
   title: string;
@@ -242,3 +242,35 @@ export function toggleHighlightRange(
   }
   return out;
 }
+
+// ── Note cards ─────────────────────────────────────────────────────────
+
+/**
+ * Fixed looks, mirroring `_BUBBLE_PRESETS` in the burn.
+ *
+ * Not free colours: a bubble has to read as a different kind of object from
+ * a subtitle, and the background alone carries that — subtitles are a
+ * translucent dark plate with light text, bubbles an opaque light card with
+ * dark text. Each pair is a light ramp step with the 800 step of the same
+ * hue on top, so contrast holds without hand-checking.
+ */
+export const ANNOTATION_PRESETS: Record<
+  AnnotationPreset,
+  { background: string; color: string }
+> = {
+  note: { background: "#FAEEDA", color: "#633806" },
+  warm: { background: "#FAECE7", color: "#712B13" },
+  cool: { background: "#E6F1FB", color: "#0C447C" },
+  dark: { background: "#2C2C2A", color: "#F1EFE8" },
+};
+
+export const ANNOTATION_PRESET_ORDER: AnnotationPreset[] = [
+  "note",
+  "warm",
+  "cool",
+  "dark",
+];
+
+/** Matches `_BUBBLE_FONT_RATIO` / `_BUBBLE_MIN_FONT_PX` in the burn. */
+export const BUBBLE_FONT_RATIO = 0.6;
+export const BUBBLE_MIN_FONT_PX = 16;

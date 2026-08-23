@@ -27,6 +27,13 @@ interface Props {
    * edit — the marks would end up on the wrong characters.
    */
   marking?: boolean;
+  /**
+   * Add a note card for this line. The entry point sits on the row because
+   * that is where the times come from — no timeline picking, no duration to
+   * choose.
+   */
+  onAddAnnotation?: (index: number) => void;
+  addAnnotationLabel?: string;
   currentTimeSec: number;
   onSeek: (sec: number) => void;
   themeColor: string;
@@ -62,6 +69,8 @@ export function SubtitleEditor({
   secondary,
   onSecondaryChange,
   marking = false,
+  onAddAnnotation,
+  addAnnotationLabel = "+ note",
   currentTimeSec,
   onSeek,
   themeColor,
@@ -215,6 +224,21 @@ export function SubtitleEditor({
               {fmtTime(sub.start)}
             </button>
             {renderCell("primary", i, sub)}
+            {onAddAnnotation && (
+              <button
+                type="button"
+                onClick={() => onAddAnnotation(i)}
+                disabled={disabled}
+                title={addAnnotationLabel}
+                className={`shrink-0 self-start mt-0.5 text-xs px-1.5 py-0.5 rounded border transition-colors ${
+                  darkMode
+                    ? "border-gray-600 text-gray-400 hover:text-gray-100 hover:border-gray-500"
+                    : "border-gray-300 text-gray-500 hover:text-gray-900 hover:border-gray-400"
+                }`}
+              >
+                {addAnnotationLabel}
+              </button>
+            )}
             {pair && (
               <div
                 className={`flex-1 flex border-l pl-3 ${

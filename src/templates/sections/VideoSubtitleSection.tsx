@@ -8,6 +8,7 @@ import { MediaSourcePicker } from "../shared/video/MediaSourcePicker";
 import { TimelineTrimmer } from "../shared/video/TimelineTrimmer";
 import { SubtitleEditor } from "../shared/video/SubtitleEditor";
 import { SubtitleOverlay } from "../shared/video/SubtitleOverlay";
+import { AnnotationLayer } from "../shared/video/AnnotationLayer";
 import { SubtitleStyleControls } from "../shared/video/SubtitleStyleControls";
 import {
   EMPTY_SOURCE,
@@ -16,12 +17,15 @@ import {
   langLabel,
   isScriptSibling,
   swapPrimaryScript,
+  ANNOTATION_PRESETS,
+  ANNOTATION_PRESET_ORDER,
   zhScriptOf,
   zhSiblingOf,
   type SourceValue,
   type TrimValue,
 } from "../shared/video/types";
 import type {
+  Annotation,
   Subtitle,
   StyleSpec,
   Job,
@@ -103,6 +107,11 @@ const DEFAULT_STRINGS = {
   // Learning mode. Off by default and adds nothing to the editor until it
   // is on — the point is emphasis on a word or two, not a permanent mode.
   markingToggle: "Mark key words",
+  noteAdd: "+ note",
+  noteHeading: "Note card",
+  notePlaceholder: "Type the note",
+  noteDelete: "Remove",
+  noteHint: "Drag the card on the video to place it.",
   markingHint:
     "Drag across the characters to underline them. Tap a marked word to clear it. Editing a line clears its marks.",
   stalled: "Progress appears to be stuck. You can cancel or check the same job again.",
@@ -253,6 +262,8 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
   const editVideoRef = useRef<HTMLVideoElement>(null);
   const [editTimeSec, setEditTimeSec] = useState(0);
   const [marking, setMarking] = useState(false);
+  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [selectedNote, setSelectedNote] = useState<number | null>(null);
 
   // Read on mount only: localStorage is not available during SSR, and the
   // list only changes through saveRecent()/restoreRecent() below.
@@ -529,6 +540,9 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
         translations:
           style.display === "bilingual" ? translations : undefined,
         style: { ...style, font_family: MVP_FONT_FAMILY },
+        // Empty stays undefined: an empty array would declare "this render
+        // has annotations" and make the backend build bubble styles for none.
+        annotations: annotations.length > 0 ? annotations : undefined,
       },
     };
     try {
@@ -598,6 +612,42 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
   const secondaryLang =
     style.display === "bilingual" ? style.secondary_language : undefined;
   const secondaryTrack = secondaryLang ? translations[secondaryLang] : undefined;
+
+  // A note card is created from a subtitle line, so its times come from
+  // that line and there is no timeline to pick or duration to choose. It is
+  // independent afterwards. Seeking to the line makes the new card visible
+  // straight away — otherwise it is created somewhere the playhead is not.
+  const addAnnotation = (index: number) => {
+    const sub = subtitles[index];
+    if (!sub) return;
+    const note: Annotation = {
+      start: sub.start,
+      end: sub.end,
+      text: "",
+      x: 0.5,
+      y: 0.15,
+      preset: "note",
+    };
+    setAnnotations((prev) => {
+      setSelectedNote(prev.length);
+      return [...prev, note];
+    });
+    const v = editVideoRef.current;
+    if (v) {
+      v.currentTime = sub.start;
+      setEditTimeSec(sub.start);
+    }
+  };
+
+  const updateNote = (index: number, patch: Partial<Annotation>) =>
+    setAnnotations((prev) =>
+      prev.map((a, i) => (i === index ? { ...a, ...patch } : a)),
+    );
+
+  const removeNote = (index: number) => {
+    setAnnotations((prev) => prev.filter((_, i) => i !== index));
+    setSelectedNote(null);
+  };
 
   const trimDuration = trim.end_sec - trim.start_sec;
   const trimValid = trimDuration > 0 && (maxDurationSec === undefined || trimDuration <= maxDurationSec);
@@ -867,6 +917,15 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                     }
                     style={style}
                   />
+                  <AnnotationLayer
+                    annotations={annotations}
+                    onChange={setAnnotations}
+                    currentTimeSec={editTimeSec}
+                    selected={selectedNote}
+                    onSelect={setSelectedNote}
+                    subtitleFontSizePx={style.font_size_px}
+                    disabled={submitting}
+                  />
                 </div>
               </div>
             ) : (
@@ -919,6 +978,63 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
               {marking && (
                 <p className={`text-xs ${subColor}`}>{t.markingHint}</p>
               )}
+              {selectedNote !== null && annotations[selectedNote] && (
+                <div
+                  className={`space-y-2 rounded-lg border p-2 ${
+                    darkMode ? "border-gray-700" : "border-gray-200"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={`text-xs font-medium ${labelColor}`}>
+                      {t.noteHeading}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeNote(selectedNote)}
+                      disabled={submitting}
+                      className="text-xs text-red-600 hover:opacity-70"
+                    >
+                      {t.noteDelete}
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={annotations[selectedNote].text}
+                    onChange={(e) =>
+                      updateNote(selectedNote, { text: e.target.value })
+                    }
+                    placeholder={t.notePlaceholder}
+                    disabled={submitting}
+                    className={`w-full rounded-md border px-2 py-1 text-sm ${
+                      darkMode
+                        ? "bg-gray-800 border-gray-600 text-gray-100"
+                        : "bg-white border-gray-300 text-gray-900"
+                    }`}
+                  />
+                  <div className="flex items-center gap-2">
+                    {ANNOTATION_PRESET_ORDER.map((preset) => {
+                      const look = ANNOTATION_PRESETS[preset];
+                      const active =
+                        (annotations[selectedNote].preset ?? "note") === preset;
+                      return (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => updateNote(selectedNote, { preset })}
+                          disabled={submitting}
+                          aria-label={preset}
+                          aria-pressed={active}
+                          className={`h-6 w-6 rounded border-2 transition-colors ${
+                            active ? "border-current" : "border-transparent"
+                          }`}
+                          style={{ backgroundColor: look.background }}
+                        />
+                      );
+                    })}
+                    <span className={`text-xs ${subColor}`}>{t.noteHint}</span>
+                  </div>
+                </div>
+              )}
               <SubtitleEditor
                 subtitles={subtitles}
                 onChange={setSubtitles}
@@ -933,6 +1049,8 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                     : undefined
                 }
                 marking={marking}
+                onAddAnnotation={addAnnotation}
+                addAnnotationLabel={t.noteAdd}
                 currentTimeSec={editTimeSec}
                 onSeek={(sec) => {
                   const v = editVideoRef.current;
