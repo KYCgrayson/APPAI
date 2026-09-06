@@ -7,7 +7,11 @@ import { AppAIBadge } from "@/components/AppAIBadge";
 import { PageRenderer } from "@/templates/shared/PageRenderer";
 import { matchPreferredLocale, parseAcceptLanguage } from "@/lib/accept-language";
 import { parsePageSegments, buildPagePath } from "@/lib/parse-page-segments";
-import { checkIframeToolUrl } from "@/lib/iframe-tool-allowlist";
+import { buildIframeToolSrc, checkIframeToolUrl } from "@/lib/iframe-tool-allowlist";
+import { issueIframeToolSession } from "@/lib/iframe-tool-session";
+import { decideSectionAccess, sectionWantsIdentity } from "@/lib/iframe-tool-session-contract";
+import { LoginGate } from "@/templates/shared/LoginGate";
+import { IframeToolFrame } from "@/templates/sections/IframeToolFrame";
 import { getPlatformLocale } from "@/lib/platform-locale";
 import type { Metadata } from "next";
 
@@ -238,7 +242,8 @@ export default async function HostedPage({ params }: Props) {
   if (!parsed) notFound();
 
   const session = await auth();
-  const isLoggedIn = !!session?.user?.id;
+  const userId = session?.user?.id ?? null;
+  const isLoggedIn = !!userId;
   const isAdmin =
     ((session as unknown as { role?: string })?.role ?? "USER") === "ADMIN";
 
@@ -255,15 +260,46 @@ export default async function HostedPage({ params }: Props) {
     const sections = ((rootPage.content as { sections?: Array<{ type: string; order: number; data: Record<string, unknown> }> })?.sections) || [];
     const section = sections.find((s) => s.order === toolOrder);
     if (!section || section.type !== "iframe-tool") notFound();
-    const data = section.data as { src?: string; heading?: string; allowFullscreen?: boolean };
+    const data = section.data as { src?: string; heading?: string; allowFullscreen?: boolean; access?: string };
     const check = data.src ? checkIframeToolUrl(data.src) : { ok: false as const };
     if (!check.ok || !check.url) notFound();
 
     const themeColor = rootPage.themeColor || "#000000";
-    const url = new URL(data.src!);
-    url.searchParams.set("locale", rootPage.locale);
-    url.searchParams.set("color", themeColor);
-    if (rootPage.darkMode) url.searchParams.set("theme", "dark");
+
+    // The fullscreen view renders the same section, so it answers to the same
+    // gate. Without this it is a way around `access` — the section is hidden
+    // inline while its own URL still hands the tool over.
+    const decision = decideSectionAccess(data.access, { isLoggedIn, isAdmin });
+    if (decision === "hidden") notFound();
+    if (decision === "sign-in") {
+      return (
+        <LoginGate
+          redirectTo={`/p/${rootPage.slug}/tools/${toolOrder}`}
+          heading={data.heading || rootPage.title}
+          description={rootPage.tagline || undefined}
+          themeColor={themeColor}
+          locale={rootPage.locale}
+        />
+      );
+    }
+
+    const grant = sectionWantsIdentity(data)
+      ? issueIframeToolSession({ src: data.src!, slug: rootPage.slug, section: toolOrder, userId })
+      : null;
+    const src = buildIframeToolSrc(data.src!, {
+      locale: rootPage.locale,
+      themeColor,
+      darkMode: rootPage.darkMode,
+      sessionToken: grant?.token,
+    });
+    const identity = grant
+      ? {
+          token: grant.token,
+          expiresAt: grant.expiresAt.toISOString(),
+          pageId: rootPage.id,
+          section: toolOrder,
+        }
+      : null;
 
     // The badge is AppAI's own chrome rather than publisher content, so it
     // follows the visitor's platform language — the page's own locale system
@@ -272,16 +308,14 @@ export default async function HostedPage({ params }: Props) {
     const tc = await getTranslations({ locale: chromeLocale, namespace: "common" });
 
     return (
-      <div style={{ position: "fixed", inset: 0, backgroundColor: rootPage.darkMode ? "#000" : "#fff" }}>
-        <iframe
-          src={url.toString()}
-          title={data.heading || rootPage.title}
-          loading="eager"
-          allow={data.allowFullscreen === false ? undefined : "fullscreen; clipboard-write; gamepad; accelerometer; gyroscope"}
-          sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-popups allow-popups-to-escape-sandbox"
-          referrerPolicy="strict-origin-when-cross-origin"
-          style={{ width: "100%", height: "100%", border: 0, display: "block" }}
-        />
+      <IframeToolFrame
+        src={src}
+        trustedOrigin={check.url.origin}
+        title={data.heading || rootPage.title}
+        allowFullscreen={data.allowFullscreen}
+        darkMode={rootPage.darkMode}
+        identity={identity}
+      >
         {/* Without this the fullscreen view has no header and no footer: no way
             back to the directory, and no signal about whether you are signed in
             when the tool itself is login-gated. */}
@@ -294,7 +328,7 @@ export default async function HostedPage({ params }: Props) {
             signedIn: tc("signedIn"),
           }}
         />
-      </div>
+      </IframeToolFrame>
     );
   }
 
@@ -457,7 +491,7 @@ export default async function HostedPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       {page.customCss && <style>{page.customCss}</style>}
-      <PageRenderer page={page} isLoggedIn={isLoggedIn} isAdmin={isAdmin} />
+      <PageRenderer page={page} isLoggedIn={isLoggedIn} isAdmin={isAdmin} userId={userId} />
     </>
   );
 }

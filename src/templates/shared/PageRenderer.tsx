@@ -25,6 +25,8 @@ import { EmbedSection } from "../sections/EmbedSection";
 import { IframeToolSection } from "../sections/IframeToolSection";
 import { VideoSubtitleSection } from "../sections/VideoSubtitleSection";
 import { SimpleOrderSection } from "../sections/SimpleOrderSection";
+import { issueIframeToolSession } from "@/lib/iframe-tool-session";
+import { decideSectionAccess, sectionWantsIdentity } from "@/lib/iframe-tool-session-contract";
 
 interface PageSectionData extends Record<string, unknown> {
   access?: string;
@@ -50,7 +52,15 @@ interface PageContent extends Record<string, unknown> {
   links?: unknown;
 }
 
+/** Who is looking. Sections gate on it; `iframe-tool` can be handed it. */
+export interface PageViewer {
+  isLoggedIn: boolean;
+  isAdmin: boolean;
+  userId: string | null;
+}
+
 interface PageData {
+  id?: string;
   slug: string;
   template: string;
   title: string;
@@ -83,6 +93,38 @@ function autoSecondaryColor(primary: string): string {
   return `#${blend(r).toString(16).padStart(2, "0")}${blend(g).toString(16).padStart(2, "0")}${blend(b).toString(16).padStart(2, "0")}`;
 }
 
+/**
+ * Mint the tool's identity, when the section asked for one.
+ *
+ * This is on the render path rather than behind a fetch so the tool has an
+ * identity in its very first request, before any of its own code runs. It costs
+ * one HMAC and no I/O. The page is already rendered per-visitor (it reads the
+ * session to decide `isLoggedIn`), so a token belonging to one viewer cannot be
+ * served to another.
+ */
+function iframeToolIdentity(
+  page: PageData,
+  section: PageSection,
+  sectionOrder: number,
+  viewer: PageViewer,
+) {
+  const src = section.data?.src;
+  if (!page.id || typeof src !== "string" || !sectionWantsIdentity(section.data)) return null;
+  const grant = issueIframeToolSession({
+    src,
+    slug: page.slug,
+    section: sectionOrder,
+    userId: viewer.userId,
+  });
+  if (!grant) return null;
+  return {
+    token: grant.token,
+    expiresAt: grant.expiresAt.toISOString(),
+    pageId: page.id,
+    section: sectionOrder,
+  };
+}
+
 function renderSection(
   section: PageSection,
   index: number,
@@ -90,9 +132,9 @@ function renderSection(
   themeColorSecondary: string,
   darkMode: boolean,
   page: PageData,
-  isAdmin = false,
+  viewer: PageViewer,
 ) {
-  const props = { data: section.data as never, themeColor, themeColorSecondary, darkMode, isAdmin };
+  const props = { data: section.data as never, themeColor, themeColorSecondary, darkMode, isAdmin: viewer.isAdmin };
   const darkBg = darkMode ? "#111827" : undefined;
   const darkBgAlt = darkMode ? "#1f2937" : "#f9fafb";
   const bg = section.data?.backgroundColor || (index % 2 === 1 ? darkBgAlt : darkBg);
@@ -157,7 +199,7 @@ function renderSection(
       content = <MediaDownloaderSection data={section.data as never} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} />;
       break;
     case "video-subtitle":
-      content = <VideoSubtitleSection data={section.data as never} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} isAdmin={isAdmin} />;
+      content = <VideoSubtitleSection data={section.data as never} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} isAdmin={viewer.isAdmin} />;
       break;
     case "tool":
       content = <ToolSection {...props} />;
@@ -181,6 +223,7 @@ function renderSection(
           darkMode={darkMode}
           locale={page.locale ?? "en"}
           fullscreenHref={fullscreenHref}
+          identity={iframeToolIdentity(page, section, sectionOrder, viewer)}
         />
       );
       break;
@@ -244,11 +287,14 @@ export function PageRenderer({
   page,
   isLoggedIn = false,
   isAdmin = false,
+  userId = null,
 }: {
   page: PageData;
   isLoggedIn?: boolean;
   isAdmin?: boolean;
+  userId?: string | null;
 }) {
+  const viewer: PageViewer = { isLoggedIn, isAdmin, userId };
   const themeColor = page.themeColor || "#000000";
   const themeColorSecondary = page.themeColorSecondary || autoSecondaryColor(themeColor);
   const darkMode = page.darkMode ?? false;
@@ -310,9 +356,13 @@ export function PageRenderer({
     <div style={wrapperStyle}>
       {fontUrl && <link rel="stylesheet" href={fontUrl} />}
       {sortedSections.map((section, index) => {
-        // Gating primitive: a section may declare data.access="login".
-        // Anonymous visitors get a sign-in prompt instead of the section.
-        if (section.data?.access === "login" && !isLoggedIn) {
+        // Gating primitive: a section may declare data.access="login" or
+        // "admin". Anonymous visitors get a sign-in prompt instead of the
+        // section; a signed-in visitor who is not an admin does not see an
+        // admin section at all, since there is nothing they could do about it.
+        const decision = decideSectionAccess(section.data?.access, viewer);
+        if (decision === "hidden") return null;
+        if (decision === "sign-in") {
           const path = page.parentSlug
             ? `/p/${page.parentSlug}/${page.slug}`
             : `/p/${page.slug}`;
@@ -330,7 +380,7 @@ export function PageRenderer({
             </div>
           );
         }
-        return renderSection(section, index, themeColor, themeColorSecondary, darkMode, page, isAdmin);
+        return renderSection(section, index, themeColor, themeColorSecondary, darkMode, page, viewer);
       })}
     </div>
   );

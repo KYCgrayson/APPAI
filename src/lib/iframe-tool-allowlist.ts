@@ -53,3 +53,25 @@ export function checkIframeToolUrl(
     url,
   };
 }
+
+/**
+ * The URL the frame is actually pointed at. AppAI adds what the tool cannot
+ * know about the page it landed in — language, theme — and, only when the
+ * section opted in with `identity: true`, an `appai_session` the tool's backend
+ * can trade for the viewer's identity at
+ * `POST /api/v1/tools/sessions/introspect`.
+ *
+ * Both the inline section and the chrome-less fullscreen view render the same
+ * iframe, so they build the URL here rather than each on their own.
+ */
+export function buildIframeToolSrc(
+  rawSrc: string,
+  opts: { locale: string; themeColor: string; darkMode: boolean; sessionToken?: string | null },
+): string {
+  const url = new URL(rawSrc);
+  url.searchParams.set("locale", opts.locale);
+  url.searchParams.set("color", opts.themeColor);
+  if (opts.darkMode) url.searchParams.set("theme", "dark");
+  if (opts.sessionToken) url.searchParams.set("appai_session", opts.sessionToken);
+  return url.toString();
+}

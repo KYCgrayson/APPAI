@@ -1,7 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { checkIframeToolUrl } from "@/lib/iframe-tool-allowlist";
+import { buildIframeToolSrc, checkIframeToolUrl } from "@/lib/iframe-tool-allowlist";
+import {
+  useIframeToolSession,
+  type IframeToolIdentity,
+} from "./use-iframe-tool-session";
+
+/**
+ * A tool the publisher deployed somewhere else, wrapped in an AppAI page.
+ *
+ * Besides locale and theme, this is where AppAI hands the tool an identity —
+ * but only when the section asks for one with `identity: true`. The token rides
+ * on the initial URL as `appai_session`; after that it is refreshed over
+ * `postMessage`, never by changing `src`, because reloading the frame would
+ * throw away whatever the visitor was in the middle of.
+ */
 
 interface Props {
   data: {
@@ -11,25 +25,20 @@ interface Props {
     src?: string;
     initialHeight?: number;
     allowFullscreen?: boolean;
+    /** Opt in to `appai_session`. Absent or false: the tool learns nothing. */
+    identity?: boolean;
   };
   themeColor: string;
   darkMode?: boolean;
   locale?: string;
   /** Optional standalone URL to surface as a "Open fullscreen" affordance. */
   fullscreenHref?: string;
+  identity?: IframeToolIdentity | null;
 }
 
 const DEFAULT_HEIGHT = 600;
 const MIN_HEIGHT = 200;
 const MAX_HEIGHT = 4000;
-
-function buildIframeSrc(rawSrc: string, opts: { locale: string; themeColor: string; darkMode: boolean }): string {
-  const url = new URL(rawSrc);
-  url.searchParams.set("locale", opts.locale);
-  url.searchParams.set("color", opts.themeColor);
-  if (opts.darkMode) url.searchParams.set("theme", "dark");
-  return url.toString();
-}
 
 export function IframeToolSection({
   data,
@@ -37,6 +46,7 @@ export function IframeToolSection({
   darkMode = false,
   locale = "en",
   fullscreenHref,
+  identity = null,
 }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [height, setHeight] = useState<number>(
@@ -45,8 +55,10 @@ export function IframeToolSection({
   const [loaded, setLoaded] = useState(false);
 
   const check = data.src ? checkIframeToolUrl(data.src) : { ok: false, reason: "Missing src" };
-
   const trustedOrigin = check.ok && check.url ? check.url.origin : null;
+
+  const sessionToken = useIframeToolSession(iframeRef, trustedOrigin, identity);
+
   useEffect(() => {
     if (!trustedOrigin) return;
 
@@ -69,7 +81,7 @@ export function IframeToolSection({
   }, [trustedOrigin]);
 
   const finalSrc = check.ok && check.url
-    ? buildIframeSrc(data.src!, { locale, themeColor, darkMode })
+    ? buildIframeToolSrc(data.src!, { locale, themeColor, darkMode, sessionToken })
     : null;
 
   return (
