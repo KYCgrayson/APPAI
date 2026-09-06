@@ -51,7 +51,7 @@ const TOKEN_PREFIX = "appai1";
 export const IFRAME_TOOL_CAPABILITIES: readonly string[] = [];
 
 export interface IframeToolSessionClaims {
-  /** Origin this token is bound to, e.g. `https://my-tools.vercel.app`. */
+  /** Origin this token is bound to, e.g. `https://acme-tools.vercel.app`. */
   aud: string;
   /** Page slug the section sits on. Context for the tool, not a gate. */
   slug: string;

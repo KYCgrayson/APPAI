@@ -84,7 +84,7 @@ test("garbage, wrong shape and wrong version are rejected without throwing", () 
 });
 
 test("http origins are never a valid audience", () => {
-  assert.equal(normalizeToolOrigin("http://my-tools.vercel.app"), null);
+  assert.equal(normalizeToolOrigin("http://acme-tools.vercel.app"), null);
   assert.equal(normalizeToolOrigin("not a url"), null);
   assert.equal(normalizeToolOrigin("https://Example.com/a/b"), "https://example.com");
 });
