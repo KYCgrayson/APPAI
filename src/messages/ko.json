@@ -103,7 +103,10 @@
     "termsNotice": "로그인하면 이용약관에 동의하는 것으로 간주됩니다",
     "gateHeading": "{tool}을(를) 이용하려면 로그인하세요",
     "gateHeadingGeneric": "계속하려면 로그인하세요",
-    "gateDescription": "이 도구를 이용하려면 로그인이 필요합니다. 무료입니다."
+    "gateDescription": "이 도구를 이용하려면 로그인이 필요합니다. 무료입니다.",
+    "adminHeading": "{tool}은(는) 관리자 전용입니다",
+    "adminHeadingGeneric": "관리자 전용",
+    "adminDescription": "로그인되어 있지만 이 도구는 이 사이트의 관리자만 사용할 수 있습니다."
   },
   "logout": {
     "title": "AppAI에서 로그아웃할까요?",

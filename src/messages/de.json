@@ -103,7 +103,10 @@
     "termsNotice": "Durch die Anmeldung stimmst du unseren Nutzungsbedingungen zu",
     "gateHeading": "Melde dich an, um {tool} zu nutzen",
     "gateHeadingGeneric": "Melde dich an, um fortzufahren",
-    "gateDescription": "Du musst dich anmelden, um dieses Tool zu nutzen. Es ist kostenlos."
+    "gateDescription": "Du musst dich anmelden, um dieses Tool zu nutzen. Es ist kostenlos.",
+    "adminHeading": "{tool} ist nur für Admins",
+    "adminHeadingGeneric": "Nur für Admins",
+    "adminDescription": "Du bist angemeldet, aber dieses Tool steht nur den Administratoren dieser Seite offen."
   },
   "logout": {
     "title": "Von AppAI abmelden?",

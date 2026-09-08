@@ -4,9 +4,18 @@ import { signIn } from "@/lib/auth";
 import { locales, type Locale } from "@/i18n/routing";
 
 /**
- * Platform login gate. Rendered in place of a section that declares
- * `data.access = "login"` when the visitor is anonymous. Part of the
- * interactive-tools gating primitive (docs/interactive-tools-architecture.md).
+ * Platform access gate. Rendered in place of a section the visitor may not use,
+ * so the section is never simply missing — the page around it is describing
+ * this tool, and a hole where it should be reads as a broken page rather than a
+ * closed door. Part of the interactive-tools gating primitive
+ * (docs/interactive-tools-architecture.md).
+ *
+ * Two walls, and the difference matters to whoever hit one:
+ *
+ * - `sign-in` — anonymous, and signing in fixes it. Offers the button.
+ * - `admin-only` — signed in, and it still is not enough. Offers no button,
+ *   because there is nothing they could press that would help; saying so is the
+ *   entire job of the card.
  *
  * The gate follows the *page's* locale rather than the visitor's platform
  * language: it sits inline on the publisher's page and wraps the publisher's
@@ -20,12 +29,14 @@ export async function LoginGate({
   description,
   themeColor = "#2563eb",
   locale = "en",
+  mode = "sign-in",
 }: {
   redirectTo: string;
   heading?: string;
   description?: string;
   themeColor?: string;
   locale?: string;
+  mode?: "sign-in" | "admin-only";
 }) {
   // A page may carry a locale the platform has no messages for; next-intl
   // throws on an unknown locale, which would take the whole page down rather
@@ -44,12 +55,21 @@ export async function LoginGate({
           </svg>
         </div>
         <h2 className="text-2xl font-bold mb-2 text-gray-900">
-          {heading ? t("gateHeading", { tool: heading }) : t("gateHeadingGeneric")}
+          {mode === "admin-only"
+            ? heading
+              ? t("adminHeading", { tool: heading })
+              : t("adminHeadingGeneric")
+            : heading
+              ? t("gateHeading", { tool: heading })
+              : t("gateHeadingGeneric")}
         </h2>
         <p className="text-gray-600 mb-8">
-          {description ?? t("gateDescription")}
+          {/* The publisher's own description explains what the tool does, which
+              is the wrong answer to "why can't I use it" — so an admin-only
+              card always speaks for itself. */}
+          {mode === "admin-only" ? t("adminDescription") : description ?? t("gateDescription")}
         </p>
-        <form
+        {mode === "admin-only" ? null : <form
           action={async () => {
             "use server";
             await signIn("google", { redirectTo });
@@ -68,7 +88,7 @@ export async function LoginGate({
             </svg>
             {t("signInGoogle")}
           </button>
-        </form>
+        </form>}
       </div>
     </section>
   );

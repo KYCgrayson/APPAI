@@ -164,15 +164,19 @@ export function verifyIframeToolSession(
 }
 
 /** What a section's `data.access` asks the platform to do about this viewer. */
-export type SectionAccessDecision = "render" | "sign-in" | "hidden";
+export type SectionAccessDecision = "render" | "sign-in" | "admin-only";
 
 /**
  * The gate every section shares. `login` was the only rung that existed;
  * `admin` is the same gate one step further, so a tool can be published — and
  * indexed, and linked — while remaining usable only by the owner.
  *
- * A logged-in non-admin gets `hidden` rather than a second prompt: they are
- * already signed in, so there is nothing for them to do about it.
+ * A gated section is always *there*. The page around it is a public landing
+ * page whose hero, features and FAQ all describe this tool, so removing the
+ * tool alone would leave a signed-in visitor seeing less than an anonymous one
+ * and no reason why. Blocked viewers get a card in its place that says which
+ * wall they hit: `sign-in` when signing in would fix it, `admin-only` when it
+ * would not, because they are already signed in and it is not enough.
  */
 export function decideSectionAccess(
   access: unknown,
@@ -180,7 +184,7 @@ export function decideSectionAccess(
 ): SectionAccessDecision {
   if (access !== "login" && access !== "admin") return "render";
   if (!viewer.isLoggedIn) return "sign-in";
-  if (access === "admin" && !viewer.isAdmin) return "hidden";
+  if (access === "admin" && !viewer.isAdmin) return "admin-only";
   return "render";
 }
 

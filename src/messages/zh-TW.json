@@ -103,7 +103,10 @@
     "termsNotice": "登入即表示您同意我們的服務條款",
     "gateHeading": "登入後即可使用「{tool}」",
     "gateHeadingGeneric": "請先登入",
-    "gateDescription": "使用這項工具需要先登入，完全免費。"
+    "gateDescription": "使用這項工具需要先登入，完全免費。",
+    "adminHeading": "{tool} 僅限管理者使用",
+    "adminHeadingGeneric": "僅限管理者",
+    "adminDescription": "您已經登入,但這項工具僅限本站的管理者使用。"
   },
   "logout": {
     "title": "要登出 AppAI 嗎？",

@@ -103,7 +103,10 @@
     "termsNotice": "登录即表示您同意我们的服务条款",
     "gateHeading": "登录后即可使用「{tool}」",
     "gateHeadingGeneric": "请先登录",
-    "gateDescription": "使用这项工具需要先登录，完全免费。"
+    "gateDescription": "使用这项工具需要先登录，完全免费。",
+    "adminHeading": "{tool} 仅限管理员使用",
+    "adminHeadingGeneric": "仅限管理员",
+    "adminDescription": "您已登录,但此工具仅限本站的管理员使用。"
   },
   "logout": {
     "title": "要退出 AppAI 吗？",

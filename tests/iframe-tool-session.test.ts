@@ -98,12 +98,31 @@ test("access gate: login and admin, for each kind of visitor", () => {
   assert.equal(decideSectionAccess("login", anon), "sign-in");
   assert.equal(decideSectionAccess("login", user), "render");
   assert.equal(decideSectionAccess("admin", anon), "sign-in");
-  // Signed in but not an admin: hidden, not prompted — signing in again is not
-  // going to help.
-  assert.equal(decideSectionAccess("admin", user), "hidden");
+  // Signed in but not an admin. Not "render", and not gone either: the section
+  // holds its place and says why, because signing in again would not help and
+  // a silently missing tool looks like a broken page.
+  assert.equal(decideSectionAccess("admin", user), "admin-only");
   assert.equal(decideSectionAccess("admin", admin), "render");
   // An unknown value must not be read as a gate that happens to be open.
   assert.equal(decideSectionAccess("owner", user), "render");
+});
+
+test("a gated section is never simply absent", () => {
+  // The page around it is a landing page for this very tool. Whatever the
+  // viewer is, the platform owes them either the tool or a reason.
+  for (const access of ["login", "admin"]) {
+    for (const viewer of [
+      { isLoggedIn: false, isAdmin: false },
+      { isLoggedIn: true, isAdmin: false },
+      { isLoggedIn: true, isAdmin: true },
+    ]) {
+      const decision = decideSectionAccess(access, viewer);
+      assert.ok(
+        decision === "render" || decision === "sign-in" || decision === "admin-only",
+        `${access} + ${JSON.stringify(viewer)} produced ${decision}`,
+      );
+    }
+  }
 });
 
 test("identity is opt-in and strictly boolean true", () => {

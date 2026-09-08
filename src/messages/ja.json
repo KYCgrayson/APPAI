@@ -103,7 +103,10 @@
     "termsNotice": "サインインすることで、利用規約に同意したものとみなされます",
     "gateHeading": "{tool}を利用するにはサインインしてください",
     "gateHeadingGeneric": "続けるにはサインインしてください",
-    "gateDescription": "このツールの利用にはサインインが必要です。無料でご利用いただけます。"
+    "gateDescription": "このツールの利用にはサインインが必要です。無料でご利用いただけます。",
+    "adminHeading": "{tool} は管理者専用です",
+    "adminHeadingGeneric": "管理者専用",
+    "adminDescription": "ログインは済んでいますが、このツールはこのサイトの管理者のみが利用できます。"
   },
   "logout": {
     "title": "AppAI からログアウトしますか？",

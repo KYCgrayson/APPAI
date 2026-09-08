@@ -357,12 +357,12 @@ export function PageRenderer({
       {fontUrl && <link rel="stylesheet" href={fontUrl} />}
       {sortedSections.map((section, index) => {
         // Gating primitive: a section may declare data.access="login" or
-        // "admin". Anonymous visitors get a sign-in prompt instead of the
-        // section; a signed-in visitor who is not an admin does not see an
-        // admin section at all, since there is nothing they could do about it.
+        // "admin". Either way the section keeps its place on the page and a
+        // card explains the wall — the hero and FAQ around it are already
+        // describing this tool, so a gap where it should be reads as broken
+        // rather than closed.
         const decision = decideSectionAccess(section.data?.access, viewer);
-        if (decision === "hidden") return null;
-        if (decision === "sign-in") {
+        if (decision !== "render") {
           const path = page.parentSlug
             ? `/p/${page.parentSlug}/${page.slug}`
             : `/p/${page.slug}`;
@@ -371,6 +371,7 @@ export function PageRenderer({
           return (
             <div key={index} id={section.data?.id || undefined}>
               <LoginGate
+                mode={decision}
                 redirectTo={path}
                 heading={section.data?.heading || page.title}
                 description={section.data?.description || page.tagline || undefined}

@@ -95,9 +95,14 @@ logic**:
   they are not agent-writable); you reference one by name.
 - **Login gating**: add `"access": "login"` to the section's `data`. Anonymous
   visitors get a platform sign-in prompt in place of the section. `"access":
-  "admin"` is the same gate one step further: anonymous visitors are prompted,
-  signed-in non-admins do not see the section at all. Both gates also cover the
+  "admin"` is the same gate one step further: signing in is not enough, the
+  visitor has to be an administrator of the site. Both gates also cover the
   fullscreen tool URL, so neither is a thing you can walk around.
+  **A gated section still occupies its place on the page** — blocked visitors
+  get a card saying which wall they hit, never a gap. The hero and FAQ around it
+  are describing this tool; a hole where the tool should be reads as a broken
+  page, not a closed door. So write the surrounding sections for everyone, and
+  let the gate speak for itself.
 - **Quota**: declared on the connector (`per user/ip`, `limit`, `window`);
   admins are exempt. Enforced automatically by the proxy.
 - **Large files do not go through the proxy.** It reads the whole upstream

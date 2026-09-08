@@ -103,7 +103,10 @@
     "termsNotice": "Al iniciar sesión, aceptas nuestros términos de servicio",
     "gateHeading": "Inicia sesión para usar {tool}",
     "gateHeadingGeneric": "Inicia sesión para continuar",
-    "gateDescription": "Necesitas iniciar sesión para usar esta herramienta. Es gratis."
+    "gateDescription": "Necesitas iniciar sesión para usar esta herramienta. Es gratis.",
+    "adminHeading": "{tool} es solo para administradores",
+    "adminHeadingGeneric": "Solo para administradores",
+    "adminDescription": "Has iniciado sesión, pero esta herramienta está reservada a los administradores de este sitio."
   },
   "logout": {
     "title": "¿Cerrar sesión en AppAI?",

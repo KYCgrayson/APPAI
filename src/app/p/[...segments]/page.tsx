@@ -267,13 +267,13 @@ export default async function HostedPage({ params }: Props) {
     const themeColor = rootPage.themeColor || "#000000";
 
     // The fullscreen view renders the same section, so it answers to the same
-    // gate. Without this it is a way around `access` — the section is hidden
-    // inline while its own URL still hands the tool over.
+    // gate — and says the same thing about it. Without this it is a way around
+    // `access`: gated inline while its own URL still hands the tool over.
     const decision = decideSectionAccess(data.access, { isLoggedIn, isAdmin });
-    if (decision === "hidden") notFound();
-    if (decision === "sign-in") {
+    if (decision !== "render") {
       return (
         <LoginGate
+          mode={decision}
           redirectTo={`/p/${rootPage.slug}/tools/${toolOrder}`}
           heading={data.heading || rootPage.title}
           description={rootPage.tagline || undefined}

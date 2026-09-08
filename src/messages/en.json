@@ -103,7 +103,10 @@
     "termsNotice": "By signing in, you agree to our Terms of Service",
     "gateHeading": "Sign in to use {tool}",
     "gateHeadingGeneric": "Sign in to continue",
-    "gateDescription": "You need to sign in to use this tool. It's free."
+    "gateDescription": "You need to sign in to use this tool. It's free.",
+    "adminHeading": "{tool} is for admins only",
+    "adminHeadingGeneric": "Admins only",
+    "adminDescription": "You're signed in, but this tool is limited to this site's administrators."
   },
   "logout": {
     "title": "Sign out of AppAI?",
