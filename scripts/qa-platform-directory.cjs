@@ -49,9 +49,11 @@ function assert(value, message) { if (!value) throw new Error(message); }
     await link.click();
     await page.waitForURL('**/people/grayson');
     assert(await page.getByRole('heading', { name: 'Grayson', exact: true }).count(), 'Profile heading missing');
-    for (const name of ['ChefChef', 'MedLogAI', 'Meyer Burger', 'Chroma ATE']) {
+    for (const name of ['ChefChef', 'MedLogAI', 'APAC commercial development', 'Cross-border delivery', 'AI product building']) {
       assert(await page.getByRole('heading', { name: new RegExp(`^${name}(?:\\s|$)`) }).count(), `Missing profile content: ${name}`);
     }
+    const profileText = await page.textContent('body');
+    assert(!/Meyer Burger|Chroma ATE/.test(profileText), 'Company details remain on personal site');
     await screenshot('profile-desktop.png');
     await noOverflow();
   });
@@ -96,7 +98,10 @@ function assert(value, message) { if (!value) throw new Error(message); }
     await page.locator('a[href="/zh-TW/people/grayson"]').first().click();
     await page.waitForURL('**/zh-TW/people/grayson');
     assert((await page.textContent('body')).includes('商務'), 'Chinese profile content missing');
+    assert(!/Meyer Burger|Chroma ATE/.test(await page.textContent('body')), 'Company details remain in Traditional Chinese');
     await screenshot('profile-zh-TW.png');
+    assert((await visit('/zh-CN/people/grayson')).status() === 200, 'Simplified Chinese profile unavailable');
+    assert(!/Meyer Burger|Chroma ATE/.test(await page.textContent('body')), 'Company details remain in Simplified Chinese');
   });
   await check('Unknown profile returns 404 and no personal content', async () => {
     const response = await visit('/people/no-such-person-qa');

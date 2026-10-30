@@ -15,6 +15,9 @@ preview, not deployment to appai.info or the state of the other iMac.
 - First-party `/people/grayson` with English, Traditional Chinese and Simplified
   Chinese copy; other platform locales fall back to English. Content lives in
   `src/lib/people.ts`. Published lookup is shared by page, directory and sitemap.
+- Experience is summarized by capability (APAC commercial development,
+  cross-border delivery and AI product building), without employer names or
+  individual company histories.
 - Website purpose filters collapse on mobile and desktop until requested.
 - X/Twitter daily digest is a future Tool, not a new top-level category or an
   available feature in this release.

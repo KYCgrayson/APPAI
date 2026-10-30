@@ -145,10 +145,9 @@ export default async function PersonalWebsite({ params }: Props) {
             </div>
             <div className="divide-y divide-[#d9dfd8] border-y border-[#d9dfd8]">
               {copy.experience.map((item) => (
-                <article key={item.organization} className="grid gap-2 py-6 sm:grid-cols-[0.7fr_1.3fr] sm:gap-8 sm:py-7">
+                <article key={item.title} className="grid gap-2 py-6 sm:grid-cols-[0.7fr_1.3fr] sm:gap-8 sm:py-7">
                   <div>
-                    <h3 className="font-serif text-xl">{item.organization}</h3>
-                    <p className="mt-1 text-xs font-medium uppercase tracking-[0.1em] text-[#54877e]">{item.area}</p>
+                    <h3 className="font-serif text-xl">{item.title}</h3>
                   </div>
                   <p className="text-sm leading-7 text-[#65716d]">{item.description}</p>
                 </article>

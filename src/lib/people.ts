@@ -15,8 +15,7 @@ export interface ProfileCopy {
     href: string | null;
   }>;
   experience: Array<{
-    organization: string;
-    area: string;
+    title: string;
     description: string;
   }>;
   contactNote: string;
@@ -88,22 +87,16 @@ const profiles: readonly EditorialProfile[] = [
         ],
         experience: [
           {
-            organization: "Meyer Burger",
-            area: "Capital-equipment commercialization",
-            description:
-              "Commercial work around capital equipment, including customer coordination and cross-border delivery and acceptance.",
+            title: "APAC commercial development",
+            description: "Developing customer relationships and commercial opportunities across APAC.",
           },
           {
-            organization: "Chroma ATE",
-            area: "Automated optical inspection",
-            description:
-              "Commercial experience connected to AOI systems and inspection technology.",
+            title: "Cross-border delivery",
+            description: "Coordinating customer needs, delivery, and acceptance across markets.",
           },
           {
-            organization: "Independent product building",
-            area: "AI-enabled products",
-            description:
-              "Building and refining products directly, from framing a user problem through implementation and release work.",
+            title: "AI product building",
+            description: "Taking part directly in shaping product problems and implementing AI-enabled software.",
           },
         ],
         contactNote: "Contact details will be added after review.",
@@ -149,19 +142,16 @@ const profiles: readonly EditorialProfile[] = [
         ],
         experience: [
           {
-            organization: "Meyer Burger",
-            area: "資本設備商務化",
-            description: "參與資本設備相關商務工作，包括客戶協調、跨境交付與驗收。",
+            title: "亞太商務拓展",
+            description: "透過客戶協作與商務規劃，推進亞太區的商務機會。",
           },
           {
-            organization: "Chroma ATE",
-            area: "自動光學檢測",
-            description: "具備與 AOI 系統及檢測技術相關的商務經驗。",
+            title: "跨境交付",
+            description: "協調不同市場的客戶需求、交付流程與驗收安排。",
           },
           {
-            organization: "獨立產品開發",
-            area: "AI 應用產品",
-            description: "親自投入產品開發與調整，從釐清使用者問題到實作及發布工作。",
+            title: "AI 產品實作",
+            description: "親自參與 AI 軟體產品的問題梳理與功能實作。",
           },
         ],
         contactNote: "聯絡資訊將於確認後補上。",
@@ -207,19 +197,16 @@ const profiles: readonly EditorialProfile[] = [
         ],
         experience: [
           {
-            organization: "Meyer Burger",
-            area: "资本设备商业化",
-            description: "参与资本设备相关商务工作，包括客户协调、跨境交付与验收。",
+            title: "亚太商务拓展",
+            description: "通过客户协作与商务规划，推进亚太区的商务机会。",
           },
           {
-            organization: "Chroma ATE",
-            area: "自动光学检测",
-            description: "具备与 AOI 系统及检测技术相关的商务经验。",
+            title: "跨境交付",
+            description: "协调不同市场的客户需求、交付流程与验收安排。",
           },
           {
-            organization: "独立产品开发",
-            area: "AI 应用产品",
-            description: "亲自投入产品开发与调整，从梳理用户问题到实现及发布工作。",
+            title: "AI 产品实践",
+            description: "亲自参与 AI 软件产品的问题梳理与功能实现。",
           },
         ],
         contactNote: "联系信息将在确认后补充。",
