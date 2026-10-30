@@ -1,17 +1,20 @@
 export const dynamic = "force-dynamic";
 
 import { getLocale, getTranslations } from "next-intl/server";
+import NextLink from "next/link";
 import { Link } from "@/i18n/navigation";
 import { db } from "@/lib/db";
 import { AppCard } from "@/components/AppCard";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { PlatformFooter } from "@/components/PlatformFooter";
 import { groupByKey, pickByLocale } from "@/lib/locale-match";
+import { getDirectoryCopy } from "@/lib/directory-copy";
 
 export default async function HomePage() {
   const t = await getTranslations("home");
   const tc = await getTranslations("common");
   const locale = await getLocale();
+  const directoryCopy = getDirectoryCopy(locale);
 
   const [featuredApps, recentApps, totalPages] = await Promise.all([
     db.app.findMany({
@@ -73,12 +76,12 @@ export default async function HomePage() {
             {t("heroDescription")}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
+            <NextLink
               href="/dashboard"
               className="inline-block bg-cyan-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-cyan-500 transition-colors shadow-lg shadow-cyan-600/20"
             >
               {t("getStarted")}
-            </a>
+            </NextLink>
             <Link
               href="/apps"
               className="inline-block border border-gray-700 text-gray-300 px-8 py-4 rounded-xl font-semibold hover:border-gray-500 hover:text-white transition-colors"
@@ -110,6 +113,27 @@ export default async function HomePage() {
           <p className="mt-8 text-xs text-gray-600 uppercase tracking-widest">
             AI-native landing infrastructure · built for agents, ready for production
           </p>
+        </div>
+      </section>
+
+      {/* Public directory entrances */}
+      <section aria-labelledby="directory-entrances" className="border-y border-gray-800 bg-gray-900/40 px-6 py-16">
+        <div className="mx-auto max-w-6xl">
+          <h2 id="directory-entrances" className="text-center text-3xl font-bold text-white">{directoryCopy.entranceTitle}</h2>
+          <p className="mx-auto mb-8 mt-3 max-w-2xl text-center text-gray-400">{directoryCopy.entranceDescription}</p>
+          <div className="grid gap-5 md:grid-cols-3">
+            {(["websites", "tools", "apps"] as const).map((section) => {
+              const item = directoryCopy.entrances[section];
+              return (
+                <Link key={section} href={section === "apps" ? "/apps?kind=apps" : `/${section}`} className="group rounded-2xl border border-gray-800 bg-gray-950 p-6 transition-colors hover:border-cyan-700/70">
+                  <p className="text-xs uppercase tracking-widest text-cyan-400">{directoryCopy.categories[section]}</p>
+                  <h3 className="mt-3 text-xl font-semibold text-white">{item.title}</h3>
+                  <p className="mt-2 min-h-12 text-sm leading-relaxed text-gray-400">{item.description}</p>
+                  <span className="mt-5 inline-block text-sm font-medium text-cyan-300 group-hover:text-cyan-200">{item.action} <span aria-hidden="true">→</span></span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </section>
 
@@ -318,12 +342,12 @@ export default async function HomePage() {
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl font-bold mb-4 text-white">{t("readyToLaunch")}</h2>
           <p className="text-gray-400 mb-8">{t("ctaDescription")}</p>
-          <a
+          <NextLink
             href="/dashboard"
             className="inline-block bg-cyan-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-cyan-500 transition-colors shadow-lg shadow-cyan-600/20"
           >
             {t("getStarted")}
-          </a>
+          </NextLink>
         </div>
       </section>
 
