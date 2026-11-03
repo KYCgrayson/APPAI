@@ -5,6 +5,13 @@ preview, not deployment to appai.info or the state of the other iMac.
 
 ## Delivered
 
+- Refined Grayson profile in all three languages with larger typography, six
+  ordered projects (ChefChef, MedLogAI / 健保快追蹤, AppAI, ShiftSnap, Simpleshop,
+  YouTube video tools), local icons and screenshots, and reviewed project links.
+  Simpleshop uses a monogram pending artwork. Terracotta accents and reduced-motion
+  aware card reveals retain the off-white serif layout. Avatar and contact links
+  are nullable data fields pending owner input; existing career copy is retained.
+
 - Websites `/websites`, Tools `/tools`, Apps `/apps?kind=apps` entrances.
 - `/apps` retains the complete existing catalog and purpose filters.
 - Product form is separate from purpose (`MEDIA`, `SOCIAL`, etc.).

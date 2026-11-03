@@ -12,7 +12,9 @@ export interface ProfileCopy {
     name: string;
     category: string;
     description: string;
-    href: string | null;
+    icon: { src: string } | null;
+    screenshot: { src: string; alt: string; kind: "phone" | "web"; width: number; height: number } | null;
+    links: Array<{ label: string; href: string }>;
   }>;
   experience: Array<{
     title: string;
@@ -26,6 +28,8 @@ export interface EditorialProfile {
   name: string;
   tagline: string;
   initials: string;
+  avatar: { src: string; alt: string } | null;
+  links: { linkedin: string | null; youtube: string | null };
   published: boolean;
   copy: Record<ProfileLocale, ProfileCopy>;
 }
@@ -40,6 +44,9 @@ const profiles: readonly EditorialProfile[] = [
     name: "Grayson",
     tagline: "Commercial perspective. Product builder's instinct.",
     initials: "G",
+    // TODO(owner): LinkedIn URL, YouTube channel, and local avatar file under public/people/grayson/ pending from owner (no remote next/image hosts configured).
+    avatar: null,
+    links: { linkedin: null, youtube: null },
     published: true,
     copy: {
       en: {
@@ -58,31 +65,130 @@ const profiles: readonly EditorialProfile[] = [
         projects: [
           {
             name: "ChefChef",
-            category: "AI recipe product",
-            description:
-              "Turns YouTube cooking videos into structured recipes and a hands-free cooking assistant.",
-            href: "https://chefchef.app/",
+            category: "iOS app · AI cooking",
+            description: "Turns YouTube cooking videos into step-by-step recipes and a hands-free, voice-guided cooking assistant.",
+            icon: {
+              src: "/people/grayson/chefchef-icon.png",
+            },
+            screenshot: {
+              src: "/people/grayson/chefchef-en-1.webp",
+              alt: "ChefChef — app screenshot",
+              kind: "phone",
+              width: 600,
+              height: 1304,
+            },
+            links: [
+              {
+                label: "App Store",
+                href: "https://apps.apple.com/us/app/chefchef-ai-youtube-to-recipe/id6754978898",
+              },
+              {
+                label: "Website",
+                href: "https://chefchef.app/",
+              },
+            ],
           },
+          // TODO(owner): confirm naming — zh pages use 健保快追蹤, en uses MedLogAI.
           {
             name: "MedLogAI",
-            category: "Health record product",
-            description:
-              "A health record product focused on helping people keep and understand their personal medical information.",
-            href: null,
+            category: "iOS app · Health records",
+            description: "Imports your lab results from Taiwan's NHI health records app, tracks the trends over time and explains each test item with AI. Not an official NHI app; not medical advice.",
+            icon: {
+              src: "/people/grayson/medlog-icon.png",
+            },
+            screenshot: {
+              src: "/people/grayson/medlog-1.webp",
+              alt: "MedLogAI — app screenshot",
+              kind: "phone",
+              width: 600,
+              height: 1304,
+            },
+            links: [
+              {
+                label: "App Store",
+                href: "https://apps.apple.com/us/app/%E5%81%A5%E4%BF%9D%E5%BF%AB%E8%BF%BD%E8%B9%A4-%E6%AA%A2%E9%A9%97%E5%A0%B1%E5%91%8A%E8%88%87%E6%8A%BD%E8%A1%80%E6%95%B8%E5%80%BC%E8%B6%A8%E5%8B%A2%E5%88%86%E6%9E%90/id6760481129",
+              },
+            ],
           },
           {
             name: "AppAI",
-            category: "Publishing platform",
-            description:
-              "A platform for publishing AI-built websites and applications with managed capabilities.",
-            href: "/websites",
+            category: "Platform",
+            description: "A hosting platform where AI agents publish landing pages, tools and apps for their creators — no domain needed.",
+            icon: {
+              src: "/people/grayson/appai-icon.png",
+            },
+            screenshot: {
+              src: "/people/grayson/appai-en-1.jpg",
+              alt: "AppAI — app screenshot",
+              kind: "web",
+              width: 900,
+              height: 562,
+            },
+            links: [
+              {
+                label: "appai.info",
+                href: "/",
+              },
+            ],
           },
           {
-            name: "Personal experiments",
-            category: "Ongoing practice",
-            description:
-              "Small experiments in software, automation, and practical ways to bring AI into everyday work.",
-            href: null,
+            name: "ShiftSnap",
+            category: "Mobile app · In development",
+            description: "Snap a photo of a paper shift roster; AI reads it and syncs the shifts to your calendar.",
+            icon: {
+              src: "/people/grayson/shiftsnap-icon.png",
+            },
+            screenshot: {
+              src: "/people/grayson/shiftsnap-1.jpg",
+              alt: "ShiftSnap — app screenshot",
+              kind: "phone",
+              width: 600,
+              height: 1304,
+            },
+            links: [],
+          },
+          {
+            name: "Simpleshop",
+            category: "Web app · In development",
+            description: "A simple shop-management app for small businesses: customers, job sites and items in one place, running on AppAI.",
+            icon: null,
+            screenshot: {
+              src: "/people/grayson/simpleshop-1.jpg",
+              alt: "Simpleshop customers and job sites screen (demo data)",
+              kind: "web",
+              width: 900,
+              height: 562,
+            },
+            links: [],
+          },
+          {
+            name: "YouTube video tools",
+            category: "Web tools",
+            description: "A set of tools for video work: downloading media, generating subtitles, and cutting livestream highlights automatically.",
+            icon: {
+              src: "/people/grayson/youtube-tools-icon.png",
+            },
+            screenshot: {
+              src: "/people/grayson/youtube-tools-1.jpg",
+              alt: "YouTube video tools — app screenshot",
+              kind: "web",
+              width: 900,
+              height: 562,
+            },
+            links: [
+              {
+                label: "Media Downloader",
+                href: "/p/media-downloader",
+              },
+              {
+                label: "Subtitle Studio",
+                href: "/p/subtitle",
+              },
+              {
+                label: "Stream Highlights",
+                href: "/p/stream-highlights",
+              },
+            ],
           },
         ],
         experience: [
@@ -117,27 +223,130 @@ const profiles: readonly EditorialProfile[] = [
         projects: [
           {
             name: "ChefChef",
-            category: "AI 食譜產品",
-            description: "將 YouTube 烹飪影片整理成結構化食譜，並提供烹飪過程中的語音助理。",
-            href: "https://chefchef.app/",
+            category: "iOS App · AI 料理",
+            description: "把 YouTube 料理影片變成一步步的食譜，下廚時用語音帶著你做，不用動手滑手機。",
+            icon: {
+              src: "/people/grayson/chefchef-icon.png",
+            },
+            screenshot: {
+              src: "/people/grayson/chefchef-zh-1.webp",
+              alt: "ChefChef App 畫面",
+              kind: "phone",
+              width: 600,
+              height: 1304,
+            },
+            links: [
+              {
+                label: "App Store",
+                href: "https://apps.apple.com/tw/app/chefchef-youtube%E9%A3%9F%E8%AD%9C%E6%96%99%E7%90%86ai/id6754978898",
+              },
+              {
+                label: "網站",
+                href: "https://chefchef.app/",
+              },
+            ],
           },
+          // TODO(owner): confirm naming — zh pages use 健保快追蹤, en uses MedLogAI.
           {
-            name: "MedLogAI",
-            category: "健康紀錄產品",
-            description: "聚焦於協助使用者保存並理解個人醫療資訊的健康紀錄產品。",
-            href: null,
+            name: "健保快追蹤",
+            category: "iOS App · 健康紀錄",
+            description: "匯入健保「健康存摺」的檢驗資料，整理歷次結果、看數值趨勢，並用 AI 說明每個檢驗項目。非健保署官方 App，不提供醫療建議。",
+            icon: {
+              src: "/people/grayson/medlog-icon.png",
+            },
+            screenshot: {
+              src: "/people/grayson/medlog-1.webp",
+              alt: "健保快追蹤 App 畫面",
+              kind: "phone",
+              width: 600,
+              height: 1304,
+            },
+            links: [
+              {
+                label: "App Store",
+                href: "https://apps.apple.com/tw/app/%E5%81%A5%E4%BF%9D%E5%BF%AB%E8%BF%BD%E8%B9%A4-%E6%AA%A2%E9%A9%97%E5%A0%B1%E5%91%8A%E8%88%87%E6%8A%BD%E8%A1%80%E6%95%B8%E5%80%BC%E8%B6%A8%E5%8B%A2%E5%88%86%E6%9E%90/id6760481129",
+              },
+            ],
           },
           {
             name: "AppAI",
-            category: "網站發布平台",
-            description: "讓 AI 建立的網站與應用程式能透過平台發布並使用受管理的能力。",
-            href: "/websites",
+            category: "平台",
+            description: "讓 AI agent 為創作者發布網站、工具與應用程式的託管平台，不需要自己的網域。",
+            icon: {
+              src: "/people/grayson/appai-icon.png",
+            },
+            screenshot: {
+              src: "/people/grayson/appai-zh-1.jpg",
+              alt: "AppAI 網站畫面",
+              kind: "web",
+              width: 900,
+              height: 562,
+            },
+            links: [
+              {
+                label: "appai.info",
+                href: "/",
+              },
+            ],
           },
           {
-            name: "個人實驗",
-            category: "持續探索",
-            description: "持續嘗試軟體、自動化，以及 AI 如何實際融入日常工作。",
-            href: null,
+            name: "ShiftSnap",
+            category: "手機 App · 開發中",
+            description: "拍下紙本班表，AI 自動辨識並把班表同步到行事曆。",
+            icon: {
+              src: "/people/grayson/shiftsnap-icon.png",
+            },
+            screenshot: {
+              src: "/people/grayson/shiftsnap-1.jpg",
+              alt: "ShiftSnap App 畫面",
+              kind: "phone",
+              width: 600,
+              height: 1304,
+            },
+            links: [],
+          },
+          {
+            name: "Simpleshop",
+            category: "網頁 App · 開發中",
+            description: "給小店家的簡單管理工具：客戶、施工地點與品項集中管理，跑在 AppAI 上。",
+            icon: null,
+            screenshot: {
+              src: "/people/grayson/simpleshop-1.jpg",
+              alt: "Simpleshop 客戶與工地畫面（示範資料）",
+              kind: "web",
+              width: 900,
+              height: 562,
+            },
+            links: [],
+          },
+          {
+            name: "YouTube 影片工具",
+            category: "網頁工具",
+            description: "做影片用的一組工具：下載影音、產生字幕、直播結束後自動剪出精華。",
+            icon: {
+              src: "/people/grayson/youtube-tools-icon.png",
+            },
+            screenshot: {
+              src: "/people/grayson/youtube-tools-1.jpg",
+              alt: "YouTube 影片工具 網站畫面",
+              kind: "web",
+              width: 900,
+              height: 562,
+            },
+            links: [
+              {
+                label: "Media Downloader",
+                href: "/p/media-downloader",
+              },
+              {
+                label: "Subtitle Studio",
+                href: "/p/subtitle",
+              },
+              {
+                label: "Stream Highlights",
+                href: "/p/stream-highlights",
+              },
+            ],
           },
         ],
         experience: [
@@ -172,27 +381,130 @@ const profiles: readonly EditorialProfile[] = [
         projects: [
           {
             name: "ChefChef",
-            category: "AI 食谱产品",
-            description: "将 YouTube 烹饪视频整理成结构化食谱，并提供烹饪过程中的语音助手。",
-            href: "https://chefchef.app/",
+            category: "iOS App · AI 烹饪",
+            description: "把 YouTube 烹饪视频变成分步骤的食谱，做菜时用语音带着你做，不用动手滑手机。",
+            icon: {
+              src: "/people/grayson/chefchef-icon.png",
+            },
+            screenshot: {
+              src: "/people/grayson/chefchef-zh-1.webp",
+              alt: "ChefChef App 画面",
+              kind: "phone",
+              width: 600,
+              height: 1304,
+            },
+            links: [
+              {
+                label: "App Store",
+                href: "https://apps.apple.com/tw/app/chefchef-youtube%E9%A3%9F%E8%AD%9C%E6%96%99%E7%90%86ai/id6754978898",
+              },
+              {
+                label: "网站",
+                href: "https://chefchef.app/",
+              },
+            ],
           },
+          // TODO(owner): confirm naming — zh pages use 健保快追蹤, en uses MedLogAI.
           {
-            name: "MedLogAI",
-            category: "健康记录产品",
-            description: "聚焦于帮助用户保存并理解个人医疗信息的健康记录产品。",
-            href: null,
+            name: "健保快追蹤",
+            category: "iOS App · 健康记录",
+            description: "导入台湾健保「健康存折」的检验数据，整理历次结果、查看数值趋势，并用 AI 解释每个检验项目。非健保署官方 App，不提供医疗建议。",
+            icon: {
+              src: "/people/grayson/medlog-icon.png",
+            },
+            screenshot: {
+              src: "/people/grayson/medlog-1.webp",
+              alt: "健保快追蹤 App 画面",
+              kind: "phone",
+              width: 600,
+              height: 1304,
+            },
+            links: [
+              {
+                label: "App Store",
+                href: "https://apps.apple.com/tw/app/%E5%81%A5%E4%BF%9D%E5%BF%AB%E8%BF%BD%E8%B9%A4-%E6%AA%A2%E9%A9%97%E5%A0%B1%E5%91%8A%E8%88%87%E6%8A%BD%E8%A1%80%E6%95%B8%E5%80%BC%E8%B6%A8%E5%8B%A2%E5%88%86%E6%9E%90/id6760481129",
+              },
+            ],
           },
           {
             name: "AppAI",
-            category: "网站发布平台",
-            description: "让 AI 构建的网站与应用程序通过平台发布并使用受管理的能力。",
-            href: "/websites",
+            category: "平台",
+            description: "让 AI agent 为创作者发布网站、工具与应用的托管平台，不需要自己的域名。",
+            icon: {
+              src: "/people/grayson/appai-icon.png",
+            },
+            screenshot: {
+              src: "/people/grayson/appai-zh-1.jpg",
+              alt: "AppAI 网站画面",
+              kind: "web",
+              width: 900,
+              height: 562,
+            },
+            links: [
+              {
+                label: "appai.info",
+                href: "/",
+              },
+            ],
           },
           {
-            name: "个人实验",
-            category: "持续探索",
-            description: "持续尝试软件、自动化，以及 AI 如何实际融入日常工作。",
-            href: null,
+            name: "ShiftSnap",
+            category: "手机 App · 开发中",
+            description: "拍下纸质排班表，AI 自动识别并把班次同步到日历。",
+            icon: {
+              src: "/people/grayson/shiftsnap-icon.png",
+            },
+            screenshot: {
+              src: "/people/grayson/shiftsnap-1.jpg",
+              alt: "ShiftSnap App 画面",
+              kind: "phone",
+              width: 600,
+              height: 1304,
+            },
+            links: [],
+          },
+          {
+            name: "Simpleshop",
+            category: "网页 App · 开发中",
+            description: "给小店家的简单管理工具：客户、施工地点与品项集中管理，运行在 AppAI 上。",
+            icon: null,
+            screenshot: {
+              src: "/people/grayson/simpleshop-1.jpg",
+              alt: "Simpleshop 客户与工地画面（示范数据）",
+              kind: "web",
+              width: 900,
+              height: 562,
+            },
+            links: [],
+          },
+          {
+            name: "YouTube 视频工具",
+            category: "网页工具",
+            description: "做视频用的一组工具：下载音视频、生成字幕、直播结束后自动剪出精华。",
+            icon: {
+              src: "/people/grayson/youtube-tools-icon.png",
+            },
+            screenshot: {
+              src: "/people/grayson/youtube-tools-1.jpg",
+              alt: "YouTube 视频工具 网站画面",
+              kind: "web",
+              width: 900,
+              height: 562,
+            },
+            links: [
+              {
+                label: "Media Downloader",
+                href: "/p/media-downloader",
+              },
+              {
+                label: "Subtitle Studio",
+                href: "/p/subtitle",
+              },
+              {
+                label: "Stream Highlights",
+                href: "/p/stream-highlights",
+              },
+            ],
           },
         ],
         experience: [
