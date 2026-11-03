@@ -1,3 +1,4 @@
+import { serializeJsonLd } from "@/lib/json-ld";
 import { Prose } from "@/templates/shared/Prose";
 
 interface Props {
@@ -45,7 +46,7 @@ export function FaqSection({ data, themeColor, darkMode }: Props) {
     <section className="py-12 md:py-20 px-4 sm:px-6">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqSchema) }}
       />
       <div className="max-w-3xl mx-auto">
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>

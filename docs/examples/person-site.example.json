@@ -1,0 +1,217 @@
+{
+  "slug": "jordan-example",
+  "locales": {
+    "en": {
+      "title": "Jordan Example",
+      "metaDescription": "Fictional maker",
+      "sections": [
+        {
+          "type": "profile-header",
+          "id": "intro",
+          "data": {
+            "name": "Jordan Example",
+            "eyebrow": "Maker",
+            "tagline": "Fictional maker",
+            "avatar": {
+              "url": "./placeholder.svg",
+              "alt": ""
+            },
+            "nav": [
+              {
+                "label": "Projects",
+                "href": "#projects"
+              }
+            ]
+          }
+        },
+        {
+          "type": "entries",
+          "id": "focus",
+          "data": {
+            "heading": "Focus",
+            "items": [
+              {
+                "title": "Small useful tools"
+              }
+            ]
+          }
+        },
+        {
+          "type": "project-cards",
+          "id": "projects",
+          "data": {
+            "heading": "Projects",
+            "items": [
+              {
+                "name": "Sample Notes",
+                "category": "Notes",
+                "description": "A fictional notebook.",
+                "icon": {
+                  "url": "./placeholder.svg",
+                  "alt": ""
+                },
+                "screenshot": {
+                  "url": "./placeholder-screen.svg",
+                  "alt": "Fictional notes screen",
+                  "kind": "web",
+                  "width": 1440,
+                  "height": 900
+                },
+                "links": [
+                  {
+                    "label": "Website",
+                    "url": "https://example.com/notes"
+                  }
+                ],
+                "page": {
+                  "slug": "jordan-sample-notes",
+                  "as": "child",
+                  "linkLabel": "Details"
+                }
+              },
+              {
+                "name": "Sample Timer",
+                "description": "A fictional timer without a screenshot.",
+                "page": {
+                  "slug": "jordan-sample-timer",
+                  "as": "root",
+                  "linkLabel": "Details"
+                }
+              },
+              {
+                "name": "External example",
+                "links": [
+                  {
+                    "label": "Website",
+                    "url": "https://example.com"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "entries",
+          "id": "contact",
+          "data": {
+            "heading": "Contact",
+            "links": [
+              {
+                "label": "Website",
+                "url": "https://example.com"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "ja": {
+      "title": "Jordan Example",
+      "metaDescription": "架空の制作者",
+      "sections": [
+        {
+          "type": "profile-header",
+          "id": "intro",
+          "data": {
+            "name": "Jordan Example",
+            "eyebrow": "制作者",
+            "tagline": "架空の制作者",
+            "avatar": {
+              "url": "./placeholder.svg",
+              "alt": ""
+            },
+            "nav": [
+              {
+                "label": "プロジェクト",
+                "href": "#projects"
+              }
+            ]
+          }
+        },
+        {
+          "type": "entries",
+          "id": "focus",
+          "data": {
+            "heading": "取り組み",
+            "items": [
+              {
+                "title": "小さな便利ツール"
+              }
+            ]
+          }
+        },
+        {
+          "type": "project-cards",
+          "id": "projects",
+          "data": {
+            "heading": "プロジェクト",
+            "items": [
+              {
+                "name": "Sample Notes",
+                "category": "メモ",
+                "description": "架空のノート。",
+                "icon": {
+                  "url": "./placeholder.svg",
+                  "alt": ""
+                },
+                "screenshot": {
+                  "url": "./placeholder-screen.svg",
+                  "alt": "架空のメモ画面",
+                  "kind": "web",
+                  "width": 1440,
+                  "height": 900
+                },
+                "links": [
+                  {
+                    "label": "ウェブサイト",
+                    "url": "https://example.com/notes"
+                  }
+                ],
+                "page": {
+                  "slug": "jordan-sample-notes",
+                  "as": "child",
+                  "linkLabel": "詳細"
+                }
+              },
+              {
+                "name": "Sample Timer",
+                "description": "スクリーンショットのない架空のタイマー。",
+                "page": {
+                  "slug": "jordan-sample-timer",
+                  "as": "root",
+                  "linkLabel": "詳細"
+                }
+              },
+              {
+                "name": "External example",
+                "links": [
+                  {
+                    "label": "Website",
+                    "url": "https://example.com"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "entries",
+          "id": "contact",
+          "data": {
+            "heading": "連絡先",
+            "links": [
+              {
+                "label": "Website",
+                "url": "https://example.com"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "page": {
+    "themeColor": "#0f5e63",
+    "fontFamily": "Newsreader"
+  }
+}

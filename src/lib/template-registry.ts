@@ -10,6 +10,7 @@ export interface SectionFieldDef {
   type: "string" | "url" | "markdown" | "boolean" | "number" | "array" | "object";
   required: boolean;
   description: string;
+  allowStringItems?: boolean; // backward-compatible URL string arrays
   items?: SectionFieldDef[];  // for array types
   fields?: SectionFieldDef[]; // for object types
 }
@@ -42,6 +43,7 @@ export interface SectionDef {
 }
 
 export interface PresetDef {
+  template?: string;
   id: string;
   name: string;
   description: string;
@@ -196,10 +198,15 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Screenshots",
     description: "Horizontal scrollable image carousel for app screenshots or product images.",
     fields: [
+      { name: "heading", type: "string", required: false, description: "Optional heading; omitted by default." },
       {
-        name: "images", type: "array", required: true, description: "List of screenshot image URLs",
+        name: "images", type: "array", required: true, allowStringItems: true, description: "Image URL strings or objects {url, alt, kind?, width?, height?}; kind phone|web, dimensions in px",
         items: [
           { name: "url", type: "url", required: true, description: "Image URL" },
+          { name: "alt", type: "string", required: false, description: "Image description; empty by default." },
+          { name: "kind", type: "string", required: false, description: "phone|web frame; omit for plain image." },
+          { name: "width", type: "number", required: false, description: "Positive width in px." },
+          { name: "height", type: "number", required: false, description: "Positive height in px." },
         ],
       },
     ],
@@ -549,6 +556,7 @@ export const SECTION_DEFS: SectionDef[] = [
 export const PRESET_DEFS: PresetDef[] = [
   {
     id: "app-landing",
+    template: "APP_LANDING",
     name: "App Landing Page",
     description: "For iOS/Android apps. Includes hero with logo, product video, features, screenshots, download buttons, testimonials, FAQ, and call-to-action.",
     sections: ["hero", "video", "features", "screenshots", "download", "testimonials", "faq", "cta"],
@@ -561,18 +569,21 @@ export const PRESET_DEFS: PresetDef[] = [
   },
   {
     id: "profile",
+    template: "PERSON",
     name: "Personal Profile",
     description: "Personal website (template PERSON): header, project cards with screenshots, and focus/experience/contact entries.",
     sections: ["profile-header", "project-cards", "entries"],
   },
   {
     id: "link-in-bio",
+    template: "LINK_IN_BIO",
     name: "Link in Bio",
     description: "Minimal link aggregator page (like Linktree). Just a hero with avatar and a list of link buttons.",
     sections: ["hero", "links"],
   },
   {
     id: "portfolio",
+    template: "PORTFOLIO",
     name: "Portfolio",
     description: "For showcasing creative work. Includes hero, about section, gallery, testimonials, and contact.",
     sections: ["hero", "about", "gallery", "testimonials", "contact"],

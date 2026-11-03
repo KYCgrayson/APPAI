@@ -2,6 +2,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { editorialLink } from "@/lib/hosted-editorial-links";
 import { Prose } from "../shared/Prose";
+import { ScreenshotFrame } from "./ScreenshotFrame";
 import { ProjectReveal } from "./ProjectReveal";
 import styles from "./editorial.module.css";
 
@@ -82,7 +83,7 @@ export function ProfileHeaderSection(props: Props<Base & {
     <div className={styles.header}>
       <div><Heading data={{ eyebrow: data.eyebrow }} /><div className={styles.identity}>
         {(data.name || data.avatar.url) && <div className={styles.avatar}>{data.avatar?.url ? <img src={data.avatar.url} alt={data.avatar.alt || ""} width={96} height={96} loading="lazy" decoding="async" /> : (data.name || "").trim().split(/\s+/).slice(0, 2).map((word) => Array.from(word)[0]).join("")}</div>}
-        <div><h1 className={styles.name}>{data.name}</h1>{data.tagline && <p className={styles.tagline}>{data.tagline}</p>}</div>
+        <div>{data.name && <h1 className={styles.name}>{data.name}</h1>}{data.tagline && <p className={styles.tagline}>{data.tagline}</p>}</div>
       </div><Links items={data.links} /></div>
       {data.intro && <Prose editorialLinks className={styles.intro}>{data.intro}</Prose>}
     </div>
@@ -106,10 +107,7 @@ export function ProjectCardsSection(props: Props<Base & { items?: {
       <div>{item.category && <p className={styles.eyebrow}>{item.category}</p>}{data.heading ? <h3 className={styles.projectName}>{item.name}</h3> : <h2 className={styles.projectName}>{item.name}</h2>}</div>
     </div>
     {item.description && <p className={styles.description}>{item.description}</p>}
-    {item.screenshot?.url && <div className={styles.screenshot}><div className={`${styles.frame} ${item.screenshot.kind === "phone" ? styles.phone : styles.web}`}>
-      {item.screenshot.kind === "web" && <div aria-hidden="true" className={styles.chrome}><span /> · ·</div>}
-      <img src={item.screenshot.url} alt={item.screenshot.alt || ""} width={item.screenshot.width || (item.screenshot.kind === "phone" ? 390 : 1440)} height={item.screenshot.height || (item.screenshot.kind === "phone" ? 844 : 900)} loading="lazy" decoding="async" />
-    </div></div>}
+    {item.screenshot?.url && <ScreenshotFrame image={item.screenshot} />}
     <Links items={item.links} />
   </article>)}</ProjectReveal>}</Shell>;
 }

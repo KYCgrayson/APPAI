@@ -1,7 +1,10 @@
+import { db } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey } from "@/lib/api-auth";
 import { createPageSchema } from "@/lib/validations/page";
 import { sanitizeContent, type SanitizeWarning } from "@/lib/sanitize";
+import { sectionFieldWarnings } from "@/lib/section-field-warnings";
+import { pageParentConflict } from "@/lib/page-parent-conflict";
 import { ICON_NAMES } from "@/components/ui/Icon";
 
 /**
@@ -51,9 +54,27 @@ export async function POST(request: NextRequest) {
   const warnings: SanitizeWarning[] = [];
   const sanitized = sanitizeContent(data.content, undefined, warnings) as Record<string, unknown>;
 
+  const existing = await db.hostedPage.findUnique({
+    where: { slug_locale: { slug: data.slug, locale: data.locale || "en" } },
+    select: { organizationId: true, parentSlug: true },
+  });
+  if (existing && existing.organizationId !== authResult.organizationId) {
+    return NextResponse.json({ valid: false, errors: [{ path: "slug", message: `Slug "${data.slug}" is already used for locale "${data.locale || "en"}" by another organization.` }], warnings, sanitizedContent: sanitized });
+  }
+  if (existing && request.nextUrl.searchParams.get("upsert") === "true") {
+    const conflict = pageParentConflict(data.slug, data.locale || "en", data.parentSlug, existing.parentSlug);
+    if (conflict) {
+      return NextResponse.json({ valid: false, errors: [{ path: "parentSlug", message: conflict.error }], hint: conflict.hint, warnings, sanitizedContent: sanitized });
+    }
+  }
+  if (existing && request.nextUrl.searchParams.get("upsert") !== "true") {
+    warnings.push({ path: "slug", message: `Slug "${data.slug}" already taken for locale "${data.locale || "en"}". POST needs ?upsert=true, or use PATCH.` });
+  }
+
   // Step 3: Extra content-level checks (non-blocking, informational)
   const sections = (sanitized as { sections?: Array<{ type: string; data: Record<string, unknown> }> })?.sections;
   if (Array.isArray(sections)) {
+    warnings.push(...sectionFieldWarnings(sections));
     for (const section of sections) {
       // Check icon field values against our known Ionicons map
       const iconFields = extractIconFields(section.data);
@@ -74,6 +95,7 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     valid: true,
+    errors: [],
     warnings,
     sanitizedContent: sanitized,
   });

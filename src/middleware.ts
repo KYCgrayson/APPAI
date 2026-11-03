@@ -135,12 +135,17 @@ function handleRateLimit(request: NextRequest): NextResponse | null {
 // ---------------------------------------------------------------------------
 
 export function middleware(request: NextRequest) {
+  const requestHeaders = new Headers(request.headers);
+  for (const name of [...requestHeaders.keys()]) {
+    if (name.startsWith("x-appai-hosted-")) requestHeaders.delete(name);
+  }
+  request = new NextRequest(request, { headers: requestHeaders });
   const { pathname } = request.nextUrl;
 
   // Rate limiting for API routes
   if (pathname.startsWith("/api/")) {
     const rateLimitResponse = handleRateLimit(request);
-    return rateLimitResponse || NextResponse.next();
+    return rateLimitResponse || NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   // Preserve the exact protected native-app path so the server layout can
@@ -148,6 +153,13 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith("/app/")) {
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-appai-request-path", `${pathname}${request.nextUrl.search}`);
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
+  if (pathname.startsWith("/p/")) {
+    const requestHeaders = new Headers(request.headers);
+    // Always overwrite visitor-supplied headers; hosted locales are independent of next-intl.
+    requestHeaders.set("x-appai-hosted-path", pathname);
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
@@ -159,7 +171,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/spec") ||
     pathname.startsWith("/llms")
   ) {
-    return NextResponse.next();
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   // i18n locale detection + redirect for public pages
@@ -168,7 +180,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all paths except static files and _next
+    // A spoofed hosted header on an excluded dotted path only affects the requester's own response.
     "/((?!_next|.*\\..*).*)",
   ],
 };

@@ -1,3 +1,4 @@
+import { serializeJsonLd } from "@/lib/json-ld";
 import { sanitizeUrl } from "@/lib/sanitize";
 
 interface Props {
@@ -35,7 +36,7 @@ export function VideoSection({ data, themeColor }: Props) {
   const safeUrl = sanitizeUrl(data.url);
   const type = getVideoType(safeUrl);
 
-  const videoSchema: Record<string, any> = {
+  const videoSchema: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "VideoObject",
     name: data.caption || "Video",
@@ -58,7 +59,7 @@ export function VideoSection({ data, themeColor }: Props) {
     <section className="py-12 md:py-20 px-4 sm:px-6">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(videoSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(videoSchema) }}
       />
       <div className="max-w-4xl mx-auto">
         <div className="rounded-2xl overflow-hidden shadow-lg">

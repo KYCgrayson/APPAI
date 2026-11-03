@@ -6,6 +6,7 @@ import { validateApiKey } from "@/lib/api-auth";
 import { createPageSchema } from "@/lib/validations/page";
 import { sanitizeContent, type SanitizeWarning } from "@/lib/sanitize";
 import { hostedPageApprovalUpdate } from "@/lib/hosted-page-approval";
+import { pageParentConflict } from "@/lib/page-parent-conflict";
 import { slugOwnershipDecision } from "@/lib/slug-ownership";
 import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 
@@ -42,6 +43,26 @@ export async function POST(request: NextRequest) {
     const data = createPageSchema.parse(body);
     const locale = data.locale || "en";
     const parentSlug = data.parentSlug ?? null;
+
+    // Check slug+locale availability
+    const existing = await db.hostedPage.findUnique({
+      where: { slug_locale: { slug: data.slug, locale } },
+    });
+    const upsert = request.nextUrl.searchParams.get("upsert") === "true";
+
+    if (existing && existing.organizationId !== authResult.organizationId) {
+      return NextResponse.json({
+        error: `Slug "${data.slug}" is already used for locale "${locale}" by another organization.`,
+        hint: `Choose a different slug. For child pages, prefix it with the parent slug, e.g. "kenji-tidepool".`,
+      }, { status: 409 });
+    }
+
+    if (existing && upsert) {
+      const conflict = pageParentConflict(data.slug, locale, parentSlug, existing.parentSlug);
+      if (conflict) {
+        return NextResponse.json(conflict, { status: 409 });
+      }
+    }
 
     // Multi-page sites: when creating a child page, the parent root page must
     // already exist in the same organization and must itself be a root page
@@ -81,12 +102,6 @@ export async function POST(request: NextRequest) {
     if (ownership.status === 403) {
       return NextResponse.json({ error: ownership.error }, { status: ownership.status });
     }
-
-    // Check slug+locale availability
-    const existing = await db.hostedPage.findUnique({
-      where: { slug_locale: { slug: data.slug, locale } },
-    });
-    const upsert = request.nextUrl.searchParams.get("upsert") === "true";
 
     if (existing && !upsert) {
       return NextResponse.json(

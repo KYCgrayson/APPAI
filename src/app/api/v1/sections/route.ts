@@ -6,7 +6,8 @@ import {
 } from "@/lib/template-registry";
 
 type JsonSchema = {
-  type: string;
+  type?: string;
+  anyOf?: JsonSchema[];
   description?: string;
   properties?: Record<string, JsonSchema>;
   items?: JsonSchema;
@@ -44,6 +45,7 @@ function fieldToJsonSchema(field: SectionFieldDef): JsonSchema {
           if (item.required) req.push(item.name);
         }
         base.items = { type: "object", properties: props, ...(req.length > 0 ? { required: req } : {}) };
+        if (field.allowStringItems) base.items = { anyOf: [{ type: "string" }, base.items] };
       }
       break;
     case "object":

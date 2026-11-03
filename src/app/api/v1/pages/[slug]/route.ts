@@ -221,6 +221,10 @@ export async function PATCH(
     const body = await request.json();
 
     // Check for immutable fields
+    // Repeated identity values are harmless; changed values remain immutable.
+    for (const field of ["slug", "locale"] as const) {
+      if (body[field] === page[field]) delete body[field];
+    }
     const immutableError = checkImmutableFields(body);
     if (immutableError) return immutableError;
 

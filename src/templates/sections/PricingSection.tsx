@@ -1,3 +1,4 @@
+import { serializeJsonLd } from "@/lib/json-ld";
 import { sanitizeUrl } from "@/lib/sanitize";
 import { Prose } from "@/templates/shared/Prose";
 
@@ -63,7 +64,7 @@ export function PricingSection({ data, themeColor, darkMode }: Props) {
 
   const offers = items.map((item) => {
     const parsed = parsePrice(item.price);
-    const offer: Record<string, any> = {
+    const offer: Record<string, unknown> = {
       "@type": "Offer",
       name: item.name,
       description: item.description || undefined,
@@ -93,7 +94,7 @@ export function PricingSection({ data, themeColor, darkMode }: Props) {
     <section className={`py-12 md:py-20 px-4 sm:px-6 ${darkMode ? "" : "bg-gray-50"}`}>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(offerSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(offerSchema) }}
       />
       <div className="max-w-6xl mx-auto">
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>

@@ -47,7 +47,7 @@ This platform gives you full control over visual design. Every parameter below i
 | `darkMode` | Boolean — renders entire page with dark backgrounds and light text. All sections adapt automatically. |
 | `fontFamily` | Google Fonts name (e.g. `"Inter"`, `"Poppins"`, `"Noto Sans JP"`) — loaded automatically. |
 | `headerLogo` | URL — separate logo for the light header (when hero logo is white/light). |
-| `ogImage` | URL — Open Graph image for social sharing. Falls back to heroImage if not set. |
+| `ogImage` | URL — Open Graph image for social sharing. Fallback order: ogImage → heroImage → profile-header avatar → screenshot or icon of the first project item that has one → first screenshots image (valid HTTP(S) URLs only). |
 
 PERSON pages are live at `/p/{slug}` immediately but appear in the AppAI directory only after AppAI review.
 
@@ -393,6 +393,7 @@ This document has everything you need. Here's where to find it:
 | **Complete page example (dark theme)** | [Example 2: Dark Theme Developer Tool](#example-2-dark-theme-developer-tool) (below) |
 | **Section JSON schemas (all section types)** | [Section Reference](#section-reference) or call `GET /api/v1/sections` |
 | **Authentication flow** | [Authentication](#authentication) |
+| **Preset recipes and implied template** | `GET /api/v1/presets` |
 | **Page creation API fields** | [Creating a Page](#creating-a-page) |
 | **Multi-language setup** | [Multi-Language Details](#multi-language-details) |
 | **Multi-page site setup** | [Multi-Page Site Details](#multi-page-site-details) |
@@ -418,7 +419,7 @@ Pick the rung first (see the table at the top of this file), then the shape:
 
 | User intent | Page shape |
 |---|---|
-| **Personal website / portfolio of a person** | template `PERSON`, `profile-header` + `project-cards` + `entries`. |
+| **Personal website / portfolio of a person** | template `PERSON` only for the person’s own root page, never project pages; `profile-header` + `project-cards` + `entries`. |
 | **Landing page for an app/product** | Hero + features + pricing + testimonials + faq + cta. Standard SaaS template. |
 | **Host a vibe-coded tool** | Hero (short tagline) + `iframe-tool` (the tool itself) + 1-2 supporting sections (about / faq / cta). The tool is the page. |
 
@@ -429,11 +430,22 @@ Three sections look similar — do not confuse them. If the user gives you a
 their own tool, it is `iframe-tool`. `embed` is for media posts (TikTok/YouTube).
 `tool` is for form-input → backend API.
 
+### Person site recipe
+Project pages use `template: "PRODUCT_SHOWCASE"` (or `APP_LANDING` for an app with downloads), never `PERSON`; `PERSON` is only for the person’s own root page. Publish projects as **child pages** (`parentSlug` = person slug): `/p/jordan-example/jordan-sample-notes` (ja: `/p/jordan-example/ja/jordan-sample-notes`). Slugs are globally unique per locale, children included; prefix child slugs with the parent slug. Children and locale variants do not count toward the free plan's 3-root limit. A project with its own product site can link there instead.
+```json
+{"slug":"jordan-example","template":"PERSON","title":"Jordan Example","isPublished":true,"content":{"sections":[{"type":"profile-header","order":0,"data":{"name":"Jordan Example"}},{"type":"project-cards","order":1,"data":{"items":[{"name":"Sample Notes","links":[{"label":"Details","url":"/p/jordan-example/jordan-sample-notes"}]}]}},{"type":"entries","order":2,"data":{"items":[{"title":"Focus","description":"Small useful tools."}]}}]}}
+{"slug":"jordan-sample-notes","parentSlug":"jordan-example","template":"PRODUCT_SHOWCASE","title":"Sample Notes","isPublished":true,"content":{"sections":[{"type":"profile-header","order":0,"data":{"name":"Sample Notes","eyebrow":"Notes","avatar":{"url":"https://example.com/icon.png","alt":""},"links":[{"label":"Website","url":"https://example.com"}]}},{"type":"screenshots","order":1,"data":{"images":[{"url":"https://example.com/screen.png","alt":"Notes screen","kind":"web"}]}}]}}
+```
+Send each object separately; set `locale` for each variant. Project shape: profile-header (project h1, icon as avatar, category as eyebrow, links) + screenshots (omit when absent) + optional entries; avoid repeating the project in project-cards.
+Data uses `{slug, page?: {themeColor, fontFamily}, locales: {en: {title?, metaDescription?, sections: [...]}}}`; section array order is preserved and `id` becomes `data.id`.
+Project cards can use existing links or `page: {slug, as: "child"|"root", linkLabel, template?, entries?}`; roots count toward the plan limit. Only `avatar`/`icon`/`screenshot` object `url`s and `images` array strings or `{url}` items upload once: relative .png/.jpg/.jpeg/.gif/.webp/.svg paths must resolve inside the real data directory; absolute paths, .env* segments and symlink escapes are refused, and links pass through. `page` allows only themeColor/fontFamily/darkMode; locales need sections arrays and project-cards need items arrays; first locale is default. Compute every locale's root and project URLs first: roots `/p/{root}[/{locale}]`, child projects `/p/{root}[/{locale}]/{slug}`, root-type projects `/p/{slug}[/{locale}]`. Publish complete, published person root locale variants with those card links, then child projects, then root-type projects, all with `?upsert=true`; no unpublished intermediate state or second pass. Dry-run preview does not check parents, so its order does not matter.
+Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/publish-person-site.mjs), with [fictional input](https://appai.info/spec/examples/person-site.example.json); [placeholder.svg](https://appai.info/spec/examples/placeholder.svg) and [placeholder-screen.svg](https://appai.info/spec/examples/placeholder-screen.svg) are included; `--dry-run` uploads images and validates every payload without publishing pages.
+
 ### What to decide yourself (do NOT ask the user)
 
 - Which template/sections to use (infer from the product type)
 - themeColor (match the product category — finance: blue/green, creative: violet/pink, dev tools: indigo/cyan, health: emerald, food: orange/red)
-- Section ordering (follow: hero → stats → features → pricing → testimonials → faq → cta)
+- Section ordering (landing pages; PERSON pages: see recipe; follow: hero → stats → features → pricing → testimonials → faq → cta)
 - Privacy policy and terms of service (generate them using the product name + contact email)
 - Whether to use dark mode (use for: dev tools, media/entertainment, gaming)
 - fontFamily (match the product character)
@@ -452,8 +464,8 @@ their own tool, it is `iframe-tool`. `embed` is for media posts (TikTok/YouTube)
 - **NEVER** present a list of templates and ask the user to pick one. Infer the right sections from context.
 - **NEVER** ask for 10 pieces of information before building. Build first, iterate after.
 - Headlines under 60 characters, subheadlines under 140 characters (mobile readability)
-- 5-8 sections per page maximum. A focused page beats a comprehensive one.
-- Always include a `cta` section near the bottom.
+- 5-8 sections per page maximum (landing pages; PERSON pages: see recipe). A focused page beats a comprehensive one.
+- Always include a `cta` section near the bottom (landing pages; PERSON pages: see recipe).
 - Logos: square image, 512x512px recommended, PNG with transparency.
 - Images: hero backgrounds under 500KB, use WebP/JPEG.
 
@@ -680,7 +692,8 @@ curl -X POST https://appai.info/api/v1/pages \
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `slug` | Yes | URL-safe identifier (lowercase, hyphens only) |
+| `slug` | Yes | 2–100 characters; lowercase letters, digits and hyphens (`^[a-z0-9-]+$`) |
+| `template` | No | Top-level classification only; default `APP_LANDING`; also `PERSON`, `PORTFOLIO`, `LINK_IN_BIO`, `COMPANY_PROFILE`, `PRODUCT_SHOWCASE` |
 | `locale` | No | BCP 47 code (default: `en`). Same slug + different locale = language variant |
 | `title` | Yes | Page title |
 | `tagline` | No | Short description |
@@ -695,14 +708,14 @@ curl -X POST https://appai.info/api/v1/pages \
 | `ogImage` | No | URL for social sharing image |
 | `canonicalUrl` | No | Full URL of the app's main site. Sends SEO credit there instead of appai.info, and marks the page as a satellite landing: header shows "Official site: {host}", footer becomes "Landing page · Hosted on AppAI · {host}", `/apps` directory card gets a "Landing page" tag. Set this whenever the app already has a primary website. |
 | `isPublished` | No | Set `true` to publish immediately |
-| `parentSlug` | No | Set to root slug to create a child page |
+| `parentSlug` | No | Root slug for a child page (same 2–100 character slug rules); omitted/null creates a root |
 | `hideFromNav` | No | `true` to keep the page off the auto-generated site nav (still reachable by URL). Use for Privacy, Terms, or compliance-only pages already linked from the footer. |
 | `navOrder` | No | Integer. Controls nav ordering; smaller numbers appear first. Nulls sort last by `createdAt`. |
 | `category` | No | For app listing: `WRITING`, `CODING`, `DESIGN`, `AUTOMATION`, `PRODUCTIVITY`, `SOCIAL`, `FINANCE`, `HEALTH`, `EDUCATION`, `FOOD`, `TRAVEL`, `ENTERTAINMENT`, `GAMES`, `MEDIA`, `UTILITIES`, `COMMERCE`, `OTHER` |
 
-**Preview without saving:** `POST /api/v1/pages/preview` — same body, returns sanitized JSON.
+**Preview without saving:** `POST /api/v1/pages/preview` — same body; HTTP 200 returns `{valid, errors: [], warnings: [], sanitizedContent?}`. Always check `valid`; warnings do not block creation. Preview rejects an exact (slug, locale) owned by another organization; it does not check plan limits, parent existence or ownership of the parent root; POST does.
 
-**Upload images:** `POST /api/v1/upload` with `multipart/form-data`. Returns `{ "url": "..." }`. Max 5MB, supports PNG/JPEG/GIF/WebP/SVG.
+**Upload images:** `POST /api/v1/upload` with `multipart/form-data`, field `file`; allowed MIME types: `image/png`, `image/jpeg`, `image/jpg`, `image/gif`, `image/webp`, `image/svg+xml`; max 5 MB (5 × 1024² bytes). HTTP 201 returns `{url, filename, size, type}`; use the returned `url` as-is in image fields.
 
 ## Visual Design Guide
 
@@ -811,9 +824,11 @@ All endpoints use slug in the URL. Add `?locale=xx` to target a specific languag
 | Publish | `POST /api/v1/pages/{slug}/publish` |
 | Unpublish | `POST /api/v1/pages/{slug}/unpublish` |
 
-Immutable fields (cannot be updated): `slug`, `locale`, `id`, `organizationId`, `createdAt`, `updatedAt`.
+Immutable fields: `slug`, `locale`, `id`, `organizationId`, `createdAt`, `updatedAt`, `parentSlug`. PATCH accepts and ignores unchanged `slug`/`locale`; different values return 400.
 
-Error responses: `{ "error": "message", "hint": "suggested fix" }`. Status codes: 400 (validation), 401 (auth), 403 (plan limit), 404 (not found), 409 (slug taken — use PATCH or ?upsert=true).
+Upsert requires the same `parentSlug` as the existing page (omitted means root); reparenting returns 409, and preview with `?upsert=true` returns `valid:false`. Use the existing parent, delete the page first, or choose another slug.
+
+Error responses: `{ "error": "message", "hint": "suggested fix" }`. Status codes: 400 (validation), 401 (auth), 403 (plan limit), 404 (not found), 409 (own-org slug taken: use PATCH or ?upsert=true; another org: choose a different slug).
 
 ## Icons
 
@@ -833,9 +848,31 @@ Full reference: https://ionic.io/ionicons
 
 ---
 
+Child slugs matching `^[a-z]{2}(-[A-Z]{2})?$` or `privacy`, `terms`, `tools` are reserved and rejected on create/preview.
+
+**Child CRUD:** `GET/PUT/PATCH/DELETE /api/v1/pages/{slug}?locale=…` resolve by your organization + slug + locale, without parent filtering. The database globally enforces unique `(slug, locale)`: a root and child, or children under two parents, cannot share that pair; choose distinct project slugs. `GET ?variants=true` lists your matching slug variants across locales/parents.
+
 ## Section Reference
 
 Full JSON schema for each section. Also available via `GET /api/v1/sections` and `GET /api/v1/sections?format=jsonschema`.
+
+### profile-header
+```json
+{"type":"profile-header","order":0,"data":{"name":"Jordan Example","eyebrow":"Maker","tagline":"Small useful tools","intro":"A fictional introduction.","avatar":{"url":"https://example.com/avatar.png","alt":""},"nav":[{"label":"Work","href":"#work"}],"links":[{"label":"Website","url":"https://example.com"}]}}
+```
+Required: `name`; avatar requires `url`, `alt`; links require `label`, `url`; nav requires `label`, `href` (`#anchor`). Links: HTTPS or `/path`; no mailto/tel, bare `#`, or unsafe schemes; invalid links omitted.
+
+### project-cards
+```json
+{"type":"project-cards","order":1,"data":{"id":"work","heading":"Selected work","eyebrow":"Tools","items":[{"name":"Sample Notes","category":"Notes","description":"A fictional notebook.","icon":{"url":"https://example.com/icon.png","alt":""},"monogram":"SN","screenshot":{"url":"https://example.com/screen.png","alt":"Notes screen","kind":"web","width":1440,"height":900},"links":[{"label":"Details","url":"/p/jordan-example/jordan-sample-notes"}]}]}}
+```
+Required: each item's `name`; image objects require `url`, `alt`; screenshot requires `kind`: `phone|web`, optional positive `width`/`height` in px; monogram 1–2 characters; links follow profile-header rules. Icon, monogram, screenshot and links may all be omitted.
+
+### entries
+```json
+{"type":"entries","order":2,"data":{"heading":"Focus","eyebrow":"Now","intro":"Optional Markdown.","items":[{"title":"Useful tools","description":"Fictional work in progress."}],"links":[{"label":"Website","url":"https://example.com"}]}}
+```
+Required: each item's `title`; all top-level fields optional; links require `label`, `url` and follow profile-header rules. No automatic heading text.
 
 ### hero
 ```json
@@ -876,9 +913,11 @@ Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
 ### screenshots
 ```json
 { "type": "screenshots", "order": 4, "data": {
-    "images": ["https://example.com/screen1.png", "https://example.com/screen2.png"]
+    "heading": "Product views", "images": [{"url":"https://example.com/screen1.png","alt":"Product view","kind":"web","width":1440,"height":900}, "https://example.com/screen2.png"]
 }}
 ```
+
+`images` required; URL strings remain supported; objects use `url`, optional `alt`, `kind` (`phone|web`), positive `width`/`height` in px. `heading` optional; on editorial pages only, no heading or English alt is added by default; legacy pages default to “Screenshots” and numbered English alt.
 
 ### download
 ```json

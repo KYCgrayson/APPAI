@@ -22,10 +22,11 @@ Recorded so future work stops re-deriving them. The boundary itself lives in
 - [ ] **D5 — `iframe-tool` depends on infrastructure we do not control.** If the user's Vercel deploy dies the AppAI page shows a broken frame and reads as our outage. Proposal: health check + graceful degradation (keep the landing content, hide the frame, notify the owner). Real scope addition, not free.
 - [ ] **D6 — Universal App review is manual.** Every release needs admin approval. That is the scope brake that keeps AppAI from becoming a general code host, but it is also the growth ceiling. Revisit once more than a handful of artifacts exist.
 
-## Hosted personal websites (D30)
+## Hosted personal websites (D30 / D31)
 
 - [x] Replace source-coded profiles with PERSON hosted pages, reusable editorial sections, approved directory listings, and root slug ownership checks across locales.
-- [ ] Orchestrator: build and browser QA with fictional qa-person seed and local approval.
+- [x] D31: public person/project recipe and publisher, shared screenshot frames, field warnings, explicit locale chrome, and PERSON SEO.
+- [x] Orchestrator: build and browser QA with fictional pages, two outside-agent rehearsals, and local approval.
 
 ## Platform i18n — directory localization
 

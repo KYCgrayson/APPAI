@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { serializeJsonLd } from "@/lib/json-ld";
 import { getLocale, getTranslations } from "next-intl/server";
 import NextLink from "next/link";
 import { Link } from "@/i18n/navigation";
@@ -322,7 +323,7 @@ export default async function HomePage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: serializeJsonLd({
             "@context": "https://schema.org",
             "@type": "FAQPage",
             mainEntity: ["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((n) => ({

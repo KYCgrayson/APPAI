@@ -1,3 +1,4 @@
+import { usesEditorialScreenshots } from "@/lib/screenshot-layout";
 import { ProfileHeaderSection, ProjectCardsSection, EntriesSection } from "../sections/EditorialSections";
 import { HeroSection } from "../app-landing/sections/HeroSection";
 import { FeaturesSection } from "../app-landing/sections/FeaturesSection";
@@ -162,7 +163,7 @@ function renderSection(
       content = <FeaturesSection {...props} />;
       break;
     case "screenshots":
-      content = <ScreenshotsSection {...props} />;
+      content = <ScreenshotsSection {...props} editorial={usesEditorialScreenshots(asPageContent(page.content).sections || [])} />;
       break;
     case "download":
       content = <DownloadSection {...props} />;
