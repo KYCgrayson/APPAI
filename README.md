@@ -131,10 +131,13 @@ Apps open through `/app/{appId}` and then run at the AppAI-managed `https://{app
 
 ## Available Page Sections
 
-Build any page by combining these 26 section types:
+Build any page by combining these 29 section types:
 
 | Section | Description |
 |---------|-------------|
+| `profile-header` | Personal introduction with avatar, Markdown and navigation |
+| `project-cards` | Project grid with icons, screenshots and links |
+| `entries` | Focus, experience or contact entries |
 | `hero` | Headline with logo, background image/video, CTA. Three variants: centered, split (text+image), minimal. Configurable height. |
 | `video` | Embedded video (YouTube, Vimeo, mp4, webm, gif) |
 | `features` | Feature cards with icons in a grid |

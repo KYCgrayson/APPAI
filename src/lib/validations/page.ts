@@ -28,7 +28,7 @@ export const createPageSchema = z.object({
     .default("en")
     .optional(),
   template: z
-    .enum(["APP_LANDING", "COMPANY_PROFILE", "PRODUCT_SHOWCASE", "PORTFOLIO", "LINK_IN_BIO"])
+    .enum(["APP_LANDING", "COMPANY_PROFILE", "PRODUCT_SHOWCASE", "PORTFOLIO", "LINK_IN_BIO", "PERSON"])
     .default("APP_LANDING"),
   title: z.string().min(1).max(200),
   tagline: z.string().max(500).optional(),

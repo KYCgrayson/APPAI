@@ -9,7 +9,6 @@ import { canLaunchUniversalApp, getUniversalAppLaunchPath } from "@/lib/universa
 import { UNIVERSAL_APP_CATEGORIES } from "@/lib/universal-apps/manifest";
 import { getDirectoryCopy } from "@/lib/directory-copy";
 import { inferDirectoryKind, type DirectoryKind } from "@/lib/directory-kind";
-import { getProfileCopy, getPublishedProfiles } from "@/lib/people";
 
 type Props = {
   kind?: DirectoryKind;
@@ -69,6 +68,8 @@ export async function PlatformDirectory({ kind, category }: Props) {
   const releasesByApp = groupByKey(releases, (release) => release.appId);
 
   const directoryApps = apps.filter((app) => {
+    const variants = app.hostedPageSlug ? variantsBySlug.get(app.hostedPageSlug) ?? [] : [];
+    if ((variants.find((page) => page.isDefault) ?? variants[0])?.template === "PERSON") return false;
     if (!kind) return true;
     const page = app.hostedPageSlug
       ? variantsBySlug.get(app.hostedPageSlug)?.find((candidate) => candidate.isDefault)
@@ -98,7 +99,10 @@ export async function PlatformDirectory({ kind, category }: Props) {
   const categoryLabel = (value: string) =>
     appsT.has(`categories.${value}`) ? appsT(`categories.${value}`) : value;
   const personalProfiles = kind === "websites" && (activeCategory === "ALL" || activeCategory === "OTHER")
-    ? getPublishedProfiles()
+    ? apps.map((app) => app.hostedPageSlug ? variantsBySlug.get(app.hostedPageSlug) ?? [] : [])
+      .filter((variants) => (variants.find((page) => page.isDefault) ?? variants[0])?.template === "PERSON")
+      .map((variants) => pickByLocale(variants.filter((page) => page.template === "PERSON"), locale))
+      .filter((page) => page !== undefined)
     : [];
 
   return (
@@ -150,13 +154,14 @@ export async function PlatformDirectory({ kind, category }: Props) {
           <section aria-label={copy.categories.websites} className="mb-10">
             <div className="grid gap-6 md:grid-cols-3">
               {personalProfiles.map((profile) => {
-                const profileCopy = getProfileCopy(profile, locale);
+                const hasLocale = profile.locale === locale;
+                const href = `/p/${profile.slug}${hasLocale && !profile.isDefault ? `/${locale}` : ""}`;
                 return (
-                  <Link key={profile.handle} href={`/people/${profile.handle}`} className="block rounded-xl border border-gray-800 bg-gray-900 p-6 transition-colors hover:border-gray-700">
+                  <a key={profile.slug} href={href} className="block rounded-xl border border-gray-800 bg-gray-900 p-6 transition-colors hover:border-gray-700">
                     <p className="mb-2 text-xs uppercase tracking-wide text-cyan-400">{copy.personal}</p>
-                    <h2 className="font-semibold text-white">{profileCopy.name}</h2>
-                    <p className="mt-1 text-sm text-gray-400 line-clamp-2">{profileCopy.tagline}</p>
-                  </Link>
+                    <h2 className="font-semibold text-white">{profile.title}</h2>
+                    <p className="mt-1 text-sm text-gray-400 line-clamp-2">{profile.tagline}</p>
+                  </a>
                 );
               })}
             </div>

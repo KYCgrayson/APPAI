@@ -1,90 +1,13 @@
-# Platform directory and personal website — review receipt
+# Hosted personal website QA
 
-Verified locally on 2026-10-30. This receipt describes source and local production
-preview, not deployment to appai.info or the state of the other iMac.
+Use fictional data only. `scripts/qa-seed-personal-site.cjs` publishes `qa-person` / Alex Rivera (QA) in en, zh-TW and zh-CN through the local Pages API with `?upsert=true`. Set APPAI_API_KEY, APPAI_BASE_URL and QA_IMAGE_BASE (HTTPS or HTTP on localhost/127.0.0.1) externally; never store credentials in the repository. Images: phone.png, web.png and icon.png.
 
-## Delivered
+The seed also creates a minimal English-only `qa-person-unlisted`; leave its App unapproved. The orchestrator must approve `qa-person` using the existing admin approve action before directory QA. PERSON pages are live immediately; directory listing requires AppAI review. Switching an App-owning default root to PERSON resets approval; ordinary PERSON edits, children and non-default locales preserve it. The implementation agent performs no database writes and does not execute the seed.
 
-- Refined Grayson profile in all three languages with larger typography, six
-  ordered projects (ChefChef, MedLogAI / 健保快追蹤, AppAI, ShiftSnap, Simpleshop,
-  YouTube video tools), local icons and screenshots, and reviewed project links.
-  Simpleshop uses a monogram pending artwork. Terracotta accents and reduced-motion
-  aware card reveals retain the off-white serif layout. Avatar and contact links
-  are nullable data fields pending owner input; existing career copy is retained.
+Run `scripts/qa-platform-directory.cjs` against the local server with Playwright available and QA_EXISTING_PAGE set. Its 11 checks cover directory entrances, the approved PERSON listing and exclusion of the unapproved fixture, hosted-page content, anchors and external links, form/category separation, Chinese hosted locale URLs, unknown-person 404, metadata/sitemap, existing hosted pages, mobile overflow at 375px, and keyboard navigation.
 
-- Websites `/websites`, Tools `/tools`, Apps `/apps?kind=apps` entrances.
-- `/apps` retains the complete existing catalog and purpose filters.
-- Product form is separate from purpose (`MEDIA`, `SOCIAL`, etc.).
-- Explicit `App.tags` values `appai:kind:website`, `appai:kind:tool`, and
-  `appai:kind:app` classify future entries; Universal Apps remain applications.
-  Legacy demo websites have a reviewed source registry because their original
-  records used the default `APP_LANDING` template. No data was migrated.
-- First-party `/people/grayson` with English, Traditional Chinese and Simplified
-  Chinese copy; other platform locales fall back to English. Content lives in
-  `src/lib/people.ts`. Published lookup is shared by page, directory and sitemap.
-- Experience is summarized by capability (APAC commercial development,
-  cross-border delivery and AI product building), without employer names or
-  individual company histories.
-- Website purpose filters collapse on mobile and desktop until requested.
-- X/Twitter daily digest is a future Tool, not a new top-level category or an
-  available feature in this release.
+Build/browser checks belong to the orchestrator. Implementation verification: typecheck, ESLint for changed source/scripts, unit tests including root/child slug ownership and PERSON approval, diff whitespace check, and a residual personal-name scan.
 
-## Verification
+The demo-portfolio, wheel-spinner and medlogai fixtures must already exist in the target DB.
 
-`npm run build`, `npm run typecheck`, changed-source ESLint and `git diff --check`
-passed. The final browser run against `next start` passed 11/11 flows; see
-`platform-directory-qa-results.json`. It checks real Wheel Spinner/MedLogAI/demo
-portfolio catalog placement, profile navigation, anchors, locale preservation,
-unknown-person 404, metadata/sitemap, combined filters, an existing hosted page,
-mobile overflow and keyboard navigation.
-
-Source queries used existing configured data read-only. The final browser suite
-intercepts view-tracking requests and does not call publish, editor, form,
-migration or deployment endpoints. Draft-profile exclusion was reviewed in
-source; there is no runtime draft-profile fixture or authenticated editing test.
-Existing sign-in and backend job execution are outside these public-page checks.
-
-Screenshots are in `docs/screenshots/platform-directory/`:
-
-- `websites-desktop.png`, `websites-mobile.png`
-- `profile-desktop.png`, `profile-mobile.png`, `profile-zh-TW.png`
-
-## Repeat locally
-
-Use configured database/environment access, an installed Chrome and Playwright.
-Do not run `next dev` concurrently with a production build in the same checkout.
-
-```sh
-npm run build
-AUTH_TRUST_HOST=true AUTH_URL=http://localhost:3100 NEXTAUTH_URL=http://localhost:3100 \
-  npm run start -- --hostname localhost --port 3100
-```
-
-In another terminal:
-
-```sh
-# Set NODE_PATH only if Playwright comes from a bundled external runtime.
-QA_EXISTING_PAGE=/p/medlogai node scripts/qa-platform-directory.cjs
-```
-
-Optional variables: `QA_BASE_URL`, `QA_OUTPUT_DIR`, `QA_BROWSER_CHANNEL`.
-The default artifact folder is `/private/tmp/appai-platform-directory-qa`.
-
-The local Next.js 16.2.10 preview returned self-redirects on English paths when
-bound to `127.0.0.1`; binding to `localhost` resolved the observed issue. No global
-routing or locale-prefix changes were made. Personal pages render per request;
-this avoids a production-only request-context error found in the initial SSG
-implementation. The final run includes both English and Chinese profile pages.
-
-## Remaining review and publication
-
-The personal content is a conservative first draft. Exact employment dates,
-numeric career results, portrait, contact details and resume PDF are omitted
-until confirmed. This is a version-controlled editorial site, not a member
-self-service editor. Existing database-owned Hosted Pages keep their own
-publication and organization permissions.
-
-Do not equate a local preview or a pushed feature branch with a production
-release. The other iMac must fetch and select this branch to continue this work;
-its unpushed changes, credentials, media and running jobs still need a separate
-handoff.
+Security review: POST root creation checks all root locale owners before creation/upsert. `/api/v1/pages/[slug]/children` is read-only and scopes both root and children to the caller organization. `/api/v1/pages/preview` only validates/sanitizes, performs no writes or slug-availability checks, and may report valid content for a slug the caller cannot publish. The ownership preflight is not a database-level concurrency constraint; simultaneous first claims of an unused slug in different locales remain a possible race under the existing schema.

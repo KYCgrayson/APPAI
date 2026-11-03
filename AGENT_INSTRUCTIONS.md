@@ -41,6 +41,7 @@ This platform gives you full control over visual design. Every parameter below i
 
 | Parameter | Description |
 |-----------|-------------|
+| `template` | `APP_LANDING`, `COMPANY_PROFILE`, `PRODUCT_SHOWCASE`, `PORTFOLIO`, `LINK_IN_BIO`, `PERSON` (classification only; sections control rendering). |
 | `themeColor` | Hex color (e.g. `#6366F1`) — drives CTA buttons, accents, links. Pick vibrant colors, not black. |
 | `themeColorSecondary` | Hex color — optional accent for secondary buttons. Auto-generated from themeColor if omitted. |
 | `darkMode` | Boolean — renders entire page with dark backgrounds and light text. All sections adapt automatically. |
@@ -48,12 +49,17 @@ This platform gives you full control over visual design. Every parameter below i
 | `headerLogo` | URL — separate logo for the light header (when hero logo is white/light). |
 | `ogImage` | URL — Open Graph image for social sharing. Falls back to heroImage if not set. |
 
-### 26 Section Types
+PERSON pages are live at `/p/{slug}` immediately but appear in the AppAI directory only after AppAI review.
+
+### 29 Section Types
 
 Every section supports optional `backgroundColor` (hex) and `id` (anchor for `#links`).
 
 | Type | What it does |
 |------|-------------|
+| `profile-header` | Personal h1 `name`, `eyebrow`, `tagline`, Markdown `intro`, optional `avatar: {url, alt}`, `links: [{label, url}]`, `nav: [{label, href}]` anchors. |
+| `project-cards` | `heading`, `eyebrow`, `items: [{name, category, description, icon: {url, alt}, monogram, screenshot: {url, alt, kind: phone/web, width, height}, links: [{label, url}]}]`. |
+| `entries` | `heading`, `eyebrow`, Markdown `intro`, `items: [{title, description}]`, `links: [{label, url}]`; reuse for focus, experience or contact. |
 | `hero` | Headline banner. **Variants:** `centered` (default), `split` (text left, image right), `minimal` (compact). **Height:** `full`/`large`/`medium`/`small`. Supports `backgroundColor`, `backgroundImage`, `backgroundVideo`, secondary CTA. |
 | `stats` | Key numbers (e.g. "10K+ Users", "99.9% Uptime"). 2-column grid on mobile, 4-column on desktop. |
 | `features` | Feature cards with icons in a responsive grid. 3-6 items recommended. |
@@ -412,8 +418,11 @@ Pick the rung first (see the table at the top of this file), then the shape:
 
 | User intent | Page shape |
 |---|---|
+| **Personal website / portfolio of a person** | template `PERSON`, `profile-header` + `project-cards` + `entries`. |
 | **Landing page for an app/product** | Hero + features + pricing + testimonials + faq + cta. Standard SaaS template. |
 | **Host a vibe-coded tool** | Hero (short tagline) + `iframe-tool` (the tool itself) + 1-2 supporting sections (about / faq / cta). The tool is the page. |
+
+For personal sites, upload images via `POST /api/v1/upload` first; publish each project as its own `/p/` page (or link the product’s own site) and link to it; never invent experience, numbers or contact details.
 
 Three sections look similar — do not confuse them. If the user gives you a
 `*.vercel.app` / `*.pages.dev` / `*.netlify.app` / `*.github.io` URL and calls it
@@ -439,8 +448,8 @@ their own tool, it is `iframe-tool`. `embed` is for media posts (TikTok/YouTube)
 
 ### Rules
 
-- **NEVER** tell the user the platform can't do something. You have 26 section types, dark mode, custom fonts, multi-language, multi-page sites, forms, interactive tools — the platform is highly capable.
-- **NEVER** present a list of 6 templates and ask the user to pick one. Infer the right sections from context.
+- **NEVER** tell the user the platform can't do something. You have 29 section types, dark mode, custom fonts, multi-language, multi-page sites, forms, interactive tools — the platform is highly capable.
+- **NEVER** present a list of templates and ask the user to pick one. Infer the right sections from context.
 - **NEVER** ask for 10 pieces of information before building. Build first, iterate after.
 - Headlines under 60 characters, subheadlines under 140 characters (mobile readability)
 - 5-8 sections per page maximum. A focused page beats a comprehensive one.

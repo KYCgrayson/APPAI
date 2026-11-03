@@ -45,7 +45,7 @@ test("Universal App manifest accepts Simpleshop without business-specific fields
 
 test("every Publisher category is browseable in the public directory", () => {
   const publisher = readFileSync("src/components/publisher/PublisherReleaseForm.tsx", "utf8");
-  const directory = readFileSync("src/app/[locale]/apps/page.tsx", "utf8");
+  const directory = readFileSync("src/components/PlatformDirectory.tsx", "utf8");
 
   assert.equal(UNIVERSAL_APP_CATEGORIES.includes("INVENTORY"), true);
   assert.equal(UNIVERSAL_APP_CATEGORIES.includes("DATABASE"), true);

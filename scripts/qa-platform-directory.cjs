@@ -1,5 +1,9 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- Playwright QA runs as CommonJS. */
 /* Browser E2E. Run against the local preview; never writes platform data.
  * NODE_PATH=<Playwright package directory> node scripts/qa-platform-directory.cjs
+ * Run qa-seed-personal-site.cjs, then approve qa-person using the admin approve action.
+ * Leave qa-person-unlisted unapproved. demo-portfolio / wheel-spinner / medlogai
+ * fixtures come from the target DB. QA_IMAGE_BASE accepts HTTPS or local HTTP.
  * Optional: QA_BASE_URL, QA_OUTPUT_DIR, QA_EXISTING_PAGE.
  */
 const { chromium } = require('playwright');
@@ -40,38 +44,39 @@ function assert(value, message) { if (!value) throw new Error(message); }
     }
     await screenshot('home-desktop.png');
   });
-  await check('Websites links to Grayson; navigation opens the profile', async () => {
+  await check('Websites links to Alex Rivera (QA); navigation opens the profile', async () => {
     assert((await visit('/websites')).status() === 200, 'Websites not available');
-    const link = page.locator('a[href="/people/grayson"]').first();
+    assert(!(await page.locator('a[href^="/p/qa-person-unlisted"]').count()), 'Unreviewed PERSON listed on websites');
+    const link = page.locator('a[href^="/p/qa-person"]').first();
     assert(await link.count(), 'Profile missing from websites');
     assert(await page.locator('a[href="/p/demo-portfolio"]').count(), 'Existing portfolio website missing');
     await screenshot('websites-desktop.png');
     await link.click();
-    await page.waitForURL('**/people/grayson');
-    assert(await page.getByRole('heading', { name: 'Grayson', exact: true }).count(), 'Profile heading missing');
-    for (const name of ['ChefChef', 'MedLogAI', 'APAC commercial development', 'Cross-border delivery', 'AI product building']) {
+    await page.waitForURL('**/p/qa-person');
+    assert(await page.getByRole('heading', { name: 'Alex Rivera (QA)', exact: true }).count(), 'Profile heading missing');
+    for (const name of ['Selected projects', 'Experience', 'Contact', 'Pocket Garden', 'Open Canvas', 'Quiet Notes', 'Fictional design practice']) {
       assert(await page.getByRole('heading', { name: new RegExp(`^${name}(?:\\s|$)`) }).count(), `Missing profile content: ${name}`);
     }
     const profileText = await page.textContent('body');
-    assert(!/Meyer Burger|Chroma ATE/.test(profileText), 'Company details remain on personal site');
+    assert(profileText.includes('fictional person'), 'Fictional QA disclosure missing');
     await screenshot('profile-desktop.png');
     await noOverflow();
   });
   await check('Profile anchors and external project links are usable', async () => {
-    await visit('/people/grayson');
+    await visit('/p/qa-person');
     for (const id of ['projects', 'experience', 'contact']) {
       const link = page.locator(`a[href="#${id}"]`).first();
       await link.click();
       assert(await page.locator(`#${id}`).count(), `Anchor target missing: ${id}`);
       assert(new URL(page.url()).hash === `#${id}`, `Anchor did not navigate: ${id}`);
     }
-    assert(await page.locator('a[href="https://chefchef.app/"]').count(), 'Verified ChefChef link missing');
+    assert(await page.locator('a[href="https://example.org/"][target="_blank"][rel="noreferrer"]').count(), 'External project link missing');
     assert(!(await page.locator('a[href="mailto:"],a[href="#"],a[download]').count()), 'Unusable contact/download link');
   });
   await check('Tools and Apps views load without mixing in personal site', async () => {
     for (const route of ['/tools', '/apps?kind=apps']) {
       assert((await visit(route)).status() === 200, `${route} unavailable`);
-      assert(!(await page.locator('a[href="/people/grayson"]').count()), 'Personal profile in wrong form');
+      assert(!(await page.locator('a[href^="/p/qa-person"]').count()), 'Personal profile in wrong form');
       if (route === '/tools') {
         assert(await page.locator('a[href="/p/wheel-spinner"]').count(), 'Known Wheel Spinner tool missing');
         assert(!(await page.locator('a[href="/p/medlogai"]').count()), 'MedLogAI product mixed into tools');
@@ -89,37 +94,39 @@ function assert(value, message) { if (!value) throw new Error(message); }
     assert(await page.locator('a[href="/tools?category=SOCIAL"]').count(), 'Purpose filter lost product form');
     await visit('/apps?kind=apps&category=MEDIA');
     assert(await page.locator('a[href="/apps?kind=apps&category=SOCIAL"]').count(), 'Apps filter lost form');
+    await visit('/websites?category=OTHER');
+    assert(await page.locator('a[href^="/p/qa-person"]').count(), 'Personal profile missing from Other');
     await visit('/websites?category=FINANCE');
-    assert(!(await page.locator('a[href="/people/grayson"]').count()), 'Unrelated profile shown for Finance');
+    assert(!(await page.locator('a[href^="/p/qa-person"]').count()), 'Unrelated profile shown for Finance');
   });
   await check('Chinese URLs retain locale through directory and profile', async () => {
     assert((await visit('/zh-TW/websites')).status() === 200, 'Chinese directory unavailable');
-    assert(await page.locator('a[href="/zh-TW/people/grayson"]').count(), 'Profile link lost locale');
-    await page.locator('a[href="/zh-TW/people/grayson"]').first().click();
-    await page.waitForURL('**/zh-TW/people/grayson');
-    assert((await page.textContent('body')).includes('商務'), 'Chinese profile content missing');
-    assert(!/Meyer Burger|Chroma ATE/.test(await page.textContent('body')), 'Company details remain in Traditional Chinese');
+    assert(await page.locator('a[href="/p/qa-person/zh-TW"]').count(), 'Profile link lost locale');
+    await page.locator('a[href="/p/qa-person/zh-TW"]').first().click();
+    await page.waitForURL('**/p/qa-person/zh-TW');
+    assert((await page.textContent('body')).includes('虛構人物'), 'Chinese profile content missing');
+    assert((await page.textContent('body')).includes('測試資料'), 'Traditional Chinese fixture missing');
     await screenshot('profile-zh-TW.png');
-    assert((await visit('/zh-CN/people/grayson')).status() === 200, 'Simplified Chinese profile unavailable');
-    assert(!/Meyer Burger|Chroma ATE/.test(await page.textContent('body')), 'Company details remain in Simplified Chinese');
+    assert((await visit('/p/qa-person/zh-CN')).status() === 200, 'Simplified Chinese profile unavailable');
+    assert((await page.textContent('body')).includes('测试数据'), 'Simplified Chinese fixture missing');
   });
   await check('Unknown profile returns 404 and no personal content', async () => {
-    const response = await visit('/people/no-such-person-qa');
+    const response = await visit('/p/no-such-person-qa');
     assert(response.status() === 404, `Unknown profile returned ${response.status()}`);
-    assert(!(await page.getByRole('heading', { name: 'Grayson', exact: true }).count()), 'Unknown profile leaked content');
+    assert(!(await page.getByRole('heading', { name: 'Alex Rivera (QA)', exact: true }).count()), 'Unknown profile leaked content');
   });
   await check('Profile metadata and sitemap expose the reviewed language variants', async () => {
-    await visit('/people/grayson');
+    await visit('/p/qa-person');
     const canonical = await page.locator('link[rel="canonical"]').getAttribute('href');
-    assert(canonical?.endsWith('/people/grayson'), 'Incorrect profile canonical');
+    assert(canonical?.endsWith('/p/qa-person'), 'Incorrect profile canonical');
     for (const language of ['en', 'zh-TW', 'zh-CN']) {
       assert(await page.locator(`link[rel="alternate"][hreflang="${language}"]`).count(), `Missing language: ${language}`);
     }
     const response = await context.request.get(`${base}/sitemap.xml`);
     assert(response.ok(), 'Sitemap unavailable');
     const xml = await response.text();
-    assert(xml.includes('/people/grayson'), 'Published profile absent from sitemap');
-    assert(!xml.includes('/people/no-such-person-qa'), 'Unknown profile present in sitemap');
+    assert(xml.includes('/p/qa-person'), 'Published profile absent from sitemap');
+    assert(!xml.includes('/p/no-such-person-qa'), 'Unknown profile present in sitemap');
   });
   await check('Existing complete directory and representative hosted page survive', async () => {
     assert((await visit('/apps')).status() === 200, 'Legacy directory unavailable');
@@ -134,8 +141,8 @@ function assert(value, message) { if (!value) throw new Error(message); }
     }
     await noOverflow();
     await screenshot('websites-mobile.png');
-    await page.locator('a[href="/people/grayson"]').first().click();
-    await page.waitForURL('**/people/grayson');
+    await page.locator('a[href^="/p/qa-person"]').first().click();
+    await page.waitForURL('**/p/qa-person');
     await noOverflow();
     await screenshot('profile-mobile.png');
   });

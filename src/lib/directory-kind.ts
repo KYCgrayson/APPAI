@@ -9,7 +9,7 @@ const TOOL_SECTIONS = new Set([
   "media-downloader",
   "video-subtitle",
 ]);
-const WEBSITE_TEMPLATES = new Set(["PORTFOLIO", "COMPANY_PROFILE", "LINK_IN_BIO"]);
+const WEBSITE_TEMPLATES = new Set(["PERSON", "PORTFOLIO", "COMPANY_PROFILE", "LINK_IN_BIO"]);
 // These published pages predate the current directory taxonomy and all kept
 // APP_LANDING as their template, so their original intent cannot be recovered
 // from template metadata alone. Keep this reviewed slug list explicit.

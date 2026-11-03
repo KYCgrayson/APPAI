@@ -23,5 +23,5 @@ export function ProjectReveal({ children }: { children: ReactNode }) {
     for (const card of root.current.children) observer.observe(card);
     return () => observer.disconnect();
   }, []);
-  return <div ref={root} className="grid border-t border-[#cfd8d2] md:grid-cols-2">{children}</div>;
+  return <div ref={root} className="grid border-t border-[var(--rule)] md:grid-cols-2">{children}</div>;
 }

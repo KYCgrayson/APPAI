@@ -1,14 +1,19 @@
+import type { Prisma } from "@prisma/client";
+import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
 import { createPageSchema } from "@/lib/validations/page";
 import { sanitizeContent, type SanitizeWarning } from "@/lib/sanitize";
+import { hostedPageApprovalUpdate } from "@/lib/hosted-page-approval";
+import { slugOwnershipDecision } from "@/lib/slug-ownership";
 import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 
-function extractLogoFromContent(content: any, heroImage?: string | null, headerLogo?: string | null): string | null {
+function extractLogoFromContent(value: unknown, heroImage?: string | null, headerLogo?: string | null): string | null {
+  const content = value as { logo?: string; sections?: { type?: string; data?: { logo?: string } }[] } | null;
   if (headerLogo) return headerLogo;
   if (content?.logo) return content.logo;
-  const heroSection = content?.sections?.find((s: any) => s.type === "hero");
+  const heroSection = content?.sections?.find((s) => s.type === "hero");
   if (heroSection?.data?.logo) return heroSection.data.logo;
   return heroImage || null;
 }
@@ -18,6 +23,7 @@ function mapTemplateToCategory(template: string): string {
     APP_LANDING: "PRODUCTIVITY",
     COMPANY_PROFILE: "OTHER",
     PRODUCT_SHOWCASE: "OTHER",
+    PERSON: "OTHER",
     PORTFOLIO: "DESIGN",
     LINK_IN_BIO: "SOCIAL",
   };
@@ -66,6 +72,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // A slug is an organization namespace across all root locale variants.
+    const owners = parentSlug ? [] : await db.hostedPage.findMany({
+      where: { slug: data.slug, parentSlug: null },
+      select: { organizationId: true },
+    });
+    const ownership = slugOwnershipDecision(owners, authResult.organizationId, parentSlug);
+    if (ownership.status === 403) {
+      return NextResponse.json({ error: ownership.error }, { status: ownership.status });
+    }
+
     // Check slug+locale availability
     const existing = await db.hostedPage.findUnique({
       where: { slug_locale: { slug: data.slug, locale } },
@@ -92,31 +108,43 @@ export async function POST(request: NextRequest) {
       }
 
       const upsertWarnings: SanitizeWarning[] = [];
-      data.content = sanitizeContent(data.content, undefined, upsertWarnings) as Record<string, any>;
+      data.content = sanitizeContent(data.content, undefined, upsertWarnings) as Record<string, unknown>;
       // parentSlug is intentionally excluded from upsert mutations: reparenting
       // a page (root <-> child) is destructive and must go through delete+create.
-      const { category: appCategory, locale: _locale, parentSlug: _parentSlug, ...pageData } = data;
+      const { category: appCategory, ...pageData } = data;
+
+      delete pageData.locale;
+      delete pageData.parentSlug;
+
+      const hadPersonRoot = !!await db.hostedPage.findFirst({
+        where: { slug: data.slug, organizationId: authResult.organizationId, parentSlug: null, template: "PERSON" },
+        select: { id: true },
+      });
 
       const updated = await db.hostedPage.update({
         where: { id: existing.id },
         data: {
           ...pageData,
-          content: pageData.content as any,
+          content: pageData.content as Prisma.InputJsonObject,
           slug: undefined, // don't update slug
         },
       });
 
-      // Update linked App (only from default locale)
-      if (existing.isDefault) {
-        const app = await db.app.findUnique({ where: { hostedPageSlug: data.slug } });
+      // Sync default-locale metadata; reset approval for the first PERSON root in any locale.
+      const approvalUpdate = hostedPageApprovalUpdate(updated.template, existing, hadPersonRoot);
+      if (!existing.parentSlug && (existing.isDefault || approvalUpdate.isApproved === false)) {
+        const app = await db.app.findFirst({ where: { hostedPageSlug: data.slug, organizationId: authResult.organizationId } });
         if (app) {
           await db.app.update({
             where: { id: app.id },
             data: {
-              name: updated.title,
-              tagline: updated.tagline || updated.title,
-              logoUrl: extractLogoFromContent(updated.content as any, updated.heroImage, updated.headerLogo),
-              ...(appCategory ? { category: appCategory } : {}),
+              ...approvalUpdate,
+              ...(existing.isDefault ? {
+                name: updated.title,
+                tagline: updated.tagline || updated.title,
+                logoUrl: extractLogoFromContent(updated.content, updated.heroImage, updated.headerLogo),
+                ...(appCategory ? { category: appCategory } : {}),
+              } : {}),
             },
           });
         }
@@ -156,11 +184,14 @@ export async function POST(request: NextRequest) {
 
     // Sanitize content before saving: strip HTML tags and validate URLs
     const contentWarnings: SanitizeWarning[] = [];
-    data.content = sanitizeContent(data.content, undefined, contentWarnings) as Record<string, any>;
+    data.content = sanitizeContent(data.content, undefined, contentWarnings) as Record<string, unknown>;
 
     // parentSlug is set explicitly below from the validated `parentSlug`
     // local, so it's stripped here from the spread to avoid double-set.
-    const { category: appCategory, locale: _locale, parentSlug: _parentSlug, ...pageData } = data;
+    const { category: appCategory, ...pageData } = data;
+
+    delete pageData.locale;
+    delete pageData.parentSlug;
 
     // First locale variant for this slug becomes the default. For child pages
     // we scope the variant count by (slug, parentSlug) so a child "faq" under
@@ -174,13 +205,18 @@ export async function POST(request: NextRequest) {
     });
     const shouldBeDefault = existingVariants === 0;
 
+    const hadPersonRoot = !!await db.hostedPage.findFirst({
+      where: { slug: data.slug, organizationId: authResult.organizationId, parentSlug: null, template: "PERSON" },
+      select: { id: true },
+    });
+
     const page = await db.hostedPage.create({
       data: {
         ...pageData,
         locale,
         isDefault: shouldBeDefault,
         parentSlug,
-        content: pageData.content as any,
+        content: pageData.content as Prisma.InputJsonObject,
         organizationId: authResult.organizationId,
       },
     });
@@ -188,8 +224,8 @@ export async function POST(request: NextRequest) {
     // Auto-create a corresponding App record (only for default locale of root
     // pages — child pages do not get their own App listing).
     if (shouldBeDefault && !parentSlug) {
-      const existingApp = await db.app.findUnique({
-        where: { hostedPageSlug: page.slug },
+      const existingApp = await db.app.findFirst({
+        where: { hostedPageSlug: page.slug, organizationId: authResult.organizationId },
       });
       if (!existingApp) {
         await db.app.create({
@@ -201,10 +237,17 @@ export async function POST(request: NextRequest) {
             category: appCategory || mapTemplateToCategory(data.template),
             hostedPageSlug: page.slug,
             logoUrl: extractLogoFromContent(pageData.content, page.heroImage, page.headerLogo),
-            isApproved: true,
+            ...hostedPageApprovalUpdate(page.template),
           },
         });
       }
+    }
+
+    if (!parentSlug && page.template === "PERSON" && !hadPersonRoot) {
+      await db.app.updateMany({
+        where: { hostedPageSlug: page.slug, organizationId: authResult.organizationId, isApproved: true },
+        data: { isApproved: false },
+      });
     }
 
     revalidateSeoIndexes(page.slug);
@@ -212,12 +255,12 @@ export async function POST(request: NextRequest) {
       { ...page, ...(contentWarnings.length > 0 ? { warnings: contentWarnings } : {}) },
       { status: 201 },
     );
-  } catch (error: any) {
-    if (error.name === "ZodError") {
-      return NextResponse.json({ error: "Validation failed", details: error.errors }, { status: 400 });
+  } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Validation failed", details: error.issues }, { status: 400 });
     }
     console.error("POST page error:", error);
-    return NextResponse.json({ error: `Failed to create page: ${error.message || "Unknown error"}` }, { status: 500 });
+    return NextResponse.json({ error: `Failed to create page: ${error instanceof Error ? error.message : "Unknown error"}` }, { status: 500 });
   }
 }
 

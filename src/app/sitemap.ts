@@ -2,7 +2,6 @@ import type { MetadataRoute } from "next";
 import { db } from "@/lib/db";
 import { buildPagePath } from "@/lib/parse-page-segments";
 import { locales } from "@/i18n/routing";
-import { getPublishedProfiles } from "@/lib/people";
 
 // ISR: regenerate at most once per hour; on publish/update, call
 // revalidatePath('/sitemap.xml') to push fresh entries sooner.
@@ -33,22 +32,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: page.changeFrequency,
       priority: page.priority,
-      alternates: { languages },
-    };
-  });
-
-  const profileEntries: MetadataRoute.Sitemap = getPublishedProfiles().map((profile) => {
-    const languages: Record<string, string> = {};
-    for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
-      const prefix = locale === "en" ? "" : `/${locale}`;
-      languages[locale] = `${baseUrl}${prefix}/people/${profile.handle}`;
-    }
-    languages["x-default"] = `${baseUrl}/people/${profile.handle}`;
-    return {
-      url: `${baseUrl}/people/${profile.handle}`,
-      lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
       alternates: { languages },
     };
   });
@@ -176,5 +159,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       };
     });
 
-  return [...staticPages, ...profileEntries, ...pageEntries, ...appEntries];
+  return [...staticPages, ...pageEntries, ...appEntries];
 }
