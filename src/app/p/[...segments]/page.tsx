@@ -1,3 +1,4 @@
+import { serializeJsonLd } from "@/lib/json-ld";
 import { notFound, redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
@@ -410,7 +411,7 @@ export default async function HostedPage({ params }: Props) {
       <>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(privacyLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(privacyLd) }}
         />
         <div className="max-w-3xl mx-auto py-10 md:py-16 px-4 sm:px-6">
           <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6 md:mb-8 flex-wrap">
@@ -456,7 +457,7 @@ export default async function HostedPage({ params }: Props) {
       <>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(termsLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(termsLd) }}
         />
         <div className="max-w-3xl mx-auto py-10 md:py-16 px-4 sm:px-6">
           <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6 md:mb-8 flex-wrap">
@@ -488,7 +489,7 @@ export default async function HostedPage({ params }: Props) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
       {page.customCss && <style>{page.customCss}</style>}
       <PageRenderer page={page} isLoggedIn={isLoggedIn} isAdmin={isAdmin} userId={userId} />
