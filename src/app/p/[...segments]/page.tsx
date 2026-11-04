@@ -1,4 +1,6 @@
 import { serializeJsonLd } from "@/lib/json-ld";
+import { resolvePage, resolveChildPage } from "@/lib/hosted-page-resolver";
+import { buildJsonLd, hostedOgImage } from "@/lib/hosted-page-seo";
 import { notFound, redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
@@ -20,10 +22,10 @@ interface Props {
   params: Promise<{ segments: string[] }>;
 }
 
-function extractLogos(page: any): { headerLogo: string | null; heroLogo: string | null } {
-  const content = page.content as any;
+function extractLogos(page: { content: unknown; headerLogo: string | null; heroImage: string | null }): { headerLogo: string | null; heroLogo: string | null } {
+  const content = page.content as { logo?: string; sections?: { type: string; data?: { logo?: string } }[] };
   const defaultLogo = content?.logo
-    || content?.sections?.find((s: any) => s.type === "hero")?.data?.logo
+    || content?.sections?.find((s) => s.type === "hero")?.data?.logo
     || page.heroImage
     || null;
   return {
@@ -48,91 +50,6 @@ function buildBreadcrumbList(baseUrl: string, entries: BreadcrumbEntry[]) {
       item: entry.url.startsWith("http") ? entry.url : `${baseUrl}${entry.url}`,
     })),
   };
-}
-
-function buildJsonLd(
-  page: any,
-  url: string,
-  baseUrl: string,
-  breadcrumb: ReturnType<typeof buildBreadcrumbList>,
-) {
-  const content = page.content as any;
-  const downloadSection = content?.sections?.find((s: any) => s.type === "download");
-  const platforms: string[] = [];
-  if (downloadSection?.data?.appStoreUrl) platforms.push("iOS");
-  if (downloadSection?.data?.playStoreUrl) platforms.push("Android");
-
-  const primary: Record<string, any> = {
-    "@type": downloadSection ? "SoftwareApplication" : "WebPage",
-    "@id": `${url}#primary`,
-    name: page.title,
-    headline: page.title,
-    description: page.metaDescription || page.tagline || undefined,
-    url,
-    image: page.ogImage || page.heroImage || undefined,
-    inLanguage: page.locale,
-    datePublished: page.createdAt ? new Date(page.createdAt).toISOString() : undefined,
-    dateModified: page.updatedAt ? new Date(page.updatedAt).toISOString() : undefined,
-    isPartOf: { "@id": `${baseUrl}/#website` },
-    publisher: { "@id": `${baseUrl}/#org` },
-  };
-
-  if (downloadSection) {
-    primary.applicationCategory = "Application";
-    if (platforms.length > 0) primary.operatingSystem = platforms.join(", ");
-    primary.offers = { "@type": "Offer", price: "0", priceCurrency: "USD" };
-  }
-
-  const graph: any[] = [primary];
-  if (breadcrumb) graph.push(breadcrumb);
-
-  return {
-    "@context": "https://schema.org",
-    "@graph": graph,
-  };
-}
-
-/** Resolve a root page from DB: explicit locale or default */
-async function resolvePage(slug: string, explicitLocale: string | null) {
-  if (explicitLocale) {
-    return db.hostedPage.findFirst({
-      where: { slug, locale: explicitLocale, isPublished: true, parentSlug: null },
-    });
-  }
-  // No locale in URL — find the default, fallback to first
-  return db.hostedPage.findFirst({
-    where: { slug, isPublished: true, parentSlug: null },
-    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
-  });
-}
-
-/** Resolve a child page (parentSlug=root.slug) within the same organization. */
-async function resolveChildPage(
-  parentSlug: string,
-  childSlug: string,
-  explicitLocale: string | null,
-  organizationId: string,
-) {
-  if (explicitLocale) {
-    return db.hostedPage.findFirst({
-      where: {
-        organizationId,
-        parentSlug,
-        slug: childSlug,
-        locale: explicitLocale,
-        isPublished: true,
-      },
-    });
-  }
-  return db.hostedPage.findFirst({
-    where: {
-      organizationId,
-      parentSlug,
-      slug: childSlug,
-      isPublished: true,
-    },
-    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
-  });
 }
 
 // Nav loading + building lives in @/lib/site-nav. It's rendered inline in the
@@ -207,7 +124,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = page.metaTitle || page.title;
   const description = page.metaDescription || page.tagline || undefined;
-  const image = page.ogImage || page.heroImage || undefined;
+  const image = hostedOgImage(page);
   const defaultCanonical = childSlug
     ? `${baseUrl}${buildPagePath(slug, page.locale, null, page.isDefault)}/${childSlug}`
     : `${baseUrl}${buildPagePath(slug, page.locale, null, page.isDefault)}`;

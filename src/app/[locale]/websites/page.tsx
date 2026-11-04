@@ -1,0 +1,12 @@
+export const dynamic = "force-dynamic";
+
+import { PlatformDirectory } from "@/components/PlatformDirectory";
+
+export default async function WebsitesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string }>;
+}) {
+  const { category } = await searchParams;
+  return <PlatformDirectory kind="websites" category={category} />;
+}

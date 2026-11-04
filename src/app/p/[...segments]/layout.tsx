@@ -7,7 +7,7 @@ import { parsePageSegments, buildPagePath } from "@/lib/parse-page-segments";
 import { LocaleLink } from "./LocaleLink";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { getExternalCanonical } from "@/lib/canonical";
-import { loadSiblings, buildNav, resolveNavHref } from "@/lib/site-nav";
+import { loadSiblings, buildNav, resolveNavHref, hostedChromeLabels } from "@/lib/site-nav";
 import { MobileMenu } from "./MobileMenu";
 import { AdaptiveChrome } from "./AdaptiveChrome";
 
@@ -31,7 +31,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
   let page;
   if (explicitLocale) {
     page = await db.hostedPage.findFirst({
-      where: { slug, locale: explicitLocale, isPublished: true },
+      where: { slug, locale: explicitLocale, isPublished: true, parentSlug: null },
       select: {
         id: true,
         organizationId: true,
@@ -52,7 +52,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
   } else {
     // No locale in URL — find the default, fallback to first available
     page = await db.hostedPage.findFirst({
-      where: { slug, isPublished: true },
+      where: { slug, isPublished: true, parentSlug: null },
       orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
       select: {
         id: true,
@@ -78,24 +78,33 @@ export default async function HostedPageLayout({ params, children }: Props) {
   }
 
   const locale = page.locale;
+  const labels = hostedChromeLabels(locale);
+  const childVariants = parsed.childSlug ? await db.hostedPage.findMany({
+    where: { organizationId: page.organizationId, parentSlug: slug, slug: parsed.childSlug, isPublished: true },
+    select: { locale: true, isDefault: true },
+  }) : [];
+  const variantHref = (variant: { locale: string; isDefault: boolean }) => {
+    const child = childVariants.find(child => child.locale === variant.locale);
+    return buildPagePath(slug, variant.locale, child ? parsed.childSlug : null, child ? child.isDefault : variant.isDefault);
+  };
 
   // Find all locale variants for the language switcher
   const variants = await db.hostedPage.findMany({
-    where: { slug, isPublished: true },
+    where: { slug, isPublished: true, parentSlug: null },
     select: { locale: true, isDefault: true },
     orderBy: [{ isDefault: "desc" }, { locale: "asc" }],
   });
 
   const themeColor = page.themeColor || "#000000";
-  const content = page.content as any;
+  const content = page.content as { logo?: string; appStoreUrl?: string; playStoreUrl?: string; nav?: { label: string; target: string }[]; sections?: { type: string; data?: { logo?: string; appStoreUrl?: string; playStoreUrl?: string } }[] };
 
   const defaultLogo = content?.logo
-    || content?.sections?.find((s: any) => s.type === "hero")?.data?.logo
+    || content?.sections?.find((s) => s.type === "hero")?.data?.logo
     || page.heroImage;
-  const logo = (page as any).headerLogo || defaultLogo;
+  const logo = page.headerLogo || defaultLogo;
 
   // Extract download URLs
-  const downloadSection = content?.sections?.find((s: any) => s.type === "download");
+  const downloadSection = content?.sections?.find((s) => s.type === "download");
   const appStoreUrl = downloadSection?.data?.appStoreUrl || content?.appStoreUrl;
   const playStoreUrl = downloadSection?.data?.playStoreUrl || content?.playStoreUrl;
   const hasDownload = appStoreUrl || playStoreUrl;
@@ -108,7 +117,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
   };
 
   const isDemo = slug.startsWith("demo-");
-  const externalCanonical = getExternalCanonical((page as any).canonicalUrl);
+  const externalCanonical = getExternalCanonical(page.canonicalUrl);
 
   // Account state in the header. Hosted pages carry the interactive tools, and
   // several of them are login-gated, so "am I signed in?" has to be answerable
@@ -135,34 +144,34 @@ export default async function HostedPageLayout({ params, children }: Props) {
   const mobileUtilityLinks: { label: string; href: string; external?: boolean }[] = [];
   if (externalCanonical) {
     mobileUtilityLinks.push({
-      label: `Official site: ${externalCanonical.host}`,
+      label: `${labels.officialSite}: ${externalCanonical.host}`,
       href: externalCanonical.url,
       external: true,
     });
   }
   if (page.privacyPolicy) {
     mobileUtilityLinks.push({
-      label: "Privacy",
+      label: labels.privacy,
       href: buildPagePath(slug, locale, "privacy", page.isDefault),
     });
   }
   if (page.termsOfService) {
     mobileUtilityLinks.push({
-      label: "Terms",
+      label: labels.terms,
       href: buildPagePath(slug, locale, "terms", page.isDefault),
     });
   }
   // The drawer is the only chrome left on narrow screens, so the account
   // actions have to be reachable from it too.
   if (session?.user) {
-    mobileUtilityLinks.push({ label: "Dashboard", href: "/dashboard" });
+    mobileUtilityLinks.push({ label: labels.dashboard, href: "/dashboard" });
     mobileUtilityLinks.push({
-      label: "Sign out",
+      label: labels.signOut,
       href: `/logout?callbackUrl=${encodeURIComponent(currentPath)}`,
     });
   } else {
     mobileUtilityLinks.push({
-      label: "Sign in",
+      label: labels.signIn,
       href: `/login?callbackUrl=${encodeURIComponent(currentPath)}`,
     });
   }
@@ -205,9 +214,10 @@ export default async function HostedPageLayout({ params, children }: Props) {
             href={buildPagePath(slug, locale, null, page.isDefault)}
             className="flex items-center gap-3 flex-shrink-0 min-w-0"
           >
-            {logo && (
+            {logo && (<>
+              {/* eslint-disable-next-line @next/next/no-img-element -- Publisher logo uses arbitrary hosts. */}
               <img src={logo} alt={page.title} className="w-8 h-8 rounded-xl object-cover flex-shrink-0" />
-            )}
+            </>)}
             <span className="font-semibold text-lg truncate">{page.title}</span>
           </a>
 
@@ -237,7 +247,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 {variants.map((v) => (
                   <LocaleLink
                     key={v.locale}
-                    href={buildPagePath(slug, v.locale, null, v.isDefault)}
+                    href={variantHref(v)}
                     locale={v.locale}
                     isActive={v.locale === locale}
                     label={localeLabels[v.locale] || v.locale.toUpperCase()}
@@ -251,19 +261,19 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 target="_blank"
                 rel="noopener"
                 className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline whitespace-nowrap group-data-[cramped=true]/chrome:!hidden"
-                title={`Visit the official site at ${externalCanonical.host}`}
+                title={`${labels.officialSite}: ${externalCanonical.host}`}
               >
-                Official site: {externalCanonical.host}
+                {labels.officialSite}: {externalCanonical.host}
               </a>
             )}
             {page.privacyPolicy && (
               <a href={buildPagePath(slug, locale, "privacy", page.isDefault)} className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline whitespace-nowrap group-data-[cramped=true]/chrome:!hidden">
-                Privacy
+                {labels.privacy}
               </a>
             )}
             {page.termsOfService && (
               <a href={buildPagePath(slug, locale, "terms", page.isDefault)} className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline whitespace-nowrap group-data-[cramped=true]/chrome:!hidden">
-                Terms
+                {labels.terms}
               </a>
             )}
             {hasDownload && (
@@ -274,7 +284,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 className="hidden md:inline text-sm text-white px-4 py-1.5 rounded-full font-medium whitespace-nowrap group-data-[cramped=true]/chrome:!hidden"
                 style={{ backgroundColor: themeColor }}
               >
-                Download
+                {labels.download}
               </a>
             )}
 
@@ -291,10 +301,10 @@ export default async function HostedPageLayout({ params, children }: Props) {
               }
               callbackUrl={currentPath}
               labels={{
-                signIn: "Sign in",
-                dashboard: "Dashboard",
-                signOut: "Sign out",
-                account: "Account",
+                signIn: labels.signIn,
+                dashboard: labels.dashboard,
+                signOut: labels.signOut,
+                account: labels.account,
               }}
             />
 
@@ -305,12 +315,12 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 navItems={mobileNavLinks}
                 locales={variants.map((v) => ({
                   locale: v.locale,
-                  href: buildPagePath(slug, v.locale, null, v.isDefault),
+                  href: variantHref(v),
                   label: localeLabels[v.locale] || v.locale.toUpperCase(),
                   isActive: v.locale === locale,
                 }))}
                 utilityLinks={mobileUtilityLinks}
-                download={hasDownload ? { label: "Download", href: (appStoreUrl || playStoreUrl) as string } : undefined}
+                download={hasDownload ? { label: labels.download, href: (appStoreUrl || playStoreUrl) as string } : undefined}
                 themeColor={themeColor}
               />
             </div>
@@ -329,12 +339,12 @@ export default async function HostedPageLayout({ params, children }: Props) {
           <div className="flex justify-center gap-6 mb-4 text-sm text-gray-500">
             {page.privacyPolicy && (
               <a href={buildPagePath(slug, locale, "privacy", page.isDefault)} className="hover:text-gray-800">
-                Privacy Policy
+                {labels.privacyPolicy}
               </a>
             )}
             {page.termsOfService && (
               <a href={buildPagePath(slug, locale, "terms", page.isDefault)} className="hover:text-gray-800">
-                Terms of Service
+                {labels.termsOfService}
               </a>
             )}
           </div>
@@ -354,11 +364,11 @@ export default async function HostedPageLayout({ params, children }: Props) {
             <img src="/appai-logo2.png" alt="" aria-hidden className="h-4 w-4 rounded" />
             <span className="font-medium">AppAI</span>
             <span aria-hidden className="text-gray-300">|</span>
-            <span>Browse more tools</span>
+            <span>{labels.browse}</span>
           </Link>
           {externalCanonical && (
             <div className="mt-3 inline-flex w-full flex-wrap justify-center items-center gap-x-2 text-gray-400">
-              <span>Landing page</span>
+              <span>{labels.landingPage}</span>
               <span aria-hidden>·</span>
               <a href={externalCanonical.url} target="_blank" rel="noopener" className="hover:text-gray-600">
                 {externalCanonical.host}

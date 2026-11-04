@@ -10,6 +10,7 @@ export interface SectionFieldDef {
   type: "string" | "url" | "markdown" | "boolean" | "number" | "array" | "object";
   required: boolean;
   description: string;
+  allowStringItems?: boolean; // backward-compatible URL string arrays
   items?: SectionFieldDef[];  // for array types
   fields?: SectionFieldDef[]; // for object types
 }
@@ -26,7 +27,7 @@ export const COMMON_SECTION_FIELDS: SectionFieldDef[] = [
     name: "backgroundColor",
     type: "string",
     required: false,
-    description: "CSS color for the section background (e.g. \"#EEF2FF\", \"#1E293B\"). Use tints of your themeColor for visual rhythm. If omitted, sections alternate between white and light gray.",
+    description: "CSS color for the section background (e.g. \"#EEF2FF\", \"#1E293B\"). Use tints of your themeColor for visual rhythm. If omitted, sections alternate between white and light gray; profile-header, project-cards and entries default to #f6f5f0.",
   },
 ];
 
@@ -42,6 +43,7 @@ export interface SectionDef {
 }
 
 export interface PresetDef {
+  template?: string;
   id: string;
   name: string;
   description: string;
@@ -51,6 +53,104 @@ export interface PresetDef {
 // --- All Available Sections ---
 
 export const SECTION_DEFS: SectionDef[] = [
+  {
+    type: "profile-header",
+    name: "Profile Header",
+    description: "Editorial personal introduction with name, avatar or initials, Markdown paragraphs and anchor navigation.",
+    fields: [
+      { name: "name", type: "string", required: true, description: "Display name used as the profile h1 or project title." },
+      { name: "eyebrow", type: "string", required: false, description: "Short accent label above the heading." },
+      { name: "tagline", type: "string", required: false, description: "Short summary below the profile name." },
+      { name: "intro", type: "markdown", required: false, description: "Introductory Markdown paragraphs; supports HTTPS and relative /path links." },
+      {
+        name: "avatar", type: "object", required: false, description: "Optional profile image; initials are used when omitted.",
+        fields: [
+          { name: "url", type: "url", required: true, description: "HTTPS image URL." },
+          { name: "alt", type: "string", required: true, description: "Accessible image description; empty for decorative images" },
+        ],
+      },
+      {
+        name: "links", type: "array", required: false, description: "Labeled links to HTTPS URLs or hosted /p/... pages.",
+        items: [
+          { name: "label", type: "string", required: true, description: "Non-empty visible link text." },
+          { name: "url", type: "url", required: true, description: "Link destination: HTTPS URL or hosted /p/... path." },
+        ],
+      },
+      {
+        name: "nav", type: "array", required: false, description: "In-page navigation links to section anchors.",
+        items: [
+          { name: "label", type: "string", required: true, description: "Non-empty visible link text." },
+          { name: "href", type: "string", required: true, description: "In-page anchor, e.g. #projects" },
+        ],
+      },
+    ],
+  },
+  {
+    type: "project-cards",
+    name: "Project Cards",
+    description: "Two-column editorial project grid with optional app icons, phone or web screenshots and project links.",
+    fields: [
+      { name: "heading", type: "string", required: false, description: "Optional section heading above the content." },
+      { name: "eyebrow", type: "string", required: false, description: "Short accent label above the heading." },
+      {
+        name: "items", type: "array", required: false, description: "Ordered content items; each requires a non-empty name or title.",
+        items: [
+          { name: "name", type: "string", required: true, description: "Display name used as the profile h1 or project title." },
+          { name: "category", type: "string", required: false, description: "Short project category shown above its name." },
+          { name: "description", type: "string", required: false, description: "Plain-text summary displayed below the title." },
+          {
+            name: "icon", type: "object", required: false, description: "Optional square project icon image.",
+            fields: [
+              { name: "url", type: "url", required: true, description: "HTTPS image URL." },
+              { name: "alt", type: "string", required: true, description: "Accessible image description; empty for decorative images" },
+            ],
+          },
+          { name: "monogram", type: "string", required: false, description: "1–2 characters displayed when no project icon is supplied." },
+          {
+            name: "screenshot", type: "object", required: false, description: "Project screenshot displayed in a phone or web frame.",
+            fields: [
+              { name: "url", type: "url", required: true, description: "HTTPS image URL." },
+              { name: "alt", type: "string", required: true, description: "Accessible image description; empty for decorative images" },
+              { name: "kind", type: "string", required: true, description: "Screenshot frame kind: phone|web." },
+              { name: "width", type: "number", required: false, description: "Positive screenshot width in px, used to reserve layout space." },
+              { name: "height", type: "number", required: false, description: "Positive screenshot height in px, used to reserve layout space." },
+            ],
+          },
+          {
+            name: "links", type: "array", required: false, description: "Labeled links to HTTPS URLs or hosted /p/... pages.",
+            items: [
+              { name: "label", type: "string", required: true, description: "Non-empty visible link text." },
+              { name: "url", type: "url", required: true, description: "Link destination: HTTPS URL or hosted /p/... path." },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    type: "entries",
+    name: "Entries",
+    description: "Editorial focus, experience or contact entries with Markdown intro and optional links.",
+    fields: [
+      { name: "heading", type: "string", required: false, description: "Optional section heading above the content." },
+      { name: "eyebrow", type: "string", required: false, description: "Short accent label above the heading." },
+      { name: "intro", type: "markdown", required: false, description: "Introductory Markdown paragraphs; supports HTTPS and relative /path links." },
+      {
+        name: "items", type: "array", required: false, description: "Ordered content items; each requires a non-empty name or title.",
+        items: [
+          { name: "title", type: "string", required: true, description: "Non-empty entry heading." },
+          { name: "description", type: "string", required: false, description: "Plain-text summary displayed below the title." },
+        ],
+      },
+      {
+        name: "links", type: "array", required: false, description: "Labeled links to HTTPS URLs or hosted /p/... pages.",
+        items: [
+          { name: "label", type: "string", required: true, description: "Non-empty visible link text." },
+          { name: "url", type: "url", required: true, description: "Link destination: HTTPS URL or hosted /p/... path." },
+        ],
+      },
+    ],
+  },
   {
     type: "hero",
     name: "Hero",
@@ -98,10 +198,15 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Screenshots",
     description: "Horizontal scrollable image carousel for app screenshots or product images.",
     fields: [
+      { name: "heading", type: "string", required: false, description: "Optional heading; omitted by default." },
       {
-        name: "images", type: "array", required: true, description: "List of screenshot image URLs",
+        name: "images", type: "array", required: true, allowStringItems: true, description: "Image URL strings or objects {url, alt, kind?, width?, height?}; kind phone|web, dimensions in px",
         items: [
           { name: "url", type: "url", required: true, description: "Image URL" },
+          { name: "alt", type: "string", required: false, description: "Image description; empty by default." },
+          { name: "kind", type: "string", required: false, description: "phone|web frame; omit for plain image." },
+          { name: "width", type: "number", required: false, description: "Positive width in px." },
+          { name: "height", type: "number", required: false, description: "Positive height in px." },
         ],
       },
     ],
@@ -451,6 +556,7 @@ export const SECTION_DEFS: SectionDef[] = [
 export const PRESET_DEFS: PresetDef[] = [
   {
     id: "app-landing",
+    template: "APP_LANDING",
     name: "App Landing Page",
     description: "For iOS/Android apps. Includes hero with logo, product video, features, screenshots, download buttons, testimonials, FAQ, and call-to-action.",
     sections: ["hero", "video", "features", "screenshots", "download", "testimonials", "faq", "cta"],
@@ -463,18 +569,21 @@ export const PRESET_DEFS: PresetDef[] = [
   },
   {
     id: "profile",
+    template: "PERSON",
     name: "Personal Profile",
-    description: "For personal branding. Includes hero, about section, key stats, contact info, and social links.",
-    sections: ["hero", "about", "stats", "contact", "links"],
+    description: "Personal website (template PERSON): header, project cards with screenshots, and focus/experience/contact entries.",
+    sections: ["profile-header", "project-cards", "entries"],
   },
   {
     id: "link-in-bio",
+    template: "LINK_IN_BIO",
     name: "Link in Bio",
     description: "Minimal link aggregator page (like Linktree). Just a hero with avatar and a list of link buttons.",
     sections: ["hero", "links"],
   },
   {
     id: "portfolio",
+    template: "PORTFOLIO",
     name: "Portfolio",
     description: "For showcasing creative work. Includes hero, about section, gallery, testimonials, and contact.",
     sections: ["hero", "about", "gallery", "testimonials", "contact"],

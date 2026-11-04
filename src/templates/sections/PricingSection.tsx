@@ -64,7 +64,7 @@ export function PricingSection({ data, themeColor, darkMode }: Props) {
 
   const offers = items.map((item) => {
     const parsed = parsePrice(item.price);
-    const offer: Record<string, any> = {
+    const offer: Record<string, unknown> = {
       "@type": "Offer",
       name: item.name,
       description: item.description || undefined,

@@ -14,6 +14,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPaths = [
     { path: "", changeFrequency: "daily" as const, priority: 1 },
     { path: "/apps", changeFrequency: "daily" as const, priority: 0.8 },
+    { path: "/websites", changeFrequency: "daily" as const, priority: 0.8 },
+    { path: "/tools", changeFrequency: "daily" as const, priority: 0.8 },
     { path: "/login", changeFrequency: "monthly" as const, priority: 0.3 },
   ];
 
@@ -39,6 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // failing the build; production keeps failing loudly.
   let pages: {
     slug: string;
+    parentSlug: string | null;
     locale: string;
     isDefault: boolean;
     updatedAt: Date;
@@ -48,36 +51,42 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     pages = await db.hostedPage.findMany({
       where: { isPublished: true },
-      select: { slug: true, locale: true, isDefault: true, updatedAt: true, privacyPolicy: true, termsOfService: true },
+      select: { slug: true, parentSlug: true, locale: true, isDefault: true, updatedAt: true, privacyPolicy: true, termsOfService: true },
     });
   } catch (e) {
     if (process.env.ALLOW_LOCAL_HTTP_BACKEND !== "1") throw e;
   }
 
+  const publishedRoots = new Set(pages.filter(page => !page.parentSlug).map(page => page.slug));
+  pages = pages.filter(page => !page.parentSlug || publishedRoots.has(page.parentSlug));
+
   // Group pages by slug to build hreflang alternates
+  const pageKey = (page: typeof pages[number]) => `${page.parentSlug || ""}/${page.slug}`;
+  const hostedPath = (page: typeof pages[number], locale: string, isDefault: boolean) =>
+    buildPagePath(page.parentSlug || page.slug, locale, page.parentSlug ? page.slug : null, isDefault);
   const slugGroups = new Map<string, typeof pages>();
   for (const page of pages) {
-    const group = slugGroups.get(page.slug) || [];
+    const group = slugGroups.get(pageKey(page)) || [];
     group.push(page);
-    slugGroups.set(page.slug, group);
+    slugGroups.set(pageKey(page), group);
   }
 
   const pageEntries: MetadataRoute.Sitemap = pages.flatMap((page) => {
-    const siblings = slugGroups.get(page.slug) || [];
+    const siblings = slugGroups.get(pageKey(page)) || [];
 
     // Build hreflang alternates for this slug
     const languages: Record<string, string> = {};
     for (const sibling of siblings) {
-      languages[sibling.locale] = `${baseUrl}${buildPagePath(page.slug, sibling.locale, null, sibling.isDefault)}`;
+      languages[sibling.locale] = `${baseUrl}${hostedPath(page, sibling.locale, sibling.isDefault)}`;
     }
     const defaultSibling = siblings.find((s) => s.isDefault) || siblings[0];
     if (defaultSibling) {
-      languages["x-default"] = `${baseUrl}${buildPagePath(page.slug, defaultSibling.locale, null, true)}`;
+      languages["x-default"] = `${baseUrl}${hostedPath(page, defaultSibling.locale, true)}`;
     }
 
     const entries: MetadataRoute.Sitemap = [
       {
-        url: `${baseUrl}${buildPagePath(page.slug, page.locale, null, page.isDefault)}`,
+        url: `${baseUrl}${hostedPath(page, page.locale, page.isDefault)}`,
         lastModified: page.updatedAt,
         changeFrequency: "weekly",
         priority: 0.7,
@@ -86,6 +95,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ];
     // Build hreflang alternates for privacy/terms subpages — only include
     // locales whose sibling row actually has the corresponding policy set.
+    if (page.parentSlug) return entries; // Legacy policy subpages belong to roots.
     const privacyLangs: Record<string, string> = {};
     const termsLangs: Record<string, string> = {};
     for (const sibling of siblings) {

@@ -36,7 +36,7 @@ export function VideoSection({ data, themeColor }: Props) {
   const safeUrl = sanitizeUrl(data.url);
   const type = getVideoType(safeUrl);
 
-  const videoSchema: Record<string, any> = {
+  const videoSchema: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "VideoObject",
     name: data.caption || "Video",

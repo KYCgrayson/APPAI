@@ -11,12 +11,12 @@ export const SUPPORTED_LOCALES = [
 
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 
-/** Validate a BCP 47 locale string */
+/** Recognize regex-valid BCP 47 hosted-page URL locale segments. */
 export function isValidLocale(locale: string): boolean {
   return /^[a-z]{2}(-[A-Z]{2})?$/.test(locale);
 }
 
-export const createPageSchema = z.object({
+const pageSchema = z.object({
   slug: z
     .string()
     .min(2)
@@ -28,7 +28,7 @@ export const createPageSchema = z.object({
     .default("en")
     .optional(),
   template: z
-    .enum(["APP_LANDING", "COMPANY_PROFILE", "PRODUCT_SHOWCASE", "PORTFOLIO", "LINK_IN_BIO"])
+    .enum(["APP_LANDING", "COMPANY_PROFILE", "PRODUCT_SHOWCASE", "PORTFOLIO", "LINK_IN_BIO", "PERSON"])
     .default("APP_LANDING"),
   title: z.string().min(1).max(200),
   tagline: z.string().max(500).optional(),
@@ -88,7 +88,11 @@ export const createPageSchema = z.object({
     .optional(),
 });
 
-export const updatePageSchema = createPageSchema.partial();
+export const createPageSchema = pageSchema.refine(
+  data => !data.parentSlug || (!isValidLocale(data.slug) && !["privacy", "terms", "tools"].includes(data.slug)),
+  { path: ["slug"], message: "Child slug is reserved for hosted locales or privacy, terms, tools; choose a distinct project slug." },
+);
+export const updatePageSchema = pageSchema.partial();
 
 export type CreatePageInput = z.infer<typeof createPageSchema>;
 export type UpdatePageInput = z.infer<typeof updatePageSchema>;

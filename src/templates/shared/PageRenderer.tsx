@@ -1,3 +1,5 @@
+import { usesEditorialScreenshots } from "@/lib/screenshot-layout";
+import { ProfileHeaderSection, ProjectCardsSection, EntriesSection } from "../sections/EditorialSections";
 import { HeroSection } from "../app-landing/sections/HeroSection";
 import { FeaturesSection } from "../app-landing/sections/FeaturesSection";
 import { ScreenshotsSection } from "../app-landing/sections/ScreenshotsSection";
@@ -137,10 +139,20 @@ function renderSection(
   const props = { data: section.data as never, themeColor, themeColorSecondary, darkMode, isAdmin: viewer.isAdmin };
   const darkBg = darkMode ? "#111827" : undefined;
   const darkBgAlt = darkMode ? "#1f2937" : "#f9fafb";
-  const bg = section.data?.backgroundColor || (index % 2 === 1 ? darkBgAlt : darkBg);
+  const editorial = ["profile-header", "project-cards", "entries"].includes(section.type);
+  const bg = section.data?.backgroundColor || (editorial ? undefined : index % 2 === 1 ? darkBgAlt : darkBg);
 
   let content;
   switch (section.type) {
+    case "profile-header":
+      content = <ProfileHeaderSection {...props} />;
+      break;
+    case "project-cards":
+      content = <ProjectCardsSection {...props} />;
+      break;
+    case "entries":
+      content = <EntriesSection {...props} />;
+      break;
     case "hero":
       content = <HeroSection {...props} />;
       break;
@@ -151,7 +163,7 @@ function renderSection(
       content = <FeaturesSection {...props} />;
       break;
     case "screenshots":
-      content = <ScreenshotsSection {...props} />;
+      content = <ScreenshotsSection {...props} editorial={usesEditorialScreenshots(asPageContent(page.content).sections || [])} />;
       break;
     case "download":
       content = <DownloadSection {...props} />;
