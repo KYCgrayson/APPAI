@@ -30,6 +30,7 @@ test("directory renders five real tabs, publisher labels, personal profiles, Chi
     fixtureDb.locale = locale;
     fixtureDb.organizationQueries = 0;
     const html = (await renderHtml(await PlatformDirectory({}))).replace(/<!--.*?-->/g, "");
+    assert.match(html, new RegExp(`<section aria-label="${labels[4]}"`));
     for (const label of labels) assert.match(html, new RegExp(`>${label}</a>`));
     assert.match(html, new RegExp(`${prefix} appai.info`));
     assert.match(html, /ExampleStudio/);
@@ -77,4 +78,32 @@ test("AppCard URLs retain HEAD behavior outside Chinese and select Chinese varia
     fixtureDb.locale = "zh-TW";
     assert.match(await renderHtml(await PlatformDirectory({})), /href="\/p\/example-app"/);
   } finally { fixtureDb.rows = saved; }
+});
+
+
+test("PERSON profiles appear only in All and Personal pages, while marketing pages appear in Websites", async () => {
+  fixtureDb.locale = "en";
+  for (const kind of ["websites", "tools", "apps"] as const) {
+    const html = await renderHtml(await PlatformDirectory({ kind }));
+    assert.doesNotMatch(html, /href="\/p\/example-person"/);
+    if (kind === "websites") assert.match(html, /href="\/p\/example-app"/);
+    else assert.doesNotMatch(html, /href="\/p\/example-app"/);
+  }
+});
+
+test("directory passes App URLs and published content into app classification", async () => {
+  const savedApps = fixtureDb.apps;
+  const savedRows = fixtureDb.rows;
+  try {
+    fixtureDb.locale = "en";
+    for (const signal of ["url", "iosUrl", "androidUrl", "content", "download"] as const) {
+      fixtureDb.apps = savedApps.map(app => app.id === "fixture-app" && (signal === "url" || signal === "iosUrl" || signal === "androidUrl")
+        ? { ...app, [signal]: signal === "url" ? "https://play.google.com/store/apps/details?id=example" : "https://example.com/app" } : app);
+      fixtureDb.rows = savedRows.map(page => page.slug === "example-app"
+        ? { ...page, content: signal === "content" ? { nested: [{ text: "https://testflight.apple.com/join/example" }] }
+          : signal === "download" ? { sections: [{ type: "download", data: {} }] } : {} } : page);
+      assert.match(await renderHtml(await PlatformDirectory({ kind: "apps" })), /href="\/p\/example-app"/);
+      assert.doesNotMatch(await renderHtml(await PlatformDirectory({ kind: "websites" })), /href="\/p\/example-app"/);
+    }
+  } finally { fixtureDb.apps = savedApps; fixtureDb.rows = savedRows; }
 });

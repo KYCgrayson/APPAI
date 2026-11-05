@@ -95,6 +95,10 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
       appType: app.appType,
       hostedPageSlug: app.hostedPageSlug,
       template: page?.template,
+      content: page?.content,
+      url: app.url,
+      iosUrl: app.iosUrl,
+      androidUrl: app.androidUrl,
       sectionTypes: content?.sections?.map((section) => section.type ?? ""),
     });
     return pageKind === kind;
@@ -112,7 +116,7 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
   };
   const categoryLabel = (value: string) =>
     appsT.has(`categories.${value}`) ? appsT(`categories.${value}`) : value;
-  const personalProfiles = (!kind || kind === "websites")
+  const personalProfiles = (!kind || (kind === "websites" && personalOnly))
     ? apps.map((app) => app.hostedPageSlug ? variantsBySlug.get(app.hostedPageSlug) ?? [] : [])
       .filter((variants) => (variants.find((page) => page.isDefault) ?? variants[0])?.template === "PERSON")
       .map((variants) => localizedVariant(variants.filter((page) => page.template === "PERSON")))
@@ -159,7 +163,7 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
         </details>}
 
         {personalProfiles.length > 0 && (
-          <section aria-label={copy.categories.websites} className="mb-10">
+          <section aria-label={copy.personalPages} className="mb-10">
             <div className="grid gap-6 md:grid-cols-3">
               {personalProfiles.map((profile) => {
                 const hasLocale = profile.locale === locale;
