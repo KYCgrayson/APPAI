@@ -1,0 +1,58 @@
+{
+  "slug": "iframe-tool-demo",
+  "template": "APP_LANDING",
+  "title": "Color Bench",
+  "tagline": "Explore color combinations in your browser.",
+  "themeColor": "#A5B4FC",
+  "fontFamily": "Space Grotesk",
+  "isPublished": true,
+  "content": {
+    "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+    "sections": [
+      {
+        "order": 0,
+        "type": "hero",
+        "data": {
+          "headline": "Color Bench",
+          "subheadline": "Explore color combinations in your browser.",
+          "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+          "variant": "centered",
+          "heroHeight": "medium",
+          "ctaText": "Read the tool guide",
+          "ctaUrl": "https://example.com/guide"
+        }
+      },
+      {
+        "order": 1,
+        "type": "iframe-tool",
+        "data": {
+          "heading": "Try Color Bench",
+          "description": "Explore a fictional color tool. Replace this demo deployment URL with your own existing hosted tool before publishing.",
+          "src": "https://color-bench-demo.pages.dev",
+          "initialHeight": 560
+        }
+      },
+      {
+        "order": 2,
+        "type": "about",
+        "data": {
+          "id": "details",
+          "heading": "Made for everyday progress",
+          "text": "Color Bench brings a thoughtful approach to the details that matter. Explore the overview, then visit our site to learn more."
+        }
+      },
+      {
+        "order": 3,
+        "type": "cta",
+        "data": {
+          "headline": "Explore the color guide",
+          "subheadline": "Explore color combinations in your browser.",
+          "buttonText": "Explore the color guide",
+          "buttonUrl": "https://example.com/iframe-tool"
+        }
+      }
+    ]
+  },
+  "locale": "en",
+  "darkMode": true
+}

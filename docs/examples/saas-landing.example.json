@@ -1,0 +1,68 @@
+{
+  "slug": "saas-landing-demo",
+  "template": "APP_LANDING",
+  "title": "Harbor Board",
+  "tagline": "A calmer workspace for small teams.",
+  "themeColor": "#A5B4FC",
+  "fontFamily": "Space Grotesk",
+  "isPublished": true,
+  "content": {
+    "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+    "sections": [
+      {
+        "order": 0,
+        "type": "hero",
+        "data": {
+          "headline": "Harbor Board",
+          "subheadline": "A calmer workspace for small teams.",
+          "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+          "variant": "centered",
+          "heroHeight": "medium",
+          "ctaText": "Explore",
+          "ctaUrl": "#details"
+        }
+      },
+      {
+        "order": 1,
+        "type": "features",
+        "data": {
+          "items": [
+            {
+              "title": "Start quickly",
+              "description": "Organize your first workspace in minutes."
+            },
+            {
+              "title": "Stay focused",
+              "description": "Keep the next action visible."
+            },
+            {
+              "title": "Share progress",
+              "description": "Bring your team along with clear updates."
+            }
+          ]
+        }
+      },
+      {
+        "order": 2,
+        "type": "about",
+        "data": {
+          "id": "details",
+          "heading": "Made for everyday progress",
+          "text": "Harbor Board brings a thoughtful approach to the details that matter. Explore the overview, then visit our site to learn more."
+        }
+      },
+      {
+        "order": 3,
+        "type": "cta",
+        "data": {
+          "headline": "Start your trial",
+          "subheadline": "A calmer workspace for small teams.",
+          "buttonText": "Start your trial",
+          "buttonUrl": "https://example.com/saas-landing"
+        }
+      }
+    ]
+  },
+  "locale": "en",
+  "darkMode": true
+}

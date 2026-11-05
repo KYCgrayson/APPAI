@@ -1,3 +1,14 @@
+import example0 from "../../docs/examples/app-landing.example.json" with { type: "json" };
+import example1 from "../../docs/examples/saas-landing.example.json" with { type: "json" };
+import example2 from "../../docs/examples/profile.example.json" with { type: "json" };
+import example3 from "../../docs/examples/link-in-bio.example.json" with { type: "json" };
+import example4 from "../../docs/examples/portfolio.example.json" with { type: "json" };
+import example5 from "../../docs/examples/event.example.json" with { type: "json" };
+import example6 from "../../docs/examples/company-service.example.json" with { type: "json" };
+import example7 from "../../docs/examples/product.example.json" with { type: "json" };
+import example8 from "../../docs/examples/hiring.example.json" with { type: "json" };
+import example9 from "../../docs/examples/iframe-tool.example.json" with { type: "json" };
+
 // ============================================================
 // AppAI Template Registry
 // Defines all available sections (building blocks) and presets
@@ -43,6 +54,8 @@ export interface SectionDef {
 }
 
 export interface PresetDef {
+  example: Record<string, unknown>;
+  exampleFile: string;
   template?: string;
   id: string;
   name: string;
@@ -183,10 +196,12 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Features",
     description: "Feature list displayed in a 3-column grid with icons.",
     fields: [
+      { name: "heading", type: "string", required: false, description: "Section title" },
+      { name: "subheading", type: "string", required: false, description: "Supporting text below the title" },
       {
         name: "items", type: "array", required: true, description: "List of features",
         items: [
-          { name: "icon", type: "string", required: false, description: "Icon name (brain, zap, shield, star, heart, globe, lock, rocket, code, chart) or any emoji" },
+          { name: "icon", type: "string", required: false, description: "One of icons (GET /api/v1/sections) or any emoji" },
           { name: "title", type: "string", required: true, description: "Feature title" },
           { name: "description", type: "string", required: true, description: "Feature description" },
         ],
@@ -351,6 +366,8 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Contact",
     description: "Contact information section with email, phone, and address.",
     fields: [
+      { name: "heading", type: "string", required: false, description: "Section title" },
+      { name: "subheading", type: "string", required: false, description: "Supporting text below the title" },
       { name: "email", type: "string", required: false, description: "Contact email" },
       { name: "phone", type: "string", required: false, description: "Phone number" },
       { name: "address", type: "string", required: false, description: "Physical address" },
@@ -379,7 +396,7 @@ export const SECTION_DEFS: SectionDef[] = [
         items: [
           { name: "title", type: "string", required: true, description: "Link text" },
           { name: "url", type: "url", required: true, description: "Link URL" },
-          { name: "icon", type: "string", required: false, description: "Emoji or icon" },
+          { name: "icon", type: "string", required: false, description: "One of icons (GET /api/v1/sections) or any emoji" },
           { name: "style", type: "string", required: false, description: "'filled' or 'outlined' (default: 'outlined')" },
           { name: "rel", type: "string", required: false, description: "Optional link rel attribute. Use 'nofollow' for affiliate/sponsored/user-supplied links, 'sponsored' for paid placements. Default is standard dofollow." },
         ],
@@ -556,6 +573,8 @@ export const SECTION_DEFS: SectionDef[] = [
 export const PRESET_DEFS: PresetDef[] = [
   {
     id: "app-landing",
+    example: example0,
+    exampleFile: "app-landing.example.json",
     template: "APP_LANDING",
     name: "App Landing Page",
     description: "For iOS/Android apps. Includes hero with logo, product video, features, screenshots, download buttons, testimonials, FAQ, and call-to-action.",
@@ -563,12 +582,16 @@ export const PRESET_DEFS: PresetDef[] = [
   },
   {
     id: "saas-landing",
+    example: example1,
+    exampleFile: "saas-landing.example.json",
     name: "SaaS Landing Page",
     description: "For web tools, APIs, and SaaS products. Includes hero, product video, features, pricing plans, testimonials, FAQ, and call-to-action.",
     sections: ["hero", "video", "features", "pricing", "testimonials", "faq", "cta"],
   },
   {
     id: "profile",
+    example: example2,
+    exampleFile: "profile.example.json",
     template: "PERSON",
     name: "Personal Profile",
     description: "Personal website (template PERSON): header, project cards with screenshots, and focus/experience/contact entries.",
@@ -576,6 +599,8 @@ export const PRESET_DEFS: PresetDef[] = [
   },
   {
     id: "link-in-bio",
+    example: example3,
+    exampleFile: "link-in-bio.example.json",
     template: "LINK_IN_BIO",
     name: "Link in Bio",
     description: "Minimal link aggregator page (like Linktree). Just a hero with avatar and a list of link buttons.",
@@ -583,6 +608,8 @@ export const PRESET_DEFS: PresetDef[] = [
   },
   {
     id: "portfolio",
+    example: example4,
+    exampleFile: "portfolio.example.json",
     template: "PORTFOLIO",
     name: "Portfolio",
     description: "For showcasing creative work. Includes hero, about section, gallery, testimonials, and contact.",
@@ -590,10 +617,16 @@ export const PRESET_DEFS: PresetDef[] = [
   },
   {
     id: "event",
+    example: example5,
+    exampleFile: "event.example.json",
     name: "Event Page",
     description: "For conferences, meetups, and launches. Includes hero, about, video, schedule, team (speakers), pricing (tickets), sponsors, FAQ, and call-to-action.",
     sections: ["hero", "about", "video", "schedule", "team", "pricing", "sponsors", "faq", "cta"],
   },
+  { id: "company-service", template: "COMPANY_PROFILE", name: "Company / Service", description: "For businesses and service providers: services, opening hours, and contact information.", sections: ["hero", "about", "features", "contact", "cta"], example: example6, exampleFile: "company-service.example.json" },
+  { id: "product", template: "PRODUCT_SHOWCASE", name: "Product Showcase", description: "For physical or digital products: features, pricing, and purchase links.", sections: ["hero", "features", "pricing", "cta"], example: example7, exampleFile: "product.example.json" },
+  { id: "hiring", template: "COMPANY_PROFILE", name: "Hiring / Job Opening", description: "For recruiting: openings, benefits, and an application link.", sections: ["hero", "features", "features", "cta"], example: example8, exampleFile: "hiring.example.json" },
+  { id: "iframe-tool", template: "APP_LANDING", name: "Wrapped Tool", description: "For tools deployed elsewhere: an iframe with a hosted introduction and usage guidance.", sections: ["hero", "iframe-tool", "about", "cta"], example: example9, exampleFile: "iframe-tool.example.json" },
 ];
 
 // --- Lookup helpers ---

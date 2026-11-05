@@ -1,3 +1,4 @@
+import { pageLogoUpdate, pageLogoWarnings } from "@/lib/page-logo";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
@@ -172,7 +173,7 @@ export async function PUT(
     const approvalUpdate = hostedPageApprovalUpdate(updated.template, page, hadPersonRoot);
 
     // Sync default-locale metadata; review the first PERSON root in any locale.
-    if (!page.parentSlug && ((page.isDefault && (data.title || data.tagline || category)) || approvalUpdate.isApproved === false)) {
+    if (!page.parentSlug && ((page.isDefault && (data.title || data.tagline || category || data.content || data.headerLogo)) || approvalUpdate.isApproved === false)) {
       const app = await db.app.findFirst({ where: { hostedPageSlug: slug, organizationId: authResult.organizationId } });
       if (app) {
         await db.app.update({
@@ -181,12 +182,14 @@ export async function PUT(
             ...(page.isDefault && data.title ? { name: data.title } : {}),
             ...(page.isDefault && data.tagline ? { tagline: data.tagline } : {}),
             ...(page.isDefault && category ? { category } : {}),
+            ...(page.isDefault ? { ...pageLogoUpdate(updated.content, updated.headerLogo) } : {}),
             ...approvalUpdate,
           },
         });
       }
     }
 
+    putWarnings.push(...pageLogoWarnings(updated));
     revalidateSeoIndexes(updated.slug);
     return NextResponse.json({ ...updated, ...(putWarnings.length > 0 ? { warnings: putWarnings } : {}) });
   } catch (error: unknown) {
@@ -263,7 +266,7 @@ export async function PATCH(
     const approvalUpdate = hostedPageApprovalUpdate(updated.template, page, hadPersonRoot);
 
     // Sync default-locale metadata; review the first PERSON root in any locale.
-    if (!page.parentSlug && ((page.isDefault && (updateData.title || updateData.tagline || category)) || approvalUpdate.isApproved === false)) {
+    if (!page.parentSlug && ((page.isDefault && (updateData.title || updateData.tagline || category || updateData.content || updateData.headerLogo)) || approvalUpdate.isApproved === false)) {
       const app = await db.app.findFirst({ where: { hostedPageSlug: slug, organizationId: authResult.organizationId } });
       if (app) {
         await db.app.update({
@@ -272,12 +275,14 @@ export async function PATCH(
             ...(page.isDefault && updateData.title ? { name: updateData.title } : {}),
             ...(page.isDefault && updateData.tagline ? { tagline: updateData.tagline } : {}),
             ...(page.isDefault && category ? { category } : {}),
+            ...(page.isDefault ? { ...pageLogoUpdate(updated.content, updated.headerLogo) } : {}),
             ...approvalUpdate,
           },
         });
       }
     }
 
+    patchWarnings.push(...pageLogoWarnings(updated));
     revalidateSeoIndexes(updated.slug);
     return NextResponse.json({ ...updated, ...(patchWarnings.length > 0 ? { warnings: patchWarnings } : {}) });
   } catch (error: unknown) {

@@ -1,11 +1,11 @@
-import { createHash } from "crypto";
+import { createHash, randomBytes } from "crypto";
 import { db } from "./db";
 
 export function hashApiKey(key: string): string {
   return createHash("sha256").update(key).digest("hex");
 }
 
-export async function validateApiKey(authHeader: string | null) {
+export async function validateApiKey(authHeader: string | null, options: { readOnly?: boolean } = {}) {
   if (!authHeader?.startsWith("Bearer ")) {
     return null;
   }
@@ -25,8 +25,8 @@ export async function validateApiKey(authHeader: string | null) {
     return null;
   }
 
-  // Update last used
-  await db.apiKey.update({
+  // Dry-runs must not write, including key usage metadata.
+  if (!options.readOnly) await db.apiKey.update({
     where: { id: apiKey.id },
     data: { lastUsedAt: new Date() },
   });
@@ -38,7 +38,6 @@ export async function validateApiKey(authHeader: string | null) {
 }
 
 export function generateApiKey(): { key: string; hash: string; prefix: string } {
-  const { randomBytes } = require("crypto");
   const raw = randomBytes(32).toString("hex");
   const key = `appai_sk_${raw}`;
   const hash = hashApiKey(key);

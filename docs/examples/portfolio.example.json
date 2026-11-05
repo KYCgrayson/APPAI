@@ -1,0 +1,59 @@
+{
+  "slug": "portfolio-demo",
+  "template": "PORTFOLIO",
+  "title": "Pebble Works",
+  "tagline": "Thoughtful identities for growing ideas.",
+  "themeColor": "#047857",
+  "fontFamily": "Lato",
+  "isPublished": true,
+  "content": {
+    "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+    "sections": [
+      {
+        "order": 0,
+        "type": "hero",
+        "data": {
+          "headline": "Pebble Works",
+          "subheadline": "Thoughtful identities for growing ideas.",
+          "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+          "variant": "centered",
+          "heroHeight": "medium",
+          "ctaText": "Discuss a project",
+          "ctaUrl": "https://example.com/studio"
+        }
+      },
+      {
+        "order": 1,
+        "type": "project-cards",
+        "data": {
+          "heading": "Selected work",
+          "items": [
+            {
+              "name": "Field Notes",
+              "description": "A visual identity for a fictional outdoor journal.",
+              "monogram": "FN",
+              "links": [
+                {
+                  "label": "View project",
+                  "url": "https://example.com/work"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "order": 2,
+        "type": "cta",
+        "data": {
+          "headline": "Discuss a commission",
+          "subheadline": "Thoughtful identities for growing ideas.",
+          "buttonText": "Discuss a commission",
+          "buttonUrl": "https://example.com/portfolio"
+        }
+      }
+    ]
+  },
+  "locale": "en",
+  "darkMode": false
+}

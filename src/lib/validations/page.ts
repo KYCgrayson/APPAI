@@ -33,7 +33,7 @@ const pageSchema = z.object({
   title: z.string().min(1).max(200),
   tagline: z.string().max(500).optional(),
   heroImage: z.string().url().optional(),
-  headerLogo: z.string().url().optional(),
+  headerLogo: z.string().refine(value => /^\/(?![\/\\])/.test(value) || URL.canParse(value), "Must be a URL or same-origin /path").optional(),
   content: z.record(z.string(), z.any()).default({}),
   privacyPolicy: z.string().optional(),
   termsOfService: z.string().optional(),

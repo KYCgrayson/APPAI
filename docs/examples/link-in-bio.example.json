@@ -1,0 +1,59 @@
+{
+  "slug": "link-in-bio-demo",
+  "template": "LINK_IN_BIO",
+  "title": "Moss Studio",
+  "tagline": "Find our latest work, notes, and experiments.",
+  "themeColor": "#FDBA74",
+  "fontFamily": "DM Sans",
+  "isPublished": true,
+  "content": {
+    "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+    "sections": [
+      {
+        "order": 0,
+        "type": "hero",
+        "data": {
+          "headline": "Moss Studio",
+          "subheadline": "Find our latest work, notes, and experiments.",
+          "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+          "variant": "centered",
+          "heroHeight": "medium",
+          "ctaText": "Read the journal",
+          "ctaUrl": "https://example.com/journal"
+        }
+      },
+      {
+        "order": 1,
+        "type": "links",
+        "data": {
+          "items": [
+            {
+              "url": "https://example.com/work",
+              "title": "Our latest project"
+            },
+            {
+              "url": "https://example.com/notes",
+              "title": "Studio notes"
+            },
+            {
+              "url": "https://example.com/contact",
+              "title": "Say hello"
+            }
+          ]
+        }
+      },
+      {
+        "order": 2,
+        "type": "cta",
+        "data": {
+          "headline": "Read the journal",
+          "subheadline": "Find our latest work, notes, and experiments.",
+          "buttonText": "Read the journal",
+          "buttonUrl": "https://example.com/link-in-bio"
+        }
+      }
+    ]
+  },
+  "locale": "en",
+  "darkMode": true
+}

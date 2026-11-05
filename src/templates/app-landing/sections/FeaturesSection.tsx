@@ -2,6 +2,8 @@ import { SmartIcon } from "@/templates/shared/SmartIcon";
 
 interface Props {
   data: {
+    heading?: string;
+    subheading?: string;
     items?: Array<{
       icon?: string;
       title: string;
@@ -33,9 +35,10 @@ export function FeaturesSection({ data, themeColor, darkMode }: Props) {
   return (
     <section className={`py-12 md:py-20 px-4 sm:px-6 ${darkMode ? "" : "bg-gray-50"}`}>
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>
-          Features
+        <h2 className={`text-3xl md:text-4xl lg:text-5xl font-bold text-center ${data.subheading ? "mb-3" : "mb-10 md:mb-16"}`} style={{ color: themeColor }}>
+          {data.heading || "Features"}
         </h2>
+        {data.subheading && <p className={`text-center mb-10 md:mb-16 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>{data.subheading}</p>}
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
           {items.map((item, i) => {
             const iconValue = item.icon

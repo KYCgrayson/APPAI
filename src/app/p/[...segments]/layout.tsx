@@ -171,7 +171,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
         <AdaptiveChrome>
           <a
             href={buildPagePath(slug, locale, null, page.isDefault)}
-            className="flex items-center gap-3 flex-shrink-0 min-w-0"
+            className="flex items-center gap-3 min-w-0 shrink md:shrink-0 group-data-[cramped=true]/chrome:!shrink"
           >
             {logo && (<>
               {/* eslint-disable-next-line @next/next/no-img-element -- Publisher logo uses arbitrary hosts. */}

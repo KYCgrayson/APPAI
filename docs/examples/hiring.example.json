@@ -1,0 +1,73 @@
+{
+  "slug": "hiring-demo",
+  "template": "COMPANY_PROFILE",
+  "title": "Harbor Careers",
+  "tagline": "Help small teams do their best work.",
+  "themeColor": "#0369A1",
+  "fontFamily": "Manrope",
+  "isPublished": true,
+  "content": {
+    "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+    "sections": [
+      {
+        "order": 0,
+        "type": "hero",
+        "data": {
+          "headline": "Harbor Careers",
+          "subheadline": "Help small teams do their best work.",
+          "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+          "variant": "centered",
+          "heroHeight": "medium",
+          "ctaText": "Explore",
+          "ctaUrl": "#details"
+        }
+      },
+      {
+        "order": 1,
+        "type": "features",
+        "data": {
+          "id": "details",
+          "heading": "Open roles",
+          "items": [
+            {
+              "icon": "code-slash-outline",
+              "title": "Product engineer",
+              "description": "Full-time · Remote. Build accessible TypeScript interfaces."
+            },
+            {
+              "icon": "sparkles-outline",
+              "title": "Product designer",
+              "description": "Full-time · Remote. Shape clear, accessible product experiences."
+            }
+          ]
+        }
+      },
+      {
+        "type": "features",
+        "data": {
+          "heading": "Benefits",
+          "items": [
+            {
+              "icon": "sparkles-outline",
+              "title": "Time to recharge",
+              "description": "Flexible hours, paid leave, and a learning budget."
+            }
+          ]
+        },
+        "order": 2
+      },
+      {
+        "order": 3,
+        "type": "cta",
+        "data": {
+          "headline": "Apply to Harbor",
+          "subheadline": "Help small teams do their best work.",
+          "buttonText": "Apply to Harbor",
+          "buttonUrl": "https://example.com/hiring"
+        }
+      }
+    ]
+  },
+  "locale": "en",
+  "darkMode": false
+}

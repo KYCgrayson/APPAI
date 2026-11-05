@@ -1,3 +1,6 @@
+import { parseDryRun } from "@/lib/page-preview";
+import { pageLogoUpdate, pageLogoWarnings } from "@/lib/page-logo";
+import { POST as previewPage } from "./preview/route";
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
@@ -9,15 +12,6 @@ import { hostedPageApprovalUpdate } from "@/lib/hosted-page-approval";
 import { pageParentConflict } from "@/lib/page-parent-conflict";
 import { slugOwnershipDecision } from "@/lib/slug-ownership";
 import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
-
-function extractLogoFromContent(value: unknown, heroImage?: string | null, headerLogo?: string | null): string | null {
-  const content = value as { logo?: string; sections?: { type?: string; data?: { logo?: string } }[] } | null;
-  if (headerLogo) return headerLogo;
-  if (content?.logo) return content.logo;
-  const heroSection = content?.sections?.find((s) => s.type === "hero");
-  if (heroSection?.data?.logo) return heroSection.data.logo;
-  return heroImage || null;
-}
 
 function mapTemplateToCategory(template: string): string {
   const map: Record<string, string> = {
@@ -33,6 +27,9 @@ function mapTemplateToCategory(template: string): string {
 
 // POST /api/v1/pages - Create a new hosted page
 export async function POST(request: NextRequest) {
+  const dryRun = parseDryRun(request.nextUrl.searchParams.get("dryRun"));
+  if (dryRun === "invalid") return NextResponse.json({ error: "Invalid dryRun value", hint: "Use dryRun=true/1/yes to preview, or false/0/no to publish." }, { status: 400 });
+  if (dryRun) return previewPage(request);
   const authResult = await validateApiKey(request.headers.get("authorization"));
   if (!authResult) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -157,7 +154,7 @@ export async function POST(request: NextRequest) {
               ...(existing.isDefault ? {
                 name: updated.title,
                 tagline: updated.tagline || updated.title,
-                logoUrl: extractLogoFromContent(updated.content, updated.heroImage, updated.headerLogo),
+                ...pageLogoUpdate(updated.content, updated.headerLogo),
                 ...(appCategory ? { category: appCategory } : {}),
               } : {}),
             },
@@ -165,6 +162,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      upsertWarnings.push(...pageLogoWarnings(updated));
       revalidateSeoIndexes(updated.slug);
       return NextResponse.json(
         { ...updated, ...(upsertWarnings.length > 0 ? { warnings: upsertWarnings } : {}) },
@@ -251,7 +249,7 @@ export async function POST(request: NextRequest) {
             description: page.tagline || page.title,
             category: appCategory || mapTemplateToCategory(data.template),
             hostedPageSlug: page.slug,
-            logoUrl: extractLogoFromContent(pageData.content, page.heroImage, page.headerLogo),
+            ...pageLogoUpdate(pageData.content, page.headerLogo),
             ...hostedPageApprovalUpdate(page.template),
           },
         });
@@ -265,6 +263,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    contentWarnings.push(...pageLogoWarnings(page));
     revalidateSeoIndexes(page.slug);
     return NextResponse.json(
       { ...page, ...(contentWarnings.length > 0 ? { warnings: contentWarnings } : {}) },

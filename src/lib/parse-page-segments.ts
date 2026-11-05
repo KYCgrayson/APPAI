@@ -1,4 +1,4 @@
-import { isValidLocale } from "@/lib/validations/page";
+import { isValidLocale } from "./validations/page.ts";
 
 const SUBPAGES = ["privacy", "terms"] as const;
 export type Subpage = (typeof SUBPAGES)[number];
