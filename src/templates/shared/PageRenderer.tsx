@@ -1,32 +1,39 @@
+import {
+  ProfileHeaderSection,
+  ProjectCardsSection,
+  EntriesSection,
+  HeroSection,
+  FeaturesSection,
+  ScreenshotsSection,
+  DownloadSection,
+  FaqSection,
+  VideoSection,
+  PricingSection,
+  TestimonialsSection,
+  GallerySection,
+  TeamSection,
+  ScheduleSection,
+  SponsorsSection,
+  StatsSection,
+  ContactSection,
+  CtaSection,
+  LinksSection,
+  AboutSection,
+  ActionSection,
+  FormSection,
+  MediaDownloaderSection,
+  ToolSection,
+  PdfViewerSection,
+  EmbedSection,
+  IframeToolSection,
+  VideoSubtitleSection,
+  SimpleOrderSection,
+} from "./section-components";
+import { Suspense } from "react";
+import { SectionErrorBoundary } from "./SectionErrorBoundary";
+import { normalizeHostedContent } from "@/lib/hosted-content";
 import { usesEditorialScreenshots } from "@/lib/screenshot-layout";
-import { ProfileHeaderSection, ProjectCardsSection, EntriesSection } from "../sections/EditorialSections";
-import { HeroSection } from "../app-landing/sections/HeroSection";
-import { FeaturesSection } from "../app-landing/sections/FeaturesSection";
-import { ScreenshotsSection } from "../app-landing/sections/ScreenshotsSection";
-import { DownloadSection } from "../app-landing/sections/DownloadSection";
-import { FaqSection } from "../app-landing/sections/FaqSection";
-import { VideoSection } from "../sections/VideoSection";
 import { LoginGate } from "./LoginGate";
-import { PricingSection } from "../sections/PricingSection";
-import { TestimonialsSection } from "../sections/TestimonialsSection";
-import { GallerySection } from "../sections/GallerySection";
-import { TeamSection } from "../sections/TeamSection";
-import { ScheduleSection } from "../sections/ScheduleSection";
-import { SponsorsSection } from "../sections/SponsorsSection";
-import { StatsSection } from "../sections/StatsSection";
-import { ContactSection } from "../sections/ContactSection";
-import { CtaSection } from "../sections/CtaSection";
-import { LinksSection } from "../sections/LinksSection";
-import { AboutSection } from "../sections/AboutSection";
-import { ActionSection } from "../sections/ActionSection";
-import { FormSection } from "../sections/FormSection";
-import { MediaDownloaderSection } from "../sections/MediaDownloaderSection";
-import { ToolSection } from "../sections/ToolSection";
-import { PdfViewerSection } from "../sections/PdfViewerSection";
-import { EmbedSection } from "../sections/EmbedSection";
-import { IframeToolSection } from "../sections/IframeToolSection";
-import { VideoSubtitleSection } from "../sections/VideoSubtitleSection";
-import { SimpleOrderSection } from "../sections/SimpleOrderSection";
 import { issueIframeToolSession } from "@/lib/iframe-tool-session";
 import { decideSectionAccess, sectionWantsIdentity } from "@/lib/iframe-tool-session-contract";
 
@@ -82,9 +89,7 @@ interface PageData {
 }
 
 function asPageContent(value: unknown): PageContent {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? value as PageContent
-    : {};
+  return normalizeHostedContent(value) as PageContent;
 }
 
 function autoSecondaryColor(primary: string): string {
@@ -292,6 +297,20 @@ function renderSection(
   );
 }
 
+// /p is dynamically rendered via auth(): errored RSC chunks reach the client
+// boundary. This catch only covers synchronous section setup (e.g. identity).
+function SafeSection({ section, index, themeColor, themeColorSecondary, darkMode, page, viewer }: {
+  section: PageSection; index: number; themeColor: string; themeColorSecondary: string;
+  darkMode: boolean; page: PageData; viewer: PageViewer;
+}) {
+  try {
+    return renderSection(section, index, themeColor, themeColorSecondary, darkMode, page, viewer);
+  } catch {
+    console.error("Hosted section failed:", section.type);
+    return null;
+  }
+}
+
 // Re-export NavItem from the canonical location so existing imports keep working.
 export type { NavItem } from "@/lib/site-nav";
 
@@ -317,42 +336,12 @@ export function PageRenderer({
     (a, b) => (a.order || 0) - (b.order || 0)
   );
 
-  // If no sections defined, render a simple default based on available fields
+  // Legacy content uses the same guarded path as explicit sections.
   if (sortedSections.length === 0) {
-    return (
-      <div>
-        <HeroSection
-          data={{
-            headline: page.title,
-            subheadline: page.tagline || "",
-            logo: pageContent.logo,
-            backgroundImage: page.heroImage || undefined,
-          }}
-          themeColor={themeColor}
-        />
-        {Array.isArray(pageContent.features) && (
-          <FeaturesSection
-            data={{ items: pageContent.features } as never}
-            themeColor={themeColor}
-          />
-        )}
-        {(pageContent.appStoreUrl || pageContent.playStoreUrl) && (
-          <DownloadSection
-            data={{
-              appStoreUrl: pageContent.appStoreUrl,
-              playStoreUrl: pageContent.playStoreUrl,
-            } as never}
-            themeColor={themeColor}
-          />
-        )}
-        {Array.isArray(pageContent.links) && (
-          <LinksSection
-            data={{ items: pageContent.links } as never}
-            themeColor={themeColor}
-          />
-        )}
-      </div>
-    );
+    sortedSections.push({ type: "hero", data: { headline: page.title, subheadline: page.tagline || "", logo: pageContent.logo, backgroundImage: page.heroImage || undefined } });
+    if (Array.isArray(pageContent.features)) sortedSections.push({ type: "features", data: { items: pageContent.features } });
+    if (pageContent.appStoreUrl || pageContent.playStoreUrl) sortedSections.push({ type: "download", data: { appStoreUrl: pageContent.appStoreUrl, playStoreUrl: pageContent.playStoreUrl } });
+    if (Array.isArray(pageContent.links)) sortedSections.push({ type: "links", data: { items: pageContent.links } });
   }
 
   const fontUrl = fontFamily
@@ -393,7 +382,11 @@ export function PageRenderer({
             </div>
           );
         }
-        return renderSection(section, index, themeColor, themeColorSecondary, darkMode, page, viewer);
+        return <SectionErrorBoundary key={index} sectionType={section.type}>
+          <Suspense fallback={null}>
+            <SafeSection section={section} index={index} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} page={page} viewer={viewer} />
+          </Suspense>
+        </SectionErrorBoundary>;
       })}
     </div>
   );

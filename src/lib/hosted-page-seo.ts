@@ -1,7 +1,13 @@
+import { normalizeHostedContent } from "./hosted-content.ts";
 import { PLATFORM_ORIGIN } from "./platform-identity.ts";
 /* Publisher JSON is intentionally open; all SEO URLs pass the shared sanitizer. */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { sanitizeUrl } from "./sanitize.ts";
+function isoDate(value: unknown): string | undefined {
+  if (!(typeof value === "string" || typeof value === "number" || value instanceof Date)) return undefined;
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toISOString() : undefined;
+}
 function clean(value: unknown): string {
   return typeof value === "string" ? value.replace(/<[^>]*>/g, "").replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/[*_`#]/g, "").trim() : "";
 }
@@ -13,7 +19,7 @@ export function safeHttpUrl(value: unknown, baseUrl?: string): string | undefine
   } catch { return undefined; }
 }
 export function hostedOgImage(page: any): string | undefined {
-  const sections = page.content?.sections || [];
+  const sections: any[] = normalizeHostedContent(page.content).sections;
   const profile = sections.find((s: any) => s.type === "profile-header")?.data;
   const project = sections.filter((s: any) => s.type === "project-cards").flatMap((s: any) => s.data?.items || []).find((item: any) => safeHttpUrl(item?.screenshot?.url) || safeHttpUrl(item?.icon?.url));
   const screenshot = sections.find((s: any) => s.type === "screenshots")?.data?.images?.[0];
@@ -27,7 +33,7 @@ export function buildJsonLd(
   baseUrl: string,
   breadcrumb: Record<string, unknown> | null,
 ) {
-  const content = page.content as any;
+  const content = normalizeHostedContent(page.content) as any;
   const downloadSection = content?.sections?.find((s: any) => s.type === "download");
   const platforms: string[] = [];
   if (downloadSection?.data?.appStoreUrl) platforms.push("iOS");
@@ -42,8 +48,8 @@ export function buildJsonLd(
     url,
     image: hostedOgImage(page),
     inLanguage: page.locale,
-    datePublished: page.createdAt ? new Date(page.createdAt).toISOString() : undefined,
-    dateModified: page.updatedAt ? new Date(page.updatedAt).toISOString() : undefined,
+    datePublished: isoDate(page.createdAt),
+    dateModified: isoDate(page.updatedAt),
     isPartOf: { "@id": `${PLATFORM_ORIGIN}/#website` },
     publisher: { "@id": `${PLATFORM_ORIGIN}/#org` },
   };

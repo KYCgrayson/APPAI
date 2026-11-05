@@ -1,18 +1,26 @@
 import { cache } from "react";
+import { convertChineseVariant, oppositeChineseLocale, chineseSourceLocales } from "./zh-convert";
 import { db } from "@/lib/db";
 
 /** Resolve a root page from DB: explicit locale or default */
 export const resolvePage = cache(async function resolvePage(slug: string, explicitLocale: string | null) {
   if (explicitLocale) {
-    return db.hostedPage.findFirst({
+    const exact = await db.hostedPage.findFirst({
       where: { slug, locale: explicitLocale, isPublished: true, parentSlug: null },
     });
+    if (exact) return { ...exact, autoConverted: false };
+    const opposite = oppositeChineseLocale(explicitLocale);
+    if (!opposite) return null;
+    const sources = await db.hostedPage.findMany({ where: { slug, locale: { in: chineseSourceLocales(explicitLocale) }, isPublished: true, parentSlug: null } });
+    const source = sources.find(row => row.locale === opposite) ?? sources[0];
+    return source ? convertChineseVariant(source, explicitLocale) : null;
   }
   // No locale in URL — find the default, fallback to first
-  return db.hostedPage.findFirst({
+  const defaultPage = await db.hostedPage.findFirst({
     where: { slug, isPublished: true, parentSlug: null },
     orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
   });
+  return defaultPage ? { ...defaultPage, autoConverted: false } : null;
 });
 
 /** Resolve a child page (parentSlug=root.slug) within the same organization. */
@@ -23,7 +31,7 @@ export const resolveChildPage = cache(async function resolveChildPage(
   organizationId: string,
 ) {
   if (explicitLocale) {
-    return db.hostedPage.findFirst({
+    const exact = await db.hostedPage.findFirst({
       where: {
         organizationId,
         parentSlug,
@@ -32,8 +40,14 @@ export const resolveChildPage = cache(async function resolveChildPage(
         isPublished: true,
       },
     });
+    if (exact) return { ...exact, autoConverted: false };
+    const opposite = oppositeChineseLocale(explicitLocale);
+    if (!opposite) return null;
+    const sources = await db.hostedPage.findMany({ where: { organizationId, parentSlug, slug: childSlug, locale: { in: chineseSourceLocales(explicitLocale) }, isPublished: true } });
+    const source = sources.find(row => row.locale === opposite) ?? sources[0];
+    return source ? convertChineseVariant(source, explicitLocale) : null;
   }
-  return db.hostedPage.findFirst({
+  const defaultPage = await db.hostedPage.findFirst({
     where: {
       organizationId,
       parentSlug,
@@ -42,5 +56,6 @@ export const resolveChildPage = cache(async function resolveChildPage(
     },
     orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
   });
+  return defaultPage ? { ...defaultPage, autoConverted: false } : null;
 });
 

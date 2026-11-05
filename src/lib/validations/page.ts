@@ -92,7 +92,13 @@ export const createPageSchema = pageSchema.refine(
   data => !data.parentSlug || (!isValidLocale(data.slug) && !["privacy", "terms", "tools"].includes(data.slug)),
   { path: ["slug"], message: "Child slug is reserved for hosted locales or privacy, terms, tools; choose a distinct project slug." },
 );
-export const updatePageSchema = pageSchema.partial();
+export const updatePageSchema = pageSchema.extend({
+  locale: pageSchema.shape.locale.unwrap().removeDefault().optional(),
+  template: pageSchema.shape.template.removeDefault(),
+  content: pageSchema.shape.content.removeDefault(),
+  darkMode: pageSchema.shape.darkMode.removeDefault(),
+  isPublished: pageSchema.shape.isPublished.removeDefault(),
+}).partial();
 
 export type CreatePageInput = z.infer<typeof createPageSchema>;
 export type UpdatePageInput = z.infer<typeof updatePageSchema>;

@@ -23,7 +23,11 @@ export const createAppSchema = z.object({
   hostedPageSlug: z.string().optional(),
 });
 
-export const updateAppSchema = createAppSchema.partial();
+export const updateAppSchema = createAppSchema.extend({
+  category: createAppSchema.shape.category.removeDefault(),
+  tags: createAppSchema.shape.tags.removeDefault(),
+  screenshots: createAppSchema.shape.screenshots.removeDefault(),
+}).partial();
 
 export type CreateAppInput = z.infer<typeof createAppSchema>;
 export type UpdateAppInput = z.infer<typeof updateAppSchema>;
