@@ -85,7 +85,7 @@ without going through a connector or a reviewed Universal App release.
 ## Project Docs
 
 - **TODO.md** — Central todolist and roadmap. All planned features, tasks, and progress are tracked here. Always check and update this file when working on new features or completing tasks.
-- **AGENT_INSTRUCTIONS.md** — Complete spec for AI agents: capability overview, visual design guide, authentication flow, API endpoints, section types, content format, multi-page sites, and multi-language support. Redesigned with a "designer mindset" — agents build first, iterate after.
+- **AGENT_INSTRUCTIONS.md** — Complete spec for AI agents: capability overview, one-minute quick start (presets, style kits), authentication flow, API endpoints, section types, content format, multi-page sites, and multi-language support. Redesigned with a "designer mindset" — agents build first, iterate after.
 
 ## AGENT_INSTRUCTIONS.md Style Rules
 

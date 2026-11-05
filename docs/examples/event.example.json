@@ -1,0 +1,64 @@
+{
+  "slug": "event-demo",
+  "template": "APP_LANDING",
+  "title": "Bright Ideas Day",
+  "tagline": "An afternoon of practical demos and shared learning.",
+  "themeColor": "#9F1239",
+  "fontFamily": "Lora",
+  "isPublished": true,
+  "content": {
+    "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+    "sections": [
+      {
+        "order": 0,
+        "type": "hero",
+        "data": {
+          "headline": "Bright Ideas Day",
+          "subheadline": "An afternoon of practical demos and shared learning.",
+          "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+          "variant": "centered",
+          "heroHeight": "medium",
+          "ctaText": "Register",
+          "ctaUrl": "https://example.com/events"
+        }
+      },
+      {
+        "type": "schedule",
+        "data": {
+          "items": [
+            {
+              "time": "13:00 UTC",
+              "title": "Welcome and demos",
+              "speaker": "Alex Reed"
+            }
+          ]
+        },
+        "order": 1
+      },
+      {
+        "type": "team",
+        "data": {
+          "items": [
+            {
+              "name": "Alex Reed",
+              "role": "Design researcher"
+            }
+          ]
+        },
+        "order": 2
+      },
+      {
+        "order": 3,
+        "type": "cta",
+        "data": {
+          "headline": "Register for Bright Ideas Day",
+          "subheadline": "An afternoon of practical demos and shared learning.",
+          "buttonText": "Register for Bright Ideas Day",
+          "buttonUrl": "https://example.com/event"
+        }
+      }
+    ]
+  },
+  "locale": "en",
+  "darkMode": false
+}

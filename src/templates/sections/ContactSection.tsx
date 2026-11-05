@@ -2,6 +2,8 @@ import { sanitizeUrl } from "@/lib/sanitize";
 
 interface Props {
   data: {
+    heading?: string;
+    subheading?: string;
     email?: string;
     phone?: string;
     address?: string;
@@ -14,9 +16,10 @@ export function ContactSection({ data, themeColor }: Props) {
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6 bg-gray-50">
       <div className="max-w-3xl mx-auto">
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>
-          Contact
+        <h2 className={`text-3xl md:text-4xl lg:text-5xl font-bold text-center ${data.subheading ? "mb-3" : "mb-10 md:mb-16"}`} style={{ color: themeColor }}>
+          {data.heading || "Contact"}
         </h2>
+        {data.subheading && <p className={"text-center text-gray-600 mb-10 md:mb-16"}>{data.subheading}</p>}
         <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm space-y-6">
           {data.email && (
             <div className="flex items-center gap-4">

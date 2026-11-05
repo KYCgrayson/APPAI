@@ -22,6 +22,12 @@ Recorded so future work stops re-deriving them. The boundary itself lives in
 - [ ] **D5 — `iframe-tool` depends on infrastructure we do not control.** If the user's Vercel deploy dies the AppAI page shows a broken frame and reads as our outage. Proposal: health check + graceful degradation (keep the landing content, hide the frame, notify the owner). Real scope addition, not free.
 - [ ] **D6 — Universal App review is manual.** Every release needs admin approval. That is the scope brake that keeps AppAI from becoming a general code host, but it is also the growth ceiling. Revisit once more than a handful of artifacts exist.
 
+## One-minute hosted publishing (ops #33)
+
+- [x] Final round: prioritize matching icon names, keep quick-start JSON in sync with the forest company-service example, and recognize mixed-case placeholder-logo schemes/hosts; regression coverage added.
+
+- [x] Shared root-logo guidance and non-blocking warnings, merged-update directory logo sync, shared dry-run alias, ten copyable preset examples, six style kits, bundled PNG and quick start. No URL fetching, AI calls, schema changes, or dependencies. Validation: typecheck, 231 tests passed (one DB integration skipped), touched-file lint clean; sandbox build passed with Webpack and the existing local DB fallback.
+
 ## Hosted personal websites (D30 / D31)
 
 - [x] Replace source-coded profiles with PERSON hosted pages, reusable editorial sections, approved directory listings, and root slug ownership checks across locales.
@@ -114,3 +120,7 @@ Check items off as they are completed. Add new items with date and description.
 - [x] Run typecheck and unit/render tests.
 - [ ] Measure 375px overflow in a browser.
 - [ ] Confirm production cause of the hosted-page 500 from logs.
+
+- [x] Ops #33 round 2: preserve Apps API logos; preview demo warnings, origin/locale links and dry-run flags; discoverable icons/filtered schemas; custom section headings and varied business examples.
+
+- [x] Ops #33 round 3: recursive placeholder warnings and indexed section paths; exact bundled icons with typo suggestions; UTF-8 examples, root-only default lookup, varied style kits and English locale; multiple hiring roles; muted subheadings; mobile header title truncation; unknown-section recovery; logo rules in quick-start step 3.

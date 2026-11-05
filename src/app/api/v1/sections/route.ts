@@ -1,3 +1,5 @@
+import { ICON_NAMES } from "@/components/ui/Icon";
+import { LOGO_GUIDANCE } from "@/lib/page-logo";
 import { NextRequest, NextResponse } from "next/server";
 import {
   SECTION_DEFS,
@@ -70,10 +72,13 @@ function fieldToJsonSchema(field: SectionFieldDef): JsonSchema {
 export async function GET(request: NextRequest) {
   const format = request.nextUrl.searchParams.get("format");
 
-  const enriched = SECTION_DEFS.map((s) => ({
+  const types = request.nextUrl.searchParams.get("type")?.split(",").map(type => type.trim());
+  const enriched = SECTION_DEFS.filter(section => !types || types.includes(section.type)).map((s) => ({
     ...s,
     fields: [...COMMON_SECTION_FIELDS, ...s.fields],
   }));
+
+  const recovery = types && enriched.length === 0 ? { total: 0, validTypes: SECTION_DEFS.map(section => section.type) } : {};
 
   if (format === "jsonschema") {
     const schemas: Record<string, JsonSchema> = {};
@@ -91,10 +96,12 @@ export async function GET(request: NextRequest) {
         ...(required.length > 0 ? { required } : {}),
       };
     }
-    return NextResponse.json({ $schema: "https://json-schema.org/draft/2020-12/schema", sections: schemas });
+    return NextResponse.json({ ...recovery, icons: ICON_NAMES, logoGuidance: LOGO_GUIDANCE, $schema: "https://json-schema.org/draft/2020-12/schema", sections: schemas });
   }
 
   return NextResponse.json({
+    icons: ICON_NAMES, logoGuidance: LOGO_GUIDANCE,
+    ...recovery,
     sections: enriched,
     total: enriched.length,
   });

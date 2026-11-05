@@ -1,0 +1,48 @@
+{
+  "slug": "profile-demo",
+  "template": "PERSON",
+  "title": "Nova Finch",
+  "tagline": "Fictional designer exploring useful everyday tools.",
+  "themeColor": "#0369A1",
+  "fontFamily": "Manrope",
+  "isPublished": true,
+  "content": {
+    "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+    "sections": [
+      {
+        "order": 0,
+        "type": "profile-header",
+        "data": {
+          "name": "Nova Finch",
+          "tagline": "Fictional designer exploring useful everyday tools.",
+          "intro": "I design simple tools and share what I learn. This is a fictional demonstration profile.",
+          "avatar": {
+            "url": "https://appai.info/spec/examples/placeholder-logo.png",
+            "alt": "Geometric demo logo"
+          }
+        }
+      },
+      {
+        "order": 1,
+        "type": "about",
+        "data": {
+          "id": "details",
+          "heading": "Made for everyday progress",
+          "text": "Nova Finch brings a thoughtful approach to the details that matter. Explore the overview, then visit our site to learn more."
+        }
+      },
+      {
+        "order": 2,
+        "type": "cta",
+        "data": {
+          "headline": "Start a conversation",
+          "subheadline": "Fictional designer exploring useful everyday tools.",
+          "buttonText": "Start a conversation",
+          "buttonUrl": "https://example.com/profile"
+        }
+      }
+    ]
+  },
+  "locale": "en",
+  "darkMode": false
+}

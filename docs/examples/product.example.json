@@ -1,0 +1,71 @@
+{
+  "slug": "product-demo",
+  "template": "PRODUCT_SHOWCASE",
+  "title": "Foldlight",
+  "tagline": "A compact desk lamp for focused evenings.",
+  "themeColor": "#9F1239",
+  "fontFamily": "Lora",
+  "isPublished": true,
+  "content": {
+    "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+    "sections": [
+      {
+        "order": 0,
+        "type": "hero",
+        "data": {
+          "headline": "Foldlight",
+          "subheadline": "A compact desk lamp for focused evenings.",
+          "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+          "variant": "centered",
+          "heroHeight": "medium",
+          "ctaText": "Shop the lamp",
+          "ctaUrl": "https://example.com/shop"
+        }
+      },
+      {
+        "type": "features",
+        "data": {
+          "heading": "Designed for your desk",
+          "items": [
+            {
+              "icon": "sparkles-outline",
+              "title": "Adjustable glow",
+              "description": "Warm dimmable light with a compact footprint."
+            }
+          ]
+        },
+        "order": 1
+      },
+      {
+        "type": "pricing",
+        "data": {
+          "items": [
+            {
+              "name": "Desk lamp",
+              "price": "$49",
+              "features": [
+                "Warm dimmable light",
+                "Two-year warranty"
+              ],
+              "ctaText": "Order a lamp",
+              "ctaUrl": "https://example.com/shop"
+            }
+          ]
+        },
+        "order": 2
+      },
+      {
+        "order": 3,
+        "type": "cta",
+        "data": {
+          "headline": "Order your desk lamp",
+          "subheadline": "A compact desk lamp for focused evenings.",
+          "buttonText": "Order your desk lamp",
+          "buttonUrl": "https://example.com/product"
+        }
+      }
+    ]
+  },
+  "locale": "en",
+  "darkMode": false
+}

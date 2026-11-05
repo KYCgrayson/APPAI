@@ -1,0 +1,68 @@
+{
+  "slug": "app-landing-demo",
+  "template": "APP_LANDING",
+  "title": "Pocket Orbit",
+  "tagline": "Keep your next small task in view.",
+  "themeColor": "#4F46E5",
+  "fontFamily": "Inter",
+  "isPublished": true,
+  "content": {
+    "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+    "sections": [
+      {
+        "order": 0,
+        "type": "hero",
+        "data": {
+          "headline": "Pocket Orbit",
+          "subheadline": "Keep your next small task in view.",
+          "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+          "variant": "centered",
+          "heroHeight": "medium",
+          "ctaText": "Get the app",
+          "ctaUrl": "https://example.com/download"
+        }
+      },
+      {
+        "order": 1,
+        "type": "features",
+        "data": {
+          "items": [
+            {
+              "title": "Start quickly",
+              "description": "Organize your first workspace in minutes."
+            },
+            {
+              "title": "Stay focused",
+              "description": "Keep the next action visible."
+            },
+            {
+              "title": "Share progress",
+              "description": "Bring your team along with clear updates."
+            }
+          ]
+        }
+      },
+      {
+        "order": 2,
+        "type": "about",
+        "data": {
+          "id": "details",
+          "heading": "Made for everyday progress",
+          "text": "Pocket Orbit brings a thoughtful approach to the details that matter. Explore the overview, then visit our site to learn more."
+        }
+      },
+      {
+        "order": 3,
+        "type": "cta",
+        "data": {
+          "headline": "Download the app",
+          "subheadline": "Keep your next small task in view.",
+          "buttonText": "Download the app",
+          "buttonUrl": "https://example.com/app-landing"
+        }
+      }
+    ]
+  },
+  "locale": "en",
+  "darkMode": false
+}

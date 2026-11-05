@@ -193,7 +193,7 @@ of these values in a public environment variable.
 - Multi-language pages with locale variants
 - Section-level anchor IDs for in-page navigation
 - Preview/dry-run API to validate content before publishing
-- 6 preset templates: app-landing, saas-landing, profile, link-in-bio, portfolio, event
+- 10 presets with full example POST bodies and 6 named style kits: app-landing, saas-landing, profile, link-in-bio, portfolio, event, company-service, product, hiring, iframe-tool
 
 ## API Base URL
 
@@ -207,7 +207,8 @@ ${baseUrl} (always use this, never use www.appai.info)
 - GET /api/v1/presets — Preset templates
 - POST /api/v1/pages — Create a page (?upsert=true to overwrite)
 - PATCH /api/v1/pages/:slug — Partial update with deep section merge
-- POST /api/v1/pages/preview — Dry-run validation without saving
+- POST /api/v1/pages/preview or POST /api/v1/pages?dryRun=true — Pre-flight validation without saving; returns errors, warnings, sanitizedContent, next
+- Every root page should provide content.logo (or hero data.logo / headerLogo): square 512x512 PNG, app-icon style with its own background; HTTPS or same-origin /path. Upload local files via POST /api/v1/upload. Missing or non-HTTPS logos warn without blocking publishing. Replace demo logos with the real logo.
 - PATCH /api/v1/pages/:slug/sections/:order — Update a single section
 - GET /api/v1/pages/:slug/children — List child pages of a multi-page site
 - POST /api/v1/upload — Upload images (max 5MB)

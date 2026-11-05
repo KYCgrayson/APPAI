@@ -33,6 +33,44 @@ Two limits worth knowing up front, so you never promise them:
 
 Everything below is detail for the rung you picked.
 
+## Publish in one minute
+
+1. **Get a key:** use the device flow in [Authentication](#authentication); send `Authorization: Bearer appai_sk_YOUR_KEY` on API requests.
+2. **Pick a preset:** `GET /api/v1/presets` returns copyable full POST bodies in `example`, section recipes, and named `styles`.
+
+| Type | Preset id | Example POST body |
+|---|---|---|
+| Mobile app | `app-landing` | [JSON](https://appai.info/spec/examples/app-landing.example.json) |
+| SaaS | `saas-landing` | [JSON](https://appai.info/spec/examples/saas-landing.example.json) |
+| Personal site | `profile` | [JSON](https://appai.info/spec/examples/profile.example.json) |
+| Link hub | `link-in-bio` | [JSON](https://appai.info/spec/examples/link-in-bio.example.json) |
+| Portfolio | `portfolio` | [JSON](https://appai.info/spec/examples/portfolio.example.json) |
+| Event | `event` | [JSON](https://appai.info/spec/examples/event.example.json) |
+| Company / service | `company-service` | [JSON](https://appai.info/spec/examples/company-service.example.json) |
+| Product | `product` | [JSON](https://appai.info/spec/examples/product.example.json) |
+| Hiring / job opening | `hiring` | [JSON](https://appai.info/spec/examples/hiring.example.json) |
+| Wrapped tool | `iframe-tool` | [JSON](https://appai.info/spec/examples/iframe-tool.example.json) |
+
+3. **Brand it:** add a real logo — square 512×512 PNG with its own background in `content.logo`, uploaded with `POST /api/v1/upload` (rules: [Logo](#logo)). Copy `themeColor`, `fontFamily`, `darkMode` from a style kit below; use its suggested backgrounds for section `data.backgroundColor`.
+4. **Pre-flight:** `POST /api/v1/pages?dryRun=true` (alias: `POST /api/v1/pages/preview`) with the full body. Review `{valid, errors, warnings, sanitizedContent, next}`; fix errors and unknown section/field warnings before publishing. Nothing is saved. Find schemas with `GET /api/v1/sections?type=features,contact` (comma list supported). `dryRun` accepts true/1/yes or false/0/no case-insensitively; other non-empty values return 400.
+5. **Publish:** `POST /api/v1/pages` with the same body (`?upsert=true` to overwrite an existing page).
+6. **Open:** `https://appai.info/p/{slug}` and check desktop/mobile layout.
+
+| Style kit | themeColor | themeColorSecondary | fontFamily | darkMode | Suggested backgroundColors |
+|---|---|---|---|---|---|
+| indigo | #4F46E5 | #0891B2 | Inter | false | #FFFFFF, #EEF2FF |
+| forest | #047857 | #B45309 | Lato | false | #FFFFFF, #ECFDF5 |
+| editorial | #9F1239 | #57534E | Lora | false | #FFFBEB, #FFF1F2 |
+| ocean | #0369A1 | #0F766E | Manrope | false | #FFFFFF, #F0F9FF |
+| midnight | #A5B4FC | #67E8F9 | Space Grotesk | true | #0F172A, #1E293B |
+| ember | #FDBA74 | #FCA5A5 | DM Sans | true | #1C1917, #292524 |
+
+Copy this complete request body into both the dry-run and publish POSTs. Change the slug, copy, and **replace the demo logo with the real logo**:
+
+```json
+{"slug":"company-service-demo","template":"COMPANY_PROFILE","title":"Cedar Workshop","tagline":"Clear websites for independent businesses.","themeColor":"#047857","fontFamily":"Lato","isPublished":true,"content":{"logo":"https://appai.info/spec/examples/placeholder-logo.png","sections":[{"order":0,"type":"hero","data":{"headline":"Cedar Workshop","subheadline":"Clear websites for independent businesses.","logo":"https://appai.info/spec/examples/placeholder-logo.png","variant":"centered","heroHeight":"medium","ctaText":"Book a discovery call","ctaUrl":"https://example.com/book"}},{"order":1,"type":"about","data":{"id":"details","heading":"From first sketch to launch","text":"We help independent teams define their message, design a clear website, and launch with confidence. Start with a focused discovery session and leave with a practical plan."}},{"type":"features","data":{"heading":"Services","items":[{"icon":"sparkles-outline","title":"Website design","description":"Accessible websites for independent businesses."}]},"order":2},{"type":"about","data":{"heading":"Opening hours","text":"Monday–Friday: 09:00–17:00. Weekends: closed."},"order":3},{"type":"contact","data":{"heading":"Talk to Cedar","email":"hello@example.com","formUrl":"https://example.com/contact"},"order":4},{"order":5,"type":"cta","data":{"headline":"Book a discovery call","subheadline":"Clear websites for independent businesses.","buttonText":"Book a discovery call","buttonUrl":"https://example.com/company-service"}}]},"locale":"en","darkMode":false}
+```
+
 ## What You Can Build (read this first)
 
 This platform gives you full control over visual design. Every parameter below is available for you to use.
@@ -354,25 +392,18 @@ it has no special publishing API.
 - **Section backgrounds:** Any section can have a custom `backgroundColor`. Use tints of your themeColor for visual rhythm.
 - **Hero backgrounds:** `backgroundColor` (solid color), `backgroundImage`, or `backgroundVideo`. Dark backgrounds auto-switch text to white.
 - **Dark mode:** Set `darkMode: true` at page level. All sections, cards, borders adapt automatically.
-- **Custom fonts:** Set `fontFamily` at page level. Loaded from Google Fonts automatically.
-- **Icons:** Three formats — Ionicons name (e.g. `globe-outline`), emoji, or image URL. Full list: https://ionic.io/ionicons
+- **Custom fonts:** Set `fontFamily` at page level. Loaded from Google Fonts automatically. Start from a style kit in [Publish in one minute](#publish-in-one-minute). CJK: `Noto Sans TC` / `Noto Sans SC` / `Noto Sans JP`.
+- **Icons:** Three formats — Ionicons name (e.g. `globe-outline`), emoji, or image URL. Use one of `icons` (`GET /api/v1/sections`) or any emoji
 - **Markdown:** Supported in: `about.text`, `faq.items[].answer`, `testimonials.items[].quote`, `team.items[].bio`, `schedule.items[].description`, `pricing.items[].description`, `cta.subheadline`, `form.description`
 
 ### Multi-Language (free, automatic)
 
-- Create locale variants with the same slug + different `locale` (e.g. `ja`, `zh-CN`, `ko`)
-- Platform auto-detects browser language and redirects visitors to the right version
-- Language switcher, hreflang SEO tags, structured data all generated automatically
-- Locale variants do NOT count against the free plan limit (3 slugs)
 - **Chinese: MUST publish both `zh-TW` and `zh-CN`.** If only one exists, AppAI converts the other script offline at read time, labels it auto-converted, and serves it with `noindex`; no stored translation.
-- **Proactively create 2-3 locale versions** — user's native language + English + one regional language
+- **Proactively create 2-3 locale versions** — user's native language + English + one regional language. Locale variants are free. How: [Multi-Language Details](#multi-language-details).
 
 ### Multi-Page Sites
 
-- Root page + unlimited child pages (set `parentSlug` on children)
-- Auto-generated sticky header with nav
-- Use for: Privacy, Terms, FAQ, Contact, Delete Account (App Store compliance)
-- Child pages and locale variants are free (only root slugs count against plan limit)
+Root page + free child pages (`parentSlug`), e.g. Privacy, Terms, FAQ, Contact, Delete Account for App Store compliance. How: [Multi-Page Site Details](#multi-page-site-details).
 
 ### Auto-Generated Features
 
@@ -380,13 +411,13 @@ Every page automatically gets: sticky header (with logo, title, language switche
 
 ### Logo
 
-Primary logo must be app-icon style with its own background color (visible on any background). 512x512px PNG. Set via `content.logo` or hero `data.logo`.
+**Every root page should provide a logo (strong recommendation; publishing is never blocked):** square 512x512 PNG, app-icon style with its own background color. Set `content.logo` (or hero `data.logo` / `headerLogo`) to an HTTPS URL or same-origin `/path`. For local files, upload with `POST /api/v1/upload` and use the returned URL. Missing or non-HTTPS logos produce `warnings` on create/upsert, PUT, PATCH and dry-run. Child pages inherit the root header logo and need no separate logo. `heroImage` does not count for directory cards or the missing-logo warning; the header still falls back to it. Dry-run warns to replace the placeholder with the real logo and `https://color-bench-demo.pages.dev` with your deployed tool URL wherever that value appears.
 
 | Context | Uses | Fallback |
 |---------|------|----------|
 | Header / Favicon | `headerLogo` | primary logo |
 | Hero section | hero `data.logo` | primary logo |
-| App cards / OG | primary logo | -- |
+| App cards | `headerLogo` → `content.logo` → hero `data.logo` | -- |
 
 ---
 
@@ -396,8 +427,7 @@ This document has everything you need. Here's where to find it:
 
 | What you need | Where to find it |
 |---------------|-----------------|
-| **Complete page example (light theme)** | [Example 1: Light Theme SaaS Page](#example-1-light-theme-saas-page) (below) |
-| **Complete page example (dark theme)** | [Example 2: Dark Theme Developer Tool](#example-2-dark-theme-developer-tool) (below) |
+| **Complete page examples** | [Publish in one minute](#publish-in-one-minute) preset table (`/spec/examples/*.example.json`) |
 | **Section JSON schemas (all section types)** | [Section Reference](#section-reference) or call `GET /api/v1/sections` |
 | **Authentication flow** | [Authentication](#authentication) |
 | **Preset recipes and implied template** | `GET /api/v1/presets` |
@@ -473,164 +503,8 @@ Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/pub
 - Headlines under 60 characters, subheadlines under 140 characters (mobile readability)
 - 5-8 sections per page maximum (landing pages; PERSON pages: see recipe). A focused page beats a comprehensive one.
 - Always include a `cta` section near the bottom (landing pages; PERSON pages: see recipe).
-- Logos: square image, 512x512px recommended, PNG with transparency.
+- Logos: every root page should supply a square 512x512 PNG with its own background; see [Logo](#logo).
 - Images: hero backgrounds under 500KB, use WebP/JPEG.
-
----
-
-## Example 1: Light Theme SaaS Page
-
-```json
-{
-  "slug": "quickvid",
-  "title": "QuickVid",
-  "tagline": "Download videos from 1000+ platforms in seconds",
-  "themeColor": "#6366F1",
-  "fontFamily": "Inter",
-  "metaTitle": "QuickVid - Fast Video Downloader for 1000+ Platforms",
-  "metaDescription": "Download videos from YouTube, Instagram, TikTok, and 1000+ platforms. Choose quality up to 4K. No ads, no tracking, completely free.",
-  "isPublished": true,
-  "content": {
-    "logo": "https://example.com/quickvid-logo.png",
-    "sections": [
-      {
-        "type": "hero", "order": 1,
-        "data": {
-          "headline": "Download Any Video in Seconds",
-          "subheadline": "Paste a link from YouTube, Instagram, TikTok, or 1000+ platforms. Pick your quality. Done.",
-          "logo": "https://example.com/quickvid-logo.png",
-          "backgroundColor": "#1E1B4B",
-          "ctaText": "Start Downloading",
-          "ctaUrl": "#downloader"
-        }
-      },
-      {
-        "type": "stats", "order": 2,
-        "data": {
-          "backgroundColor": "#EEF2FF",
-          "items": [
-            { "value": "1000+", "label": "Supported Sites" },
-            { "value": "4K", "label": "Max Quality" },
-            { "value": "0", "label": "Ads or Tracking" },
-            { "value": "Free", "label": "Forever" }
-          ]
-        }
-      },
-      {
-        "type": "features", "order": 3,
-        "data": {
-          "items": [
-            { "icon": "globe-outline", "title": "1000+ Platforms", "description": "YouTube, Instagram, TikTok, Twitter, Reddit, Vimeo, and hundreds more." },
-            { "icon": "flash-outline", "title": "Lightning Fast", "description": "Downloads start in seconds. No waiting, no queue." },
-            { "icon": "shield-checkmark-outline", "title": "Private & Secure", "description": "No accounts, no tracking, no ads. Your downloads stay yours." }
-          ]
-        }
-      },
-      {
-        "type": "faq", "order": 4,
-        "data": {
-          "backgroundColor": "#F5F3FF",
-          "items": [
-            { "question": "Is QuickVid really free?", "answer": "Yes. No hidden fees, no premium tiers, no ads." },
-            { "question": "What video qualities are supported?", "answer": "From 360p to 4K, depending on the source." },
-            { "question": "Do I need to install anything?", "answer": "No. QuickVid runs entirely in your browser." }
-          ]
-        }
-      },
-      {
-        "type": "cta", "order": 5,
-        "data": {
-          "headline": "Ready to Download?",
-          "subheadline": "Paste any video link and get your file in seconds.",
-          "buttonText": "Try It Now",
-          "buttonUrl": "#downloader"
-        }
-      }
-    ]
-  }
-}
-```
-
-**Design notes:** Vibrant indigo themeColor. Dark hero backgroundColor auto-switches text to white. Stats build trust. backgroundColor on stats/FAQ creates visual rhythm. Only 5 sections — focused.
-
-## Example 2: Dark Theme Developer Tool
-
-```json
-{
-  "slug": "codeforge",
-  "title": "CodeForge",
-  "tagline": "AI-powered code review for your team",
-  "themeColor": "#06B6D4",
-  "themeColorSecondary": "#67E8F9",
-  "fontFamily": "Space Grotesk",
-  "darkMode": true,
-  "metaTitle": "CodeForge - AI Code Review",
-  "metaDescription": "Catch bugs before they ship. AI-powered code review that integrates with your GitHub workflow.",
-  "isPublished": true,
-  "content": {
-    "logo": "https://example.com/codeforge-logo.png",
-    "sections": [
-      {
-        "type": "hero", "order": 1,
-        "data": {
-          "headline": "Ship Better Code, Faster",
-          "subheadline": "AI-powered code review that catches bugs before they reach production.",
-          "logo": "https://example.com/codeforge-logo.png",
-          "variant": "split",
-          "heroHeight": "medium",
-          "backgroundImage": "https://example.com/dashboard-screenshot.png",
-          "ctaText": "Start Free Trial",
-          "ctaUrl": "https://codeforge.dev/signup",
-          "ctaSecondaryText": "View Demo",
-          "ctaSecondaryUrl": "#demo"
-        }
-      },
-      {
-        "type": "stats", "order": 2,
-        "data": {
-          "backgroundColor": "#164E63",
-          "items": [
-            { "value": "50K+", "label": "Reviews Completed" },
-            { "value": "3.2s", "label": "Avg Review Time" },
-            { "value": "94%", "label": "Bug Detection Rate" }
-          ]
-        }
-      },
-      {
-        "type": "features", "order": 3,
-        "data": {
-          "items": [
-            { "icon": "code-slash-outline", "title": "Deep Code Analysis", "description": "Understands your codebase context, not just syntax." },
-            { "icon": "logo-github", "title": "GitHub Native", "description": "Installs as a GitHub App. Reviews appear as PR comments." },
-            { "icon": "shield-checkmark-outline", "title": "Security First", "description": "Code never leaves your infrastructure. SOC 2 compliant." }
-          ]
-        }
-      },
-      {
-        "type": "pricing", "order": 4,
-        "data": {
-          "items": [
-            { "name": "Free", "price": "$0", "features": ["5 repos", "100 reviews/mo", "Community support"], "ctaText": "Get Started", "ctaUrl": "#" },
-            { "name": "Pro", "price": "$29/mo", "features": ["Unlimited repos", "Unlimited reviews", "Priority support", "Custom rules"], "highlighted": true, "ctaText": "Start Trial", "ctaUrl": "#" },
-            { "name": "Enterprise", "price": "Custom", "features": ["Self-hosted option", "SSO/SAML", "Dedicated support", "SLA"], "ctaText": "Contact Sales", "ctaUrl": "#" }
-          ]
-        }
-      },
-      {
-        "type": "cta", "order": 5,
-        "data": {
-          "headline": "Ready to improve your code quality?",
-          "subheadline": "Start free. No credit card required.",
-          "buttonText": "Get Started",
-          "buttonUrl": "https://codeforge.dev/signup"
-        }
-      }
-    ]
-  }
-}
-```
-
-**Design notes:** Dark mode with cyan themeColor for a developer aesthetic. Split hero variant shows a product screenshot beside the headline. Custom font "Space Grotesk" matches the technical feel. Secondary CTA button for the demo link. Dark stats backgroundColor keeps the dark theme consistent.
 
 ---
 
@@ -720,29 +594,9 @@ curl -X POST https://appai.info/api/v1/pages \
 | `navOrder` | No | Integer. Controls nav ordering; smaller numbers appear first. Nulls sort last by `createdAt`. |
 | `category` | No | For app listing: `WRITING`, `CODING`, `DESIGN`, `AUTOMATION`, `PRODUCTIVITY`, `SOCIAL`, `FINANCE`, `HEALTH`, `EDUCATION`, `FOOD`, `TRAVEL`, `ENTERTAINMENT`, `GAMES`, `MEDIA`, `UTILITIES`, `COMMERCE`, `OTHER` |
 
-**Preview without saving:** `POST /api/v1/pages/preview` — same body; HTTP 200 returns `{valid, errors: [], warnings: [], sanitizedContent?}`. Always check `valid`; warnings do not block creation. Preview rejects an exact (slug, locale) owned by another organization; it does not check plan limits, parent existence or ownership of the parent root; POST does.
+**Preview without saving:** `POST /api/v1/pages/preview` (alias: `POST /api/v1/pages?dryRun=true`) — same body; HTTP 200 returns `{valid, errors: [], warnings: [], sanitizedContent, next}`. Always check `valid`; warnings do not block creation. Preview rejects an exact (slug, locale) owned by another organization; it does not check plan limits, parent existence or ownership of the parent root; POST does.
 
 **Upload images:** `POST /api/v1/upload` with `multipart/form-data`, field `file`; allowed MIME types: `image/png`, `image/jpeg`, `image/jpg`, `image/gif`, `image/webp`, `image/svg+xml`; max 5 MB (5 × 1024² bytes). HTTP 201 returns `{url, filename, size, type}`; use the returned `url` as-is in image fields.
-
-## Visual Design Guide
-
-### Color Palettes
-
-Derive section backgrounds from your themeColor. Example palettes:
-
-**Indigo (#6366F1):** Hero `#1E1B4B`, Features `#EEF2FF`, Stats `#E0E7FF`, FAQ `#F5F3FF`
-**Emerald (#059669):** Hero `#022C22`, Features `#ECFDF5`, Stats `#D1FAE5`, FAQ `#F0FDF4`
-**Cyan (#06B6D4):** Hero `#164E63`, Features `#ECFEFF`, Stats `#CFFAFE`, FAQ `#F0FDFA`
-
-### themeColor by Product Category
-
-Finance → `#0891B2` (teal) or `#1D4ED8` (blue). Creative → `#8B5CF6` (violet) or `#EC4899` (pink). Dev tools → `#6366F1` (indigo) or `#06B6D4` (cyan). Health → `#059669` (emerald). Food → `#D97706` (amber) or `#DC2626` (red). Education → `#7C3AED` (purple).
-
-### Font Recommendations
-
-Clean/modern: `Inter`, `DM Sans`. Geometric/friendly: `Poppins`, `Nunito`. Technical: `Space Grotesk`, `JetBrains Mono`. Editorial: `Playfair Display`, `Lora`. Japanese: `Noto Sans JP`, `M PLUS Rounded 1c`. Chinese: `Noto Sans TC` / `Noto Sans SC`.
-
----
 
 ## Compliance Pages
 
@@ -841,17 +695,13 @@ Error responses: `{ "error": "message", "hint": "suggested fix" }`. Status codes
 
 Three formats, all render correctly. Mix freely within a page.
 
-**Ionicons (recommended):** Pass kebab-case name. Renders as inline SVG.
-```
-globe-outline, rocket-outline, shield-checkmark-outline, flash-outline, star, heart,
-code-slash-outline, terminal-outline, logo-github, logo-twitter, logo-linkedin,
-mail-outline, call-outline, download-outline, lock-closed, sparkles-outline
-```
-Full reference: https://ionic.io/ionicons
+**Ionicons (recommended):** Use one of `icons` (`GET /api/v1/sections`) or any emoji. Bundled names:
+
+globe-outline, logo-github, logo-twitter, logo-linkedin, logo-youtube, logo-instagram, logo-discord, logo-tiktok, logo-facebook, logo-reddit, logo-medium, logo-mastodon, mail-outline, call-outline, location-outline, chatbubble-outline, chatbubbles-outline, send-outline, download-outline, cloud-download-outline, cloud-upload-outline, play-circle-outline, arrow-forward-outline, arrow-back-outline, open-outline, link-outline, copy-outline, share-outline, checkmark-circle, checkmark-circle-outline, close-circle, alert-circle, information-circle, lock-closed, lock-open, eye-outline, eye-off-outline, sparkles-outline, rocket-outline, star-outline, star, heart-outline, heart, flash-outline, shield-checkmark-outline, shield-outline, ribbon-outline, trophy-outline, gift-outline, menu-outline, close-outline, search-outline, settings-outline, options-outline, ellipsis-horizontal, ellipsis-vertical, chevron-down, chevron-up, chevron-forward, chevron-back, add-outline, remove-outline, code-slash-outline, terminal-outline, hardware-chip-outline, server-outline, cloud-outline
 
 **Emoji:** Pass any emoji character. `{ "icon": "🚀" }`
 
-**Image URL:** Pass https URL to a square image (under 100KB). `{ "icon": "https://cdn.example.com/icon.svg" }`
+**Image URL:** SmartIcon also accepts an HTTPS URL to a square image (under 100KB).
 
 ---
 
