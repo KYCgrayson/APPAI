@@ -14,6 +14,8 @@ export type AppCardApp = {
 
 export type AppCardProps = {
   app: AppCardApp;
+  publisherLabel?: string;
+  publisherPrefix?: string;
   /** Where the card links. Callers own this: the directory routes Universal
    *  Apps to their launcher, the home page links to the hosted page. */
   href: string;
@@ -37,6 +39,8 @@ export type AppCardProps = {
  */
 export async function AppCard({
   app,
+  publisherLabel,
+  publisherPrefix,
   href,
   localizedName,
   localizedTagline,
@@ -56,7 +60,7 @@ export async function AppCard({
   return (
     <a
       href={href}
-      className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors block"
+      className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors block min-w-0 break-words"
     >
       <div className="flex items-start gap-4">
         {app.logoUrl ? (
@@ -71,6 +75,7 @@ export async function AppCard({
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold truncate text-white">{name}</h3>
           <p className="text-sm text-gray-400 line-clamp-2">{localizedTagline || app.tagline}</p>
+          {publisherLabel && <p className="mt-2 text-xs text-gray-400 break-words">{publisherPrefix} {publisherLabel}</p>}
           <div className="flex gap-2 mt-2 items-center flex-wrap">
             <span className="text-xs text-gray-600">{categoryLabel}</span>
             {app.iosUrl && <span className="text-xs text-blue-400">iOS</span>}

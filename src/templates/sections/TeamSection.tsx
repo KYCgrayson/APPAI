@@ -14,7 +14,7 @@ interface Props {
 }
 
 function getInitials(name: string): string {
-  return name
+  return (typeof name === "string" ? name : "")
     .split(" ")
     .map((part) => part[0])
     .join("")

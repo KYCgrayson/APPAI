@@ -5,8 +5,8 @@ import { PlatformDirectory } from "@/components/PlatformDirectory";
 export default async function WebsitesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; type?: string }>;
 }) {
-  const { category } = await searchParams;
-  return <PlatformDirectory kind="websites" category={category} />;
+  const { category, type } = await searchParams;
+  return <PlatformDirectory kind="websites" category={category} personalOnly={type === "personal"} />;
 }

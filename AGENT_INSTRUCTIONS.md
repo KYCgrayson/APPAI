@@ -358,6 +358,7 @@ it has no special publishing API.
 - Platform auto-detects browser language and redirects visitors to the right version
 - Language switcher, hreflang SEO tags, structured data all generated automatically
 - Locale variants do NOT count against the free plan limit (3 slugs)
+- **Chinese: MUST publish both `zh-TW` and `zh-CN`.** If only one exists, AppAI converts the other script offline at read time, labels it auto-converted, and serves it with `noindex`; no stored translation.
 - **Proactively create 2-3 locale versions** — user's native language + English + one regional language
 
 ### Multi-Page Sites

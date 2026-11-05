@@ -9,6 +9,9 @@ type Copy = {
   emptyTitle: string;
   emptyDescription: string;
   personal: string;
+  by: string;
+  personalPages: string;
+  moreCategories: string;
   all: string;
   categoriesLabel: string;
   categories: { websites: string; tools: string; apps: string };
@@ -25,6 +28,7 @@ const COPY: Record<string, Copy> = {
     emptyTitle: "Nothing here yet",
     emptyDescription: "Published entries will appear here.",
     personal: "Personal",
+    by: "By", personalPages: "Personal pages", moreCategories: "More categories",
     all: "All",
     categoriesLabel: "Purpose categories",
     categories: { websites: "Websites", tools: "Tools", apps: "Apps" },
@@ -43,6 +47,7 @@ const COPY: Record<string, Copy> = {
     emptyTitle: "目前沒有項目",
     emptyDescription: "已發布的項目會顯示在這裡。",
     personal: "個人網站",
+    by: "發布者", personalPages: "個人頁", moreCategories: "更多分類",
     all: "全部",
     categoriesLabel: "用途分類",
     categories: { websites: "網站", tools: "工具", apps: "應用程式" },
@@ -61,6 +66,7 @@ const COPY: Record<string, Copy> = {
     emptyTitle: "目前没有项目",
     emptyDescription: "已发布的项目会显示在这里。",
     personal: "个人网站",
+    by: "发布者", personalPages: "个人页", moreCategories: "更多分类",
     all: "全部",
     categoriesLabel: "用途分类",
     categories: { websites: "网站", tools: "工具", apps: "应用程序" },

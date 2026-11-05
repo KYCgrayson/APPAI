@@ -104,3 +104,13 @@ Check items off as they are completed. Add new items with date and description.
 
 - [x] YouTube/Media Download Tool (admin-only, hosted on NAS via Docker + Cloudflare Tunnel)
 - [x] `media-downloader` section type — public, interactive download tool embeddable in any landing page via API
+
+### Backlog #32 — directory and hosted-page resilience
+
+- [x] Batched publisher labels from organization ADMIN ownership; primary type tabs and collapsed purpose categories.
+- [x] Offline zh-TW/zh-CN read-time fallback, visible notice, noindex, directory copy, and publishing requirement.
+- [x] Normalize malformed hosted sections and chrome inputs; isolate section rendering and normalize crash-prone list fields.
+- [x] Preserve numeric string section ordering, backend values, URI text conversion, publisher visibility, and non-Chinese card links with regression tests.
+- [x] Run typecheck and unit/render tests.
+- [ ] Measure 375px overflow in a browser.
+- [ ] Confirm production cause of the hosted-page 500 from logs.

@@ -15,7 +15,7 @@ interface Props {
 
 // Strip minimal markdown so the JSON-LD answer text is clean for LLMs.
 function stripMarkdown(input: string): string {
-  return input
+  return (typeof input === "string" ? input : "")
     .replace(/\*\*([^*]+)\*\*/g, "$1")
     .replace(/\*([^*]+)\*/g, "$1")
     .replace(/`([^`]+)`/g, "$1")

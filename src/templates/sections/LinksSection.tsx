@@ -25,7 +25,7 @@ export function LinksSection({ data, themeColor }: Props) {
           const safeUrl = sanitizeUrl(item.url);
           const isExternal = /^https?:\/\//i.test(safeUrl);
           const relParts = isExternal ? ["noopener", "noreferrer"] : [];
-          if (item.rel) relParts.push(...item.rel.split(/\s+/).filter(Boolean));
+          if (typeof item.rel === "string") relParts.push(...item.rel.split(/\s+/).filter(Boolean));
           const relAttr = relParts.length > 0 ? Array.from(new Set(relParts)).join(" ") : undefined;
           return (
           <a

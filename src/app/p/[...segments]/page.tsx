@@ -1,3 +1,4 @@
+import { normalizeHostedContent, contentString } from "@/lib/hosted-content";
 import { serializeJsonLd } from "@/lib/json-ld";
 import { resolvePage, resolveChildPage } from "@/lib/hosted-page-resolver";
 import { buildJsonLd, hostedOgImage } from "@/lib/hosted-page-seo";
@@ -23,9 +24,9 @@ interface Props {
 }
 
 function extractLogos(page: { content: unknown; headerLogo: string | null; heroImage: string | null }): { headerLogo: string | null; heroLogo: string | null } {
-  const content = page.content as { logo?: string; sections?: { type: string; data?: { logo?: string } }[] };
-  const defaultLogo = content?.logo
-    || content?.sections?.find((s) => s.type === "hero")?.data?.logo
+  const content = normalizeHostedContent(page.content);
+  const defaultLogo = contentString(content.logo)
+    || contentString(content.sections.find((s) => s.type === "hero")?.data.logo)
     || page.heroImage
     || null;
   return {
@@ -58,7 +59,12 @@ function buildBreadcrumbList(baseUrl: string, entries: BreadcrumbEntry[]) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { segments } = await params;
   const parsed = parsePageSegments(segments);
-  if (!parsed || parsed.subpage) return {};
+  if (!parsed) return {};
+  if (parsed.subpage) {
+    const page = await resolvePage(parsed.slug, parsed.locale);
+    // Legal subpages contain derived script text too; keep them out of the index.
+    return page?.autoConverted ? { robots: { index: false, follow: true } } : {};
+  }
 
   // Tool fullscreen: minimal metadata, noindex (the parent page is the canonical SEO target).
   if (parsed.toolOrder !== null) {
@@ -67,7 +73,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
       select: { title: true, content: true },
     });
-    const sections = ((rootPage?.content as { sections?: Array<{ type: string; order: number; data: Record<string, unknown> }> })?.sections) || [];
+    const sections = normalizeHostedContent(rootPage?.content).sections;
     const section = sections.find((s) => s.order === parsed.toolOrder);
     const data = (section?.data ?? {}) as { heading?: string; description?: string };
     return {
@@ -132,6 +138,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
+    // Derived script variants are useful to readers but are not original translations.
+    robots: page.autoConverted ? { index: false, follow: true } : undefined,
     icons: logoUrl ? { icon: logoUrl, apple: logoUrl } : undefined,
     openGraph: {
       title,
@@ -175,7 +183,7 @@ export default async function HostedPage({ params }: Props) {
       orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
     });
     if (!rootPage) notFound();
-    const sections = ((rootPage.content as { sections?: Array<{ type: string; order: number; data: Record<string, unknown> }> })?.sections) || [];
+    const sections = normalizeHostedContent(rootPage?.content).sections;
     const section = sections.find((s) => s.order === toolOrder);
     if (!section || section.type !== "iframe-tool") notFound();
     const data = section.data as { src?: string; heading?: string; allowFullscreen?: boolean; access?: string };

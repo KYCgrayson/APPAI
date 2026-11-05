@@ -31,7 +31,7 @@ function sanitizeUrl(url: string | undefined): string | undefined {
 }
 
 export function Prose({ children, className, editorialLinks = false }: Props) {
-  if (!children || !children.trim()) return null;
+  if (typeof children !== "string" || !children.trim()) return null;
 
   return (
     <div

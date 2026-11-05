@@ -16,7 +16,7 @@ export function CtaSection({ data, themeColor }: Props) {
   const safeUrl = sanitizeUrl(data.buttonUrl);
   const isExternal = /^https?:\/\//i.test(safeUrl);
   const relParts = isExternal ? ["noopener", "noreferrer"] : [];
-  if (data.rel) relParts.push(...data.rel.split(/\s+/).filter(Boolean));
+  if (typeof data.rel === "string") relParts.push(...data.rel.split(/\s+/).filter(Boolean));
   const relAttr = relParts.length > 0 ? Array.from(new Set(relParts)).join(" ") : undefined;
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6" style={{ backgroundColor: themeColor }}>

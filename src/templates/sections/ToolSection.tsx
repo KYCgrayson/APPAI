@@ -438,7 +438,7 @@ export function ToolSection({ data, themeColor }: Props) {
                     {field.label}
                   </span>
                   <div className="flex flex-wrap gap-2">
-                    {field.options.map((opt) => (
+                    {(field.options || []).map((opt) => (
                       <button
                         key={opt.value}
                         onClick={() => setValue(field.name, opt.value)}
@@ -469,7 +469,7 @@ export function ToolSection({ data, themeColor }: Props) {
                     className="w-full border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2"
                     style={{ "--tw-ring-color": themeColor } as React.CSSProperties}
                   >
-                    {field.options.map((opt) => (
+                    {(field.options || []).map((opt) => (
                       <option key={opt.value} value={opt.value}>
                         {opt.label}
                       </option>

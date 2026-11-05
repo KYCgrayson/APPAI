@@ -1,3 +1,4 @@
+import { chineseFallback, chineseSourceLocales } from "./zh-convert";
 import { db } from "@/lib/db";
 import { sanitizeUrl } from "@/lib/sanitize";
 
@@ -63,7 +64,7 @@ export async function loadSiblings(
       parentSlug,
       isPublished: true,
       hideFromNav: false,
-      OR: [{ locale }, { isDefault: true }],
+      OR: [{ locale }, { locale: { in: chineseSourceLocales(locale) } }, { isDefault: true }],
     },
     select: {
       slug: true,
@@ -76,16 +77,11 @@ export async function loadSiblings(
     },
   });
 
+  const grouped = new Map<string, SiblingRow[]>();
+  for (const row of rows) grouped.set(row.slug, [...(grouped.get(row.slug) ?? []), row]);
   const bySlug = new Map<string, SiblingRow>();
-  for (const row of rows) {
-    const existing = bySlug.get(row.slug);
-    if (!existing) {
-      bySlug.set(row.slug, row);
-      continue;
-    }
-    if (row.locale === locale && existing.locale !== locale) {
-      bySlug.set(row.slug, row);
-    }
+  for (const [slug, variants] of grouped) {
+    bySlug.set(slug, chineseFallback(variants, locale) ?? variants.find(v => v.locale === locale) ?? variants.find(v => v.isDefault) ?? variants[0]);
   }
 
   return Array.from(bySlug.values()).sort((a, b) => {
@@ -142,6 +138,7 @@ export function resolveNavHref(
   rootSlug: string,
   localeSegment: string,
 ): { href: string; external: boolean } {
+  if (typeof target !== "string") return { href: "#", external: false };
   if (/^https?:\/\//i.test(target)) {
     return { href: sanitizeUrl(target), external: true };
   }

@@ -24,7 +24,7 @@ interface Props {
 // best-effort extractor — when parsing fails we omit priceSpecification and
 // just emit the raw text, which Google still accepts.
 function parsePrice(raw: string): { amount: string; currency: string } | null {
-  const text = raw.trim();
+  const text = typeof raw === "string" ? raw.trim() : "";
   if (/^free$/i.test(text) || /^0(\.0+)?$/.test(text)) {
     return { amount: "0", currency: "USD" };
   }
@@ -127,7 +127,7 @@ export function PricingSection({ data, themeColor, darkMode }: Props) {
                 <Prose className="prose prose-sm max-w-none text-gray-500 mb-6 prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{item.description}</Prose>
               )}
               <ul className="space-y-3 mb-8">
-                {item.features.map((feature, j) => (
+                {(item.features || []).map((feature, j) => (
                   <li key={j} className={`flex items-start gap-2 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
                     <span style={{ color: themeColor }}>&#10003;</span>
                     <span>{feature}</span>

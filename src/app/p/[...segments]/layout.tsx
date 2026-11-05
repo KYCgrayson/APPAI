@@ -1,3 +1,6 @@
+import { normalizeHostedContent, contentString } from "@/lib/hosted-content";
+import { resolvePage, resolveChildPage } from "@/lib/hosted-page-resolver";
+import { withChineseLocales, chineseScript } from "@/lib/zh-convert";
 import Link from "next/link";
 
 import { db } from "@/lib/db";
@@ -27,86 +30,42 @@ export default async function HostedPageLayout({ params, children }: Props) {
 
   const { slug, locale: explicitLocale } = parsed;
 
-  // Resolve locale: explicit from URL, or find the default for this slug
-  let page;
-  if (explicitLocale) {
-    page = await db.hostedPage.findFirst({
-      where: { slug, locale: explicitLocale, isPublished: true, parentSlug: null },
-      select: {
-        id: true,
-        organizationId: true,
-        slug: true,
-        locale: true,
-        isDefault: true,
-        title: true,
-        content: true,
-        themeColor: true,
-        heroImage: true,
-        headerLogo: true,
-        privacyPolicy: true,
-        termsOfService: true,
-        isPublished: true,
-        canonicalUrl: true,
-      },
-    });
-  } else {
-    // No locale in URL — find the default, fallback to first available
-    page = await db.hostedPage.findFirst({
-      where: { slug, isPublished: true, parentSlug: null },
-      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
-      select: {
-        id: true,
-        organizationId: true,
-        slug: true,
-        locale: true,
-        isDefault: true,
-        title: true,
-        content: true,
-        themeColor: true,
-        heroImage: true,
-        headerLogo: true,
-        privacyPolicy: true,
-        termsOfService: true,
-        isPublished: true,
-        canonicalUrl: true,
-      },
-    });
-  }
+  const page = await resolvePage(slug, explicitLocale);
 
   if (!page) {
     return <>{children}</>;
   }
 
-  const locale = page.locale;
+  const childPage = parsed.childSlug
+    ? await resolveChildPage(slug, parsed.childSlug, explicitLocale, page.organizationId) : null;
+  const autoConverted = (childPage ?? page).autoConverted;
+  const locale = childPage?.locale ?? page.locale;
   const labels = hostedChromeLabels(locale);
-  const childVariants = parsed.childSlug ? await db.hostedPage.findMany({
+  const childVariants = withChineseLocales(parsed.childSlug ? await db.hostedPage.findMany({
     where: { organizationId: page.organizationId, parentSlug: slug, slug: parsed.childSlug, isPublished: true },
     select: { locale: true, isDefault: true },
-  }) : [];
+  }) : []);
   const variantHref = (variant: { locale: string; isDefault: boolean }) => {
     const child = childVariants.find(child => child.locale === variant.locale);
     return buildPagePath(slug, variant.locale, child ? parsed.childSlug : null, child ? child.isDefault : variant.isDefault);
   };
 
   // Find all locale variants for the language switcher
-  const variants = await db.hostedPage.findMany({
+  const variants = withChineseLocales(await db.hostedPage.findMany({
     where: { slug, isPublished: true, parentSlug: null },
     select: { locale: true, isDefault: true },
     orderBy: [{ isDefault: "desc" }, { locale: "asc" }],
-  });
+  }));
 
   const themeColor = page.themeColor || "#000000";
-  const content = page.content as { logo?: string; appStoreUrl?: string; playStoreUrl?: string; nav?: { label: string; target: string }[]; sections?: { type: string; data?: { logo?: string; appStoreUrl?: string; playStoreUrl?: string } }[] };
-
-  const defaultLogo = content?.logo
-    || content?.sections?.find((s) => s.type === "hero")?.data?.logo
+  const content = normalizeHostedContent(page.content);
+  const defaultLogo = contentString(content.logo)
+    || contentString(content.sections.find(s => s.type === "hero")?.data.logo)
     || page.heroImage;
   const logo = page.headerLogo || defaultLogo;
-
-  // Extract download URLs
-  const downloadSection = content?.sections?.find((s) => s.type === "download");
-  const appStoreUrl = downloadSection?.data?.appStoreUrl || content?.appStoreUrl;
-  const playStoreUrl = downloadSection?.data?.playStoreUrl || content?.playStoreUrl;
+  const downloadSection = content.sections.find(s => s.type === "download");
+  const appStoreUrl = contentString(downloadSection?.data.appStoreUrl) || contentString(content.appStoreUrl);
+  const playStoreUrl = contentString(downloadSection?.data.playStoreUrl) || contentString(content.playStoreUrl);
   const hasDownload = appStoreUrl || playStoreUrl;
 
   const localeLabels: Record<string, string> = {
@@ -330,6 +289,9 @@ export default async function HostedPageLayout({ params, children }: Props) {
 
       {/* Page Content */}
       <main className="flex-1">
+        {autoConverted && <p className="border-b bg-amber-50 px-4 py-2 text-center text-sm text-amber-900">
+          {chineseScript(locale) === "zh-TW" ? "此頁由簡體中文自動轉換" : "此页由繁体中文自动转换"}
+        </p>}
         {children}
       </main>
 
