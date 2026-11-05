@@ -51,7 +51,7 @@ Everything below is detail for the rung you picked.
 | Hiring / job opening | `hiring` | [JSON](https://appai.info/spec/examples/hiring.example.json) |
 | Wrapped tool | `iframe-tool` | [JSON](https://appai.info/spec/examples/iframe-tool.example.json) |
 
-3. **Brand it:** use a real square 512×512 PNG with its own background in `content.logo` (or hero `data.logo` / `headerLogo`), via HTTPS or same-origin `/path`; upload local files with `POST /api/v1/upload`. Child pages inherit the root logo. Set `themeColor`, `fontFamily`, and `darkMode` from a style kit below. Set section `data.backgroundColor` from its suggested backgrounds.
+3. **Brand it:** add a real logo — square 512×512 PNG with its own background in `content.logo`, uploaded with `POST /api/v1/upload` (rules: [Logo](#logo)). Copy `themeColor`, `fontFamily`, `darkMode` from a style kit below; use its suggested backgrounds for section `data.backgroundColor`.
 4. **Pre-flight:** `POST /api/v1/pages?dryRun=true` (alias: `POST /api/v1/pages/preview`) with the full body. Review `{valid, errors, warnings, sanitizedContent, next}`; fix errors and unknown section/field warnings before publishing. Nothing is saved. Find schemas with `GET /api/v1/sections?type=features,contact` (comma list supported). `dryRun` accepts true/1/yes or false/0/no case-insensitively; other non-empty values return 400.
 5. **Publish:** `POST /api/v1/pages` with the same body (`?upsert=true` to overwrite an existing page).
 6. **Open:** `https://appai.info/p/{slug}` and check desktop/mobile layout.
@@ -392,25 +392,18 @@ it has no special publishing API.
 - **Section backgrounds:** Any section can have a custom `backgroundColor`. Use tints of your themeColor for visual rhythm.
 - **Hero backgrounds:** `backgroundColor` (solid color), `backgroundImage`, or `backgroundVideo`. Dark backgrounds auto-switch text to white.
 - **Dark mode:** Set `darkMode: true` at page level. All sections, cards, borders adapt automatically.
-- **Custom fonts:** Set `fontFamily` at page level. Loaded from Google Fonts automatically.
+- **Custom fonts:** Set `fontFamily` at page level. Loaded from Google Fonts automatically. Start from a style kit in [Publish in one minute](#publish-in-one-minute). CJK: `Noto Sans TC` / `Noto Sans SC` / `Noto Sans JP`.
 - **Icons:** Three formats — Ionicons name (e.g. `globe-outline`), emoji, or image URL. Use one of `icons` (`GET /api/v1/sections`) or any emoji
 - **Markdown:** Supported in: `about.text`, `faq.items[].answer`, `testimonials.items[].quote`, `team.items[].bio`, `schedule.items[].description`, `pricing.items[].description`, `cta.subheadline`, `form.description`
 
 ### Multi-Language (free, automatic)
 
-- Create locale variants with the same slug + different `locale` (e.g. `ja`, `zh-CN`, `ko`)
-- Platform auto-detects browser language and redirects visitors to the right version
-- Language switcher, hreflang SEO tags, structured data all generated automatically
-- Locale variants do NOT count against the free plan limit (3 slugs)
 - **Chinese: MUST publish both `zh-TW` and `zh-CN`.** If only one exists, AppAI converts the other script offline at read time, labels it auto-converted, and serves it with `noindex`; no stored translation.
-- **Proactively create 2-3 locale versions** — user's native language + English + one regional language
+- **Proactively create 2-3 locale versions** — user's native language + English + one regional language. Locale variants are free. How: [Multi-Language Details](#multi-language-details).
 
 ### Multi-Page Sites
 
-- Root page + unlimited child pages (set `parentSlug` on children)
-- Auto-generated sticky header with nav
-- Use for: Privacy, Terms, FAQ, Contact, Delete Account (App Store compliance)
-- Child pages and locale variants are free (only root slugs count against plan limit)
+Root page + free child pages (`parentSlug`), e.g. Privacy, Terms, FAQ, Contact, Delete Account for App Store compliance. How: [Multi-Page Site Details](#multi-page-site-details).
 
 ### Auto-Generated Features
 
@@ -434,8 +427,7 @@ This document has everything you need. Here's where to find it:
 
 | What you need | Where to find it |
 |---------------|-----------------|
-| **Complete page example (light theme)** | [Example 1: Light Theme SaaS Page](#example-1-light-theme-saas-page) (below) |
-| **Complete page example (dark theme)** | [Example 2: Dark Theme Developer Tool](#example-2-dark-theme-developer-tool) (below) |
+| **Complete page examples** | [Publish in one minute](#publish-in-one-minute) preset table (`/spec/examples/*.example.json`) |
 | **Section JSON schemas (all section types)** | [Section Reference](#section-reference) or call `GET /api/v1/sections` |
 | **Authentication flow** | [Authentication](#authentication) |
 | **Preset recipes and implied template** | `GET /api/v1/presets` |
@@ -513,162 +505,6 @@ Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/pub
 - Always include a `cta` section near the bottom (landing pages; PERSON pages: see recipe).
 - Logos: every root page should supply a square 512x512 PNG with its own background; see [Logo](#logo).
 - Images: hero backgrounds under 500KB, use WebP/JPEG.
-
----
-
-## Example 1: Light Theme SaaS Page
-
-```json
-{
-  "slug": "quickvid",
-  "title": "QuickVid",
-  "tagline": "Download videos from 1000+ platforms in seconds",
-  "themeColor": "#6366F1",
-  "fontFamily": "Inter",
-  "metaTitle": "QuickVid - Fast Video Downloader for 1000+ Platforms",
-  "metaDescription": "Download videos from YouTube, Instagram, TikTok, and 1000+ platforms. Choose quality up to 4K. No ads, no tracking, completely free.",
-  "isPublished": true,
-  "content": {
-    "logo": "https://example.com/quickvid-logo.png",
-    "sections": [
-      {
-        "type": "hero", "order": 1,
-        "data": {
-          "headline": "Download Any Video in Seconds",
-          "subheadline": "Paste a link from YouTube, Instagram, TikTok, or 1000+ platforms. Pick your quality. Done.",
-          "logo": "https://example.com/quickvid-logo.png",
-          "backgroundColor": "#1E1B4B",
-          "ctaText": "Start Downloading",
-          "ctaUrl": "#downloader"
-        }
-      },
-      {
-        "type": "stats", "order": 2,
-        "data": {
-          "backgroundColor": "#EEF2FF",
-          "items": [
-            { "value": "1000+", "label": "Supported Sites" },
-            { "value": "4K", "label": "Max Quality" },
-            { "value": "0", "label": "Ads or Tracking" },
-            { "value": "Free", "label": "Forever" }
-          ]
-        }
-      },
-      {
-        "type": "features", "order": 3,
-        "data": {
-          "items": [
-            { "icon": "globe-outline", "title": "1000+ Platforms", "description": "YouTube, Instagram, TikTok, Twitter, Reddit, Vimeo, and hundreds more." },
-            { "icon": "flash-outline", "title": "Lightning Fast", "description": "Downloads start in seconds. No waiting, no queue." },
-            { "icon": "shield-checkmark-outline", "title": "Private & Secure", "description": "No accounts, no tracking, no ads. Your downloads stay yours." }
-          ]
-        }
-      },
-      {
-        "type": "faq", "order": 4,
-        "data": {
-          "backgroundColor": "#F5F3FF",
-          "items": [
-            { "question": "Is QuickVid really free?", "answer": "Yes. No hidden fees, no premium tiers, no ads." },
-            { "question": "What video qualities are supported?", "answer": "From 360p to 4K, depending on the source." },
-            { "question": "Do I need to install anything?", "answer": "No. QuickVid runs entirely in your browser." }
-          ]
-        }
-      },
-      {
-        "type": "cta", "order": 5,
-        "data": {
-          "headline": "Ready to Download?",
-          "subheadline": "Paste any video link and get your file in seconds.",
-          "buttonText": "Try It Now",
-          "buttonUrl": "#downloader"
-        }
-      }
-    ]
-  }
-}
-```
-
-**Design notes:** Vibrant indigo themeColor. Dark hero backgroundColor auto-switches text to white. Stats build trust. backgroundColor on stats/FAQ creates visual rhythm. Only 5 sections — focused.
-
-## Example 2: Dark Theme Developer Tool
-
-```json
-{
-  "slug": "codeforge",
-  "title": "CodeForge",
-  "tagline": "AI-powered code review for your team",
-  "themeColor": "#06B6D4",
-  "themeColorSecondary": "#67E8F9",
-  "fontFamily": "Space Grotesk",
-  "darkMode": true,
-  "metaTitle": "CodeForge - AI Code Review",
-  "metaDescription": "Catch bugs before they ship. AI-powered code review that integrates with your GitHub workflow.",
-  "isPublished": true,
-  "content": {
-    "logo": "https://example.com/codeforge-logo.png",
-    "sections": [
-      {
-        "type": "hero", "order": 1,
-        "data": {
-          "headline": "Ship Better Code, Faster",
-          "subheadline": "AI-powered code review that catches bugs before they reach production.",
-          "logo": "https://example.com/codeforge-logo.png",
-          "variant": "split",
-          "heroHeight": "medium",
-          "backgroundImage": "https://example.com/dashboard-screenshot.png",
-          "ctaText": "Start Free Trial",
-          "ctaUrl": "https://codeforge.dev/signup",
-          "ctaSecondaryText": "View Demo",
-          "ctaSecondaryUrl": "#demo"
-        }
-      },
-      {
-        "type": "stats", "order": 2,
-        "data": {
-          "backgroundColor": "#164E63",
-          "items": [
-            { "value": "50K+", "label": "Reviews Completed" },
-            { "value": "3.2s", "label": "Avg Review Time" },
-            { "value": "94%", "label": "Bug Detection Rate" }
-          ]
-        }
-      },
-      {
-        "type": "features", "order": 3,
-        "data": {
-          "items": [
-            { "icon": "code-slash-outline", "title": "Deep Code Analysis", "description": "Understands your codebase context, not just syntax." },
-            { "icon": "logo-github", "title": "GitHub Native", "description": "Installs as a GitHub App. Reviews appear as PR comments." },
-            { "icon": "shield-checkmark-outline", "title": "Security First", "description": "Code never leaves your infrastructure. SOC 2 compliant." }
-          ]
-        }
-      },
-      {
-        "type": "pricing", "order": 4,
-        "data": {
-          "items": [
-            { "name": "Free", "price": "$0", "features": ["5 repos", "100 reviews/mo", "Community support"], "ctaText": "Get Started", "ctaUrl": "#" },
-            { "name": "Pro", "price": "$29/mo", "features": ["Unlimited repos", "Unlimited reviews", "Priority support", "Custom rules"], "highlighted": true, "ctaText": "Start Trial", "ctaUrl": "#" },
-            { "name": "Enterprise", "price": "Custom", "features": ["Self-hosted option", "SSO/SAML", "Dedicated support", "SLA"], "ctaText": "Contact Sales", "ctaUrl": "#" }
-          ]
-        }
-      },
-      {
-        "type": "cta", "order": 5,
-        "data": {
-          "headline": "Ready to improve your code quality?",
-          "subheadline": "Start free. No credit card required.",
-          "buttonText": "Get Started",
-          "buttonUrl": "https://codeforge.dev/signup"
-        }
-      }
-    ]
-  }
-}
-```
-
-**Design notes:** Dark mode with cyan themeColor for a developer aesthetic. Split hero variant shows a product screenshot beside the headline. Custom font "Space Grotesk" matches the technical feel. Secondary CTA button for the demo link. Dark stats backgroundColor keeps the dark theme consistent.
 
 ---
 
@@ -761,26 +597,6 @@ curl -X POST https://appai.info/api/v1/pages \
 **Preview without saving:** `POST /api/v1/pages/preview` (alias: `POST /api/v1/pages?dryRun=true`) — same body; HTTP 200 returns `{valid, errors: [], warnings: [], sanitizedContent, next}`. Always check `valid`; warnings do not block creation. Preview rejects an exact (slug, locale) owned by another organization; it does not check plan limits, parent existence or ownership of the parent root; POST does.
 
 **Upload images:** `POST /api/v1/upload` with `multipart/form-data`, field `file`; allowed MIME types: `image/png`, `image/jpeg`, `image/jpg`, `image/gif`, `image/webp`, `image/svg+xml`; max 5 MB (5 × 1024² bytes). HTTP 201 returns `{url, filename, size, type}`; use the returned `url` as-is in image fields.
-
-## Visual Design Guide
-
-### Color Palettes
-
-Derive section backgrounds from your themeColor. Example palettes:
-
-**Indigo (#6366F1):** Hero `#1E1B4B`, Features `#EEF2FF`, Stats `#E0E7FF`, FAQ `#F5F3FF`
-**Emerald (#059669):** Hero `#022C22`, Features `#ECFDF5`, Stats `#D1FAE5`, FAQ `#F0FDF4`
-**Cyan (#06B6D4):** Hero `#164E63`, Features `#ECFEFF`, Stats `#CFFAFE`, FAQ `#F0FDFA`
-
-### themeColor by Product Category
-
-Finance → `#0891B2` (teal) or `#1D4ED8` (blue). Creative → `#8B5CF6` (violet) or `#EC4899` (pink). Dev tools → `#6366F1` (indigo) or `#06B6D4` (cyan). Health → `#059669` (emerald). Food → `#D97706` (amber) or `#DC2626` (red). Education → `#7C3AED` (purple).
-
-### Font Recommendations
-
-Clean/modern: `Inter`, `DM Sans`. Geometric/friendly: `Poppins`, `Nunito`. Technical: `Space Grotesk`, `JetBrains Mono`. Editorial: `Playfair Display`, `Lora`. Japanese: `Noto Sans JP`, `M PLUS Rounded 1c`. Chinese: `Noto Sans TC` / `Noto Sans SC`.
-
----
 
 ## Compliance Pages
 
