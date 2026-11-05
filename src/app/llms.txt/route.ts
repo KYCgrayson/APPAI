@@ -104,8 +104,8 @@ If a skill install is not available in your environment, continue with the manua
 
 ## Hosted Page: manual flow
 
-1. READ the full agent instructions: ${baseUrl}/llms-full.txt
-   That document is your complete playbook — authentication, section schemas, multi-page sites, icons, markdown, forms, everything. Read it before making any API calls.
+1. READ the overview: ${baseUrl}/spec
+   MUST READ ${baseUrl}/spec/style before publishing to pick a style kit and check the logo spec.
 
 2. AUTHENTICATE using our device flow (RFC 8628):
    POST ${baseUrl}/api/v1/auth/device
@@ -228,7 +228,16 @@ You (the agent) are building pages on behalf of a human. When you need decisions
 Everything you need is in one document:
 ${baseUrl}/llms-full.txt
 
-That is the same content as ${baseUrl}/spec — pick whichever URL your tooling handles better.
+The short overview is at ${baseUrl}/spec.
+
+## Topic pages
+
+- Pages: ${baseUrl}/spec/pages — configuration, sections, CRUD and workflow
+- Style: ${baseUrl}/spec/style — style kits, logo and visual design
+- I18n: ${baseUrl}/spec/i18n — languages, child pages and navigation
+- Tools: ${baseUrl}/spec/tools — wrapped/connected tools, identity and access
+- Apps: ${baseUrl}/spec/apps — manifests, releases, review and runtime
+- API: ${baseUrl}/spec/api — authentication, discovery, uploads and preview
 ${hostedPagesSection}
 ## Links
 

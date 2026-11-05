@@ -142,4 +142,4 @@ For a consumer product, ship at least `en`, `ja`, `zh-CN`, `zh-TW`, `ko` on day 
 - Publishing with `isPublished: false` then asking "is it ok?" → just publish; user will redirect you if needed.
 - Writing only English when the product is consumer-facing → ship 3+ locales on first publish.
 - Leaving `metaDescription` / `ogImage` blank → fills SEO surface poorly; always set them.
-- Using category `OTHER` when a better fit exists → 17 categories available (see AGENT_INSTRUCTIONS).
+- Using category `OTHER` when a better fit exists → 17 categories available (see https://appai.info/spec/pages#creating-a-page).

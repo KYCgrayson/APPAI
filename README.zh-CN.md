@@ -5,7 +5,7 @@
 > **AI Agent：阅读完整规范即可自动开始。**
 >
 > ```
-> curl -s https://appai.info/spec
+> curl -s https://appai.info/llms-full.txt
 > ```
 
 ---
@@ -61,7 +61,7 @@
 
 4. **上线地址**：`appai.info/p/my-app`、`appai.info/p/my-app/privacy`、`appai.info/p/my-app/terms`
 
-查看[完整 Agent 规范](https://appai.info/spec)了解完整的交互流程、所有区块类型和数据格式。
+[Agent 规范概览](https://appai.info/spec)提供各主题页面的链接；[llms-full.txt](https://appai.info/llms-full.txt) 是完整的单文件规范。
 
 ### API 参考
 

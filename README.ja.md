@@ -5,7 +5,7 @@
 > **AI Agent：フルスペックを読めば自動で始められます。**
 >
 > ```
-> curl -s https://appai.info/spec
+> curl -s https://appai.info/llms-full.txt
 > ```
 
 ---
@@ -61,7 +61,7 @@ AI Agent：
 
 4. **公開先**：`appai.info/p/my-app`、`appai.info/p/my-app/privacy`、`appai.info/p/my-app/terms`
 
-完全なワークフロー、全セクションタイプ、データ形式については[フル Agent Spec](https://appai.info/spec) を参照してください。
+[Agent Spec 概要](https://appai.info/spec)からトピック別ページを参照できます。[llms-full.txt](https://appai.info/llms-full.txt) は完全な単一ファイルです。
 
 ### API リファレンス
 

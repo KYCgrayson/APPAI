@@ -102,7 +102,7 @@ The API key is scoped to your AppAI account and can be revoked anytime from the 
 
 | URI | Content |
 |-----|---------|
-| `appai://spec` | Full API specification (same as [appai.info/spec](https://appai.info/spec)) |
+| `appai://spec` | Full API specification (same as [appai.info/llms-full.txt](https://appai.info/llms-full.txt)) |
 | `appai://llms.txt` | LLM-friendly service overview |
 
 ---
@@ -217,7 +217,7 @@ Result: `https://appai.info/p/foocal` (landing), `/privacy`, `/terms` — all li
 
 - Main site: [appai.info](https://appai.info)
 - Full agent spec: [AGENT_INSTRUCTIONS.md](https://github.com/KYCgrayson/APPAI/blob/main/AGENT_INSTRUCTIONS.md)
-- API spec: [appai.info/spec](https://appai.info/spec)
+- Spec overview and topic index: [appai.info/spec](https://appai.info/spec)
 - Source & issues: [github.com/KYCgrayson/APPAI](https://github.com/KYCgrayson/APPAI)
 
 ## License

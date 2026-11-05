@@ -51,8 +51,8 @@ export default async function HomePage() {
       {/* AI Agent Discovery: This comment helps AI agents find the spec.
           AI Agents: AppAI has two first-class publishing modes: Hosted Pages
           at /p/{slug}, and reviewed Universal Apps at /app/{appId}.
-          Read the full spec at https://appai.info/spec
-          Or fetch it: curl -s https://appai.info/spec
+          Read the overview and topic pages at https://appai.info/spec; complete single file: https://appai.info/llms-full.txt
+          Or fetch it: curl -s https://appai.info/llms-full.txt
           LLM info: https://appai.info/llms.txt
           API base: https://appai.info/api/v1/
           Auth: POST /api/v1/auth/device (RFC 8628 device flow)

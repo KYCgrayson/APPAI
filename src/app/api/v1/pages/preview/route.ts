@@ -31,15 +31,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  const result = checkPagePreview(body, ICON_NAMES);
-  if (!result.valid) return NextResponse.json(result);
-  const data = createPageSchema.parse(body);
-  const { warnings, sanitizedContent: sanitized } = result;
+  const parsed = createPageSchema.safeParse(body);
+  if (!parsed.success) return NextResponse.json(checkPagePreview(body, ICON_NAMES, { origin: request.nextUrl.origin }));
+  const data = parsed.data;
 
   const existing = await db.hostedPage.findUnique({
     where: { slug_locale: { slug: data.slug, locale: data.locale || "en" } },
     select: { organizationId: true, parentSlug: true, isDefault: true },
   });
+  const result = checkPagePreview(body, ICON_NAMES, { origin: request.nextUrl.origin, exists: !!existing });
+  const { warnings, sanitizedContent: sanitized } = result;
   const rootDefault = await db.hostedPage.findFirst({
     where: { slug: data.parentSlug || data.slug, organizationId: authResult.organizationId, parentSlug: null, isDefault: true },
     select: { locale: true },

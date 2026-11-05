@@ -85,15 +85,15 @@ without going through a connector or a reviewed Universal App release.
 ## Project Docs
 
 - **TODO.md** — Central todolist and roadmap. All planned features, tasks, and progress are tracked here. Always check and update this file when working on new features or completing tasks.
-- **AGENT_INSTRUCTIONS.md** — Complete spec for AI agents: capability overview, one-minute quick start (presets, style kits), authentication flow, API endpoints, section types, content format, multi-page sites, and multi-language support. Redesigned with a "designer mindset" — agents build first, iterate after.
+- **docs/spec/** — Source of truth for the short `/spec` overview and six topic pages: pages, style, i18n, tools, apps, api.
+- **AGENT_INSTRUCTIONS.md** — Generated full specification for GitHub readers and `/llms-full.txt`.
 
 ## AGENT_INSTRUCTIONS.md Style Rules
 
-This file is the most important entry point for external AI agents. Keep it tight:
+Edit `docs/spec/`, never the generated root file. Keep overview.md at most 200 lines (target 150), with style/logo guidance prominent and links to each topic. Preserve all rules and examples on the topic pages; keep headings stable and use absolute cross-page links. Run `npm run spec:build` after edits.
 - **Tables and one-liners over paragraphs.** If it can be a table row, don't write a paragraph.
-- **Capability-first.** The first 300 lines tell agents what they CAN do. Details come after.
-- **No unnecessary statements.** Every line must earn its place. Target: under 700 lines total.
-- **Agent is a designer, not a form-filler.** Instructions should empower agents to build autonomously, not ask the user 10 questions before starting.
+- **Capability-first.** Classify the rung before the publishing steps.
+- **Agent is a designer, not a form-filler.** Build autonomously with minimum context.
 
 ## Conventions
 

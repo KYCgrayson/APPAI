@@ -40,7 +40,7 @@ server.resource("agent-spec", "appai://spec", async (uri) => ({
         {
             uri: uri.href,
             mimeType: "text/plain",
-            text: await fetch(`${API_BASE}/spec`).then((r) => r.text()),
+            text: await fetch(`${API_BASE}/llms-full.txt`).then((r) => r.text()),
         },
     ],
 }));

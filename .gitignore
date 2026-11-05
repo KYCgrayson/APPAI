@@ -37,6 +37,8 @@ yarn-error.log*
 
 # docs (internal planning documents, but allow screenshots)
 /docs/*
+!/docs/spec/
+!/docs/spec/**
 !/docs/examples/
 !/docs/examples/**
 !/docs/screenshots

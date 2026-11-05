@@ -5,7 +5,7 @@
 > **AI Agents: Read the full spec to get started automatically.**
 >
 > ```
-> curl -s https://appai.info/spec
+> curl -s https://appai.info/llms-full.txt
 > ```
 
 ---
@@ -63,7 +63,7 @@ The entire flow is automated. Your AI agent reads the [Agent Spec](https://appai
 
 4. **Live at**: `appai.info/p/my-app`, `appai.info/p/my-app/privacy`, `appai.info/p/my-app/terms`
 
-See the [full Agent Spec](https://appai.info/spec) for the complete interactive workflow, all section types, and data formats.
+The [Agent Spec overview](https://appai.info/spec) links to topic pages; [llms-full.txt](https://appai.info/llms-full.txt) is the complete single file.
 
 ### API Reference
 
