@@ -209,7 +209,7 @@ function FileDropZone({
   );
 }
 
-export function ToolSection({ data, themeColor }: Props) {
+export function ToolSection({ data, themeColor, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const [values, setValues] = useState<Record<string, string>>({});
   const [fileValues, setFileValues] = useState<Record<string, File[]>>({});
   const [status, setStatus] = useState<Status>("idle");
@@ -403,12 +403,12 @@ export function ToolSection({ data, themeColor }: Props) {
     <section className="py-12 md:py-16 px-4 sm:px-6">
       <div className="max-w-xl mx-auto">
         {data.heading && (
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-2">
+          <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-2xl md:text-3xl font-bold text-center mb-2">
             {data.heading}
           </h2>
         )}
         {data.description && (
-          <p className="text-gray-500 text-sm text-center mb-8">
+          <p data-typography-role={typographyActive ? "body" : undefined} className="text-gray-500 text-sm text-center mb-8">
             {data.description}
           </p>
         )}
@@ -434,12 +434,12 @@ export function ToolSection({ data, themeColor }: Props) {
               const currentVal = getVal(field.name, field.default);
               return (
                 <div key={field.name} className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">
+                  <span data-typography-role={typographyActive ? "caption" : undefined} className="text-sm font-medium text-gray-700">
                     {field.label}
                   </span>
                   <div className="flex flex-wrap gap-2">
                     {(field.options || []).map((opt) => (
-                      <button
+                      <button data-typography-role={typographyActive ? "body" : undefined}
                         key={opt.value}
                         onClick={() => setValue(field.name, opt.value)}
                         className={toggleClass(currentVal === opt.value)}
@@ -460,10 +460,10 @@ export function ToolSection({ data, themeColor }: Props) {
             if (field.type === "select") {
               return (
                 <div key={field.name}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label data-typography-role={typographyActive ? "caption" : undefined} className="block text-sm font-medium text-gray-700 mb-1.5">
                     {field.label}
                   </label>
-                  <select
+                  <select data-typography-role={typographyActive ? "card" : undefined}
                     value={getVal(field.name, field.default)}
                     onChange={(e) => setValue(field.name, e.target.value)}
                     className="w-full border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2"
@@ -482,11 +482,11 @@ export function ToolSection({ data, themeColor }: Props) {
             // text, url, password
             return (
               <div key={field.name}>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label data-typography-role={typographyActive ? "caption" : undefined} className="block text-sm font-medium text-gray-700 mb-1.5">
                   {field.label}
                   {field.required && <span className="text-red-500 ml-1">*</span>}
                 </label>
-                <input
+                <input data-typography-role={typographyActive ? "body" : undefined}
                   type={field.type}
                   value={getVal(field.name)}
                   onChange={(e) => setValue(field.name, e.target.value)}
@@ -500,13 +500,13 @@ export function ToolSection({ data, themeColor }: Props) {
 
           {/* File size limit hint */}
           {data.fileSizeLimit && (
-            <p className="text-xs text-gray-400 text-center">
+            <p data-typography-role={typographyActive ? "caption" : undefined} className="text-xs text-gray-400 text-center">
               Max file size: {data.fileSizeLimit}
             </p>
           )}
 
           {/* Submit button */}
-          <button
+          <button data-typography-role={typographyActive ? "card" : undefined}
             onClick={handleSubmit}
             disabled={status === "uploading" || status === "processing"}
             className="w-full text-white px-6 py-3 rounded-lg text-sm font-medium hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
@@ -532,8 +532,8 @@ export function ToolSection({ data, themeColor }: Props) {
           {/* Error */}
           {status === "error" && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-center">
-              <p className="text-sm text-red-600 mb-2">{error}</p>
-              <button
+              <p data-typography-role={typographyActive ? "card" : undefined} className="text-sm text-red-600 mb-2">{error}</p>
+              <button data-typography-role={typographyActive ? "card" : undefined}
                 onClick={resetTool}
                 className="text-sm text-red-700 underline hover:no-underline"
               >
@@ -547,7 +547,7 @@ export function ToolSection({ data, themeColor }: Props) {
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg space-y-3">
               {/* Text message */}
               {result.message && (
-                <p className="text-sm text-green-800 text-center">
+                <p data-typography-role={typographyActive ? "card" : undefined} className="text-sm text-green-800 text-center">
                   {result.message}
                 </p>
               )}
@@ -566,7 +566,7 @@ export function ToolSection({ data, themeColor }: Props) {
               {/* Download button */}
               {result.download_url && (
                 <div className="text-center">
-                  <button
+                  <button data-typography-role={typographyActive ? "card" : undefined}
                     onClick={handleDownload}
                     className="bg-green-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-green-700"
                   >
@@ -579,14 +579,14 @@ export function ToolSection({ data, themeColor }: Props) {
 
               {/* Expiry notice */}
               {data.expiresIn && (
-                <p className="text-xs text-gray-400 text-center">
+                <p data-typography-role={typographyActive ? "caption" : undefined} className="text-xs text-gray-400 text-center">
                   File available for {data.expiresIn}
                 </p>
               )}
 
               {/* Process another */}
               <div className="text-center">
-                <button
+                <button data-typography-role={typographyActive ? "card" : undefined}
                   onClick={resetTool}
                   className="text-sm underline hover:no-underline"
                   style={{ color: themeColor }}

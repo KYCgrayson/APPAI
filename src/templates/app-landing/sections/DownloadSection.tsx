@@ -9,18 +9,18 @@ interface Props {
   themeColor: string;
 }
 
-export function DownloadSection({ data, themeColor }: Props) {
+export function DownloadSection({ data, themeColor, typographyActive = false }: Props & { typographyActive?: boolean }) {
   if (!data.appStoreUrl && !data.playStoreUrl) return null;
 
   return (
     <section id="download" className="py-12 md:py-20 px-4 sm:px-6 text-center" style={{ backgroundColor: themeColor }}>
       <div className="max-w-2xl mx-auto">
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-8">
+        <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-8">
           {data.ctaText || "Download Now"}
         </h2>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           {data.appStoreUrl && (
-            <a
+            <a data-typography-role={typographyActive ? "card" : undefined}
               href={sanitizeUrl(data.appStoreUrl)}
               target="_blank"
               rel="noopener noreferrer"
@@ -36,7 +36,7 @@ export function DownloadSection({ data, themeColor }: Props) {
             </a>
           )}
           {data.playStoreUrl && (
-            <a
+            <a data-typography-role={typographyActive ? "card" : undefined}
               href={sanitizeUrl(data.playStoreUrl)}
               target="_blank"
               rel="noopener noreferrer"

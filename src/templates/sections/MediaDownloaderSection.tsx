@@ -56,7 +56,7 @@ interface Props {
   darkMode?: boolean;
 }
 
-export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
+export function MediaDownloaderSection({ data, themeColor, darkMode, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const t = { ...DEFAULT_STRINGS, ...data.strings };
   const maxVideo = Number(data.maxVideoQuality ?? "2160");
   const defaultVideoQuality: VideoQuality =
@@ -164,12 +164,12 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
     <section className="py-12 md:py-16 px-4 sm:px-6">
       <div className="max-w-xl mx-auto">
         {data.heading && (
-          <h2 className={`text-2xl md:text-3xl font-bold text-center mb-2 ${darkMode ? "text-gray-100" : ""}`}>
+          <h2 data-typography-role={typographyActive ? "heading" : undefined} className={`text-2xl md:text-3xl font-bold text-center mb-2 ${darkMode ? "text-gray-100" : ""}`}>
             {data.heading}
           </h2>
         )}
         {data.description && (
-          <p className={`text-sm text-center mb-8 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+          <p data-typography-role={typographyActive ? "body" : undefined} className={`text-sm text-center mb-8 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
             {data.description}
           </p>
         )}
@@ -177,7 +177,7 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
         <div className="space-y-5">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative w-full sm:flex-1">
-              <input
+              <input data-typography-role={typographyActive ? "body" : undefined}
                 ref={inputRef}
                 type="url"
                 value={url}
@@ -195,7 +195,7 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
                 onKeyDown={(e) => e.key === "Enter" && handleDownload()}
               />
               {url && (
-                <button
+                <button data-typography-role={typographyActive ? "card" : undefined}
                   type="button"
                   onClick={handleClearAndPaste}
                   disabled={status === "downloading"}
@@ -221,7 +221,7 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
                 </button>
               )}
             </div>
-            <button
+            <button data-typography-role={typographyActive ? "card" : undefined}
               onClick={handleDownload}
               disabled={status === "downloading" || !url.trim()}
               className="text-white px-6 py-3 rounded-lg text-sm font-medium hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -233,11 +233,11 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
 
           <div className={`border rounded-xl p-4 space-y-4 ${darkMode ? "border-gray-700" : ""}`}>
             <div className="flex items-center justify-between">
-              <span className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+              <span data-typography-role={typographyActive ? "caption" : undefined} className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
                 {t.formatLabel}
               </span>
               <div className="flex gap-2 flex-wrap justify-end">
-                <button
+                <button data-typography-role={typographyActive ? "card" : undefined}
                   onClick={() => setFormat("video")}
                   className={toggleClass(format === "video")}
                   style={
@@ -248,7 +248,7 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
                 >
                   {t.videoLabel}
                 </button>
-                <button
+                <button data-typography-role={typographyActive ? "card" : undefined}
                   onClick={() => setFormat("mp3")}
                   className={toggleClass(format === "mp3")}
                   style={
@@ -264,7 +264,7 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
 
             {(format === "video" || format === "mp3") && (
             <div className="flex items-center justify-between">
-              <span className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+              <span data-typography-role={typographyActive ? "caption" : undefined} className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
                 {t.qualityLabel}
               </span>
               <div className="flex flex-wrap gap-2 justify-end">
@@ -282,7 +282,7 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
                             ? "2160"
                             : label.replace("p", "");
                         return (
-                          <button
+                          <button data-typography-role={typographyActive ? "card" : undefined}
                             key={val}
                             onClick={() =>
                               setVideoQuality(val as VideoQuality)
@@ -302,7 +302,7 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
                 ) : (
                   <>
                     {(["320", "192", "128"] as const).map((val) => (
-                      <button
+                      <button data-typography-role={typographyActive ? "card" : undefined}
                         key={val}
                         onClick={() => setMp3Quality(val as Mp3Quality)}
                         className={toggleClass(mp3Quality === val)}
@@ -323,10 +323,10 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
 
             {format === "video" && (
               <div className="flex items-center justify-between">
-                <span className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                <span data-typography-role={typographyActive ? "caption" : undefined} className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
                   {t.subtitlesLabel}
                 </span>
-                <button
+                <button data-typography-role={typographyActive ? "card" : undefined}
                   onClick={() => setSubtitles(!subtitles)}
                   className="relative w-11 h-6 rounded-full transition-colors"
                   style={{
@@ -344,27 +344,27 @@ export function MediaDownloaderSection({ data, themeColor, darkMode }: Props) {
           </div>
 
           {status === "pasted" && (
-            <p className={`text-sm text-center ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+            <p data-typography-role={typographyActive ? "body" : undefined} className={`text-sm text-center ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
               {t.pastedMessage}
             </p>
           )}
 
           {status === "downloading" && (
-            <p className={`text-sm text-center ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+            <p data-typography-role={typographyActive ? "body" : undefined} className={`text-sm text-center ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
               {t.downloadingMessage}
             </p>
           )}
 
           {status === "error" && (
-            <p className="text-sm text-red-600 text-center">{error}</p>
+            <p data-typography-role={typographyActive ? "body" : undefined} className="text-sm text-red-600 text-center">{error}</p>
           )}
 
           {status === "ready" && result && (
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
-              <p className="text-sm font-medium text-green-800 mb-2">
+              <p data-typography-role={typographyActive ? "card" : undefined} className="text-sm font-medium text-green-800 mb-2">
                 {result.title}
               </p>
-              <button
+              <button data-typography-role={typographyActive ? "card" : undefined}
                 onClick={handleFileDownload}
                 className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700"
               >

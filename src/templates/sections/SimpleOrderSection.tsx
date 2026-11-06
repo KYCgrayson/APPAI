@@ -70,7 +70,8 @@ export function SimpleOrderSection({
   parentSlug,
   locale,
   sectionOrder,
-}: Props) {
+  typographyActive = false,
+}: Props & { typographyActive?: boolean }) {
   const isConfigured = Boolean(data.isConfigured && data.paymentUrl);
   const currency = data.currency || "TWD";
   const maxItems = data.maxItems ?? 20;
@@ -106,8 +107,8 @@ export function SimpleOrderSection({
     return (
       <section className="py-12 md:py-20 px-4 sm:px-6">
         <div className="max-w-2xl mx-auto rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
-          <h2 className="text-xl font-bold">Simple Order is not configured</h2>
-          <p className="mt-2 text-sm leading-6">
+          <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-xl font-bold">Simple Order is not configured</h2>
+          <p data-typography-role={typographyActive ? "card" : undefined} className="mt-2 text-sm leading-6">
             Add the private notification recipient and payment URL before publishing.
           </p>
         </div>
@@ -229,7 +230,7 @@ export function SimpleOrderSection({
           >
             ✓
           </div>
-          <h2 className="mt-5 text-2xl md:text-3xl font-bold">
+          <h2 data-typography-role={typographyActive ? "heading" : undefined} className="mt-5 text-2xl md:text-3xl font-bold">
             {data.successMessage || "Order sent. The shop owner will confirm quantity and date by email."}
           </h2>
         </div>
@@ -241,14 +242,14 @@ export function SimpleOrderSection({
     <section className="py-12 md:py-20 px-4 sm:px-6">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em]" style={{ color: themeColor }}>
+          <p data-typography-role={typographyActive ? "caption" : undefined} className="text-sm font-semibold uppercase tracking-[0.18em]" style={{ color: themeColor }}>
             {data.storeName || "Simple Order"}
           </p>
-          <h2 className={`mt-2 text-3xl md:text-5xl font-bold ${darkMode ? "text-white" : "text-gray-950"}`}>
+          <h2 data-typography-role={typographyActive ? "heading" : undefined} className={`mt-2 text-3xl md:text-5xl font-bold ${darkMode ? "text-white" : "text-gray-950"}`}>
             {data.heading || "Place an order"}
           </h2>
           {(data.description || data.storeDescription) && (
-            <p className={`mt-4 max-w-2xl mx-auto leading-7 ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
+            <p data-typography-role={typographyActive ? "body" : undefined} className={`mt-4 max-w-2xl mx-auto leading-7 ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
               {data.description || data.storeDescription}
             </p>
           )}
@@ -257,18 +258,18 @@ export function SimpleOrderSection({
         <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
           <div className={`rounded-2xl border p-5 md:p-6 shadow-sm ${cardClass}`}>
             <div className="grid gap-4 md:grid-cols-3">
-              <label className={labelClass}>
+              <label data-typography-role={typographyActive ? "caption" : undefined} className={labelClass}>
                 Name
-                <input
+                <input data-typography-role={typographyActive ? "card" : undefined}
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   className={inputClass}
                   style={{ ["--tw-ring-color" as string]: `${themeColor}33` }}
                 />
               </label>
-              <label className={labelClass}>
+              <label data-typography-role={typographyActive ? "caption" : undefined} className={labelClass}>
                 Email
-                <input
+                <input data-typography-role={typographyActive ? "card" : undefined}
                   type="email"
                   value={customerEmail}
                   onChange={(e) => setCustomerEmail(e.target.value)}
@@ -276,9 +277,9 @@ export function SimpleOrderSection({
                   style={{ ["--tw-ring-color" as string]: `${themeColor}33` }}
                 />
               </label>
-              <label className={labelClass}>
+              <label data-typography-role={typographyActive ? "caption" : undefined} className={labelClass}>
                 Preferred date
-                <input
+                <input data-typography-role={typographyActive ? "card" : undefined}
                   type="date"
                   value={preferredDate}
                   onChange={(e) => setPreferredDate(e.target.value)}
@@ -296,18 +297,18 @@ export function SimpleOrderSection({
                     darkMode ? "border-gray-700 bg-gray-950" : "border-gray-200 bg-gray-50"
                   }`}
                 >
-                  <label className={labelClass}>
+                  <label data-typography-role={typographyActive ? "caption" : undefined} className={labelClass}>
                     {index === 0 ? "Item" : <span className="sr-only">Item</span>}
-                    <input
+                    <input data-typography-role={typographyActive ? "card" : undefined}
                       value={item.name}
                       onChange={(e) => updateItem(item.id, { name: e.target.value })}
                       placeholder="Cake, flowers, custom item..."
                       className={inputClass}
                     />
                   </label>
-                  <label className={labelClass}>
+                  <label data-typography-role={typographyActive ? "caption" : undefined} className={labelClass}>
                     {index === 0 ? "Qty" : <span className="sr-only">Qty</span>}
-                    <input
+                    <input data-typography-role={typographyActive ? "card" : undefined}
                       type="number"
                       min="1"
                       value={item.quantity}
@@ -315,9 +316,9 @@ export function SimpleOrderSection({
                       className={inputClass}
                     />
                   </label>
-                  <label className={labelClass}>
+                  <label data-typography-role={typographyActive ? "caption" : undefined} className={labelClass}>
                     {index === 0 ? "Unit price" : <span className="sr-only">Unit price</span>}
-                    <input
+                    <input data-typography-role={typographyActive ? "card" : undefined}
                       type="number"
                       min="0"
                       value={item.unitPrice}
@@ -331,7 +332,7 @@ export function SimpleOrderSection({
                       {money(item.subtotal, currency, locale)}
                     </div>
                   </div>
-                  <button
+                  <button data-typography-role={typographyActive ? "card" : undefined}
                     type="button"
                     onClick={() => removeItem(item.id)}
                     className={`self-end rounded-lg border px-3 py-2 text-sm font-semibold transition ${
@@ -347,7 +348,7 @@ export function SimpleOrderSection({
               ))}
             </div>
 
-            <button
+            <button data-typography-role={typographyActive ? "card" : undefined}
               type="button"
               onClick={addItem}
               disabled={items.length >= maxItems}
@@ -358,9 +359,9 @@ export function SimpleOrderSection({
               Add item
             </button>
 
-            <label className={`mt-5 ${labelClass}`}>
+            <label data-typography-role={typographyActive ? "caption" : undefined} className={`mt-5 ${labelClass}`}>
               Note
-              <textarea
+              <textarea data-typography-role={typographyActive ? "card" : undefined}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 rows={4}
@@ -381,12 +382,12 @@ export function SimpleOrderSection({
                   darkMode ? "border-amber-700 bg-amber-950/30" : "border-amber-200 bg-amber-50"
                 }`}
               >
-                <h3 className="font-bold">{data.paymentHeading || "Please complete payment"}</h3>
-                <p className={`mt-2 text-sm leading-6 ${darkMode ? "text-amber-100" : "text-amber-900"}`}>
+                <h3 data-typography-role={typographyActive ? "card" : undefined} className="font-bold">{data.paymentHeading || "Please complete payment"}</h3>
+                <p data-typography-role={typographyActive ? "card" : undefined} className={`mt-2 text-sm leading-6 ${darkMode ? "text-amber-100" : "text-amber-900"}`}>
                   {data.paymentInstructions ||
                     "After payment, submit this order. The shop owner will confirm quantity and date, then reply by email."}
                 </p>
-                <a
+                <a data-typography-role={typographyActive ? "caption" : undefined}
                   href={data.paymentUrl || "#"}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -395,7 +396,7 @@ export function SimpleOrderSection({
                 >
                   Open payment link
                 </a>
-                <button
+                <button data-typography-role={typographyActive ? "card" : undefined}
                   type="button"
                   onClick={submitOrder}
                   disabled={state.kind === "submitting"}
@@ -406,7 +407,7 @@ export function SimpleOrderSection({
                 </button>
               </div>
             ) : (
-              <button
+              <button data-typography-role={typographyActive ? "card" : undefined}
                 type="button"
                 onClick={checkout}
                 className="mt-5 w-full rounded-lg px-4 py-3 text-sm font-bold text-white transition hover:opacity-90"
@@ -417,7 +418,7 @@ export function SimpleOrderSection({
             )}
 
             {step === "payment" && (
-              <button
+              <button data-typography-role={typographyActive ? "card" : undefined}
                 type="button"
                 onClick={() => {
                   setState({ kind: "idle" });

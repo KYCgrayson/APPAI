@@ -22,14 +22,14 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
-export function TeamSection({ data, themeColor }: Props) {
+export function TeamSection({ data, themeColor, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const items = data.items || [];
   if (items.length === 0) return null;
 
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>
+        <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>
           Our Team
         </h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
@@ -49,11 +49,11 @@ export function TeamSection({ data, themeColor }: Props) {
                   {getInitials(item.name)}
                 </div>
               )}
-              <h3 className="text-lg font-semibold">{item.name}</h3>
-              <p className="text-sm mb-2" style={{ color: themeColor }}>
+              <h3 data-typography-role={typographyActive ? "card" : undefined} className="text-lg font-semibold">{item.name}</h3>
+              <p data-typography-role={typographyActive ? "caption" : undefined} className="text-sm mb-2" style={{ color: themeColor }}>
                 {item.role}
               </p>
-              {item.bio && <Prose className="prose prose-sm max-w-none text-gray-500 prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{item.bio}</Prose>}
+              {item.bio && <Prose typographyRole={typographyActive ? "card" : undefined} className="prose prose-sm max-w-none text-gray-500 prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{item.bio}</Prose>}
             </div>
           ))}
         </div>

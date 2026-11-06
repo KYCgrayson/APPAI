@@ -108,7 +108,7 @@ Never ask the user to generate and paste a key. Reuse a securely stored key when
 ## Hosted Page: publish flow
 
 1. READ ${baseUrl}/spec, then follow ${baseUrl}/spec/api for agent authorization.
-2. MUST READ ${baseUrl}/spec/style before publishing to pick a style kit and check the logo spec.
+2. MUST READ ${baseUrl}/spec/style before publishing to check the logo spec, then pick a theme at ${baseUrl}/spec/theme and text size at ${baseUrl}/spec/typography.
 3. Build a first draft using ${baseUrl}/spec/pages and ${baseUrl}/spec/sections.
 4. Dry-run using ${baseUrl}/spec/api#dry-run, then POST ${baseUrl}/api/v1/pages with the same content JSON. The page is live instantly at ${baseUrl}/p/{slug}.
 
@@ -233,7 +233,9 @@ ${baseUrl}/llms-full.txt — the complete specification when a single file is ne
 ## Topic pages
 
 - Authorization & API: ${baseUrl}/spec/api — agent authorization, key storage, dry-run, image upload and API discovery
-- Style & logo: ${baseUrl}/spec/style — style kits, logo and visual design
+- Style & logo: ${baseUrl}/spec/style — logo and two style steps
+- Theme: ${baseUrl}/spec/theme — colors, backgrounds and style kits
+- Typography: ${baseUrl}/spec/typography — font, text size, contrast and role overrides
 - Pages: ${baseUrl}/spec/pages — configuration, CRUD and workflow
 - Sections: ${baseUrl}/spec/sections — section schemas and icons
 - Multi-language & multi-page: ${baseUrl}/spec/i18n — languages, child pages and navigation

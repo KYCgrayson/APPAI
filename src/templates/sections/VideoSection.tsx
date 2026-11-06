@@ -32,7 +32,7 @@ function getYouTubeId(url: string): string | null {
   return match?.[1] ?? null;
 }
 
-export function VideoSection({ data, themeColor }: Props) {
+export function VideoSection({ data, themeColor, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const safeUrl = sanitizeUrl(data.url);
   const type = getVideoType(safeUrl);
 
@@ -95,7 +95,7 @@ export function VideoSection({ data, themeColor }: Props) {
           )}
         </div>
         {data.caption && (
-          <p className="text-center text-gray-500 mt-4 text-sm">{data.caption}</p>
+          <p data-typography-role={typographyActive ? "caption" : undefined} className="text-center text-gray-500 mt-4 text-sm">{data.caption}</p>
         )}
       </div>
     </section>

@@ -36,7 +36,7 @@ Use the [topic pages](https://appai.info/spec#topic-pages) for details on the ru
 ## Publish in one minute
 
 1. **[Authorization & API](https://appai.info/spec/api):** Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste. Use the [device flow](https://appai.info/spec/api#authentication); send `Authorization: Bearer appai_sk_YOUR_KEY` on API requests.
-2. **MUST READ before publishing — [Style & logo](https://appai.info/spec/style):** open it, pick a style kit, and check the logo spec. Dry-run warns (with this link) when `themeColor` or `fontFamily` is missing. Add a real logo — square 512×512 PNG with its own background in `content.logo`, uploaded with `POST /api/v1/upload` (rules: [Logo](https://appai.info/spec/style#logo)). Copy `themeColor`, `fontFamily`, `darkMode` from a style kit; use its suggested backgrounds for section `data.backgroundColor`.
+2. **MUST READ before publishing — [Style & logo](https://appai.info/spec/style):** open it, check the logo spec, then pick a [theme](https://appai.info/spec/theme) and [text size](https://appai.info/spec/typography). Dry-run warns (with this link) when `themeColor` or `fontFamily` is missing. Add a real logo — square 512×512 PNG with its own background in `content.logo`, uploaded with `POST /api/v1/upload` (rules: [Logo](https://appai.info/spec/style#logo)). Copy `themeColor`, `fontFamily`, `darkMode` from a style kit; use its suggested backgrounds for section `data.backgroundColor`.
 3. **[Pages](https://appai.info/spec/pages):** pick a preset. `GET /api/v1/presets` returns copyable full POST bodies in `example`, section recipes, and named `styles`. Build a complete first draft.
 4. **[Sections](https://appai.info/spec/sections):** use the section schemas and icons. Find schemas with `GET /api/v1/sections?type=features,contact` (comma list supported).
 5. **[Dry-run](https://appai.info/spec/api#dry-run):** `POST /api/v1/pages?dryRun=true` (identical to `POST /api/v1/pages/preview`) with the full body. Review `{valid, errors, warnings, sanitizedContent, next}`; fix errors and unknown section/field warnings before publishing. Nothing is saved. `dryRun` accepts true/1/yes or false/0/no case-insensitively; other non-empty values return 400.
@@ -68,7 +68,9 @@ Copy this complete request body into both the dry-run and publish POSTs. Change 
 | Page | URL | Covers |
 |---|---|---|
 | Authorization & API | https://appai.info/spec/api | Agent authorization, key storage, dry-run, image upload and API discovery |
-| Style & logo | https://appai.info/spec/style | Style kits, logo and visual design |
+| Style & logo | https://appai.info/spec/style | Logo and two style steps |
+| Theme | https://appai.info/spec/theme | Colors, backgrounds and style kits |
+| Typography | https://appai.info/spec/typography | Font, text size, contrast and role overrides |
 | Pages | https://appai.info/spec/pages | Page configuration, CRUD and workflow |
 | Sections | https://appai.info/spec/sections | Section schemas and icons |
 | Multi-language & multi-page | https://appai.info/spec/i18n | Languages, child pages and navigation |

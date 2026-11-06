@@ -14,7 +14,7 @@ interface Props {
   themeColor: string;
 }
 
-export function LinksSection({ data, themeColor }: Props) {
+export function LinksSection({ data, themeColor, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const items = data.items || [];
   if (items.length === 0) return null;
 
@@ -28,7 +28,7 @@ export function LinksSection({ data, themeColor }: Props) {
           if (typeof item.rel === "string") relParts.push(...item.rel.split(/\s+/).filter(Boolean));
           const relAttr = relParts.length > 0 ? Array.from(new Set(relParts)).join(" ") : undefined;
           return (
-          <a
+          <a data-typography-role={typographyActive ? "card" : undefined}
             key={i}
             href={safeUrl}
             target={isExternal ? "_blank" : undefined}

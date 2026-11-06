@@ -1,3 +1,4 @@
+import { computeTypography, storeTypography, typographySettings } from "./typography.ts";
 import { buildPagePath } from "./parse-page-segments.ts";
 import { createPageSchema } from "./validations/page.ts";
 import { sanitizeContent, type SanitizeWarning } from "./sanitize.ts";
@@ -13,8 +14,10 @@ export function checkPagePreview(body: unknown, iconNames: readonly string[] = [
   for (const field of ["themeColor", "fontFamily"]) {
     if (!context.exists && !(field === "themeColor" && parsed.data.parentSlug) && rawBody[field] === undefined) warnings.push({ path: field, message: `The page will use defaults for ${field}; pick a style kit at ${context.origin || "https://appai.info"}/spec/style.` });
   }
-  const sanitizedContent = sanitizeContent(parsed.data.content, undefined, warnings) as Record<string, unknown>;
+  const sanitizedContent = sanitizeContent(storeTypography(parsed.data).content, undefined, warnings) as Record<string, unknown>;
 
+  const computedTypography = computeTypography(typographySettings(sanitizedContent));
+  warnings.push(...computedTypography.warnings);
   warnings.push(...pageLogoWarnings({ ...parsed.data, content: sanitizedContent }));
   // Step 3: Extra content-level checks (non-blocking, informational)
   const rawSections = sanitizedContent.sections;
@@ -55,7 +58,7 @@ export function checkPagePreview(body: unknown, iconNames: readonly string[] = [
     const section = Array.isArray(rawSections) ? rawSections[Number(index)] : null;
     return section && typeof section === "object" && "type" in section ? `${match}(${section.type})` : match;
   });
-  return { valid: true, errors: [], warnings, sanitizedContent, next: pagePreviewNext(parsed.data, context) };
+  return { valid: true, errors: [], warnings, sanitizedContent, typography: computedTypography.desktop, typographyMobile: computedTypography.mobile, next: pagePreviewNext(parsed.data, context) };
 }
 
 /** Recursively find fields named "icon" and return their paths + values. */

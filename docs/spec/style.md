@@ -1,25 +1,18 @@
 # AppAI — Style & logo
-Covers style kits, visual design, colours, fonts, backgrounds, hero variants and logo rules.
-Previous: [Authorization & API](https://appai.info/spec/api) · Next: [Pages](https://appai.info/spec/pages)
+Check the logo, then choose a theme and text size.
+Previous: [Authorization & API](https://appai.info/spec/api) · Next: [Theme](https://appai.info/spec/theme)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
-| Style kit | themeColor | themeColorSecondary | fontFamily | darkMode | Suggested backgroundColors |
-|---|---|---|---|---|---|
-| indigo | #4F46E5 | #0891B2 | Inter | false | #FFFFFF, #EEF2FF |
-| forest | #047857 | #B45309 | Lato | false | #FFFFFF, #ECFDF5 |
-| editorial | #9F1239 | #57534E | Lora | false | #FFFBEB, #FFF1F2 |
-| ocean | #0369A1 | #0F766E | Manrope | false | #FFFFFF, #F0F9FF |
-| midnight | #A5B4FC | #67E8F9 | Space Grotesk | true | #0F172A, #1E293B |
-| ember | #FDBA74 | #FCA5A5 | DM Sans | true | #1C1917, #292524 |
+1. [Pick a theme](https://appai.info/spec/theme): colors, backgrounds and ready-made style kits.
+2. [Pick text size](https://appai.info/spec/typography): font, overall size, contrast and optional role overrides.
 
 ### Visual Design Capabilities
 
-- **Section backgrounds:** Any section can have a custom `backgroundColor`. Use tints of your themeColor for visual rhythm.
-- **Hero backgrounds:** `backgroundColor` (solid color), `backgroundImage`, or `backgroundVideo`. Dark backgrounds auto-switch text to white.
-- **Dark mode:** Set `darkMode: true` at page level. All sections, cards, borders adapt automatically.
-- **Custom fonts:** Set `fontFamily` at page level. Loaded from Google Fonts automatically. Start from a style kit in the table above. CJK: `Noto Sans TC` / `Noto Sans SC` / `Noto Sans JP`.
-- **Icons:** Three formats — Ionicons name (e.g. `globe-outline`), emoji, or image URL. Use one of `icons` (`GET /api/v1/sections`) or any emoji
-- **Markdown:** Supported in: `about.text`, `faq.items[].answer`, `testimonials.items[].quote`, `team.items[].bio`, `schedule.items[].description`, `pricing.items[].description`, `cta.subheadline`, `form.description`
+Moved to [Theme](https://appai.info/spec/theme#visual-design-capabilities).
+
+## Hero variants
+
+Moved to [Theme](https://appai.info/spec/theme#hero-variants).
 
 ### Logo
 
@@ -31,12 +24,5 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 | Hero section | hero `data.logo` | primary logo |
 | App cards | `headerLogo` → `content.logo` → hero `data.logo` | -- |
 
----
 
-## Hero variants
-
-| Type | What it does |
-|---|---|
-| `hero` | Headline banner. **Variants:** `centered` (default), `split` (text left, image right), `minimal` (compact). **Height:** `full`/`large`/`medium`/`small`. Supports `backgroundColor`, `backgroundImage`, `backgroundVideo`, secondary CTA. |
-
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)

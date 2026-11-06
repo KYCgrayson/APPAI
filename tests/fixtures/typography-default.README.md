@@ -1,0 +1,1 @@
+The HTML fixture was captured from commit `4dc13ee13d87f33ee72e84ce71b1a8904f6f821b` before typography changes, using `typography-page.json`, the hosted render loader and renderHtml helper. The regression test compares the entire HTML byte for byte for omitted and explicit default settings.

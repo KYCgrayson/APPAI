@@ -19,7 +19,7 @@ async function loadPdfjs() {
   return pdfjsLib;
 }
 
-export function PdfViewerSection({ data, themeColor }: Props) {
+export function PdfViewerSection({ data, themeColor, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -206,12 +206,12 @@ export function PdfViewerSection({ data, themeColor }: Props) {
     <section className="py-12 md:py-16 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto">
         {data.heading && (
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-2">
+          <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-2xl md:text-3xl font-bold text-center mb-2">
             {data.heading}
           </h2>
         )}
         {data.description && (
-          <p className="text-gray-500 text-sm text-center mb-8">
+          <p data-typography-role={typographyActive ? "body" : undefined} className="text-gray-500 text-sm text-center mb-8">
             {data.description}
           </p>
         )}
@@ -240,7 +240,7 @@ export function PdfViewerSection({ data, themeColor }: Props) {
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
           >
-            <input
+            <input data-typography-role={typographyActive ? "card" : undefined}
               ref={fileInputRef}
               type="file"
               accept=".pdf"
@@ -265,10 +265,10 @@ export function PdfViewerSection({ data, themeColor }: Props) {
                   d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
                 />
               </svg>
-              <p className="font-medium mb-1">
+              <p data-typography-role={typographyActive ? "card" : undefined} className="font-medium mb-1">
                 Drop a PDF here or click to browse
               </p>
-              <p className="text-xs text-gray-400">
+              <p data-typography-role={typographyActive ? "caption" : undefined} className="text-xs text-gray-400">
                 Supports password-protected PDFs
               </p>
             </div>
@@ -292,13 +292,13 @@ export function PdfViewerSection({ data, themeColor }: Props) {
                   d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
                 />
               </svg>
-              <p className="font-medium text-gray-900 mb-1">
+              <p data-typography-role={typographyActive ? "card" : undefined} className="font-medium text-gray-900 mb-1">
                 This PDF is password-protected
               </p>
-              <p className="text-sm text-gray-500">{file?.name}</p>
+              <p data-typography-role={typographyActive ? "card" : undefined} className="text-sm text-gray-500">{file?.name}</p>
             </div>
             <div className="flex gap-3">
-              <input
+              <input data-typography-role={typographyActive ? "card" : undefined}
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -309,7 +309,7 @@ export function PdfViewerSection({ data, themeColor }: Props) {
                 }
                 onKeyDown={(e) => e.key === "Enter" && handlePasswordSubmit()}
               />
-              <button
+              <button data-typography-role={typographyActive ? "card" : undefined}
                 onClick={handlePasswordSubmit}
                 disabled={!password}
                 className="text-white px-6 py-3 rounded-lg text-sm font-medium hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -319,7 +319,7 @@ export function PdfViewerSection({ data, themeColor }: Props) {
               </button>
             </div>
             {error && (
-              <p className="text-sm text-red-600 text-center">{error}</p>
+              <p data-typography-role={typographyActive ? "card" : undefined} className="text-sm text-red-600 text-center">{error}</p>
             )}
           </div>
         )}
@@ -331,7 +331,7 @@ export function PdfViewerSection({ data, themeColor }: Props) {
               className="inline-block w-8 h-8 border-3 border-t-transparent rounded-full animate-spin"
               style={{ borderColor: `${themeColor} transparent ${themeColor} ${themeColor}` }}
             />
-            <p className="text-sm text-gray-500 mt-3">Opening PDF...</p>
+            <p data-typography-role={typographyActive ? "body" : undefined} className="text-sm text-gray-500 mt-3">Opening PDF...</p>
           </div>
         )}
 
@@ -349,17 +349,17 @@ export function PdfViewerSection({ data, themeColor }: Props) {
               </div>
               <div className="flex items-center gap-2">
                 {/* Zoom controls */}
-                <button
+                <button data-typography-role={typographyActive ? "card" : undefined}
                   onClick={() => setScale((s) => Math.max(0.5, s - 0.25))}
                   className="px-2 py-1 text-sm border rounded hover:bg-gray-100"
                   title="Zoom out"
                 >
                   -
                 </button>
-                <span className="text-xs text-gray-500 w-12 text-center">
+                <span data-typography-role={typographyActive ? "caption" : undefined} className="text-xs text-gray-500 w-12 text-center">
                   {Math.round(scale * 100)}%
                 </span>
-                <button
+                <button data-typography-role={typographyActive ? "card" : undefined}
                   onClick={() => setScale((s) => Math.min(3, s + 0.25))}
                   className="px-2 py-1 text-sm border rounded hover:bg-gray-100"
                   title="Zoom in"
@@ -376,17 +376,17 @@ export function PdfViewerSection({ data, themeColor }: Props) {
 
             {/* Page navigation */}
             <div className="flex items-center justify-center gap-4">
-              <button
+              <button data-typography-role={typographyActive ? "card" : undefined}
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage <= 1}
                 className="px-4 py-2 text-sm border rounded-lg hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
-              <span className="text-sm text-gray-600">
+              <span data-typography-role={typographyActive ? "caption" : undefined} className="text-sm text-gray-600">
                 Page {currentPage} of {totalPages}
               </span>
-              <button
+              <button data-typography-role={typographyActive ? "card" : undefined}
                 onClick={() =>
                   setCurrentPage((p) => Math.min(totalPages, p + 1))
                 }
@@ -399,7 +399,7 @@ export function PdfViewerSection({ data, themeColor }: Props) {
 
             {/* Actions */}
             <div className="flex justify-center gap-3">
-              <button
+              <button data-typography-role={typographyActive ? "card" : undefined}
                 onClick={handleSaveUnlocked}
                 disabled={saving}
                 className="text-white px-6 py-3 rounded-lg text-sm font-medium hover:opacity-80 disabled:opacity-50"
@@ -409,7 +409,7 @@ export function PdfViewerSection({ data, themeColor }: Props) {
                   ? `Saving (${totalPages} pages)...`
                   : "Save as Unlocked PDF"}
               </button>
-              <button
+              <button data-typography-role={typographyActive ? "card" : undefined}
                 onClick={handleReset}
                 className="px-6 py-3 rounded-lg text-sm font-medium border border-gray-300 hover:bg-gray-50"
               >
@@ -422,8 +422,8 @@ export function PdfViewerSection({ data, themeColor }: Props) {
         {/* Error */}
         {status === "error" && (
           <div className="p-6 bg-red-50 border border-red-200 rounded-lg text-center">
-            <p className="text-sm text-red-600 mb-3">{error}</p>
-            <button
+            <p data-typography-role={typographyActive ? "card" : undefined} className="text-sm text-red-600 mb-3">{error}</p>
+            <button data-typography-role={typographyActive ? "card" : undefined}
               onClick={handleReset}
               className="text-sm underline hover:no-underline"
               style={{ color: themeColor }}

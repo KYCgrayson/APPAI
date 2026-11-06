@@ -58,7 +58,7 @@ function parsePrice(raw: string): { amount: string; currency: string } | null {
   return null;
 }
 
-export function PricingSection({ data, themeColor, darkMode }: Props) {
+export function PricingSection({ data, themeColor, darkMode, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const items = data.items || [];
   if (items.length === 0) return null;
 
@@ -97,7 +97,7 @@ export function PricingSection({ data, themeColor, darkMode }: Props) {
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(offerSchema) }}
       />
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>
+        <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>
           Pricing
         </h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
@@ -112,30 +112,30 @@ export function PricingSection({ data, themeColor, darkMode }: Props) {
               style={item.highlighted ? { borderColor: themeColor } : undefined}
             >
               {item.highlighted && (
-                <span
+                <span data-typography-role={typographyActive ? "caption" : undefined}
                   className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-white text-xs font-semibold"
                   style={{ backgroundColor: themeColor }}
                 >
                   Recommended
                 </span>
               )}
-              <h3 className={`text-xl font-semibold mb-2 ${darkMode ? "text-gray-100" : ""}`}>{item.name}</h3>
-              <p className="text-4xl font-bold mb-4" style={{ color: themeColor }}>
+              <h3 data-typography-role={typographyActive ? "card" : undefined} className={`text-xl font-semibold mb-2 ${darkMode ? "text-gray-100" : ""}`}>{item.name}</h3>
+              <p data-typography-role={typographyActive ? "heading" : undefined} className="text-4xl font-bold mb-4" style={{ color: themeColor }}>
                 {item.price}
               </p>
               {item.description && (
-                <Prose className="prose prose-sm max-w-none text-gray-500 mb-6 prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{item.description}</Prose>
+                <Prose typographyRole={typographyActive ? "card" : undefined} className="prose prose-sm max-w-none text-gray-500 mb-6 prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{item.description}</Prose>
               )}
               <ul className="space-y-3 mb-8">
                 {(item.features || []).map((feature, j) => (
-                  <li key={j} className={`flex items-start gap-2 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                  <li data-typography-role={typographyActive ? "card" : undefined} key={j} className={`flex items-start gap-2 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
                     <span style={{ color: themeColor }}>&#10003;</span>
                     <span>{feature}</span>
                   </li>
                 ))}
               </ul>
               {item.ctaText && (
-                <a
+                <a data-typography-role={typographyActive ? "card" : undefined}
                   href={sanitizeUrl(item.ctaUrl || "#")}
                   className="block text-center px-6 py-3 rounded-full font-semibold transition-transform hover:scale-105"
                   style={

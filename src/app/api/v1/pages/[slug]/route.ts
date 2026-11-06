@@ -1,3 +1,4 @@
+import { storeTypography, typographyWarnings } from "@/lib/typography";
 import { pageLogoUpdate, pageLogoWarnings } from "@/lib/page-logo";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
@@ -152,7 +153,7 @@ export async function PUT(
 
     const parsed = updatePageSchema.parse(body);
     // Strip category and locale (they're not HostedPage columns to update)
-    const { category, ...data } = parsed;
+    const { category, ...data } = storeTypography(parsed, page.content);
     delete data.locale;
 
     const putWarnings: SanitizeWarning[] = [];
@@ -189,7 +190,7 @@ export async function PUT(
       }
     }
 
-    putWarnings.push(...pageLogoWarnings(updated));
+    putWarnings.push(...pageLogoWarnings(updated), ...typographyWarnings(updated));
     revalidateSeoIndexes(updated.slug);
     return NextResponse.json({ ...updated, ...(putWarnings.length > 0 ? { warnings: putWarnings } : {}) });
   } catch (error: unknown) {
@@ -232,13 +233,13 @@ export async function PATCH(
     if (immutableError) return immutableError;
 
     const parsed = updatePageSchema.parse(body);
-    const { category, ...fields } = parsed;
+    const { category, ...fields } = storeTypography(parsed, page.content);
     delete fields.locale;
 
     // Build update: only include fields that were explicitly sent in the body
     const updateData: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(fields)) {
-      if (key in body && value !== undefined) {
+      if ((key in body || (key === "content" && ("textSize" in body || "textContrast" in body || "typography" in body))) && value !== undefined) {
         updateData[key] = value;
       }
     }
@@ -282,7 +283,7 @@ export async function PATCH(
       }
     }
 
-    patchWarnings.push(...pageLogoWarnings(updated));
+    patchWarnings.push(...pageLogoWarnings(updated), ...typographyWarnings(updated));
     revalidateSeoIndexes(updated.slug);
     return NextResponse.json({ ...updated, ...(patchWarnings.length > 0 ? { warnings: patchWarnings } : {}) });
   } catch (error: unknown) {

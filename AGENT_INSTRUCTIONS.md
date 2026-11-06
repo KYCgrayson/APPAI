@@ -37,7 +37,7 @@ Use the [topic pages](https://appai.info/spec#topic-pages) for details on the ru
 ## Publish in one minute
 
 1. **[Authorization & API](https://appai.info/spec/api):** Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste. Use the [device flow](https://appai.info/spec/api#authentication); send `Authorization: Bearer appai_sk_YOUR_KEY` on API requests.
-2. **MUST READ before publishing — [Style & logo](https://appai.info/spec/style):** open it, pick a style kit, and check the logo spec. Dry-run warns (with this link) when `themeColor` or `fontFamily` is missing. Add a real logo — square 512×512 PNG with its own background in `content.logo`, uploaded with `POST /api/v1/upload` (rules: [Logo](https://appai.info/spec/style#logo)). Copy `themeColor`, `fontFamily`, `darkMode` from a style kit; use its suggested backgrounds for section `data.backgroundColor`.
+2. **MUST READ before publishing — [Style & logo](https://appai.info/spec/style):** open it, check the logo spec, then pick a [theme](https://appai.info/spec/theme) and [text size](https://appai.info/spec/typography). Dry-run warns (with this link) when `themeColor` or `fontFamily` is missing. Add a real logo — square 512×512 PNG with its own background in `content.logo`, uploaded with `POST /api/v1/upload` (rules: [Logo](https://appai.info/spec/style#logo)). Copy `themeColor`, `fontFamily`, `darkMode` from a style kit; use its suggested backgrounds for section `data.backgroundColor`.
 3. **[Pages](https://appai.info/spec/pages):** pick a preset. `GET /api/v1/presets` returns copyable full POST bodies in `example`, section recipes, and named `styles`. Build a complete first draft.
 4. **[Sections](https://appai.info/spec/sections):** use the section schemas and icons. Find schemas with `GET /api/v1/sections?type=features,contact` (comma list supported).
 5. **[Dry-run](https://appai.info/spec/api#dry-run):** `POST /api/v1/pages?dryRun=true` (identical to `POST /api/v1/pages/preview`) with the full body. Review `{valid, errors, warnings, sanitizedContent, next}`; fix errors and unknown section/field warnings before publishing. Nothing is saved. `dryRun` accepts true/1/yes or false/0/no case-insensitively; other non-empty values return 400.
@@ -69,7 +69,9 @@ Copy this complete request body into both the dry-run and publish POSTs. Change 
 | Page | URL | Covers |
 |---|---|---|
 | Authorization & API | https://appai.info/spec/api | Agent authorization, key storage, dry-run, image upload and API discovery |
-| Style & logo | https://appai.info/spec/style | Style kits, logo and visual design |
+| Style & logo | https://appai.info/spec/style | Logo and two style steps |
+| Theme | https://appai.info/spec/theme | Colors, backgrounds and style kits |
+| Typography | https://appai.info/spec/typography | Font, text size, contrast and role overrides |
 | Pages | https://appai.info/spec/pages | Page configuration, CRUD and workflow |
 | Sections | https://appai.info/spec/sections | Section schemas and icons |
 | Multi-language & multi-page | https://appai.info/spec/i18n | Languages, child pages and navigation |
@@ -179,30 +181,23 @@ Publish with `POST /api/v1/pages` using the same body and `isPublished: true` (`
 
 `GET /api/v1/sections` returns section schemas and icons (`?format=jsonschema` for JSON Schema; `?type=features,contact` to filter). `GET /api/v1/presets` returns 10 copyable preset examples and 6 named style kits.
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
 
 # AppAI — Style & logo
-Covers style kits, visual design, colours, fonts, backgrounds, hero variants and logo rules.
-Previous: [Authorization & API](https://appai.info/spec/api) · Next: [Pages](https://appai.info/spec/pages)
+Check the logo, then choose a theme and text size.
+Previous: [Authorization & API](https://appai.info/spec/api) · Next: [Theme](https://appai.info/spec/theme)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
-| Style kit | themeColor | themeColorSecondary | fontFamily | darkMode | Suggested backgroundColors |
-|---|---|---|---|---|---|
-| indigo | #4F46E5 | #0891B2 | Inter | false | #FFFFFF, #EEF2FF |
-| forest | #047857 | #B45309 | Lato | false | #FFFFFF, #ECFDF5 |
-| editorial | #9F1239 | #57534E | Lora | false | #FFFBEB, #FFF1F2 |
-| ocean | #0369A1 | #0F766E | Manrope | false | #FFFFFF, #F0F9FF |
-| midnight | #A5B4FC | #67E8F9 | Space Grotesk | true | #0F172A, #1E293B |
-| ember | #FDBA74 | #FCA5A5 | DM Sans | true | #1C1917, #292524 |
+1. [Pick a theme](https://appai.info/spec/theme): colors, backgrounds and ready-made style kits.
+2. [Pick text size](https://appai.info/spec/typography): font, overall size, contrast and optional role overrides.
 
 ### Visual Design Capabilities
 
-- **Section backgrounds:** Any section can have a custom `backgroundColor`. Use tints of your themeColor for visual rhythm.
-- **Hero backgrounds:** `backgroundColor` (solid color), `backgroundImage`, or `backgroundVideo`. Dark backgrounds auto-switch text to white.
-- **Dark mode:** Set `darkMode: true` at page level. All sections, cards, borders adapt automatically.
-- **Custom fonts:** Set `fontFamily` at page level. Loaded from Google Fonts automatically. Start from a style kit in the table above. CJK: `Noto Sans TC` / `Noto Sans SC` / `Noto Sans JP`.
-- **Icons:** Three formats — Ionicons name (e.g. `globe-outline`), emoji, or image URL. Use one of `icons` (`GET /api/v1/sections`) or any emoji
-- **Markdown:** Supported in: `about.text`, `faq.items[].answer`, `testimonials.items[].quote`, `team.items[].bio`, `schedule.items[].description`, `pricing.items[].description`, `cta.subheadline`, `form.description`
+Moved to [Theme](https://appai.info/spec/theme#visual-design-capabilities).
+
+## Hero variants
+
+Moved to [Theme](https://appai.info/spec/theme#hero-variants).
 
 ### Logo
 
@@ -214,7 +209,35 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 | Hero section | hero `data.logo` | primary logo |
 | App cards | `headerLogo` → `content.logo` → hero `data.logo` | -- |
 
----
+
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+
+# AppAI — Theme
+Choose theme colors, dark mode, section backgrounds and ready-made style kits.
+Previous: [Style & logo](https://appai.info/spec/style) · Next: [Typography](https://appai.info/spec/typography)
+API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
+
+| Style kit | themeColor | themeColorSecondary | fontFamily | darkMode | Suggested backgroundColors |
+|---|---|---|---|---|---|
+| indigo | #4F46E5 | #0891B2 | Inter | false | #FFFFFF, #EEF2FF |
+| forest | #047857 | #B45309 | Lato | false | #FFFFFF, #ECFDF5 |
+| editorial | #9F1239 | #57534E | Lora | false | #FFFBEB, #FFF1F2 |
+| ocean | #0369A1 | #0F766E | Manrope | false | #FFFFFF, #F0F9FF |
+| midnight | #A5B4FC | #67E8F9 | Space Grotesk | true | #0F172A, #1E293B |
+| ember | #FDBA74 | #FCA5A5 | DM Sans | true | #1C1917, #292524 |
+
+Use indigo for apps/SaaS; forest for nature and wellbeing; editorial for writing and portfolios; ocean for services and technical products; midnight for dark dashboards; ember for warm creative brands. Copy kit fields into the page request; backgrounds remain opt-in.
+
+`themeColor` sets the primary accent; `themeColorSecondary` sets the secondary accent. When omitted, the secondary color is automatically derived from the primary.
+
+### Visual Design Capabilities
+
+- **Section backgrounds:** Any section can have a custom `backgroundColor`. Use tints of your themeColor for visual rhythm.
+- **Hero backgrounds:** `backgroundColor` (solid color), `backgroundImage`, or `backgroundVideo`. Dark backgrounds auto-switch text to white.
+- **Dark mode:** Set `darkMode: true` at page level. All sections, cards, borders adapt automatically.
+- **Icons:** Three formats — Ionicons name (e.g. `globe-outline`), emoji, or image URL. Use one of `icons` (`GET /api/v1/sections`) or any emoji
+- **Markdown:** Supported in: `about.text`, `faq.items[].answer`, `testimonials.items[].quote`, `team.items[].bio`, `schedule.items[].description`, `pricing.items[].description`, `cta.subheadline`, `form.description`
+
 
 ## Hero variants
 
@@ -222,11 +245,67 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 |---|---|
 | `hero` | Headline banner. **Variants:** `centered` (default), `split` (text left, image right), `minimal` (compact). **Height:** `full`/`large`/`medium`/`small`. Supports `backgroundColor`, `backgroundImage`, `backgroundVideo`, secondary CTA. |
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+
+# AppAI — Typography
+Choose a font, overall text size, heading contrast and optional role overrides.
+Previous: [Theme](https://appai.info/spec/theme) · Next: [Pages](https://appai.info/spec/pages)
+API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
+
+- **Custom fonts:** Set `fontFamily` at page level. Loaded from Google Fonts automatically. Start from a [style kit](https://appai.info/spec/theme) before choosing a font. CJK: `Noto Sans TC` / `Noto Sans SC` / `Noto Sans JP`.
+
+All three layers are optional. Omitted settings, or `textSize: "md"` with `textContrast: "normal"` and no overrides, preserve existing section typography exactly. Send settings at page level or under `content`; they persist in content JSON. Top-level values take precedence. PUT/upsert replace content; PATCH merges content and preserves sections. An overrides object replaces the previous overrides; send `{}` to clear it.
+
+- `textSize`: xs (75%), sm (87%), md (100%), lg (115%), xl (132%), 2xl (152%), 3xl (175%), 4xl (200%).
+- `textContrast`: low reduces heading/display to 80%, normal keeps 100%, high increases them to 125%. Caption/card/body are unchanged.
+- `typography`: optional caption, card, body, heading, display values using the same eight steps. Each override selects that role’s size independently of textSize; contrast still applies to heading/display. Unset roles follow textSize and textContrast.
+- Roles: caption = notes/meta; card = card text; body = paragraphs; heading = section titles; display = hero/first-screen title.
+
+## Sizes in pixels
+
+<!-- typography-table -->
+| Step | Scale | Caption | Card | Body | Heading | Display |
+|---|---|---|---|---|---|---|
+| xs | 75% | 10.5 | 12 | 12 | 28.8 / 36 / 45 | 36 / 45 / 56.25 |
+| sm | 87% | 12.18 | 13.92 | 13.92 | 33.41 / 41.76 / 52.2 | 41.76 / 52.2 / 65.25 |
+| md | 100% | 14 | 16 | 16 | 38.4 / 48 / 60 | 48 / 60 / 75 |
+| lg | 115% | 16.1 | 18.4 | 18.4 | 44.16 / 55.2 / 69 | 55.2 / 69 / 86.25 |
+| xl | 132% | 18.48 | 21.12 | 21.12 | 50.69 / 63.36 / 79.2 | 63.36 / 79.2 / 99 |
+| 2xl | 152% | 21.28 | 24.32 | 24.32 | 58.37 / 72.96 / 91.2 | 72.96 / 91.2 / 114 |
+| 3xl | 175% | 24.5 | 28 | 28 | 67.2 / 84 / 105 | 84 / 105 / 131.25 |
+| 4xl | 200% | 28 | 32 | 32 | 76.8 / 96 / 120 | 96 / 120 / 150 |
+<!-- /typography-table -->
+
+These are **reference element** desktop sizes in pixels, not fixed sizes applied to every element. Heading/display cells show **low / normal / high** contrast. References are hero h1 (text-6xl, 60px desktop / text-4xl, 36px mobile; the centered hero uses md:text-7xl, 72px), section h2 (text-5xl, 48px desktop / text-3xl, 30px mobile), body and card copy (16px), and caption (text-sm, 14px). Every tagged element multiplies its own existing Tailwind size by the same role percentage; responsive classes keep their breakpoints. Untagged elements and Markdown headings receive no typography rules. A tagged element without a text size class uses its inherited 16px base.
+
+Below 640px, the multiplier becomes `1 + (factor - 1) × damping`: damping is 0.35 for display, 0.5 for heading, and 0.75 for other roles. Body/card elements have a 14px mobile floor. From 640–1023px, all roles use an intermediate multiplier of `1 + (factor - 1) × 0.75`; desktop ≥1024px uses the full factor. The extreme 4xl/high hero is 54.9px on mobile (150–180px desktop depending on hero height and variant; the table uses the 60px reference, while the default centered hero uses 72px). The xs/low body reference is 12px desktop / 14px mobile. Every tagged element uses overflow-wrap:anywhere and min-width:0 when typography is active. Enlarged heading/display also use line-height 1.2 and automatic hyphenation. Warnings combine both viewports into one message per path for body below 14px or headings/display smaller than body; publishing remains allowed. Dry-run returns reference sizes in `typography` and `typographyMobile`, plus warnings. Real create, upsert, PUT and PATCH responses also return warnings.
+
+Each page sets its own typography, theme color and font family in the section renderer; child pages do not inherit these settings from the root. Shared navigation chrome has its own root-page styling.
+
+## Recipes
+
+Tool page, compact (body override keeps small text readable):
+```json
+{"textSize":"sm","textContrast":"low","typography":{"body":"md"}}
+```
+General:
+```json
+{"textSize":"md","textContrast":"normal"}
+```
+Elderly/health: use xl or 2xl, normal contrast, and keep body at least 18px (xl gives 21.12px desktop / 19.84px mobile):
+```json
+{"textSize":"xl","textContrast":"normal","typography":{"body":"xl"}}
+```
+Dashboard/kiosk:
+```json
+{"textSize":"lg","textContrast":"high"}
+```
+
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
 
 # AppAI — Pages
 Covers Hosted Page configuration, CRUD, compliance and publishing workflow.
-Previous: [Style & logo](https://appai.info/spec/style) · Next: [Sections](https://appai.info/spec/sections)
+Previous: [Typography](https://appai.info/spec/typography) · Next: [Sections](https://appai.info/spec/sections)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 ## What You Can Build (read this first)
@@ -262,7 +341,7 @@ Every section supports optional `backgroundColor` (hex) and `id` (anchor for `#l
 | [`profile-header`](https://appai.info/spec/sections#profile-header) | Personal h1 `name`, `eyebrow`, `tagline`, Markdown `intro`, optional `avatar: {url, alt}`, `links: [{label, url}]`, `nav: [{label, href}]` anchors. |
 | [`project-cards`](https://appai.info/spec/sections#project-cards) | `heading`, `eyebrow`, `items: [{name, category, description, icon: {url, alt}, monogram, screenshot: {url, alt, kind: phone/web, width, height}, links: [{label, url}]}]`. |
 | [`entries`](https://appai.info/spec/sections#entries) | `heading`, `eyebrow`, Markdown `intro`, `items: [{title, description}]`, `links: [{label, url}]`; reuse for focus, experience or contact. |
-| [`hero`](https://appai.info/spec/sections#hero) | [Hero variants and height](https://appai.info/spec/style#hero-variants). |
+| [`hero`](https://appai.info/spec/sections#hero) | [Hero variants and height](https://appai.info/spec/theme#hero-variants). |
 | [`stats`](https://appai.info/spec/sections#stats) | Key numbers (e.g. "10K+ Users", "99.9% Uptime"). 2-column grid on mobile, 4-column on desktop. |
 | [`features`](https://appai.info/spec/sections#features) | Feature cards with icons in a responsive grid. 3-6 items recommended. |
 | [`pricing`](https://appai.info/spec/sections#pricing) | Pricing comparison cards. 3 tiers recommended. Supports `highlighted` flag. |
@@ -441,7 +520,7 @@ Moved to [Icons](https://appai.info/spec/sections#icons).
 
 Moved to [Section Reference](https://appai.info/spec/sections#section-reference).
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
 
 # AppAI — Sections
 Covers section schemas and icons; interactive section schemas remain on /spec/tools.
@@ -672,7 +751,7 @@ Links in `links` and `cta` sections accept an optional `rel` string. Use `"nofol
 ]}}
 ```
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
 
 # AppAI — Multi-language & multi-page
 Covers multi-language variants, multi-page sites and automatic site navigation.
@@ -750,7 +829,7 @@ See the [compliance page recipe](https://appai.info/spec/pages#compliance-pages)
 
 This keeps the nav clean (only Contact shows) while every compliance URL stays reachable for App Store / Play Store review.
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
 
 # AppAI — Tools
 Covers Wrapped tool and Connected tool configuration, connectors, identity, access and interactive section schemas.
@@ -982,7 +1061,7 @@ Two optional fields decide who may use it and what it is told about them:
 ```
 For small shops that need an order request flow hosted entirely on AppAI. Customers type free-form line items, quantity, unit price, and preferred date. AppAI calculates subtotals and totals in the browser, shows the configured LINE/payment link, and sends an owner notification after the customer confirms payment. This does not automatically verify payment.
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
 
 # AppAI — Universal App
 Covers Universal App manifests, immutable releases, platform review and runtime contracts.
@@ -1129,7 +1208,7 @@ digests. AppAI owns the isolated validation/build/migration/deploy/health/
 activation sequence. Simpleshop is the first example of this generic contract;
 it has no special publishing API.
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
 
 ## Legacy anchors
 
@@ -1140,7 +1219,7 @@ All topics: [Overview](https://appai.info/spec) · [Authorization & API](https:/
 | Document Guide | https://appai.info/spec#document-guide |
 | Authentication | https://appai.info/spec/api#authentication |
 | Where the key goes afterwards | https://appai.info/spec/api#where-the-key-goes-afterwards |
-| Visual Design Capabilities | https://appai.info/spec/style#visual-design-capabilities |
+| Visual Design Capabilities | https://appai.info/spec/theme#visual-design-capabilities |
 | Logo | https://appai.info/spec/style#logo |
 | What You Can Build (read this first) | https://appai.info/spec/pages#what-you-can-build-read-this-first |
 | Page-Level Configuration | https://appai.info/spec/pages#page-level-configuration |

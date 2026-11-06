@@ -1,0 +1,955 @@
+{
+  "slug": "typography-fixture",
+  "title": "Example",
+  "template": "APP_LANDING",
+  "content": {
+    "sections": [
+      {
+        "type": "hero",
+        "data": {
+          "headline": "Example display",
+          "subheadline": "Example body",
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "features",
+        "data": {
+          "heading": "Features heading",
+          "items": [
+            {
+              "title": "Card title",
+              "description": "Card body"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "about",
+        "data": {
+          "heading": "About heading",
+          "text": "A paragraph with **bold** text.",
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "pricing",
+        "data": {
+          "heading": "Pricing",
+          "items": [
+            {
+              "name": "Starter",
+              "price": "$9",
+              "features": [
+                "One feature"
+              ]
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "profile-header",
+        "data": {
+          "name": "Writer",
+          "tagline": "A writer",
+          "apiBase": "https://example.test/api",
+          "eyebrow": "Writer",
+          "intro": "Introduction"
+        }
+      },
+      {
+        "type": "project-cards",
+        "data": {
+          "heading": "project-cards heading",
+          "title": "project-cards title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "entries",
+        "data": {
+          "heading": "entries heading",
+          "title": "entries title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "video",
+        "data": {
+          "heading": "video heading",
+          "title": "video title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "screenshots",
+        "data": {
+          "heading": "screenshots heading",
+          "title": "screenshots title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "download",
+        "data": {
+          "heading": "download heading",
+          "title": "download title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api",
+          "appStoreUrl": "https://apps.apple.com/app/example"
+        }
+      },
+      {
+        "type": "testimonials",
+        "data": {
+          "heading": "testimonials heading",
+          "title": "testimonials title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "faq",
+        "data": {
+          "heading": "faq heading",
+          "title": "faq title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "gallery",
+        "data": {
+          "heading": "gallery heading",
+          "title": "gallery title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "team",
+        "data": {
+          "heading": "team heading",
+          "title": "team title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "schedule",
+        "data": {
+          "heading": "schedule heading",
+          "title": "schedule title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "sponsors",
+        "data": {
+          "heading": "sponsors heading",
+          "title": "sponsors title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "stats",
+        "data": {
+          "heading": "stats heading",
+          "title": "stats title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "contact",
+        "data": {
+          "heading": "contact heading",
+          "title": "contact title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "cta",
+        "data": {
+          "heading": "cta heading",
+          "title": "cta title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "links",
+        "data": {
+          "heading": "links heading",
+          "title": "links title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "action",
+        "data": {
+          "heading": "action heading",
+          "title": "action title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "media-downloader",
+        "data": {
+          "heading": "media-downloader heading",
+          "title": "media-downloader title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "video-subtitle",
+        "data": {
+          "heading": "video-subtitle heading",
+          "title": "video-subtitle title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "tool",
+        "data": {
+          "heading": "tool heading",
+          "title": "tool title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "pdf-viewer",
+        "data": {
+          "heading": "pdf-viewer heading",
+          "title": "pdf-viewer title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "embed",
+        "data": {
+          "heading": "embed heading",
+          "title": "embed title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "iframe-tool",
+        "data": {
+          "heading": "iframe-tool heading",
+          "title": "iframe-tool title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "form",
+        "data": {
+          "heading": "form heading",
+          "title": "form title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api"
+        }
+      },
+      {
+        "type": "simple-order",
+        "data": {
+          "heading": "simple-order heading",
+          "title": "simple-order title",
+          "name": "Example",
+          "caption": "Example caption",
+          "description": "Description",
+          "text": "Example body",
+          "src": "https://example.test",
+          "url": "https://example.test",
+          "videoUrl": "https://example.test/video.mp4",
+          "items": [
+            {
+              "title": "Item",
+              "name": "Name",
+              "value": "99",
+              "label": "Label",
+              "description": "Description",
+              "question": "Question",
+              "answer": "Answer",
+              "quote": "Quote",
+              "caption": "Caption",
+              "url": "https://example.test",
+              "image": "https://example.test/image.png",
+              "time": "12:00"
+            }
+          ],
+          "images": [
+            {
+              "url": "https://example.test/image.png",
+              "alt": "Image"
+            }
+          ],
+          "apiBase": "https://example.test/api",
+          "notificationEmail": "private@example.test",
+          "paymentUrl": "https://example.test/pay"
+        }
+      }
+    ]
+  }
+}

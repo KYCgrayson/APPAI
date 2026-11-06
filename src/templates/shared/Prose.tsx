@@ -6,6 +6,7 @@ interface Props {
   children?: string | null;
   className?: string;
   editorialLinks?: boolean;
+  typographyRole?: "caption" | "card" | "body" | "heading" | "display";
 }
 
 /**
@@ -30,11 +31,12 @@ function sanitizeUrl(url: string | undefined): string | undefined {
   return (SAFE_URL_RE.test(url) || /^\/(?![\/\\])/.test(url)) ? url : undefined;
 }
 
-export function Prose({ children, className, editorialLinks = false }: Props) {
+export function Prose({ children, className, editorialLinks = false, typographyRole }: Props) {
   if (typeof children !== "string" || !children.trim()) return null;
 
   return (
     <div
+      data-typography-role={typographyRole}
       className={
         className ??
         "prose prose-sm md:prose-base max-w-none prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold"

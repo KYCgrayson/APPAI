@@ -100,7 +100,7 @@ When the response contains `api_key`, keep it in memory or outside the working t
 
 ### 2. MUST READ — Style & logo, then build
 
-Read [Style & logo](https://appai.info/spec/style), pick a style kit and check the logo spec. Upload the real logo, then build a complete first draft using [Pages](https://appai.info/spec/pages) and [Sections](https://appai.info/spec/sections).
+Read [Style & logo](https://appai.info/spec/style), check the logo spec, then read [Theme](https://appai.info/spec/theme) to pick a style kit and [Typography](https://appai.info/spec/typography) to choose text size. Upload the real logo, then build a complete first draft using [Pages](https://appai.info/spec/pages) and [Sections](https://appai.info/spec/sections).
 
 ### 3. Dry-run before publishing
 
