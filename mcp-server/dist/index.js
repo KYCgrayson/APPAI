@@ -54,7 +54,7 @@ server.resource("llms-info", "appai://llms.txt", async (uri) => ({
     ],
 }));
 // --- Tools ---
-server.tool("start-auth", "Start device authorization flow to get an AppAI API key. Returns a verification URL the user must open in their browser to sign in with Google.", {}, async () => {
+server.tool("start-auth", "Start device authorization flow to get an AppAI API key. Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste.", {}, async () => {
     const result = await apiRequest("/api/v1/auth/device", { method: "POST" });
     return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
@@ -218,8 +218,8 @@ server.prompt("create-app-page", { app_name: z.string().optional().describe("Nam
                 text: `Help me create a landing page${app_name ? ` for "${app_name}"` : ""} on AppAI (appai.info). I need a hosted page with a privacy policy and terms of service.
 
 Steps:
-1. First, use the start-auth tool to begin authentication, then open the verification URL for me
-2. Poll with poll-auth until I've signed in
+1. First, use the start-auth tool to begin authentication. Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste.
+2. Poll with poll-auth until the user has approved and the agent receives the key
 3. Use list-presets to show me the available templates
 4. Ask me about my app details
 5. Use create-page to create the page

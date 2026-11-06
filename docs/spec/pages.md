@@ -1,7 +1,7 @@
 # AppAI — Pages
-Covers Hosted Page configuration, section reference, CRUD, compliance and publishing workflow.
+Covers Hosted Page configuration, CRUD, compliance and publishing workflow.
+Previous: [Style & logo](https://appai.info/spec/style) · Next: [Sections](https://appai.info/spec/sections)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
-[Overview](https://appai.info/spec) · [Pages](https://appai.info/spec/pages) · [Style](https://appai.info/spec/style) · [I18n](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Apps](https://appai.info/spec/apps) · [API](https://appai.info/spec/api)
 
 ## What You Can Build (read this first)
 
@@ -33,33 +33,33 @@ Every section supports optional `backgroundColor` (hex) and `id` (anchor for `#l
 
 | Type | What it does |
 |------|-------------|
-| `profile-header` | Personal h1 `name`, `eyebrow`, `tagline`, Markdown `intro`, optional `avatar: {url, alt}`, `links: [{label, url}]`, `nav: [{label, href}]` anchors. |
-| `project-cards` | `heading`, `eyebrow`, `items: [{name, category, description, icon: {url, alt}, monogram, screenshot: {url, alt, kind: phone/web, width, height}, links: [{label, url}]}]`. |
-| `entries` | `heading`, `eyebrow`, Markdown `intro`, `items: [{title, description}]`, `links: [{label, url}]`; reuse for focus, experience or contact. |
-| `hero` | [Hero variants and height](https://appai.info/spec/style#hero-variants). |
-| `stats` | Key numbers (e.g. "10K+ Users", "99.9% Uptime"). 2-column grid on mobile, 4-column on desktop. |
-| `features` | Feature cards with icons in a responsive grid. 3-6 items recommended. |
-| `pricing` | Pricing comparison cards. 3 tiers recommended. Supports `highlighted` flag. |
-| `testimonials` | User quote cards with name, role, avatar. |
-| `faq` | Expandable Q&A accordion. 5-10 items recommended. Auto-generates FAQ schema for SEO. |
-| `cta` | Bold call-to-action banner. Uses themeColor as background automatically. Place near bottom. |
-| `video` | Embedded video. Supports YouTube, Vimeo, mp4, webm, gif (auto-detected). |
-| `screenshots` | Horizontal scrollable image carousel. |
-| `download` | App Store / Play Store download buttons. Also adds a Download button to the sticky header. |
-| `gallery` | Image/video grid (masonry layout). |
-| `team` | Team member cards with photo, name, role, bio. |
-| `schedule` | Timeline for events/conferences. |
-| `sponsors` | Logo wall for partners/sponsors. |
-| `contact` | Contact info (email, phone, address) with optional external form link. |
-| `links` | Link buttons (Linktree-style). Max 6 items recommended. |
-| `about` | Long-form text content (Markdown supported). |
+| [`profile-header`](https://appai.info/spec/sections#profile-header) | Personal h1 `name`, `eyebrow`, `tagline`, Markdown `intro`, optional `avatar: {url, alt}`, `links: [{label, url}]`, `nav: [{label, href}]` anchors. |
+| [`project-cards`](https://appai.info/spec/sections#project-cards) | `heading`, `eyebrow`, `items: [{name, category, description, icon: {url, alt}, monogram, screenshot: {url, alt, kind: phone/web, width, height}, links: [{label, url}]}]`. |
+| [`entries`](https://appai.info/spec/sections#entries) | `heading`, `eyebrow`, Markdown `intro`, `items: [{title, description}]`, `links: [{label, url}]`; reuse for focus, experience or contact. |
+| [`hero`](https://appai.info/spec/sections#hero) | [Hero variants and height](https://appai.info/spec/style#hero-variants). |
+| [`stats`](https://appai.info/spec/sections#stats) | Key numbers (e.g. "10K+ Users", "99.9% Uptime"). 2-column grid on mobile, 4-column on desktop. |
+| [`features`](https://appai.info/spec/sections#features) | Feature cards with icons in a responsive grid. 3-6 items recommended. |
+| [`pricing`](https://appai.info/spec/sections#pricing) | Pricing comparison cards. 3 tiers recommended. Supports `highlighted` flag. |
+| [`testimonials`](https://appai.info/spec/sections#testimonials) | User quote cards with name, role, avatar. |
+| [`faq`](https://appai.info/spec/sections#faq) | Expandable Q&A accordion. 5-10 items recommended. Auto-generates FAQ schema for SEO. |
+| [`cta`](https://appai.info/spec/sections#cta) | Bold call-to-action banner. Uses themeColor as background automatically. Place near bottom. |
+| [`video`](https://appai.info/spec/sections#video) | Embedded video. Supports YouTube, Vimeo, mp4, webm, gif (auto-detected). |
+| [`screenshots`](https://appai.info/spec/sections#screenshots) | Horizontal scrollable image carousel. |
+| [`download`](https://appai.info/spec/sections#download) | App Store / Play Store download buttons. Also adds a Download button to the sticky header. |
+| [`gallery`](https://appai.info/spec/sections#gallery) | Image/video grid (masonry layout). |
+| [`team`](https://appai.info/spec/sections#team) | Team member cards with photo, name, role, bio. |
+| [`schedule`](https://appai.info/spec/sections#schedule) | Timeline for events/conferences. |
+| [`sponsors`](https://appai.info/spec/sections#sponsors) | Logo wall for partners/sponsors. |
+| [`contact`](https://appai.info/spec/sections#contact) | Contact info (email, phone, address) with optional external form link. |
+| [`links`](https://appai.info/spec/sections#links) | Link buttons (Linktree-style). Max 6 items recommended. |
+| [`about`](https://appai.info/spec/sections#about) | Long-form text content (Markdown supported). |
 | [`action`](https://appai.info/spec/tools#action) | Interactive buttons that send HTTP requests to custom URLs (webhooks, API triggers). |
 | [`form`](https://appai.info/spec/tools#form) | Real HTML form with server-side relay. Supports `mailto:` and `https://` webhook destinations. |
 | [`media-downloader`](https://appai.info/spec/tools#media-downloader) | Interactive video/audio downloader. Requires a yt-dlp backend API. |
 | [`video-subtitle`](https://appai.info/spec/tools#video-subtitle) | Interactive YouTube subtitle generator. Visitor pastes a YouTube link, trims ≤5 min, auto-transcribes via ASR, translates into chosen languages, tweaks subtitle style, and downloads a burned mp4. Requires the Video Subtitle backend service. |
 | [`tool`](https://appai.info/spec/tools#tool) | Universal interactive tool (file upload, processing, download). Connect any backend API. |
 | [`pdf-viewer`](https://appai.info/spec/tools#pdf-viewer) | Client-side PDF viewer with password unlock. No backend needed. |
-| `embed` | Embed TikTok / Loom / YouTube / Vimeo / Spotify / CodePen / Figma / X / Instagram. Auto-detects provider from URL. |
+| [`embed`](https://appai.info/spec/sections#embed) | Embed TikTok / Loom / YouTube / Vimeo / Spotify / CodePen / Figma / X / Instagram. Auto-detects provider from URL. |
 | [`iframe-tool`](https://appai.info/spec/tools#iframe-tool) | **Host a tool the user vibe-coded.** Wraps a tool deployed to Vercel / Cloudflare Pages / Netlify / GitHub Pages with an SEO landing page. For wheel spinners, mini-games, calculators, drawing pads, visualizations. Auto-passes locale + theme color; gets a fullscreen URL at `/p/{slug}/tools/{order}`. **Use this — not `embed` — when the URL is a tool the user built, not a media post.** |
 | [`simple-order`](https://appai.info/spec/tools#simple-order) | Native small-shop order request section. Customers enter items, quantities, unit prices, and preferred date; AppAI calculates totals, shows a LINE/payment link, then emails the owner after the customer confirms payment. Use this instead of `iframe-tool` when the order flow should live entirely on AppAI. |
 
@@ -73,7 +73,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 
 1. **Gather minimum context.** Ask: "What is your product/app and who is it for?" You need: product name, what it does, target audience. That's enough to start.
 2. **Make design decisions yourself.** Choose themeColor based on the product category. Pick sections based on the product type. Generate features, FAQ, and copy from what the user told you. Generate privacy policy and terms of service automatically.
-3. **Build the first draft.** Authenticate, create the page, publish it. Show the user the live URL.
+3. **Publish the first draft.** [Authorize](https://appai.info/spec/api#authentication) → **MUST READ [Style & logo](https://appai.info/spec/style)** to pick a style kit and logo → [build](https://appai.info/spec/pages#creating-a-page) with the [section schemas](https://appai.info/spec/sections) → [dry-run, then publish](https://appai.info/spec/api#dry-run) with the same body. Show the user the live URL.
 4. **Iterate.** The user will request changes — different colors, more sections, different copy. Use PATCH to update.
 
 ### Page shape per intent
@@ -209,222 +209,10 @@ Error responses: `{ "error": "message", "hint": "suggested fix" }`. Status codes
 
 ## Icons
 
-Three formats, all render correctly. Mix freely within a page.
-
-**Ionicons (recommended):** Use one of `icons` (`GET /api/v1/sections`) or any emoji. Bundled names:
-
-globe-outline, logo-github, logo-twitter, logo-linkedin, logo-youtube, logo-instagram, logo-discord, logo-tiktok, logo-facebook, logo-reddit, logo-medium, logo-mastodon, mail-outline, call-outline, location-outline, chatbubble-outline, chatbubbles-outline, send-outline, download-outline, cloud-download-outline, cloud-upload-outline, play-circle-outline, arrow-forward-outline, arrow-back-outline, open-outline, link-outline, copy-outline, share-outline, checkmark-circle, checkmark-circle-outline, close-circle, alert-circle, information-circle, lock-closed, lock-open, eye-outline, eye-off-outline, sparkles-outline, rocket-outline, star-outline, star, heart-outline, heart, flash-outline, shield-checkmark-outline, shield-outline, ribbon-outline, trophy-outline, gift-outline, menu-outline, close-outline, search-outline, settings-outline, options-outline, ellipsis-horizontal, ellipsis-vertical, chevron-down, chevron-up, chevron-forward, chevron-back, add-outline, remove-outline, code-slash-outline, terminal-outline, hardware-chip-outline, server-outline, cloud-outline
-
-**Emoji:** Pass any emoji character. `{ "icon": "🚀" }`
-
-**Image URL:** SmartIcon also accepts an HTTPS URL to a square image (under 100KB).
-
----
+Moved to [Icons](https://appai.info/spec/sections#icons).
 
 ## Section Reference
 
-JSON schemas for page sections below; the eight interactive section schemas are on [/spec/tools](https://appai.info/spec/tools). Also available via `GET /api/v1/sections` and `GET /api/v1/sections?format=jsonschema`.
+Moved to [Section Reference](https://appai.info/spec/sections#section-reference).
 
-### profile-header
-```json
-{"type":"profile-header","order":0,"data":{"name":"Jordan Example","eyebrow":"Maker","tagline":"Small useful tools","intro":"A fictional introduction.","avatar":{"url":"https://example.com/avatar.png","alt":""},"nav":[{"label":"Work","href":"#work"}],"links":[{"label":"Website","url":"https://example.com"}]}}
-```
-Required: `name`; avatar requires `url`, `alt`; links require `label`, `url`; nav requires `label`, `href` (`#anchor`). Links: HTTPS or `/path`; no mailto/tel, bare `#`, or unsafe schemes; invalid links omitted.
-
-### project-cards
-```json
-{"type":"project-cards","order":1,"data":{"id":"work","heading":"Selected work","eyebrow":"Tools","items":[{"name":"Sample Notes","category":"Notes","description":"A fictional notebook.","icon":{"url":"https://example.com/icon.png","alt":""},"monogram":"SN","screenshot":{"url":"https://example.com/screen.png","alt":"Notes screen","kind":"web","width":1440,"height":900},"links":[{"label":"Details","url":"/p/jordan-example/jordan-sample-notes"}]}]}}
-```
-Required: each item's `name`; image objects require `url`, `alt`; screenshot requires `kind`: `phone|web`, optional positive `width`/`height` in px; monogram 1–2 characters; links follow profile-header rules. Icon, monogram, screenshot and links may all be omitted.
-
-### entries
-```json
-{"type":"entries","order":2,"data":{"heading":"Focus","eyebrow":"Now","intro":"Optional Markdown.","items":[{"title":"Useful tools","description":"Fictional work in progress."}],"links":[{"label":"Website","url":"https://example.com"}]}}
-```
-Required: each item's `title`; all top-level fields optional; links require `label`, `url` and follow profile-header rules. No automatic heading text.
-
-### hero
-```json
-{ "type": "hero", "order": 1, "data": {
-    "headline": "Your App Name",
-    "subheadline": "A short tagline",
-    "logo": "https://example.com/logo.png",
-    "backgroundColor": "#1E1B4B",
-    "backgroundImage": "https://example.com/bg.jpg",
-    "backgroundVideo": "https://example.com/bg.mp4",
-    "variant": "centered",
-    "heroHeight": "large",
-    "ctaText": "Get Started",
-    "ctaUrl": "https://example.com",
-    "ctaSecondaryText": "Learn More",
-    "ctaSecondaryUrl": "#features"
-}}
-```
-
-### video
-```json
-{ "type": "video", "order": 2, "data": {
-    "url": "https://youtube.com/watch?v=...",
-    "caption": "Watch the demo"
-}}
-```
-Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
-
-### features
-```json
-{ "type": "features", "order": 3, "data": {
-    "items": [
-      { "icon": "rocket-outline", "title": "Fast", "description": "Blazing fast performance" }
-    ]
-}}
-```
-
-### screenshots
-```json
-{ "type": "screenshots", "order": 4, "data": {
-    "heading": "Product views", "images": [{"url":"https://example.com/screen1.png","alt":"Product view","kind":"web","width":1440,"height":900}, "https://example.com/screen2.png"]
-}}
-```
-
-`images` required; URL strings remain supported; objects use `url`, optional `alt`, `kind` (`phone|web`), positive `width`/`height` in px. `heading` optional; on editorial pages only, no heading or English alt is added by default; legacy pages default to “Screenshots” and numbered English alt.
-
-### download
-```json
-{ "type": "download", "order": 5, "data": {
-    "appStoreUrl": "https://apps.apple.com/app/...",
-    "playStoreUrl": "https://play.google.com/store/apps/...",
-    "ctaText": "Download Now"
-}}
-```
-
-### pricing
-```json
-{ "type": "pricing", "order": 6, "data": {
-    "items": [
-      { "name": "Free", "price": "$0", "features": ["1 project", "Basic support"], "ctaText": "Start Free", "ctaUrl": "#" },
-      { "name": "Pro", "price": "$9/mo", "features": ["Unlimited", "Priority support"], "highlighted": true, "ctaText": "Upgrade", "ctaUrl": "#" }
-    ]
-}}
-```
-
-### testimonials
-```json
-{ "type": "testimonials", "order": 7, "data": {
-    "items": [
-      { "name": "Jane Doe", "role": "CEO", "avatar": "https://example.com/avatar.jpg", "quote": "Amazing product!" }
-    ]
-}}
-```
-
-### faq
-```json
-{ "type": "faq", "order": 8, "data": {
-    "items": [
-      { "question": "Is it free?", "answer": "Yes, the basic plan is free." }
-    ]
-}}
-```
-
-### gallery
-```json
-{ "type": "gallery", "order": 9, "data": {
-    "items": [
-      { "url": "https://example.com/work1.jpg", "caption": "Project Alpha", "type": "image" }
-    ]
-}}
-```
-
-### team
-```json
-{ "type": "team", "order": 10, "data": {
-    "items": [
-      { "name": "Alice", "role": "CEO", "photo": "https://example.com/alice.jpg", "bio": "10 years in tech" }
-    ]
-}}
-```
-
-### schedule
-```json
-{ "type": "schedule", "order": 11, "data": {
-    "items": [
-      { "time": "10:00 AM", "title": "Opening Keynote", "speaker": "John", "description": "Welcome" }
-    ]
-}}
-```
-
-### sponsors
-```json
-{ "type": "sponsors", "order": 12, "data": {
-    "items": [
-      { "name": "Acme", "logo": "https://example.com/logo.png", "url": "https://acme.com" }
-    ]
-}}
-```
-
-### stats
-```json
-{ "type": "stats", "order": 13, "data": {
-    "items": [
-      { "value": "10K+", "label": "Users" },
-      { "value": "99.9%", "label": "Uptime" }
-    ]
-}}
-```
-
-### contact
-```json
-{ "type": "contact", "order": 14, "data": {
-    "email": "hello@example.com",
-    "phone": "+1-555-0123",
-    "address": "123 Main St"
-}}
-```
-
-### cta
-```json
-{ "type": "cta", "order": 15, "data": {
-    "headline": "Ready to start?",
-    "subheadline": "Join thousands of users",
-    "buttonText": "Sign Up Free",
-    "buttonUrl": "https://example.com/signup"
-}}
-```
-
-### links
-```json
-{ "type": "links", "order": 16, "data": {
-    "items": [
-      { "title": "Website", "url": "https://example.com", "icon": "globe-outline", "style": "filled" },
-      { "title": "GitHub", "url": "https://github.com/...", "icon": "logo-github", "style": "outlined" }
-    ]
-}}
-```
-
-### about
-```json
-{ "type": "about", "order": 17, "data": {
-    "heading": "Our Story",
-    "text": "We started in 2024 with a simple idea..."
-}}
-```
-
-### embed
-```json
-{ "type": "embed", "order": 23, "data": {
-    "url": "https://www.tiktok.com/@user/video/1234567890",
-    "title": "Optional heading above the embed",
-    "caption": "Optional caption below",
-    "aspectRatio": "9:16"
-}}
-```
-Auto-detects provider from URL. Supported: YouTube, Vimeo, TikTok, Loom, Spotify, CodePen, Figma. X (Twitter) and Instagram render as linked preview cards (their iframe policy blocks direct embeds). `aspectRatio` optional — sensible default per provider (TikTok → 9:16, YouTube → 16:9). Iframe is sandboxed.
-
-### Link rel (SEO)
-Links in `links` and `cta` sections accept an optional `rel` string. Use `"nofollow"` for sponsored/affiliate/user-supplied links, `"sponsored"` for paid placements, `"nofollow sponsored"` for both. Leaving it unset produces `rel="noopener noreferrer"` for external links (standard dofollow). Example:
-```json
-{ "type": "links", "data": { "items": [
-    { "title": "Our main site", "url": "https://acme.com" },
-    { "title": "Sponsor", "url": "https://partner.com", "rel": "sponsored" },
-    { "title": "User submission", "url": "https://ugc.com", "rel": "nofollow" }
-]}}
-```
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)

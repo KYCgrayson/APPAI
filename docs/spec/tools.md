@@ -1,9 +1,9 @@
 # AppAI — Tools
-Covers Wrapped and connected tools, connectors, identity, access and interactive section schemas.
+Covers Wrapped tool and Connected tool configuration, connectors, identity, access and interactive section schemas.
+Previous: [Overview](https://appai.info/spec) · Next: [Pages](https://appai.info/spec/pages)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
-[Overview](https://appai.info/spec) · [Pages](https://appai.info/spec/pages) · [Style](https://appai.info/spec/style) · [I18n](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Apps](https://appai.info/spec/apps) · [API](https://appai.info/spec/api)
 
-For generic section configuration, see [Section Reference](https://appai.info/spec/pages#section-reference).
+For generic section configuration, see [Section Reference](https://appai.info/spec/sections#section-reference).
 
 ### Interactive tools that need a backend, login, or quota
 
@@ -50,7 +50,7 @@ it cannot tell an admin from a stranger means rewriting, not patching.
 | Rung | What the tool can know | How it gets it |
 |---|---|---|
 | Hosted Page | nothing | there is no tool to tell |
-| **iframe-tool** | user id, organization, `isAdmin`. **Only with `"identity": true` on the section** — without it, nothing at all | AppAI puts an opaque `appai_session` on the iframe URL; the tool's **backend** posts it to `/api/v1/tools/sessions/introspect` |
+| **Wrapped tool** (`iframe-tool`) | user id, organization, `isAdmin`. **Only with `"identity": true` on the section** — without it, nothing at all | AppAI puts an opaque `appai_session` on the iframe URL; the tool's **backend** posts it to `/api/v1/tools/sessions/introspect` |
 | Connected tool | the same, plus `X-AppAI-User` / `X-AppAI-Admin` injected on every proxied call | the connector proxy holds a server secret, which is what makes those headers worth anything |
 | Universal App | a full runtime session; the `identity` capability additionally releases name and email | launch code → `POST /api/runtime/sessions/exchange` → `POST /api/runtime/sessions/introspect` |
 
@@ -227,3 +227,5 @@ Two optional fields decide who may use it and what it is told about them:
 }}
 ```
 For small shops that need an order request flow hosted entirely on AppAI. Customers type free-form line items, quantity, unit price, and preferred date. AppAI calculates subtotals and totals in the browser, shows the configured LINE/payment link, and sends an owner notification after the customer confirms payment. This does not automatically verify payment.
+
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)

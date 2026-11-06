@@ -85,7 +85,7 @@ without going through a connector or a reviewed Universal App release.
 ## Project Docs
 
 - **TODO.md** — Central todolist and roadmap. All planned features, tasks, and progress are tracked here. Always check and update this file when working on new features or completing tasks.
-- **docs/spec/** — Source of truth for the short `/spec` overview and six topic pages: pages, style, i18n, tools, apps, api.
+- **docs/spec/** — Source of truth for the short `/spec` overview and seven topic pages: api, style, pages, sections, i18n, tools, apps.
 - **AGENT_INSTRUCTIONS.md** — Generated full specification for GitHub readers and `/llms-full.txt`.
 
 ## AGENT_INSTRUCTIONS.md Style Rules

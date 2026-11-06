@@ -1,7 +1,7 @@
-# AppAI — API
-Covers Authentication, API discovery, uploads and page preview endpoints.
+# AppAI — Authorization & API
+The agent obtains a key with the user's approval via device flow; covers key storage, dry-run, image upload and API discovery.
+Previous: [Overview](https://appai.info/spec) · Next: [Style & logo](https://appai.info/spec/style)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
-[Overview](https://appai.info/spec) · [Pages](https://appai.info/spec/pages) · [Style](https://appai.info/spec/style) · [I18n](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Apps](https://appai.info/spec/apps) · [API](https://appai.info/spec/api)
 
 ## Authentication
 
@@ -16,8 +16,10 @@ curl -sX POST https://appai.info/api/v1/auth/device
 #     "verification_uri_complete": "https://appai.info/auth/device?code=LMLT-SVTC",
 #     "expires_in": 900, "interval": 5 }
 
-# 2. Open verification_uri_complete in the user's browser. Print it too — you
-#    cannot assume there is a browser on the machine you are running on.
+# 2. Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it.
+#    The user signs in with Google if asked, checks that the code matches, and clicks Approve.
+#    Never approve it yourself.
+#    The agent receives the key — nothing to copy or paste.
 
 # 3. Poll until it answers.
 curl -sX POST https://appai.info/api/v1/auth/token \
@@ -57,10 +59,28 @@ again next time. Read `APPAI_API_KEY` from the environment first so CI can
 supply one without any of this. If a stored key is ever rejected, discard it and
 run the flow again rather than reporting an authentication failure to the user.
 
+After authorization: Hosted Page → [Style & logo](https://appai.info/spec/style); Universal App → return to [Universal App](https://appai.info/spec/apps#natural-release-flow) for the release steps.
+
+## Dry-run
+
+Validate and preview the page before publishing with the same request body.
+
+Previous: [Sections](https://appai.info/spec/sections) · Next: [Publish](https://appai.info/spec#publish-in-one-minute)
+
+### Dry-run & publish
+
 ### Preview without saving
 
-**Preview without saving:** `POST /api/v1/pages/preview` (alias: `POST /api/v1/pages?dryRun=true`) — same body; HTTP 200 returns `{valid, errors: [], warnings: [], sanitizedContent, next}`. Always check `valid`; warnings do not block creation. Preview rejects an exact (slug, locale) owned by another organization; it does not check plan limits, parent existence or ownership of the parent root; POST does.
+**Preview without saving:** `POST /api/v1/pages?dryRun=true` (identical to `POST /api/v1/pages/preview`) — same body; HTTP 200 returns `{valid, errors: [], warnings: [], sanitizedContent, next}`. Always check `valid`; warnings do not block creation. Preview rejects an exact (slug, locale) owned by another organization; it does not check plan limits, parent existence or ownership of the parent root; POST does.
 
-### Upload images
+Publish with `POST /api/v1/pages` using the same body and `isPublished: true` (`?upsert=true` to overwrite an existing page). Open `https://appai.info/p/{slug}` and check desktop/mobile layout.
+
+## Upload images
 
 **Upload images:** `POST /api/v1/upload` with `multipart/form-data`, field `file`; allowed MIME types: `image/png`, `image/jpeg`, `image/jpg`, `image/gif`, `image/webp`, `image/svg+xml`; max 5 MB (5 × 1024² bytes). HTTP 201 returns `{url, filename, size, type}`; use the returned `url` as-is in image fields.
+
+## API discovery
+
+`GET /api/v1/sections` returns section schemas and icons (`?format=jsonschema` for JSON Schema; `?type=features,contact` to filter). `GET /api/v1/presets` returns 10 copyable preset examples and 6 named style kits.
+
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)

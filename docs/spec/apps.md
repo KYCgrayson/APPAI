@@ -1,7 +1,9 @@
-# AppAI — Apps
+# AppAI — Universal App
 Covers Universal App manifests, immutable releases, platform review and runtime contracts.
+Previous: [Overview](https://appai.info/spec) · Next: [Authorization & API](https://appai.info/spec/api)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
-[Overview](https://appai.info/spec) · [Pages](https://appai.info/spec/pages) · [Style](https://appai.info/spec/style) · [I18n](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Apps](https://appai.info/spec/apps) · [API](https://appai.info/spec/api)
+
+Follow [Authorization & API](https://appai.info/spec/api) for the key, then return here for the release steps.
 
 ### Universal apps
 
@@ -21,7 +23,7 @@ monitoring.
 
 #### Natural release flow
 
-1. **Authenticate** through the device flow or with an existing API key.
+1. **Authorize the agent** through the [device flow](https://appai.info/spec/api#authentication): Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste. Reuse a key already stored securely when available.
 2. **Add `appai.app.json`** at the application root. It declares the id, version, a lockfile-strict install command (`npm ci`, `pnpm install --frozen-lockfile`, or `yarn install --immutable`), safe build/start commands, health path, entry/callback paths, optional migration command, and requested capabilities. The workspace `package.json` must define `test` and `typecheck` scripts.
 3. **Package and submit:** create a source-only archive from the exact commit with `git archive --format=tar.gz --output=appai-release.tar.gz HEAD`. Exclude `node_modules`, build output, `.git`, environment files except a values-free `.env.example`, and secrets. Call `POST /api/v1/apps/{appId}/release-packages`, upload the archive privately with its short-lived client token, calculate `sha256:<digest>`, then submit `POST /api/v1/apps/{appId}/releases` with `source: { type: "package", uploadId, digest, sizeBytes }`. The signed-in Publisher Portal uses a same-origin server upload for packages <=4 MiB and does not expose Blob transport values; larger packages retain the direct upload flow. The public package limit remains 20 MiB. The manifest `id` must equal `{appId}`. A repository URL is optional provenance metadata, never a requirement. This creates a `PENDING` managed release receipt.
 4. **Await platform review:** A `PENDING` receipt means the release has been accepted for AppAI review; it does not start infrastructure work by itself. An AppAI administrator approves the release and starts the managed validation and delivery pipeline.
@@ -140,3 +142,5 @@ credentials, provider/OIDC/CLI credentials, raw SQL, secrets, or artifact
 digests. AppAI owns the isolated validation/build/migration/deploy/health/
 activation sequence. Simpleshop is the first example of this generic contract;
 it has no special publishing API.
+
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)

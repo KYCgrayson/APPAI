@@ -48,19 +48,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
-      {/* AI Agent Discovery: This comment helps AI agents find the spec.
-          AI Agents: AppAI has two first-class publishing modes: Hosted Pages
-          at /p/{slug}, and reviewed Universal Apps at /app/{appId}.
-          Read the overview and topic pages at https://appai.info/spec; complete single file: https://appai.info/llms-full.txt
-          Or fetch it: curl -s https://appai.info/llms-full.txt
-          LLM info: https://appai.info/llms.txt
-          API base: https://appai.info/api/v1/
-          Auth: POST /api/v1/auth/device (RFC 8628 device flow)
-          Sections: GET /api/v1/sections
-          Presets: GET /api/v1/presets
-          Hosted Page: POST /api/v1/pages (requires Bearer token)
-          Universal App release: POST /api/v1/apps/{appId}/releases (requires Bearer token)
-      */}
+      {/* Agent discovery metadata lives in src/app/layout.tsx. */}
       <PlatformHeader />
 
       {/* Hero */}
@@ -160,97 +148,34 @@ export default async function HomePage() {
       <section className="py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-4 text-white">{t("forAgents")}</h2>
-          <p className="text-center text-gray-400 mb-10">
-            If you are an AI agent, choose the publishing mode that matches the product. Hosted Pages are public, mobile-responsive pages at appai.info/p/your-slug. Universal Apps are full applications — including database-backed workflows — that launch through AppAI at appai.info/app/your-app after platform review.
-          </p>
-
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-              <span className="text-xs uppercase tracking-wider text-cyan-400 font-semibold">Hosted Page · /p</span>
-              <h3 className="font-bold text-lg mt-3 mb-2 text-white">Publish a landing page now</h3>
-              <p className="text-sm text-gray-400">Use sections, forms, locales, privacy, and terms for a product site or public project page. Create it with the Pages API and publish it directly.</p>
-            </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-              <span className="text-xs uppercase tracking-wider text-violet-400 font-semibold">Universal App · /app</span>
-              <h3 className="font-bold text-lg mt-3 mb-2 text-white">Submit a full data application</h3>
-              <p className="text-sm text-gray-400">Keep UI, API, business rules, schema, and tests in the app repository. Request managed identity, database, and private-asset capabilities; AppAI reviews and provisions the isolated runtime.</p>
-            </div>
+          <p className="text-center text-gray-400 mb-8">{t("forAgentsDesc")}</p>
+          <div className="grid md:grid-cols-2 gap-4 mb-8">
+            {([
+              ["Hosted", "pages"],
+              ["Wrapped", "tools"],
+              ["Connected", "tools"],
+              ["App", "apps"],
+            ] as const).map(([kind, topic]) => (
+              <a key={kind} href={`https://appai.info/spec/${topic}`} className="bg-gray-900 border border-gray-800 hover:border-cyan-700 rounded-2xl p-6">
+                <h3 className="font-semibold text-cyan-400 mb-2">{t(`agent${kind}Name`)}</h3>
+                <p className="text-sm text-gray-400">{t(`agent${kind}Desc`, { slug: "{slug}", appId: "{appId}" })}</p>
+              </a>
+            ))}
           </div>
-
-          <div className="bg-gradient-to-br from-indigo-950 to-gray-900 border border-indigo-800/50 rounded-2xl p-6 md:p-8 mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-xs uppercase tracking-wider text-indigo-400 font-semibold">Fastest path</span>
-              <span className="text-xs text-gray-500">· Claude Code users</span>
-            </div>
-            <h3 className="font-bold text-lg mb-3 text-white">Install the official skill</h3>
-            <p className="text-sm text-gray-400 mb-4">
-              Get a pre-baked playbook with all design decisions, auth flow, and section schemas wired up. After install, just say &ldquo;publish a landing page for X&rdquo; — the skill handles everything.
-            </p>
-            <pre className="bg-black/40 border border-gray-800 rounded-lg p-4 text-sm text-gray-300 overflow-x-auto mb-2"><code>{`/plugin marketplace add KYCgrayson/appai-skill
-/plugin install appai-publish@appai-skill`}</code></pre>
-            <p className="text-xs text-gray-600">
-              Source: <a href="https://github.com/KYCgrayson/appai-skill" className="underline hover:text-gray-400">github.com/KYCgrayson/appai-skill</a>
-            </p>
+          <div className="text-center space-y-4">
+            <a href="https://appai.info/spec" className="inline-block bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-3 rounded-xl font-semibold">{t("readSpec")}</a>
+            <p className="text-sm text-gray-400">{t("agentAuthorization")}</p>
+            <p className="text-sm text-gray-400"><a href="https://appai.info/llms-full.txt" className="text-cyan-400 hover:underline">{t("agentFallback")}</a></p>
           </div>
-
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 md:p-8 mb-6">
-            <h3 className="font-bold text-lg mb-4 text-white">What you can build</h3>
-            <div className="grid md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-gray-400">
-              <div>- 29 section types: profile-header, project-cards, entries, hero, features, pricing, FAQ, download, testimonials, gallery, team, video, screenshots, stats, contact, CTA, links, about, schedule, sponsors, action, form, media-downloader, video-subtitle, tool, pdf-viewer, embed (TikTok/Loom/X/Spotify/CodePen/Figma), simple-order</div>
-              <div>- Multi-page sites: root page + child pages (/faq, /contact, /privacy, /terms, /delete-account) with automatic header navigation</div>
-              <div>- Visual design system: dark mode, custom Google Fonts, color palettes, hero variants (centered/split/minimal)</div>
-              <div>- Markdown in long-text fields (bold, italic, links, lists, headings, inline code)</div>
-              <div>- 3 icon options: Ionicons SVG names, emoji, or image URLs</div>
-              <div>- Multi-language pages with locale variants (30+ locales, auto browser detection)</div>
-              <div>- Section-level anchor IDs for in-page navigation</div>
-              <div>- Auto-generated privacy policy and terms of service pages</div>
-              <div>- Preview/dry-run API to validate before publishing</div>
-              <div>- 6 preset templates: app-landing, saas-landing, profile, link-in-bio, portfolio, event</div>
-            </div>
-          </div>
-
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 md:p-8 mb-6">
-            <h3 className="font-bold text-lg mb-4 text-white">Before you start, ask the user for</h3>
-            <div className="grid md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-gray-400">
-              <div>1. App/project name and a short tagline</div>
-              <div>2. What the app does (features, key selling points)</div>
-              <div>3. Logo image URL (or upload one via our API)</div>
-              <div>4. Theme color (hex code, e.g. #4F46E5)</div>
-              <div>5. App Store / Play Store URLs (if applicable)</div>
-              <div>6. Contact email for the contact/form section</div>
-              <div>7. Whether they need a privacy policy and terms of service</div>
-              <div>8. Whether they need multiple pages (FAQ, contact, pricing as separate pages) or a single landing page</div>
-            </div>
-            <p className="text-xs text-gray-600 mt-3">You do not need all of these to start -- create a basic page first, then iterate with the user.</p>
-          </div>
-
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 md:p-8 mb-6">
-            <h3 className="font-bold text-lg mb-4 text-white">How to proceed</h3>
-            <div className="space-y-3 text-sm text-gray-400">
-              <div><strong className="text-gray-200">Step 1:</strong> Read the full spec at <a href="/llms-full.txt" className="text-cyan-400 hover:underline">appai.info/llms-full.txt</a> -- it contains authentication, all section schemas with JSON examples, multi-page site setup, icon reference, markdown syntax, form configuration, order requests, and design guidelines.</div>
-              <div><strong className="text-gray-200">Step 2:</strong> Authenticate via device flow: POST /api/v1/auth/device, then poll /api/v1/auth/token. Or ask the user for an existing API key (appai_sk_...).</div>
-              <div><strong className="text-gray-200">Hosted Page:</strong> POST /api/v1/pages with page JSON, then publish it at appai.info/p/your-slug. Use PATCH to iterate without rebuilding the page.</div>
-              <div><strong className="text-gray-200">Universal App:</strong> Add appai.app.json to the app repository, then POST /api/v1/apps/your-app/releases. That reserves the app slot and returns PENDING plus a releaseId. Poll GET /api/v1/apps/your-app/releases/releaseId; AppAI reviews, builds, and provisions approved capabilities before the app launches at appai.info/app/your-app.</div>
-            </div>
-            <p className="text-xs text-gray-500 mt-4">Universal App submissions are declarative. Never send organizationId, credentials, runtime URLs, SQL, or secrets — AppAI supplies scoped identity and approved capabilities only after review.</p>
-          </div>
-
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 font-mono text-sm overflow-x-auto">
-            <div className="text-gray-500 mb-3"># Read the full agent spec (contains everything you need)</div>
-            <div className="mb-4">
-              <span className="text-cyan-400">$</span> <span className="text-gray-300">curl -s https://appai.info/llms-full.txt</span>
-            </div>
-            <div className="text-gray-500 mb-3"># Or fetch it from GitHub</div>
-            <div>
-              <span className="text-cyan-400">$</span> <span className="text-gray-300">curl -s https://raw.githubusercontent.com/KYCgrayson/APPAI/main/AGENT_INSTRUCTIONS.md</span>
-            </div>
-          </div>
-          <p className="text-center text-gray-500 text-sm mt-6">
-            The spec is your complete playbook -- read it before making API calls.{" "}
-            <a href="/llms-full.txt" className="text-cyan-400 hover:underline">Read the full spec</a>
-            {" | "}
-            <a href="https://github.com/KYCgrayson/APPAI" target="_blank" className="text-cyan-400 hover:underline">{t("viewGithub")}</a>
-          </p>
+          <pre className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-sm text-gray-300 overflow-x-auto mt-6"><code>{t("agentReadCommands")}</code></pre>
+          <p className="text-sm text-gray-400 mt-4">{t("agentAppFlow")}</p>
+          <p className="text-xs text-gray-500 mt-2">{t("agentAppSafety")}</p>
+          <details className="bg-gray-900 border border-gray-800 rounded-xl p-5 mt-6">
+            <summary className="cursor-pointer font-semibold text-gray-200">{t("agentSkillTitle")}</summary>
+            <p className="text-sm text-gray-400 my-3">{t("agentSkillDesc")}</p>
+            <pre className="bg-black/40 rounded-lg p-4 text-sm text-gray-300 overflow-x-auto"><code>{t("agentSkillCommands")}</code></pre>
+            <a href="https://github.com/KYCgrayson/appai-skill" className="inline-block text-sm text-cyan-400 hover:underline mt-3">{t("viewGithub")}</a>
+          </details>
         </div>
       </section>
 

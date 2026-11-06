@@ -1,7 +1,7 @@
-# AppAI — Style
-Covers Style kits, visual design, colours, fonts, backgrounds, hero variants and logo rules.
+# AppAI — Style & logo
+Covers style kits, visual design, colours, fonts, backgrounds, hero variants and logo rules.
+Previous: [Authorization & API](https://appai.info/spec/api) · Next: [Pages](https://appai.info/spec/pages)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
-[Overview](https://appai.info/spec) · [Pages](https://appai.info/spec/pages) · [Style](https://appai.info/spec/style) · [I18n](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Apps](https://appai.info/spec/apps) · [API](https://appai.info/spec/api)
 
 | Style kit | themeColor | themeColorSecondary | fontFamily | darkMode | Suggested backgroundColors |
 |---|---|---|---|---|---|
@@ -38,3 +38,5 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 | Type | What it does |
 |---|---|
 | `hero` | Headline banner. **Variants:** `centered` (default), `split` (text left, image right), `minimal` (compact). **Height:** `full`/`large`/`medium`/`small`. Supports `backgroundColor`, `backgroundImage`, `backgroundVideo`, secondary CTA. |
+
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
