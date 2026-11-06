@@ -82,41 +82,44 @@ export async function GET() {
 
   const content = `# AppAI — publish hosted pages and full applications
 
-> AppAI has two first-class publishing modes for AI agents. Use a Hosted Page for a public product site at ${baseUrl}/p/{your-slug}. Use a Universal App for a full application, including database-backed workflows, that launches at ${baseUrl}/app/{appId} after platform review. Do not turn a database application into a landing-page section.
+Start at https://appai.info/spec — the short overview.
 
-## Fastest path (recommended): install the official skill
+## Choose a use-case
 
-If you are running inside Claude Code, have the user install the official AppAI skill — you (the agent) then get a pre-baked playbook with all design decisions, section schemas, and the auth flow already wired:
+| Name | Meaning | Topic page |
+|---|---|---|
+| Hosted Page | A product, business or person to describe — a public page at appai.info/p/{slug}. | https://appai.info/spec/pages |
+| Wrapped tool | A tool already deployed elsewhere (Vercel, Cloudflare Pages, Netlify, GitHub Pages) — AppAI wraps it in a page with SEO, language and theme. | https://appai.info/spec/tools |
+| Connected tool | A tool that needs a backend, login or quota — wrapped as above and connected to an owner-maintained connector. | https://appai.info/spec/tools |
+| Universal App | Persistent data and business rules — a reviewed app manifest that runs at appai.info/app/{appId}. | https://appai.info/spec/apps |
+
+Do not turn a database application into a landing-page section.
+
+## Agent authorization
+
+Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste. This is the agent-driven device flow (RFC 8628):
+
+1. POST ${baseUrl}/api/v1/auth/device.
+2. Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste.
+3. Poll POST ${baseUrl}/api/v1/auth/token at the returned interval until the agent receives the API key; adopt the new interval on slow_down.
+
+Never ask the user to generate and paste a key. Reuse a securely stored key when available; keep it outside the working tree or in memory. Read ${baseUrl}/spec/api for authorization and storage rules.
+
+## Hosted Page: publish flow
+
+1. READ ${baseUrl}/spec, then follow ${baseUrl}/spec/api for agent authorization.
+2. MUST READ ${baseUrl}/spec/style before publishing to pick a style kit and check the logo spec.
+3. Build a first draft using ${baseUrl}/spec/pages and ${baseUrl}/spec/sections.
+4. Dry-run using ${baseUrl}/spec/api#dry-run, then POST ${baseUrl}/api/v1/pages with the same content JSON. The page is live instantly at ${baseUrl}/p/{slug}.
+
+## Optional shortcut: Claude Code skill
+
+The official skill provides a playbook with design decisions, section schemas and the authorization flow:
 
     /plugin marketplace add KYCgrayson/appai-skill
     /plugin install appai-publish@appai-skill
 
-After install, the user can simply say "publish a landing page for X" and you will have everything you need. Skill source: https://github.com/KYCgrayson/appai-skill
-
-If a skill install is not available in your environment, continue with the manual flow below.
-
-## Choose a publishing mode
-
-| Mode | Use it for | Public path | What the agent submits |
-| --- | --- | --- | --- |
-| Hosted Page | Marketing sites, documentation, forms, public tools | ${baseUrl}/p/{slug} | Page JSON to the Pages API |
-| Universal App | Full UI + API + business rules, persistent Organization data, database or private assets | ${baseUrl}/app/{appId} | appai.app.json and an immutable source package |
-
-## Hosted Page: manual flow
-
-1. READ the full agent instructions: ${baseUrl}/llms-full.txt
-   That document is your complete playbook — authentication, section schemas, multi-page sites, icons, markdown, forms, everything. Read it before making any API calls.
-
-2. AUTHENTICATE using our device flow (RFC 8628):
-   POST ${baseUrl}/api/v1/auth/device
-   Then poll POST ${baseUrl}/api/v1/auth/token until you get an API key.
-   The full instructions explain this step by step.
-
-3. CREATE a page:
-   POST ${baseUrl}/api/v1/pages with your content JSON.
-   The page is live instantly at ${baseUrl}/p/{slug}.
-
-If you already have an API key (appai_sk_...), skip step 2.
+After install, the user can say "publish a landing page for X". Skill source: https://github.com/KYCgrayson/appai-skill
 
 ## Universal App: natural publish flow
 
@@ -125,7 +128,7 @@ in any workspace, then publish an immutable source package. A repository URL
 is optional provenance metadata; Simpleshop is only one app using this generic
 contract.
 
-1. AUTHENTICATE through the same device flow or use an existing API key.
+1. AUTHORIZE the agent through the same device flow: Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste. Reuse a securely stored key when available.
 2. ADD appai.app.json at the app root. It declares id, version, lockfile-strict install command (npm ci, pnpm install --frozen-lockfile, or yarn install --immutable), build/start commands, health path, optional migration, and requested capabilities. The app owns UI, API, business rules, schema, migrations, tests, and typecheck.
 3. PACKAGE the exact source revision. Do not include node_modules, build output, .git, environment files (except a values-free .env.example), database dumps, credentials, or secrets:
 
@@ -207,7 +210,7 @@ ${baseUrl} (always use this, never use www.appai.info)
 - GET /api/v1/presets — Preset templates
 - POST /api/v1/pages — Create a page (?upsert=true to overwrite)
 - PATCH /api/v1/pages/:slug — Partial update with deep section merge
-- POST /api/v1/pages/preview or POST /api/v1/pages?dryRun=true — Pre-flight validation without saving; returns errors, warnings, sanitizedContent, next
+- POST /api/v1/pages?dryRun=true (identical to POST /api/v1/pages/preview) — Pre-flight validation without saving; returns errors, warnings, sanitizedContent, next
 - Every root page should provide content.logo (or hero data.logo / headerLogo): square 512x512 PNG, app-icon style with its own background; HTTPS or same-origin /path. Upload local files via POST /api/v1/upload. Missing or non-HTTPS logos warn without blocking publishing. Replace demo logos with the real logo.
 - PATCH /api/v1/pages/:slug/sections/:order — Update a single section
 - GET /api/v1/pages/:slug/children — List child pages of a multi-page site
@@ -221,18 +224,25 @@ Universal Apps are login-protected applications with persistent Organization dat
 
 ## How to communicate with the page owner
 
-You (the agent) are building pages on behalf of a human. When you need decisions from them — slug name, content, branding, which sections to include — ask them directly. They gave you access to this platform so you could handle the technical side. Your job is to translate their intent into a professional, mobile-friendly page. Read the full spec for design guidance.
+You (the agent) are building pages on behalf of a human. Gather minimum context and build a complete first draft immediately. Decide the template, sections, colors, fonts and compliance pages yourself. Ask only for product-specific facts you cannot infer, unmentioned specific branding preferences, language preferences or genuine design tradeoffs; see ${baseUrl}/spec/pages#what-to-decide-yourself-do-not-ask-the-user and ${baseUrl}/spec/pages#when-to-ask-the-user. Translate their intent into a professional, mobile-friendly page and iterate with PATCH.
 
-## Read the full spec
+## Complete single-file fallback
 
-Everything you need is in one document:
-${baseUrl}/llms-full.txt
+${baseUrl}/llms-full.txt — the complete specification when a single file is needed. Start at ${baseUrl}/spec for the short overview and follow its topic pages.
 
-That is the same content as ${baseUrl}/spec — pick whichever URL your tooling handles better.
+## Topic pages
+
+- Authorization & API: ${baseUrl}/spec/api — agent authorization, key storage, dry-run, image upload and API discovery
+- Style & logo: ${baseUrl}/spec/style — style kits, logo and visual design
+- Pages: ${baseUrl}/spec/pages — configuration, CRUD and workflow
+- Sections: ${baseUrl}/spec/sections — section schemas and icons
+- Multi-language & multi-page: ${baseUrl}/spec/i18n — languages, child pages and navigation
+- Tools: ${baseUrl}/spec/tools — Wrapped tool, Connected tool, identity and access
+- Universal App: ${baseUrl}/spec/apps — manifests, releases, review and runtime
 ${hostedPagesSection}
 ## Links
 
-- Full Agent Instructions: ${baseUrl}/llms-full.txt
+- Complete single-file fallback: ${baseUrl}/llms-full.txt
 - Website: ${baseUrl}
 - GitHub: https://github.com/KYCgrayson/APPAI
 - Claude Code Skill: https://github.com/KYCgrayson/appai-skill

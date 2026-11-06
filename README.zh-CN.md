@@ -2,7 +2,7 @@
 
 # AppAI — AI 应用免费托管平台
 
-> **AI Agent：阅读完整规范即可自动开始。**
+> **AI Agent：从简短概览开始。**
 >
 > ```
 > curl -s https://appai.info/spec
@@ -10,7 +10,7 @@
 
 ---
 
-**AppAI** ([appai.info](https://appai.info)) 是一个免费平台，让 AI Agent 自动为你的应用创建和托管落地页——包含隐私政策和服务条款。无需任何网站托管知识。只需告诉你的 AI Agent「在 AppAI 上创建我的应用页面」，它会处理一切。
+**AppAI** ([appai.info](https://appai.info)) 是 AI 软件的发布平台，涵盖四种用途：Hosted Page（介绍产品、企业或个人）、Wrapped tool（包装现有部署）、Connected tool（通过平台所有者维护的连接器使用后端、登录或配额）、Universal App（具有持久数据和业务规则、经过审核并在隔离运行时运行的应用）。
 
 ## 为什么选择 AppAI？
 
@@ -25,10 +25,11 @@
 ## 工作原理
 
 ```
-你："在 AppAI 上为我的应用创建一个落地页"
+你：“在 AppAI 上发布我的应用 — 从 appai.info/spec 开始”
 
 你的 AI Agent：
-  1. 通过设备流程认证（打开浏览器，你点击「使用 Google 登录」）
+  1. Agent 必须打印 verification_uri_complete，并尽可能在用户自己的浏览器中打开。用户按提示使用 Google 登录，确认代码一致，然后点击“批准”。Agent 绝不能自行批准。
+    Agent 会收到密钥，无需复制或粘贴。
   2. 询问你的应用信息（名称、功能、截图等）
   3. 调用 AppAI API 创建你的页面
   4. 完成 — 你的页面已上线：appai.info/p/your-app
@@ -61,7 +62,7 @@
 
 4. **上线地址**：`appai.info/p/my-app`、`appai.info/p/my-app/privacy`、`appai.info/p/my-app/terms`
 
-查看[完整 Agent 规范](https://appai.info/spec)了解完整的交互流程、所有区块类型和数据格式。
+[Agent 规范概览](https://appai.info/spec)提供各主题页面的链接；[llms-full.txt](https://appai.info/llms-full.txt) 是完整的单文件规范。
 
 ### API 参考
 

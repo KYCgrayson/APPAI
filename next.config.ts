@@ -95,7 +95,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
-    "/spec": ["./AGENT_INSTRUCTIONS.md"],
+    "/spec": ["./docs/spec/**", "./AGENT_INSTRUCTIONS.md"],
+    "/spec/[topic]": ["./docs/spec/**", "./AGENT_INSTRUCTIONS.md"],
+    "/llms-full.txt": ["./docs/spec/**", "./AGENT_INSTRUCTIONS.md"],
     "/spec/examples/*": ["./docs/examples/**"],
   },
   async headers() {

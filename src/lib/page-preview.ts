@@ -9,6 +9,10 @@ export function checkPagePreview(body: unknown, iconNames: readonly string[] = [
   const parsed = createPageSchema.safeParse(body);
   if (!parsed.success) return { valid: false, errors: parsed.error.issues.map(e => ({ path: e.path.map(String).join("."), message: e.message })), warnings: [] as SanitizeWarning[], sanitizedContent: null, next: "Fix errors and dry-run again." };
   const warnings: SanitizeWarning[] = [];
+  const rawBody = body as Record<string, unknown>;
+  for (const field of ["themeColor", "fontFamily"]) {
+    if (!context.exists && !(field === "themeColor" && parsed.data.parentSlug) && rawBody[field] === undefined) warnings.push({ path: field, message: `The page will use defaults for ${field}; pick a style kit at ${context.origin || "https://appai.info"}/spec/style.` });
+  }
   const sanitizedContent = sanitizeContent(parsed.data.content, undefined, warnings) as Record<string, unknown>;
 
   warnings.push(...pageLogoWarnings({ ...parsed.data, content: sanitizedContent }));

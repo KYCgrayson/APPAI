@@ -2,7 +2,7 @@
 
 # AppAI — Publishing for AI-Built Pages and Applications
 
-> **AI Agents: Read the full spec to get started automatically.**
+> **AI Agents: Start with the short overview.**
 >
 > ```
 > curl -s https://appai.info/spec
@@ -10,7 +10,7 @@
 
 ---
 
-**AppAI** ([appai.info](https://appai.info)) is a publishing platform for AI-built software. It gives agents two first-class paths: publish a Hosted Page for a public product site, or submit a Universal App for a full, database-capable application that AppAI reviews and runs in an isolated runtime.
+**AppAI** ([appai.info](https://appai.info)) is a publishing platform for AI-built software. It covers four use-cases: Hosted Page for a product, business or person; Wrapped tool for an existing deployment; Connected tool for a backend, login or quota through an owner-maintained connector; Universal App for persistent data and business rules in a reviewed, isolated runtime.
 
 ## Why AppAI?
 
@@ -27,10 +27,10 @@ Built an app with AI but don't have a website? AppAI gives you:
 ## How It Works
 
 ```
-You: "Create a landing page for my app on AppAI"
+You: "Publish my app on AppAI — start at appai.info/spec"
 
 Your AI Agent:
-  1. Authenticates via device flow (opens browser, you click "Sign in with Google")
+  1. Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste.
   2. Asks you about your app (name, features, screenshots, etc.)
   3. Calls the AppAI API to create your page
   4. Done — your page is live at appai.info/p/your-app
@@ -63,7 +63,7 @@ The entire flow is automated. Your AI agent reads the [Agent Spec](https://appai
 
 4. **Live at**: `appai.info/p/my-app`, `appai.info/p/my-app/privacy`, `appai.info/p/my-app/terms`
 
-See the [full Agent Spec](https://appai.info/spec) for the complete interactive workflow, all section types, and data formats.
+The [Agent Spec overview](https://appai.info/spec) links to topic pages; [llms-full.txt](https://appai.info/llms-full.txt) is the complete single file.
 
 ### API Reference
 
@@ -82,7 +82,7 @@ See the [full Agent Spec](https://appai.info/spec) for the complete interactive 
 | `POST` | `/api/v1/pages/:slug/publish` | Bearer | Publish a page |
 | `POST` | `/api/v1/pages/:slug/unpublish` | Bearer | Unpublish a page |
 | `POST` | `/api/v1/pages/:slug/set-default` | Bearer | Set default locale (`?locale=ja`) |
-| `POST` | `/api/v1/pages/preview` | Bearer | Preview a page without saving |
+| `POST` | `/api/v1/pages?dryRun=true` | Bearer | Preview without saving (identical to `POST /api/v1/pages/preview`) |
 | `POST` | `/api/v1/upload` | Bearer | Upload an image (returns public URL) |
 | `POST` | `/api/v1/apps` | Bearer | Submit an app |
 | `GET` | `/api/v1/apps` | Bearer | List apps |
@@ -99,7 +99,7 @@ Use a Universal App when the software has its own UI/API/business rules or persi
 
 ### Natural Universal App publishing flow
 
-1. Authenticate with the AppAI device flow or an API key.
+1. Authorize with the AppAI device flow: the agent shows a link; open the link, sign in with Google if asked, check the code matches, and click Approve; the agent receives the key — nothing to copy or paste. Reuse a securely stored key when available.
 2. Add `appai.app.json` to the app repository, including a lockfile-strict `installCommand`: `npm ci`, `pnpm install --frozen-lockfile`, or `yarn install --immutable`. The repository's `package.json` must define `test` and `typecheck` scripts.
 3. Submit `POST /api/v1/apps/{appId}/releases` with a credential-free public GitHub repository URL (`https://github.com/{owner}/{repo}`) and exact 40-character Git commit SHA; AppAI returns `PENDING`.
 4. The `PENDING` release awaits AppAI platform review. An AppAI administrator approves it and starts the managed pipeline.

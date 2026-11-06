@@ -1,6 +1,6 @@
 # Section Library
 
-24 section types. Pick 4–8 per page. Order them via `order` field (ascending).
+Section schemas and icons: [Sections](https://appai.info/spec/sections). Pick 4–8 per page. Order them via `order` field (ascending).
 
 ## Hero variants
 
@@ -10,7 +10,7 @@
 | `hero` | `split` | Product with a screenshot worth showing |
 | `hero` | `minimal` | Premium brand aesthetic |
 
-Fields: `headline`, `subheadline`, `cta` ({text, url}), `secondaryCta`, `heroImage`, `logo`, `variant`.
+Fields: `headline`, `subheadline`, `ctaText`, `ctaUrl`, `secondaryCtaText`, `secondaryCtaUrl`, `heroImage`, `logo`, `variant`.
 
 ## Content sections
 

@@ -6,12 +6,14 @@ import test from "node:test";
 const root = process.cwd();
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 
-test("public agent instructions describe Hosted Pages and Universal Apps as first-class modes", () => {
+test("public agent instructions describe the four publishing use-cases", () => {
   const instructions = read("AGENT_INSTRUCTIONS.md");
   const quickstart = read("src/app/llms.txt/route.ts");
 
   for (const content of [instructions, quickstart]) {
-    assert.match(content, /Hosted Pages?/);
+    assert.match(content, /Hosted Page/);
+    assert.match(content, /Wrapped tool/);
+    assert.match(content, /Connected tool/);
     assert.match(content, /Universal Apps?/);
     assert.match(content, /POST (?:\$\{baseUrl\})?\/api\/v1\/apps\/\{appId\}\/releases/);
     assert.match(content, /appai\.app\.json/);

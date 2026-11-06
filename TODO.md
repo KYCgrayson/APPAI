@@ -22,6 +22,16 @@ Recorded so future work stops re-deriving them. The boundary itself lives in
 - [ ] **D5 — `iframe-tool` depends on infrastructure we do not control.** If the user's Vercel deploy dies the AppAI page shows a broken frame and reads as our outage. Proposal: health check + graceful degradation (keep the landing content, hide the frame, notify the owner). Real scope addition, not free.
 - [ ] **D6 — Universal App review is manual.** Every release needs admin approval. That is the scope brake that keeps AppAI from becoming a general code host, but it is also the growth ceiling. Revisit once more than a handful of artifacts exist.
 
+## Spec topic split (ops #34)
+
+- [x] One-minute publishing round 3: align device authorization, four use-cases, metadata, translations, topic navigation, dry-run-to-publish flow and skill guidance; strengthen entry-point regression checks.
+
+- [x] Ops #34 / PR #37 follow-up: align agent entry points on four use-cases and device approval; translate homepage guidance in nine locales; add Sections, chained topic headers and generated legacy mapping; preserve publishing rules and add consistency checks.
+
+- [x] Ops #34 round 2: correct preview style warning context; sync MCP dist and deploy spec generation; clarify overview/full-file references and topic cross-links.
+
+- [x] Split source into docs/spec overview + six topics; generated full spec, topic routes, MCP full-text resource, style-default preview warnings and regression checks.
+
 ## One-minute hosted publishing (ops #33)
 
 - [x] Final round: prioritize matching icon names, keep quick-start JSON in sync with the forest company-service example, and recognize mixed-case placeholder-logo schemes/hosts; regression coverage added.

@@ -4,11 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/build-agent-instructions.mjs",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "spec:build": "node scripts/build-agent-instructions.mjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",

@@ -47,7 +47,7 @@ test('shared dry-run validates, sanitizes, and warns without mutating input', ()
   for (const sections of [[null, 'bad'], 'bad', [{ type: 'hero', data: {} }], [{ type: 'features', data: { items: false } }]]) {
     assert.ok(checkPagePreview({ slug: 'demo', title: 'Demo', content: { sections } }).warnings.length);
   }
-  assert.deepEqual(checkPagePreview({ slug: 'demo', title: 'Demo', parentSlug: 'root' }).warnings, []);
+  assert.deepEqual(checkPagePreview({ slug: 'demo', title: 'Demo', parentSlug: 'root', themeColor: '#047857', fontFamily: 'Lato' }).warnings, []);
 });
 test('each preset is a copyable, clean full POST body matching its served file', () => {
   assert.equal(PRESET_DEFS.length, 10);
@@ -109,7 +109,7 @@ test('section discovery exposes icons and comma-list filtering in both formats',
   assert.match(route, /enriched.length === 0.*total: 0, validTypes:/);
 });
 test('features and contact accept custom heading and subheading', () => {
-  const result = checkPagePreview({ slug: 'business', title: 'Business', content: { logo: url, sections: [
+  const result = checkPagePreview({ slug: 'business', title: 'Business', themeColor: '#047857', fontFamily: 'Lato', content: { logo: url, sections: [
     { type: 'features', data: { heading: 'Services', subheading: 'How we help', items: [{ title: 'Design', description: 'Accessible websites.' }] } },
     { type: 'contact', data: { heading: 'Visit us', subheading: 'Say hello', email: 'hello@example.com' } },
   ] } });
@@ -173,4 +173,37 @@ test('placeholder logo detection accepts mixed-case schemes and hosts but preser
   }
   const result = checkPagePreview({ slug: 'demo', title: 'Demo', content: { logo: 'https://appai.info/SPEC/examples/placeholder-logo.png' } });
   assert.ok(!result.warnings.some(w => /Replace demo/.test(w.message)));
+});
+
+test('preview warns on raw omitted styling even when schema supplies defaults', () => {
+  const base = { slug: 'styled', title: 'Styled', content: { logo: url } };
+  for (const missing of ['themeColor', 'fontFamily']) {
+    const body: Record<string, unknown> = { ...base, themeColor: '#047857', fontFamily: 'Lato' };
+    delete body[missing];
+    const result = checkPagePreview(body, [], { origin: 'https://preview.example' });
+    assert.equal(result.valid, true);
+    assert.deepEqual(result.errors, []);
+    assert.equal(result.warnings.length, 1);
+    assert.equal(result.warnings[0].path, missing);
+    assert.match(result.warnings[0].message, /defaults.*https:\/\/preview.example\/spec\/style/);
+  }
+  const result = checkPagePreview(base, [], { origin: undefined, exists: false });
+  assert.deepEqual(result.warnings.map(w => w.path), ['themeColor', 'fontFamily']);
+  assert.ok(result.warnings.every(w => w.message.includes('https://appai.info/spec/style')));
+});
+
+test('production preview context scopes style warnings to newly created pages', () => {
+  const body = { slug: 'styled', title: 'Styled', content: { logo: url } };
+  const origin = 'https://preview.example';
+  const styles = (input: typeof body & { parentSlug?: string }, exists: boolean) =>
+    checkPagePreview(input, [], { origin, exists }).warnings.filter(w => ['themeColor', 'fontFamily'].includes(w.path));
+  assert.deepEqual(styles(body, false).map(w => w.path), ['themeColor', 'fontFamily']);
+  assert.ok(styles(body, false).every(w => w.message.includes(`${origin}/spec/style`)));
+  assert.deepEqual(styles(body, true), []);
+  assert.deepEqual(styles({ ...body, parentSlug: 'root' }, false).map(w => w.path), ['fontFamily']);
+  assert.deepEqual(styles({ ...body, parentSlug: 'root' }, true), []);
+  const route = readFileSync(new URL('../src/app/api/v1/pages/preview/route.ts', import.meta.url), 'utf8');
+  assert.match(route, /checkPagePreview\(body, ICON_NAMES, \{ origin: request.nextUrl.origin, exists: !!existing \}\)/);
+  const publish = readFileSync(new URL('../src/app/api/v1/pages/route.ts', import.meta.url), 'utf8');
+  assert.match(publish, /if \(dryRun\) return previewPage\(request\)/);
 });

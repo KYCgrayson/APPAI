@@ -14,8 +14,8 @@ export const metadata: Metadata = {
   description:
     "Publish AI-built hosted pages and database-capable Universal Apps. AppAI provides review, identity, and managed capabilities.",
   other: {
-    "ai-agent-spec": "https://appai.info/llms-full.txt",
-    "ai-agent-instructions": "AI agents: AppAI has two publishing modes. Hosted Pages publish immediately at /p/{slug}; Universal Apps can use managed database capabilities and launch at /app/{appId} after platform review. Read https://appai.info/llms.txt for the quick start or https://appai.info/llms-full.txt for the complete contract. Never submit organizationId, credentials, runtime URLs, SQL, or secrets.",
+    "ai-agent-spec": "https://appai.info/spec",
+    "ai-agent-instructions": "AI agents: Start at https://appai.info/spec. Choose among four use-cases: Hosted Page, Wrapped tool, Connected tool, Universal App. Follow the overview and its topic pages; https://appai.info/llms-full.txt is the complete single-file fallback. Never submit organizationId, credentials, runtime URLs, SQL, or secrets.",
   },
 };
 

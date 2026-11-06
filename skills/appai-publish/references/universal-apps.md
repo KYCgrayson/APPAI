@@ -1,4 +1,4 @@
-# Universal Apps: immutable package publishing
+# Universal App: immutable package publishing
 
 Use this route for an application with its own UI/API, business rules,
 persistent Organization data, or private assets. It is not a Hosted Page.
@@ -31,8 +31,7 @@ the archive. Its id must equal `{appId}` in every endpoint path.
 
 ## Authenticate
 
-Start the AppAI device flow, present `verification_uri_complete` to the user,
-and poll the token endpoint until it returns an API key. Never ask a user to
+Start at [Overview](https://appai.info/spec). Use the [agent authorization flow](https://appai.info/spec/api#authentication): request a code. Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste. Poll the token endpoint until the agent receives the key. Never ask a user to
 paste an API key into an application form.
 
 ```text

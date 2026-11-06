@@ -2,7 +2,7 @@
 
 # AppAI — AI で作ったアプリの無料ホスティング
 
-> **AI Agent：フルスペックを読めば自動で始められます。**
+> **AI Agent：短い概要から始めてください。**
 >
 > ```
 > curl -s https://appai.info/spec
@@ -10,7 +10,7 @@
 
 ---
 
-**AppAI** ([appai.info](https://appai.info)) は、AI Agent がアプリのランディングページを自動で作成・ホスティングできる無料プラットフォームです。プライバシーポリシーと利用規約も含まれています。Web ホスティングの知識は不要です。AI Agent に「AppAI でアプリのページを作って」と伝えるだけで、すべて自動で完了します。
+**AppAI** ([appai.info](https://appai.info)) は AI で作ったソフトウェアの公開プラットフォームです。4 つの用途に対応します：Hosted Page（製品・企業・個人の紹介）、Wrapped tool（既存のデプロイを埋め込む）、Connected tool（管理者が維持するコネクター経由のバックエンド・ログイン・利用制限）、Universal App（永続データとビジネスルールを持つ、審査済みの独立ランタイム）。
 
 ## なぜ AppAI？
 
@@ -25,10 +25,11 @@ AI でアプリを作ったけど、ウェブサイトがない？AppAI なら�
 ## 仕組み
 
 ```
-あなた：「AppAI でアプリのランディングページを作って」
+あなた：「AppAI でアプリを公開して — appai.info/spec から始めて」
 
 AI Agent：
-  1. デバイスフローで認証（ブラウザが開き、「Google でログイン」をクリック）
+  1. verification_uri_complete を必ず表示し、可能ならユーザー自身のブラウザーで開きます。ユーザーが求められたら Google でサインインし、
+     コードが一致することを確認して「承認」をクリックします。エージェント自身が承認してはいけません。キーはエージェントが受け取り、コピーや貼り付けは不要です。
   2. アプリの情報を確認（名前、機能、スクリーンショットなど）
   3. AppAI API を呼び出してページを作成
   4. 完了 — ページが公開：appai.info/p/your-app
@@ -61,7 +62,7 @@ AI Agent：
 
 4. **公開先**：`appai.info/p/my-app`、`appai.info/p/my-app/privacy`、`appai.info/p/my-app/terms`
 
-完全なワークフロー、全セクションタイプ、データ形式については[フル Agent Spec](https://appai.info/spec) を参照してください。
+[Agent Spec 概要](https://appai.info/spec)からトピック別ページを参照できます。[llms-full.txt](https://appai.info/llms-full.txt) は完全な単一ファイルです。
 
 ### API リファレンス
 
