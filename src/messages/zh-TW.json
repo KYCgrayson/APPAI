@@ -115,6 +115,14 @@
     "confirm": "登出"
   },
   "deviceAuth": {
+    "requestedAt": "請求時間",
+    "expiresAt": "到期時間",
+    "grantAccount": "授予存取權限的帳戶",
+    "warning": "僅核准您自己發起的請求，例如您的 AI 代理程式向您顯示了此代碼。",
+    "approve": "核准",
+    "deny": "拒絕",
+    "deniedMessage": "已拒絕請求。您可以關閉此視窗。",
+    "invalidRequest": "此代碼不存在、已過期或已使用。",
     "invalidLink": "無效的連結",
     "missingCode": "缺少裝置代碼。請使用您的 Agent 提供的連結。",
     "authorizeDevice": "授權裝置",

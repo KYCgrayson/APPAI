@@ -115,6 +115,14 @@
     "confirm": "Sign out"
   },
   "deviceAuth": {
+    "requestedAt": "Requested at",
+    "expiresAt": "Expires at",
+    "grantAccount": "Grant access to account",
+    "warning": "Only approve if you started this request yourself, for example if your AI agent showed you this code.",
+    "approve": "Approve",
+    "deny": "Deny",
+    "deniedMessage": "Request denied. You can close this window.",
+    "invalidRequest": "This code is unknown, expired, or already used.",
     "invalidLink": "Invalid Link",
     "missingCode": "Missing device code. Please use the link provided by your agent.",
     "authorizeDevice": "Authorize Device",
