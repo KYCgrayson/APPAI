@@ -128,6 +128,14 @@
     "confirm": "ログアウト"
   },
   "deviceAuth": {
+    "requestedAt": "リクエスト日時",
+    "expiresAt": "有効期限",
+    "grantAccount": "アクセスを許可するアカウント",
+    "warning": "AIエージェントにこのコードを表示された場合など、ご自身で開始したリクエストのみ承認してください。",
+    "approve": "承認",
+    "deny": "拒否",
+    "deniedMessage": "リクエストを拒否しました。このウィンドウを閉じてください。",
+    "invalidRequest": "このコードは不明、有効期限切れ、または使用済みです。",
     "invalidLink": "無効なリンク",
     "missingCode": "デバイスコードがありません。エージェントから提供されたリンクを使用してください。",
     "authorizeDevice": "デバイスを認証",

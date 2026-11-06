@@ -2,18 +2,21 @@
 
 import { useSearchParams } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useTranslations } from "next-intl";
 
 function DeviceAuthContent() {
   const searchParams = useSearchParams();
   const code = searchParams.get("code");
   const { data: session, status: sessionStatus } = useSession();
-  const [state, setState] = useState<"loading" | "needLogin" | "approving" | "done" | "error">("loading");
+  const [state, setState] = useState<"loading" | "needLogin" | "ready" | "approving" | "denied" | "done" | "error">("loading");
+  const [info, setInfo] = useState<{ userCode: string; createdAt: string; expiresAt: string } | null>(null);
   const [error, setError] = useState("");
   const t = useTranslations("deviceAuth");
+  const decisionStarted = useRef(false);
 
   useEffect(() => {
+    if (decisionStarted.current) return;
     if (!code) {
       setState("error");
       setError(t("missingCode"));
@@ -27,35 +30,52 @@ function DeviceAuthContent() {
       return;
     }
 
-    // User is authenticated — auto-approve
-    if (sessionStatus === "authenticated" && state !== "done" && state !== "approving") {
-      approveDevice(code);
-    }
-  }, [code, sessionStatus]);
+    const controller = new AbortController();
+    setState("loading");
+    setInfo(null);
+    fetch(`/api/auth/device/lookup?code=${encodeURIComponent(code)}`, { signal: controller.signal, cache: "no-store" })
+      .then(async res => {
+        if (!res.ok) throw new Error(t("invalidRequest"));
+        return res.json();
+      })
+      .then(data => {
+        if (controller.signal.aborted || decisionStarted.current) return;
+        setInfo(data); setState("ready");
+      })
+      .catch(err => {
+        if (controller.signal.aborted || decisionStarted.current) return;
+        setError(err.message); setState("error");
+      });
+    return () => controller.abort();
+  }, [code, sessionStatus, session?.user?.email, t]);
 
-  async function approveDevice(userCode: string) {
+  async function handleDecision(action: "approve" | "deny") {
+    if (decisionStarted.current) return;
+    decisionStarted.current = true;
     setState("approving");
     try {
-      const res = await fetch("/api/auth/device/approve", {
+      const res = await fetch(`/api/auth/device/${action}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userCode }),
+        body: JSON.stringify({ userCode: code }),
       });
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Failed to approve device");
+        throw new Error(data.error || t("invalidRequest"));
       }
 
-      setState("done");
-    } catch (err: any) {
+      setState(action === "approve" ? "done" : "denied");
+    } catch (err: unknown) {
+      decisionStarted.current = false;
       setState("error");
-      setError(err.message);
+      setError(err instanceof Error ? err.message : t("invalidRequest"));
     }
   }
 
   function handleSignIn() {
-    signIn("google", { callbackUrl: `/auth/device?code=${code}` });
+    if (!code) return;
+    signIn("google", { callbackUrl: `/auth/device?code=${encodeURIComponent(code)}` });
   }
 
   if (!code) {
@@ -102,6 +122,23 @@ function DeviceAuthContent() {
             </button>
           </>
         )}
+
+        {state === "ready" && info && (
+          <div className="space-y-4 text-left">
+            <dl className="text-sm space-y-2">
+              <dt>{t("confirmationCode")}</dt><dd className="font-mono">{info.userCode}</dd>
+              <dt>{t("requestedAt")}</dt><dd>{new Date(info.createdAt).toLocaleString()}</dd>
+              <dt>{t("expiresAt")}</dt><dd>{new Date(info.expiresAt).toLocaleString()}</dd>
+              <dt>{t("grantAccount")}</dt><dd className="break-all">{session?.user?.email}</dd>
+            </dl>
+            <p className="p-3 bg-amber-50 text-amber-900 rounded" role="alert">{t("warning")}</p>
+            <div className="flex gap-3">
+              <button className="flex-1 bg-black text-white rounded p-3" onClick={() => handleDecision("approve")}>{t("approve")}</button>
+              <button className="flex-1 border rounded p-3" onClick={() => handleDecision("deny")}>{t("deny")}</button>
+            </div>
+          </div>
+        )}
+        {state === "denied" && <p role="status">{t("deniedMessage")}</p>}
 
         {state === "approving" && (
           <div className="flex flex-col items-center gap-3">

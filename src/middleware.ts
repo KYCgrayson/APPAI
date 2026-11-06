@@ -61,8 +61,13 @@ const rules: RateLimitRule[] = [
     windowMs: 60_000,
   },
   {
-    match: (p) => p === "/api/auth/device/approve",
+    match: (p) => (p === "/api/auth/device/approve" || p === "/api/auth/device/deny"),
     limit: 10,
+    windowMs: 60_000,
+  },
+  {
+    match: (p) => p === "/api/auth/device/lookup",
+    limit: 20,
     windowMs: 60_000,
   },
   {

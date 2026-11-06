@@ -128,6 +128,14 @@
     "confirm": "Cerrar sesión"
   },
   "deviceAuth": {
+    "requestedAt": "Fecha de solicitud",
+    "expiresAt": "Fecha de caducidad",
+    "grantAccount": "Conceder acceso a la cuenta",
+    "warning": "Aprueba solo si tú iniciaste esta solicitud, por ejemplo, si tu agente de IA te mostró este código.",
+    "approve": "Aprobar",
+    "deny": "Denegar",
+    "deniedMessage": "Solicitud denegada. Puedes cerrar esta ventana.",
+    "invalidRequest": "Este código es desconocido, ha caducado o ya se ha utilizado.",
     "invalidLink": "Enlace inválido",
     "missingCode": "Falta el código del dispositivo. Usa el enlace proporcionado por tu agente.",
     "authorizeDevice": "Autorizar dispositivo",

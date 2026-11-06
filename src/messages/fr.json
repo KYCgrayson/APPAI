@@ -128,6 +128,14 @@
     "confirm": "Se déconnecter"
   },
   "deviceAuth": {
+    "requestedAt": "Date de la demande",
+    "expiresAt": "Expiration",
+    "grantAccount": "Accorder l’accès au compte",
+    "warning": "N’approuvez que si vous avez vous-même lancé cette demande, par exemple si votre agent IA vous a montré ce code.",
+    "approve": "Approuver",
+    "deny": "Refuser",
+    "deniedMessage": "Demande refusée. Vous pouvez fermer cette fenêtre.",
+    "invalidRequest": "Ce code est inconnu, expiré ou déjà utilisé.",
     "invalidLink": "Lien invalide",
     "missingCode": "Code d'appareil manquant. Veuillez utiliser le lien fourni par votre agent.",
     "authorizeDevice": "Autoriser l'appareil",
