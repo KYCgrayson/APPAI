@@ -115,6 +115,14 @@
     "confirm": "Abmelden"
   },
   "deviceAuth": {
+    "requestedAt": "Angefordert am",
+    "expiresAt": "Läuft ab am",
+    "grantAccount": "Zugriff auf dieses Konto gewähren",
+    "warning": "Genehmigen Sie nur Anfragen, die Sie selbst gestartet haben, etwa wenn Ihr KI-Agent Ihnen diesen Code gezeigt hat.",
+    "approve": "Genehmigen",
+    "deny": "Ablehnen",
+    "deniedMessage": "Anfrage abgelehnt. Sie können dieses Fenster schließen.",
+    "invalidRequest": "Dieser Code ist unbekannt, abgelaufen oder bereits verwendet.",
     "invalidLink": "Ungültiger Link",
     "missingCode": "Gerätecode fehlt. Bitte verwende den von deinem Agenten bereitgestellten Link.",
     "authorizeDevice": "Gerät autorisieren",

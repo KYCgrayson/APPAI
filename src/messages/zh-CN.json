@@ -115,6 +115,14 @@
     "confirm": "退出登录"
   },
   "deviceAuth": {
+    "requestedAt": "请求时间",
+    "expiresAt": "到期时间",
+    "grantAccount": "授予访问权限的账户",
+    "warning": "仅批准您自己发起的请求，例如您的 AI 智能体向您显示了此代码。",
+    "approve": "批准",
+    "deny": "拒绝",
+    "deniedMessage": "请求已拒绝。您可以关闭此窗口。",
+    "invalidRequest": "此代码不存在、已过期或已被使用。",
     "invalidLink": "无效链接",
     "missingCode": "缺少设备代码。请使用 Agent 提供的链接。",
     "authorizeDevice": "授权设备",
