@@ -191,7 +191,7 @@ of these values in a public environment variable.
 ## What you can build
 
 - 29 section types: profile-header, project-cards, entries, hero, features, pricing, faq, download, testimonials, gallery, team, video, screenshots, stats, contact, cta, links, about, schedule, sponsors, action, form, media-downloader, video-subtitle, tool, pdf-viewer, embed (TikTok/Loom/X/YouTube/Vimeo/Spotify/CodePen/Figma), simple-order
-- Multi-page sites with automatic header navigation (root page + child pages like /faq, /contact, /privacy)
+- Multi-page sites with automatic header navigation (root page + child pages like /p/my-app/my-app-faq, /p/my-app/my-app-contact, /p/my-app/my-app-delete-account; prefix child slugs with the root slug because (slug, locale) is globally unique; privacy/terms use privacyPolicy/termsOfService fields)
 - Contact and account-deletion forms that work on any device
 - Markdown-formatted long text (bold, italic, links, lists)
 - 3 icon options per section: Ionicons names, emoji, or image URLs

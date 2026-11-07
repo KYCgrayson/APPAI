@@ -57,7 +57,8 @@ test('each preset is a copyable, clean full POST body matching its served file',
     assert.equal(checkPagePreview(file).valid, true, preset.id);
     const data = createPageSchema.parse(file);
     assert.ok(data.isPublished);
-    assert.ok(data.content.sections.length >= 3 && data.content.sections.length <= 6);
+    if (['profile', 'link-in-bio', 'portfolio', 'iframe-tool'].includes(preset.id)) assert.ok(!data.content.sections.some((section: { type: string }) => section.type === 'cta'));
+    assert.ok(data.content.sections.length >= 2 && data.content.sections.length <= 6);
     for (const section of data.content.sections) assert.ok(SECTION_DEFS.some(def => def.type === section.type));
     assert.deepEqual(pageLogoWarnings(data), []);
     const warnings: Parameters<typeof sanitizeContent>[2] = [];

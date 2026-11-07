@@ -42,7 +42,7 @@ Every section supports optional `backgroundColor` (hex) and `id` (anchor for `#l
 | [`pricing`](https://appai.info/spec/sections#pricing) | Pricing comparison cards. 3 tiers recommended. Supports `highlighted` flag. |
 | [`testimonials`](https://appai.info/spec/sections#testimonials) | User quote cards with name, role, avatar. |
 | [`faq`](https://appai.info/spec/sections#faq) | Expandable Q&A accordion. 5-10 items recommended. Auto-generates FAQ schema for SEO. |
-| [`cta`](https://appai.info/spec/sections#cta) | Bold call-to-action banner. Uses themeColor as background automatically. Place near bottom. |
+| [`cta`](https://appai.info/spec/sections#cta) | Bold call-to-action banner. Uses themeColor as background automatically. Use only on landing-type pages, near bottom. |
 | [`video`](https://appai.info/spec/sections#video) | Embedded video. Supports YouTube, Vimeo, mp4, webm, gif (auto-detected). |
 | [`screenshots`](https://appai.info/spec/sections#screenshots) | Horizontal scrollable image carousel. |
 | [`download`](https://appai.info/spec/sections#download) | App Store / Play Store download buttons. Also adds a Download button to the sticky header. |
@@ -84,7 +84,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 |---|---|
 | **Personal website / portfolio of a person** | template `PERSON` only for the person’s own root page, never project pages; `profile-header` + `project-cards` + `entries`. |
 | **Landing page for an app/product** | Hero + features + pricing + testimonials + faq + cta. Standard SaaS template. |
-| **Host a vibe-coded tool** | Hero (short tagline) + `iframe-tool` (the tool itself) + 1-2 supporting sections (about / faq / cta). The tool is the page. |
+| **Host a vibe-coded tool** | Hero (short tagline) + `iframe-tool` (the tool itself) + 1-2 supporting sections (about / faq). The tool is the page. |
 
 For personal sites, upload images via [`POST /api/v1/upload`](https://appai.info/spec/api#upload-images) first; publish each project as its own `/p/` page (or link the product’s own site) and link to it; never invent experience, numbers or contact details.
 
@@ -94,14 +94,14 @@ their own tool, it is `iframe-tool`. `embed` is for media posts (TikTok/YouTube)
 `tool` is for form-input → backend API.
 
 ### Person site recipe
-Project pages use `template: "PRODUCT_SHOWCASE"` (or `APP_LANDING` for an app with downloads), never `PERSON`; `PERSON` is only for the person’s own root page. Publish projects as **child pages** (`parentSlug` = person slug): `/p/jordan-example/jordan-sample-notes` (ja: `/p/jordan-example/ja/jordan-sample-notes`). Slugs are globally unique per locale, children included; prefix child slugs with the parent slug. Children and locale variants do not count toward the free plan's 3-root limit. A project with its own product site can link there instead.
+Project pages use `template: "PRODUCT_SHOWCASE"` (or `APP_LANDING` for an app with downloads), never `PERSON`; `PERSON` is only for the person’s own root page. Publish projects as **child pages** (`parentSlug` = person slug): `/p/jordan-example/jordan-example-sample-notes` (zh-TW: `/p/jordan-example/zh-TW/jordan-example-sample-notes`). Slugs are globally unique per locale, children included; prefix child slugs with the parent slug. Children and locale variants do not count toward the free plan's 3-root limit. A project with its own product site can link there instead.
 ```json
-{"slug":"jordan-example","template":"PERSON","title":"Jordan Example","isPublished":true,"content":{"sections":[{"type":"profile-header","order":0,"data":{"name":"Jordan Example"}},{"type":"project-cards","order":1,"data":{"items":[{"name":"Sample Notes","links":[{"label":"Details","url":"/p/jordan-example/jordan-sample-notes"}]}]}},{"type":"entries","order":2,"data":{"items":[{"title":"Focus","description":"Small useful tools."}]}}]}}
-{"slug":"jordan-sample-notes","parentSlug":"jordan-example","template":"PRODUCT_SHOWCASE","title":"Sample Notes","isPublished":true,"content":{"sections":[{"type":"profile-header","order":0,"data":{"name":"Sample Notes","eyebrow":"Notes","avatar":{"url":"https://example.com/icon.png","alt":""},"links":[{"label":"Website","url":"https://example.com"}]}},{"type":"screenshots","order":1,"data":{"images":[{"url":"https://example.com/screen.png","alt":"Notes screen","kind":"web"}]}}]}}
+{"slug":"jordan-example","template":"PERSON","title":"Jordan Example","isPublished":true,"content":{"sections":[{"type":"profile-header","order":0,"data":{"name":"Jordan Example"}},{"type":"project-cards","order":1,"data":{"items":[{"name":"Sample Notes","links":[{"label":"Details","url":"/p/jordan-example/jordan-example-sample-notes"}]}]}},{"type":"entries","order":2,"data":{"items":[{"title":"Focus","description":"Small useful tools."}]}}]}}
+{"slug":"jordan-example-sample-notes","parentSlug":"jordan-example","template":"PRODUCT_SHOWCASE","title":"Sample Notes","isPublished":true,"content":{"sections":[{"type":"profile-header","order":0,"data":{"name":"Sample Notes","eyebrow":"Notes","avatar":{"url":"https://example.com/icon.png","alt":""},"links":[{"label":"Website","url":"https://example.com"}]}},{"type":"screenshots","order":1,"data":{"images":[{"url":"https://example.com/screen.png","alt":"Notes screen","kind":"web"}]}}]}}
 ```
 Send each object separately; set `locale` for each variant. Project shape: profile-header (project h1, icon as avatar, category as eyebrow, links) + screenshots (omit when absent) + optional entries; avoid repeating the project in project-cards.
-Data uses `{slug, page?: {themeColor, fontFamily}, locales: {en: {title?, metaDescription?, sections: [...]}}}`; section array order is preserved and `id` becomes `data.id`.
-Project cards can use existing links or `page: {slug, as: "child"|"root", linkLabel, template?, entries?}`; roots count toward the plan limit. Only `avatar`/`icon`/`screenshot` object `url`s and `images` array strings or `{url}` items [upload once](https://appai.info/spec/api#upload-images): relative .png/.jpg/.jpeg/.gif/.webp/.svg paths must resolve inside the real data directory; absolute paths, .env* segments and symlink escapes are refused, and links pass through. `page` allows only themeColor/fontFamily/darkMode; locales need sections arrays and project-cards need items arrays; first locale is default. Compute every locale's root and project URLs first: roots `/p/{root}[/{locale}]`, child projects `/p/{root}[/{locale}]/{slug}`, root-type projects `/p/{slug}[/{locale}]`. Publish complete, published person root locale variants with those card links, then child projects, then root-type projects, all with `?upsert=true`; no unpublished intermediate state or second pass. [Dry-run preview](https://appai.info/spec/api#preview-without-saving) does not check parents, so its order does not matter.
+Data uses `{slug, page?: {themeColor, themeColorSecondary, fontFamily, darkMode}, locales: {en: {title?, metaDescription?, fontFamily?, sections: [...]}}}`; section array order is preserved and `id` becomes `data.id`.
+Project cards can use existing links or `page: {slug, as: "child"|"root", linkLabel, template?, entries?}`; roots count toward the plan limit. Only `avatar`/`icon`/`screenshot` object `url`s and `images` array strings or `{url}` items [upload once](https://appai.info/spec/api#upload-images): relative .png/.jpg/.jpeg/.gif/.webp/.svg paths must resolve inside the real data directory; absolute paths, .env* segments and symlink escapes are refused, and links pass through. `page` allows only themeColor/themeColorSecondary/fontFamily/darkMode; each locale may override fontFamily, defaulting to Noto Sans TC for zh-TW, Noto Sans SC for zh-CN, and page.fontFamily otherwise (for root, child and root-type project payloads); themeColor/themeColorSecondary/darkMode stay identical; locales need sections arrays and project-cards need items arrays; publish en first (default), then zh-TW, zh-CN and es. Compute every locale's root and project URLs first: roots `/p/{root}[/{locale}]`, child projects `/p/{root}[/{locale}]/{slug}`, root-type projects `/p/{slug}[/{locale}]`. Publish complete, published person root locale variants with those card links, then child projects, then root-type projects, all with `?upsert=true`; no unpublished intermediate state or second pass. [Dry-run preview](https://appai.info/spec/api#preview-without-saving) does not check parents, so its order does not matter.
 Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/publish-person-site.mjs), with [fictional input](https://appai.info/spec/examples/person-site.example.json); [placeholder.svg](https://appai.info/spec/examples/placeholder.svg) and [placeholder-screen.svg](https://appai.info/spec/examples/placeholder-screen.svg) are included; [`--dry-run`](https://appai.info/spec/api#preview-without-saving) uploads images and validates every payload without publishing pages.
 
 ### What to decide yourself (do NOT ask the user)
@@ -109,7 +109,7 @@ Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/pub
 - Languages: always publish the four default locales — English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Other languages are asked about; see [When to ask the user](https://appai.info/spec/pages#when-to-ask-the-user).
 - Which template/sections to use (infer from the product type)
 - themeColor (copy together with themeColorSecondary, fontFamily (Chinese variants: Noto Sans TC/SC) and darkMode from a kit in [Style & logo](https://appai.info/spec/style))
-- Section ordering for landing-type pages: hero → stats → features → pricing → testimonials → faq → cta, omitting unsupported sections. Content/card walls, link-in-bio, portfolio and PERSON pages follow their content needs and may omit cta.
+- Section ordering for landing-type pages: hero → stats → features → pricing → testimonials → faq → cta, omitting unsupported sections. Use `cta` only on landing-type pages: app, product, SaaS, company/service, event and hiring. Do not add it to PERSON/profile, link-in-bio, portfolio, card-wall or wrapped-tool pages.
 - Privacy policy and terms of service (generate them using the product name + contact email)
 - darkMode (use the same style kit)
 - fontFamily: Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants.
@@ -129,7 +129,7 @@ Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/pub
 - **NEVER** ask for 10 pieces of information before building. Build first, iterate after.
 - Headlines under 60 characters, subheadlines under 140 characters (mobile readability)
 - 5-8 sections per page maximum (landing pages; PERSON pages: see recipe). A focused page beats a comprehensive one.
-- Include a `cta` section near the bottom of landing-type pages: app, product, SaaS, company/service, event and hiring landing pages. Content walls / card walls, link-in-bio, portfolio and PERSON pages may omit `cta`; wrapped-tool pages may use it when helpful. All ten current presets include `cta` as a starting point, including presets where it is optional.
+- Use `cta` only on landing-type pages: app, product, SaaS, company/service, event and hiring. Do not add it to PERSON/profile, link-in-bio, portfolio, card-wall or wrapped-tool pages.
 - Logos: every root page should supply a square 512x512 PNG with its own background; see [Logo](https://appai.info/spec/style#logo).
 - Images: hero backgrounds under 500KB, use WebP/JPEG.
 
@@ -166,7 +166,7 @@ curl -X POST https://appai.info/api/v1/pages \
 | `canonicalUrl` | No | Full URL of the app's main site. Sends SEO credit there instead of appai.info, and marks the page as a satellite landing: header shows "Official site: {host}", footer becomes "Landing page · Hosted on AppAI · {host}", `/apps` directory card gets a "Landing page" tag. Set this whenever the app already has a primary website. |
 | `isPublished` | No | Set `true` to publish immediately |
 | `parentSlug` | No | Root slug for a child page (same 2–100 character slug rules); omitted/null creates a root |
-| `hideFromNav` | No | `true` to keep the page off the auto-generated site nav (still reachable by URL). Use for Privacy, Terms, or compliance-only pages already linked from the footer. |
+| `hideFromNav` | No | `true` to keep the page off the auto-generated site nav (still reachable by URL). Use for Delete Account, or compliance-only pages already linked from the footer. |
 | `navOrder` | No | Integer. Controls nav ordering; smaller numbers appear first. Nulls sort last by `createdAt`. |
 | `category` | No | For app listing: `WRITING`, `CODING`, `DESIGN`, `AUTOMATION`, `PRODUCTIVITY`, `SOCIAL`, `FINANCE`, `HEALTH`, `EDUCATION`, `FOOD`, `TRAVEL`, `ENTERTAINMENT`, `GAMES`, `MEDIA`, `UTILITIES`, `COMMERCE`, `OTHER` |
 
@@ -180,11 +180,11 @@ Generate privacy policy and terms of service automatically — any LLM can produ
 
 The canonical compliance setup:
 - Root: marketing landing page
-- Child `faq`: product FAQ
-- Child `contact`: contact form (`"submitTo": "mailto:support@app.com"`)
+- Child `my-app-faq`: product FAQ
+- Child `my-app-contact`: contact form (`"submitTo": "mailto:support@app.com"`)
 - Root variant `privacyPolicy`: translated privacy policy
 - Root variant `termsOfService`: translated terms of service
-- Child `delete-account`: account deletion form
+- Child `my-app-delete-account`: account deletion form
 
 ---
 
@@ -216,5 +216,7 @@ Moved to [Icons](https://appai.info/spec/sections#icons).
 ## Section Reference
 
 Moved to [Section Reference](https://appai.info/spec/sections#section-reference).
+
+Prefix every child slug with its root slug because `(slug, locale)` is unique across the whole platform; an unprefixed `contact` can collide with another user’s page.
 
 All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)

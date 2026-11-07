@@ -66,7 +66,7 @@
     "agentFallback": "llms-full.txt — पूरी स्पेक एक ही फ़ाइल में पढ़ने का वैकल्पिक रास्ता",
     "agentSkillTitle": "वैकल्पिक शॉर्टकट: Claude Code स्किल",
     "agentSkillDesc": "डिज़ाइन मार्गदर्शन और डिवाइस अनुमति प्रक्रिया के लिए आधिकारिक AppAI स्किल इंस्टॉल करें। मौजूदा सेक्शन स्कीमा के लिए यह GET /api/v1/sections की ओर निर्देशित करती है।",
-    "agentAppFlow": "Universal App: ऐप की रूट डायरेक्टरी में appai.app.json जोड़ें, POST /api/v1/apps/your-app/releases भेजें और PENDING रसीद व releaseId संभालकर रखें। GET /api/v1/apps/your-app/releases/releaseId को पोल करें; appai.info/app/your-app पर लॉन्च से पहले AppAI समीक्षा, बिल्ड और स्वीकृत क्षमताओं की व्यवस्था करता है।",
+    "agentAppFlow": "Universal App: ऐप की रूट डायरेक्टरी में appai.app.json जोड़ें। पहले निजी अपलोड अनुमति के लिए POST /api/v1/apps/your-app/release-packages करें, पैकेज अपलोड करें, फिर स्रोत पैकेज के साथ POST /api/v1/apps/your-app/releases करें। PENDING रसीद और releaseId रखें। GET /api/v1/apps/your-app/releases/releaseId से स्थिति जाँचें; appai.info/app/your-app पर लॉन्च से पहले AppAI समीक्षा, बिल्ड और स्वीकृत सुविधाओं की व्यवस्था करता है।",
     "agentAppSafety": "Universal App में घोषणात्मक जानकारी भेजी जाती है। organizationId, क्रेडेंशियल, रनटाइम URL, SQL या गोपनीय जानकारी कभी न भेजें। AppAI समीक्षा के बाद ही सीमित दायरे की पहचान और स्वीकृत क्षमताएं देता है।",
     "agentReadCommands": "curl -s https://appai.info/spec\ncurl -s https://appai.info/llms-full.txt",
     "agentSkillCommands": "/plugin marketplace add KYCgrayson/appai-skill\n/plugin install appai-publish@appai-skill"

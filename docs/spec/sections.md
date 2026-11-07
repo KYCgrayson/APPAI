@@ -33,7 +33,7 @@ Required: `name`; avatar requires `url`, `alt`; links require `label`, `url`; na
 
 Use for a card wall or summary wall: a responsive grid of items, each with a name and optional short description, image/icon and links.
 ```json
-{"type":"project-cards","order":1,"data":{"id":"work","heading":"Selected work","eyebrow":"Tools","items":[{"name":"Sample Notes","category":"Notes","description":"A fictional notebook.","icon":{"url":"https://example.com/icon.png","alt":""},"monogram":"SN","screenshot":{"url":"https://example.com/screen.png","alt":"Notes screen","kind":"web","width":1440,"height":900},"links":[{"label":"Details","url":"/p/jordan-example/jordan-sample-notes"}]}]}}
+{"type":"project-cards","order":1,"data":{"id":"work","heading":"Selected work","eyebrow":"Tools","items":[{"name":"Sample Notes","category":"Notes","description":"A fictional notebook.","icon":{"url":"https://example.com/icon.png","alt":""},"monogram":"SN","screenshot":{"url":"https://example.com/screen.png","alt":"Notes screen","kind":"web","width":1440,"height":900},"links":[{"label":"Details","url":"/p/jordan-example/jordan-example-sample-notes"}]}]}}
 ```
 Required: each item's `name`; image objects require `url`, `alt`; screenshot requires `kind`: `phone|web`, optional positive `width`/`height` in px; monogram 1–2 characters; links follow profile-header rules. Icon, monogram, screenshot and links may all be omitted.
 
@@ -182,7 +182,7 @@ Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
 
 ### cta
 
-Include a `cta` section near the bottom of landing-type pages: app, product, SaaS, company/service, event and hiring landing pages. Content walls / card walls, link-in-bio, portfolio and PERSON pages may omit `cta`; wrapped-tool pages may use it when helpful. All ten current presets include `cta` as a starting point, including presets where it is optional.
+Use `cta` only on landing-type pages: app, product, SaaS, company/service, event and hiring. Do not add it to PERSON/profile, link-in-bio, portfolio, card-wall or wrapped-tool pages.
 ```json
 { "type": "cta", "order": 15, "data": {
     "headline": "Ready to start?",

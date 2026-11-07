@@ -43,16 +43,6 @@
           ],
           "backgroundColor": "#ECFDF5"
         }
-      },
-      {
-        "order": 2,
-        "type": "cta",
-        "data": {
-          "headline": "Discuss a commission",
-          "subheadline": "Thoughtful identities for growing ideas.",
-          "buttonText": "Discuss a commission",
-          "buttonUrl": "https://example.com/portfolio"
-        }
       }
     ]
   },

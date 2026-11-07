@@ -66,7 +66,7 @@
     "agentFallback": "llms-full.txt — 전체 명세를 단일 파일로 읽는 대체 경로",
     "agentSkillTitle": "선택 사항: Claude Code 스킬",
     "agentSkillDesc": "공식 AppAI 스킬을 설치하면 디자인 지침과 기기 인증 흐름을 이용할 수 있습니다. 최신 섹션 스키마는 GET /api/v1/sections를 참조하도록 안내합니다.",
-    "agentAppFlow": "Universal App: 앱 루트에 appai.app.json을 추가하고 POST /api/v1/apps/your-app/releases로 제출하세요. PENDING 접수 정보와 releaseId를 보관하고 GET /api/v1/apps/your-app/releases/releaseId를 폴링하세요. AppAI가 검토, 빌드, 승인된 기능 준비를 마친 뒤 appai.info/app/your-app에서 실행됩니다.",
+    "agentAppFlow": "Universal App: 앱 루트에 appai.app.json을 추가하세요. 먼저 POST /api/v1/apps/your-app/release-packages로 비공개 업로드 권한을 받고 패키지를 업로드한 다음, 소스 패키지를 포함하여 POST /api/v1/apps/your-app/releases를 요청하세요. PENDING 접수 결과와 releaseId를 보관하고 GET /api/v1/apps/your-app/releases/releaseId로 상태를 확인하세요. AppAI가 검토, 빌드 및 승인된 기능 구성을 마친 후 appai.info/app/your-app에서 출시됩니다.",
     "agentAppSafety": "Universal App은 선언형 방식으로 제출합니다. organizationId, 자격 증명, 런타임 URL, SQL 또는 비밀 정보를 보내지 마세요. AppAI는 검토 후에만 범위가 지정된 신원 정보와 승인된 기능을 제공합니다.",
     "agentReadCommands": "curl -s https://appai.info/spec\ncurl -s https://appai.info/llms-full.txt",
     "agentSkillCommands": "/plugin marketplace add KYCgrayson/appai-skill\n/plugin install appai-publish@appai-skill"

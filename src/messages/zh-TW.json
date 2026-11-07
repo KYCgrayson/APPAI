@@ -66,7 +66,7 @@
     "agentFallback": "llms-full.txt — 需要完整單一檔案規格時的備用入口",
     "agentSkillTitle": "選用捷徑：Claude Code 技能",
     "agentSkillDesc": "安裝 AppAI 官方技能，取得設計指引及裝置授權流程。技能會指引代理透過 GET /api/v1/sections 取得最新區塊結構。",
-    "agentAppFlow": "Universal App：在應用程式根目錄加入 appai.app.json，透過 POST /api/v1/apps/your-app/releases 提交，並保存 PENDING 回執與 releaseId。輪詢 GET /api/v1/apps/your-app/releases/releaseId；AppAI 完成審核、建置與已核准能力的配置後，應用程式才會在 appai.info/app/your-app 上線。",
+    "agentAppFlow": "Universal App：在應用程式根目錄加入 appai.app.json。先 POST /api/v1/apps/your-app/release-packages 取得私人上傳授權，上傳套件，再 POST /api/v1/apps/your-app/releases 並附上來源套件。保留 PENDING 收據與 releaseId，輪詢 GET /api/v1/apps/your-app/releases/releaseId；AppAI 完成審核、建置及核准功能的配置後，才會在 appai.info/app/your-app 上線。",
     "agentAppSafety": "Universal App 採宣告式提交。請勿傳送 organizationId、憑證、執行環境 URL、SQL 或機密資訊。AppAI 僅在審核後提供限定範圍的身分資訊與已核准的能力。",
     "agentReadCommands": "curl -s https://appai.info/spec\ncurl -s https://appai.info/llms-full.txt",
     "agentSkillCommands": "/plugin marketplace add KYCgrayson/appai-skill\n/plugin install appai-publish@appai-skill"

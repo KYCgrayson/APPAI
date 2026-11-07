@@ -66,7 +66,7 @@
     "agentFallback": "llms-full.txt — alternativa con la especificación completa en un solo archivo",
     "agentSkillTitle": "Atajo opcional: skill de Claude Code",
     "agentSkillDesc": "Instala la habilidad oficial de AppAI para obtener orientación de diseño y el flujo de autorización de dispositivos. Remite a GET /api/v1/sections para consultar los esquemas actuales de las secciones.",
-    "agentAppFlow": "Universal App: añade appai.app.json en la raíz de la aplicación, envía POST /api/v1/apps/your-app/releases y guarda el recibo PENDING y el releaseId. Consulta periódicamente GET /api/v1/apps/your-app/releases/releaseId; AppAI revisa, compila y prepara las capacidades aprobadas antes del lanzamiento en appai.info/app/your-app.",
+    "agentAppFlow": "Universal App: añade appai.app.json en la raíz de la aplicación. Primero POST /api/v1/apps/your-app/release-packages para obtener una autorización de carga privada, sube el paquete y luego POST /api/v1/apps/your-app/releases con el paquete de origen. Conserva el recibo PENDING y releaseId. Consulta GET /api/v1/apps/your-app/releases/releaseId; AppAI revisa, compila y configura las capacidades aprobadas antes del lanzamiento en appai.info/app/your-app.",
     "agentAppSafety": "Las solicitudes de Universal App son declarativas. Nunca envíes organizationId, credenciales, URL de ejecución, SQL ni secretos. AppAI proporciona identidad limitada al ámbito autorizado y capacidades aprobadas solo después de la revisión.",
     "agentReadCommands": "curl -s https://appai.info/spec\ncurl -s https://appai.info/llms-full.txt",
     "agentSkillCommands": "/plugin marketplace add KYCgrayson/appai-skill\n/plugin install appai-publish@appai-skill"

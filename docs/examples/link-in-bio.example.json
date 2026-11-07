@@ -43,16 +43,6 @@
           ],
           "backgroundColor": "#292524"
         }
-      },
-      {
-        "order": 2,
-        "type": "cta",
-        "data": {
-          "headline": "Read the journal",
-          "subheadline": "Find our latest work, notes, and experiments.",
-          "buttonText": "Read the journal",
-          "buttonUrl": "https://example.com/link-in-bio"
-        }
       }
     ]
   },

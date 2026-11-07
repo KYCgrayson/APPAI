@@ -32,16 +32,6 @@
           "text": "Nova Finch brings a thoughtful approach to the details that matter. Explore the overview, then visit our site to learn more.",
           "backgroundColor": "#F0F9FF"
         }
-      },
-      {
-        "order": 2,
-        "type": "cta",
-        "data": {
-          "headline": "Start a conversation",
-          "subheadline": "Fictional designer exploring useful everyday tools.",
-          "buttonText": "Start a conversation",
-          "buttonUrl": "https://example.com/profile"
-        }
       }
     ]
   },

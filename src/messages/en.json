@@ -66,7 +66,7 @@
     "agentFallback": "llms-full.txt — complete single-file fallback",
     "agentSkillTitle": "Optional shortcut: Claude Code skill",
     "agentSkillDesc": "Install the official AppAI skill for design guidance and the device authorization flow. It points to GET /api/v1/sections for current section schemas.",
-    "agentAppFlow": "Universal App: add appai.app.json at the app root, submit POST /api/v1/apps/your-app/releases, and keep the PENDING receipt and releaseId. Poll GET /api/v1/apps/your-app/releases/releaseId; AppAI reviews, builds and provisions approved capabilities before launch at appai.info/app/your-app.",
+    "agentAppFlow": "Universal App: add appai.app.json at the app root. POST /api/v1/apps/your-app/release-packages for a private upload intent, upload the package, then POST /api/v1/apps/your-app/releases with the source package. Keep the PENDING receipt and releaseId. Poll GET /api/v1/apps/your-app/releases/releaseId; AppAI reviews, builds and provisions approved capabilities before launch at appai.info/app/your-app.",
     "agentAppSafety": "Universal App submissions are declarative. Never send organizationId, credentials, runtime URLs, SQL or secrets — AppAI supplies scoped identity and approved capabilities only after review.",
     "agentReadCommands": "curl -s https://appai.info/spec\ncurl -s https://appai.info/llms-full.txt",
     "agentSkillCommands": "/plugin marketplace add KYCgrayson/appai-skill\n/plugin install appai-publish@appai-skill"

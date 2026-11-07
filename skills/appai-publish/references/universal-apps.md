@@ -87,7 +87,11 @@ import { createHash } from "node:crypto";
 import { put } from "@vercel/blob/client";
 
 const baseUrl = "https://appai.info";
-const appId = "inventory";
+const manifest = JSON.parse(await readFile("appai.app.json", "utf8"));
+const appId = manifest.id;
+const tagline = "Track stock across your organization";
+const description = "A database-backed inventory workflow for teams.";
+const category = "INVENTORY";
 const apiKey = process.env.APPAI_API_KEY!;
 const archive = await readFile("appai-release.tar.gz");
 const intent = await fetch(`${baseUrl}/api/v1/apps/${appId}/release-packages`, {
