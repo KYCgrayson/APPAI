@@ -674,3 +674,23 @@ model UsageEvent {
   @@index([connector, createdAt])
   @@index([connector, organizationId, createdAt])
 }
+
+model Feedback {
+  id String @id @default(cuid())
+  createdAt DateTime @default(now())
+  source String
+  kind String
+  message String @db.VarChar(4000)
+  pageSlug String?
+  specUrl String?
+  contactEmail String
+  organizationId String?
+  userId String?
+  apiKeyId String?
+  ipHash String?
+  userAgent String?
+  status String @default("new")
+
+  @@index([apiKeyId, createdAt])
+  @@index([createdAt])
+}

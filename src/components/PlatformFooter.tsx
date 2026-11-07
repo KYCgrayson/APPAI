@@ -21,9 +21,9 @@ export async function PlatformFooter() {
           <a href="https://github.com/KYCgrayson/APPAI" target="_blank" className="hover:text-gray-300 transition-colors">
             {t("github")}
           </a>
-          <a href="https://github.com/KYCgrayson/APPAI/issues" target="_blank" className="hover:text-gray-300 transition-colors">
+          <Link href="/feedback" className="hover:text-gray-300 transition-colors">
             {t("feedback")}
-          </a>
+          </Link>
           <a href="/dashboard" className="hover:text-gray-300 transition-colors">
             {t("dashboard")}
           </a>
