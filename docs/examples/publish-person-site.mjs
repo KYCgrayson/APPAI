@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-/* Node 18+. Usage: node publish-person-site.mjs data.json [--dry-run]; page allows themeColor/fontFamily/darkMode; locales require sections and project-cards require items.
- * Only avatar/icon/screenshot.url and images items upload relative PNG/JPEG/GIF/WebP/SVG files contained in the real data directory; absolute, .env* segments and symlink escapes are refused; links pass through. */
+/* Node 18+. Usage: node publish-person-site.mjs data.json [--dry-run]; page allows themeColor/themeColorSecondary/fontFamily/darkMode; publish en first, then zh-TW, zh-CN and es; locale fontFamily overrides the kit (Chinese defaults: Noto Sans TC/SC); locales require sections and project-cards require items.
+ * --dry-run replaces relative images with HTTPS placeholders and only calls preview; it never uploads or saves.
+ * Root logo and avatar/icon/screenshot.url and images items upload relative PNG/JPEG/GIF/WebP/SVG files contained in the real data directory; absolute, .env* segments and symlink escapes are refused; links pass through. */
 import { readFile, realpath } from 'node:fs/promises';
 import { resolve, dirname, extname, basename, isAbsolute, relative, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -71,7 +72,7 @@ export async function uploadTree(value, directory, upload = uploadUrl, imageItem
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 export function validateData(data) {
   if (!object(data)) throw new Error('Data must be an object.');
-  if (data.page !== undefined && (!object(data.page) || Object.keys(data.page).some(key => !['themeColor', 'fontFamily', 'darkMode'].includes(key)))) throw new Error('page may only contain themeColor, fontFamily and darkMode.');
+  if (data.page !== undefined && (!object(data.page) || Object.keys(data.page).some(key => !['themeColor', 'themeColorSecondary', 'fontFamily', 'darkMode'].includes(key)))) throw new Error('page may only contain themeColor, themeColorSecondary, fontFamily and darkMode.');
   if (!object(data.locales) || !Object.keys(data.locales).length) throw new Error('locales must be a non-empty object.');
   for (const [locale, person] of Object.entries(data.locales)) {
     if (!object(person) || !Array.isArray(person.sections)) throw new Error(`Locale ${locale}: sections must be an array.`);
@@ -98,7 +99,12 @@ async function main() {
   if (/^\.env/i.test(basename(path))) throw new Error('Provide a JSON data file.');
   const data = JSON.parse(await readFile(path, 'utf8'));
   validateData(data);
-  const directory = dirname(path);
+  for (const [payload, url] of await buildPayloads(data, dirname(path), uploadUrl, { dryRun })) await publish(payload, url);
+}
+export async function buildPayloads(data, directory, upload = uploadUrl, { dryRun = false } = {}) {
+  validateData(data);
+  const imageUpload = dryRun ? async () => 'https://appai.info/spec/examples/placeholder.svg' : upload;
+  const logo = data.logo === undefined ? undefined : await uploadTree(data.logo, directory, imageUpload, true);
   const locales = Object.entries(data.locales || {});
   if (!locales.length) throw new Error('Provide at least one locale.');
   const roots = [];
@@ -108,9 +114,10 @@ async function main() {
     const suffix = index ? `/${locale}` : '';
     const rootPath = `/p/${data.slug}${suffix}`;
     const sections = [];
-    const common = { ...data.page, locale, isPublished: true };
+    const fontFamily = person.fontFamily ?? (locale === 'zh-TW' ? 'Noto Sans TC' : locale === 'zh-CN' ? 'Noto Sans SC' : data.page?.fontFamily);
+    const common = { ...data.page, fontFamily, locale, isPublished: true };
     for (const raw of person.sections) {
-      const section = { ...raw, data: await uploadTree(raw.data, directory) };
+      const section = { ...raw, data: await uploadTree(raw.data, directory, imageUpload) };
       if (section.type === 'project-cards') {
         const cards = [];
         for (const item of section.data.items) {
@@ -133,9 +140,9 @@ async function main() {
       sections.push(section);
     }
     const header = sections.find(section => section.type === 'profile-header');
-    roots.push([{ ...common, template: 'PERSON', slug: data.slug, title: person.title || header?.data.name, ...(person.metaDescription !== undefined ? { metaDescription: person.metaDescription } : {}), content: { sections: orderedSections(sections) } }, `${base}${rootPath}`]);
+    roots.push([{ ...common, template: 'PERSON', slug: data.slug, title: person.title || header?.data.name, ...(person.metaDescription !== undefined ? { metaDescription: person.metaDescription } : {}), content: { ...(logo !== undefined ? { logo } : {}), sections: orderedSections(sections) } }, `${base}${rootPath}`]);
   }
-  for (const [payload, url] of [...roots, ...children, ...projects]) await publish(payload, url);
+  return [...roots, ...children, ...projects];
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   main().catch(error => { console.error(error.message); process.exitCode = 1; });

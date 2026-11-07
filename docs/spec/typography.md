@@ -3,7 +3,7 @@ Choose a font, overall text size, heading contrast and optional role overrides.
 Previous: [Theme](https://appai.info/spec/theme) · Next: [Pages](https://appai.info/spec/pages)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
-- **Custom fonts:** Set `fontFamily` at page level. Loaded from Google Fonts automatically. Start from a [style kit](https://appai.info/spec/theme) before choosing a font. CJK: `Noto Sans TC` / `Noto Sans SC` / `Noto Sans JP`.
+- **Custom fonts:** Each locale variant stores its own page-level `fontFamily`, loaded from Google Fonts and rendered as `"<font>", sans-serif`. There is no automatic CJK font selection. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants. Start from a [style kit](https://appai.info/spec/theme) before choosing a font.
 
 All three layers are optional. Omitted settings, or `textSize: "md"` with `textContrast: "normal"` and no overrides, preserve existing section typography exactly. Send settings at page level or under `content`; they persist in content JSON. Top-level values take precedence. PUT/upsert replace content; PATCH merges content and preserves sections. An overrides object replaces the previous overrides; send `{}` to clear it.
 

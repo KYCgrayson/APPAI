@@ -19,7 +19,8 @@
           "variant": "centered",
           "heroHeight": "medium",
           "ctaText": "Book a discovery call",
-          "ctaUrl": "https://example.com/book"
+          "ctaUrl": "https://example.com/book",
+          "backgroundColor": "#FFFFFF"
         }
       },
       {
@@ -28,7 +29,8 @@
         "data": {
           "id": "details",
           "heading": "From first sketch to launch",
-          "text": "We help independent teams define their message, design a clear website, and launch with confidence. Start with a focused discovery session and leave with a practical plan."
+          "text": "We help independent teams define their message, design a clear website, and launch with confidence. Start with a focused discovery session and leave with a practical plan.",
+          "backgroundColor": "#ECFDF5"
         }
       },
       {
@@ -41,7 +43,8 @@
               "title": "Website design",
               "description": "Accessible websites for independent businesses."
             }
-          ]
+          ],
+          "backgroundColor": "#FFFFFF"
         },
         "order": 2
       },
@@ -49,7 +52,8 @@
         "type": "about",
         "data": {
           "heading": "Opening hours",
-          "text": "Monday–Friday: 09:00–17:00. Weekends: closed."
+          "text": "Monday–Friday: 09:00–17:00. Weekends: closed.",
+          "backgroundColor": "#ECFDF5"
         },
         "order": 3
       },
@@ -58,7 +62,8 @@
         "data": {
           "heading": "Talk to Cedar",
           "email": "hello@example.com",
-          "formUrl": "https://example.com/contact"
+          "formUrl": "https://example.com/contact",
+          "backgroundColor": "#FFFFFF"
         },
         "order": 4
       },
@@ -75,5 +80,6 @@
     ]
   },
   "locale": "en",
-  "darkMode": false
+  "darkMode": false,
+  "themeColorSecondary": "#B45309"
 }

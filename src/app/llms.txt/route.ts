@@ -97,24 +97,26 @@ Do not turn a database application into a landing-page section.
 
 ## Agent authorization
 
-Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste. This is the agent-driven device flow (RFC 8628):
+Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. Also print the returned user_code so the user can compare it with the approval page. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste. This is the agent-driven device flow (RFC 8628):
 
 1. POST ${baseUrl}/api/v1/auth/device.
-2. Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste.
+2. Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. Also print the returned user_code so the user can compare it with the approval page. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste.
 3. Poll POST ${baseUrl}/api/v1/auth/token at the returned interval until the agent receives the API key; adopt the new interval on slow_down.
 
 Never ask the user to generate and paste a key. Reuse a securely stored key when available; keep it outside the working tree or in memory. Read ${baseUrl}/spec/api for authorization and storage rules.
 
 ## Hosted Page: publish flow
 
+Hosted Pages are always published in four locales: English (en), Traditional Chinese (zh-TW), Simplified Chinese (zh-CN) and Spanish (es). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.
+
 1. READ ${baseUrl}/spec, then follow ${baseUrl}/spec/api for agent authorization.
-2. MUST READ ${baseUrl}/spec/style before publishing to check the logo spec, then pick a theme at ${baseUrl}/spec/theme and text size at ${baseUrl}/spec/typography.
+2. MUST READ ${baseUrl}/spec/style before publishing to pick a style kit and check the logo spec, then pick a theme at ${baseUrl}/spec/theme and text size at ${baseUrl}/spec/typography. Copy themeColor, themeColorSecondary, fontFamily (Chinese variants: Noto Sans TC/SC) and darkMode together; use the style kit's suggested backgroundColors. Use the kit fontFamily for en and es, Noto Sans TC for zh-TW and Noto Sans SC for zh-CN; for other CJK languages chosen by the user, choose the matching font (e.g. Noto Sans JP for Japanese). Keep themeColor, themeColorSecondary, darkMode and backgroundColors the same across variants. If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with POST /api/v1/upload, then publish. A missing logo only warns and never blocks publishing.
 3. Build a first draft using ${baseUrl}/spec/pages and ${baseUrl}/spec/sections.
 4. Dry-run using ${baseUrl}/spec/api#dry-run, then POST ${baseUrl}/api/v1/pages with the same content JSON. The page is live instantly at ${baseUrl}/p/{slug}.
 
 ## Optional shortcut: Claude Code skill
 
-The official skill provides a playbook with design decisions, section schemas and the authorization flow:
+The official skill provides design guidance and the device authorization flow, and points to GET /api/v1/sections for current section schemas:
 
     /plugin marketplace add KYCgrayson/appai-skill
     /plugin install appai-publish@appai-skill
@@ -128,7 +130,7 @@ in any workspace, then publish an immutable source package. A repository URL
 is optional provenance metadata; Simpleshop is only one app using this generic
 contract.
 
-1. AUTHORIZE the agent through the same device flow: Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste. Reuse a securely stored key when available.
+1. AUTHORIZE the agent through the same device flow: Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. Also print the returned user_code so the user can compare it with the approval page. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste. Reuse a securely stored key when available.
 2. ADD appai.app.json at the app root. It declares id, version, lockfile-strict install command (npm ci, pnpm install --frozen-lockfile, or yarn install --immutable), build/start commands, health path, optional migration, and requested capabilities. The app owns UI, API, business rules, schema, migrations, tests, and typecheck.
 3. PACKAGE the exact source revision. Do not include node_modules, build output, .git, environment files (except a values-free .env.example), database dumps, credentials, or secrets:
 
@@ -138,14 +140,14 @@ contract.
 4. REQUEST a private upload intent:
 
        POST ${baseUrl}/api/v1/apps/{appId}/release-packages
-       Authorization: Bearer appai_sk_...
+       Authorization: Bearer appai_sk_YOUR_KEY
        {"filename":"appai-release.tar.gz","sizeBytes":12345,"contentType":"application/gzip"}
 
    The default response contains uploadId, pathname, and clientToken. Use @vercel/blob/client put(pathname, packageFile, { access: "private", token: clientToken }); do not log, expose, or reuse these short-lived transport values. The signed-in Publisher Portal may instead request "uploadMethod":"server" for a package of 4 MiB or less, then POST that file as same-origin multipart form data to /api/v1/apps/{appId}/release-packages/{uploadId}/upload. That server transport never returns a Blob pathname, URL, or token. The public package limit remains 20 MiB; larger packages use the direct private upload.
 5. COMPUTE lowercase SHA-256 of the exact package bytes and FINALIZE:
 
        POST ${baseUrl}/api/v1/apps/{appId}/releases
-       Authorization: Bearer appai_sk_...
+       Authorization: Bearer appai_sk_YOUR_KEY
        {"manifest":{...},"tagline":"...","description":"...","category":"INVENTORY","source":{"type":"package","uploadId":"...","digest":"sha256:<64 lowercase hex chars>","sizeBytes":12345}}
 
 6. The receipt is PENDING and awaits AppAI platform review. AppAI validates the package, runs test/typecheck/build in isolation, provisions approved database/private-asset capabilities, runs migrations with a separate role, deploys, health-checks, and activates only verified evidence. Poll GET ${baseUrl}/api/v1/apps/{appId}/releases/{releaseId} until the release is APPROVED and production deployment is ACTIVE, then users launch ${baseUrl}/app/{appId}.
@@ -189,7 +191,7 @@ of these values in a public environment variable.
 ## What you can build
 
 - 29 section types: profile-header, project-cards, entries, hero, features, pricing, faq, download, testimonials, gallery, team, video, screenshots, stats, contact, cta, links, about, schedule, sponsors, action, form, media-downloader, video-subtitle, tool, pdf-viewer, embed (TikTok/Loom/X/YouTube/Vimeo/Spotify/CodePen/Figma), simple-order
-- Multi-page sites with automatic header navigation (root page + child pages like /faq, /contact, /privacy)
+- Multi-page sites with automatic header navigation (root page + child pages like /p/my-app/my-app-faq, /p/my-app/my-app-contact, /p/my-app/my-app-delete-account; prefix child slugs with the root slug because (slug, locale) is globally unique; privacy/terms use privacyPolicy/termsOfService fields)
 - Contact and account-deletion forms that work on any device
 - Markdown-formatted long text (bold, italic, links, lists)
 - 3 icon options per section: Ionicons names, emoji, or image URLs
@@ -211,7 +213,7 @@ ${baseUrl} (always use this, never use www.appai.info)
 - POST /api/v1/pages — Create a page (?upsert=true to overwrite)
 - PATCH /api/v1/pages/:slug — Partial update with deep section merge
 - POST /api/v1/pages?dryRun=true (identical to POST /api/v1/pages/preview) — Pre-flight validation without saving; returns errors, warnings, sanitizedContent, next
-- Every root page should provide content.logo (or hero data.logo / headerLogo): square 512x512 PNG, app-icon style with its own background; HTTPS or same-origin /path. Upload local files via POST /api/v1/upload. Missing or non-HTTPS logos warn without blocking publishing. Replace demo logos with the real logo.
+- Every root page should provide content.logo (or hero data.logo / headerLogo): square 512x512 PNG, app-icon style with its own background; HTTPS or same-origin /path. Upload local files via POST /api/v1/upload. Missing or non-HTTPS logos warn without blocking publishing. Replace demo logos with the real logo. If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with POST /api/v1/upload, then publish. A missing logo only warns and never blocks publishing.
 - PATCH /api/v1/pages/:slug/sections/:order — Update a single section
 - GET /api/v1/pages/:slug/children — List child pages of a multi-page site
 - POST /api/v1/upload — Upload images (max 5MB)
@@ -224,7 +226,7 @@ Universal Apps are login-protected applications with persistent Organization dat
 
 ## How to communicate with the page owner
 
-You (the agent) are building pages on behalf of a human. Gather minimum context and build a complete first draft immediately. Decide the template, sections, colors, fonts and compliance pages yourself. Ask only for product-specific facts you cannot infer, unmentioned specific branding preferences, language preferences or genuine design tradeoffs; see ${baseUrl}/spec/pages#what-to-decide-yourself-do-not-ask-the-user and ${baseUrl}/spec/pages#when-to-ask-the-user. Translate their intent into a professional, mobile-friendly page and iterate with PATCH.
+You (the agent) are building pages on behalf of a human. Gather minimum context and build a complete first draft immediately. Decide the template, sections, colors, fonts and compliance pages yourself. Ask only for product-specific facts you cannot infer, unmentioned specific branding preferences, whether to add languages beyond the four defaults, or genuine design tradeoffs; see ${baseUrl}/spec/pages#what-to-decide-yourself-do-not-ask-the-user and ${baseUrl}/spec/pages#when-to-ask-the-user. Hosted Pages are always published in four locales: English (en), Traditional Chinese (zh-TW), Simplified Chinese (zh-CN) and Spanish (es). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four. Translate their intent into a professional, mobile-friendly page and iterate with PATCH.
 
 ## Complete single-file fallback
 

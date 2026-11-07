@@ -31,7 +31,7 @@ the archive. Its id must equal `{appId}` in every endpoint path.
 
 ## Authenticate
 
-Start at [Overview](https://appai.info/spec). Use the [agent authorization flow](https://appai.info/spec/api#authentication): request a code. Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste. Poll the token endpoint until the agent receives the key. Never ask a user to
+Start at [Overview](https://appai.info/spec). Use the [agent authorization flow](https://appai.info/spec/api#authentication): request a code. Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. Also print the returned `user_code` for comparison with the approval page. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste. Poll the token endpoint until the agent receives the key. Never ask a user to
 paste an API key into an application form.
 
 ```text
@@ -45,7 +45,7 @@ POST https://appai.info/api/v1/auth/token
 
 ```text
 POST https://appai.info/api/v1/apps/{appId}/release-packages
-Authorization: Bearer appai_sk_...
+Authorization: Bearer <key>
 Content-Type: application/json
 
 { "filename": "appai-release.tar.gz", "sizeBytes": 12345, "contentType": "application/gzip" }
@@ -67,7 +67,7 @@ Content-Type: application/json
 }
 ```
 
-The response is a `PENDING` receipt. Poll
+The response is a `PENDING` receipt awaiting AppAI platform review. An AppAI administrator starts the managed pipeline; `package.json` must define `test` and `typecheck`, and those scripts and the declared build command must pass. Poll
 `GET /api/v1/apps/{appId}/releases/{releaseId}`; only `APPROVED` plus an
 `ACTIVE` production deployment is live. Users enter through `/app/{appId}`.
 
@@ -87,7 +87,11 @@ import { createHash } from "node:crypto";
 import { put } from "@vercel/blob/client";
 
 const baseUrl = "https://appai.info";
-const appId = "inventory";
+const manifest = JSON.parse(await readFile("appai.app.json", "utf8"));
+const appId = manifest.id;
+const tagline = "Track stock across your organization";
+const description = "A database-backed inventory workflow for teams.";
+const category = "INVENTORY";
 const apiKey = process.env.APPAI_API_KEY!;
 const archive = await readFile("appai-release.tar.gz");
 const intent = await fetch(`${baseUrl}/api/v1/apps/${appId}/release-packages`, {

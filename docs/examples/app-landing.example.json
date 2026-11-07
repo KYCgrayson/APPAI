@@ -19,7 +19,8 @@
           "variant": "centered",
           "heroHeight": "medium",
           "ctaText": "Get the app",
-          "ctaUrl": "https://example.com/download"
+          "ctaUrl": "https://example.com/download",
+          "backgroundColor": "#FFFFFF"
         }
       },
       {
@@ -39,7 +40,8 @@
               "title": "Share progress",
               "description": "Bring your team along with clear updates."
             }
-          ]
+          ],
+          "backgroundColor": "#EEF2FF"
         }
       },
       {
@@ -48,7 +50,8 @@
         "data": {
           "id": "details",
           "heading": "Made for everyday progress",
-          "text": "Pocket Orbit brings a thoughtful approach to the details that matter. Explore the overview, then visit our site to learn more."
+          "text": "Pocket Orbit brings a thoughtful approach to the details that matter. Explore the overview, then visit our site to learn more.",
+          "backgroundColor": "#FFFFFF"
         }
       },
       {
@@ -64,5 +67,6 @@
     ]
   },
   "locale": "en",
-  "darkMode": false
+  "darkMode": false,
+  "themeColorSecondary": "#0891B2"
 }

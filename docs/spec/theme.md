@@ -14,11 +14,13 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 Use indigo for apps/SaaS; forest for nature and wellbeing; editorial for writing and portfolios; ocean for services and technical products; midnight for dark dashboards; ember for warm creative brands. Copy kit fields into the page request; backgrounds remain opt-in.
 
+Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a style kit; use the style kit's suggested backgroundColors. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants.
+
 `themeColor` sets the primary accent; `themeColorSecondary` sets the secondary accent. When omitted, the secondary color is automatically derived from the primary.
 
 ### Visual Design Capabilities
 
-- **Section backgrounds:** Any section can have a custom `backgroundColor`. Use tints of your themeColor for visual rhythm.
+- **Section backgrounds:** Any section can have a custom `backgroundColor`. Use the style kit's suggested backgroundColors.
 - **Hero backgrounds:** `backgroundColor` (solid color), `backgroundImage`, or `backgroundVideo`. Dark backgrounds auto-switch text to white.
 - **Dark mode:** Set `darkMode: true` at page level. All sections, cards, borders adapt automatically.
 - **Icons:** Three formats — Ionicons name (e.g. `globe-outline`), emoji, or image URL. Use one of `icons` (`GET /api/v1/sections`) or any emoji

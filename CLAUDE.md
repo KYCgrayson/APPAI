@@ -23,7 +23,7 @@ This is a **public repository**. All files, commits, and history are visible to 
 3. Page is immediately live at `appai.info/p/{slug}` with automatic i18n, SEO, privacy/terms pages
 4. Supports 29 section types (profile-header, project-cards, entries, hero, features, pricing, FAQ, gallery, form, media-downloader, iframe-tool, etc.) and 6 templates (including PERSON)
 5. Visual design system: dark mode, custom Google Fonts, color palettes, hero variants (centered/split/minimal), per-section backgroundColor
-6. Multi-page sites supported (root + child pages like /faq, /contact, /privacy)
+6. Multi-page sites supported (root + child pages prefixed with the root slug, e.g. /p/my-app/my-app-faq; privacy/terms come from the page's privacyPolicy/termsOfService fields)
 
 ### Product Boundary (read before adding capability)
 

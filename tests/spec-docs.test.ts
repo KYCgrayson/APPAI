@@ -307,3 +307,19 @@ test('style retains the origin/main heading anchors after theme extraction', () 
     assert.ok(docs.get('style')!.includes(`Moved to [Theme](https://appai.info/spec/theme#${anchor})`));
   }
 });
+
+test('Hosted Page guidance publishes four default locales without waiting for optional languages', () => {
+  const rule = 'Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.';
+  for (const content of [docs.get('i18n')!, docs.get('pages')!, overview, read('skills/appai-publish/SKILL.md'), read('skills/appai-publish/references/i18n.md')]) {
+    assert.ok(content.includes(rule));
+    assert.doesNotMatch(content, /2[-–]3 locale|language preferences|one regional language/i);
+  }
+  assert.ok(quickstart.includes(rule.replaceAll('`', '')));
+  assert.match(homepage, /className="text-sm text-gray-400">\{t\("agentLanguages"\)\}/);
+  for (const locale of locales) {
+    const home = JSON.parse(read(`src/messages/${locale}.json`)).home;
+    for (const code of ['en', 'zh-TW', 'zh-CN', 'es']) assert.ok(home.agentLanguages.includes(`(${code})`) || home.agentLanguages.includes(`（${code}）`), locale + ': ' + code);
+    assert.ok(home.agentAuthorization.includes('user_code'), locale);
+    assert.ok(home.agentSkillDesc.includes('GET /api/v1/sections'), locale);
+  }
+});

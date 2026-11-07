@@ -19,7 +19,8 @@
           "variant": "centered",
           "heroHeight": "medium",
           "ctaText": "Discuss a project",
-          "ctaUrl": "https://example.com/studio"
+          "ctaUrl": "https://example.com/studio",
+          "backgroundColor": "#FFFFFF"
         }
       },
       {
@@ -39,21 +40,13 @@
                 }
               ]
             }
-          ]
-        }
-      },
-      {
-        "order": 2,
-        "type": "cta",
-        "data": {
-          "headline": "Discuss a commission",
-          "subheadline": "Thoughtful identities for growing ideas.",
-          "buttonText": "Discuss a commission",
-          "buttonUrl": "https://example.com/portfolio"
+          ],
+          "backgroundColor": "#ECFDF5"
         }
       }
     ]
   },
   "locale": "en",
-  "darkMode": false
+  "darkMode": false,
+  "themeColorSecondary": "#B45309"
 }

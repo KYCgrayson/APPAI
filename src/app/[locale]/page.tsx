@@ -165,6 +165,7 @@ export default async function HomePage() {
           <div className="text-center space-y-4">
             <a href="https://appai.info/spec" className="inline-block bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-3 rounded-xl font-semibold">{t("readSpec")}</a>
             <p className="text-sm text-gray-400">{t("agentAuthorization")}</p>
+            <p className="text-sm text-gray-400">{t("agentLanguages")}</p>
             <p className="text-sm text-gray-400"><a href="https://appai.info/llms-full.txt" className="text-cyan-400 hover:underline">{t("agentFallback")}</a></p>
           </div>
           <pre className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-sm text-gray-300 overflow-x-auto mt-6"><code>{t("agentReadCommands")}</code></pre>
