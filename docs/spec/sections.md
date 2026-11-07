@@ -30,6 +30,8 @@ JSON schemas for page sections below; the eight interactive section schemas are 
 Required: `name`; avatar requires `url`, `alt`; links require `label`, `url`; nav requires `label`, `href` (`#anchor`). Links: HTTPS or `/path`; no mailto/tel, bare `#`, or unsafe schemes; invalid links omitted.
 
 ### project-cards
+
+Use for a card wall or summary wall: a responsive grid of items, each with a name and optional short description, image/icon and links.
 ```json
 {"type":"project-cards","order":1,"data":{"id":"work","heading":"Selected work","eyebrow":"Tools","items":[{"name":"Sample Notes","category":"Notes","description":"A fictional notebook.","icon":{"url":"https://example.com/icon.png","alt":""},"monogram":"SN","screenshot":{"url":"https://example.com/screen.png","alt":"Notes screen","kind":"web","width":1440,"height":900},"links":[{"label":"Details","url":"/p/jordan-example/jordan-sample-notes"}]}]}}
 ```
@@ -179,6 +181,8 @@ Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
 ```
 
 ### cta
+
+Include a `cta` section near the bottom of landing-type pages: app, product, SaaS, company/service, event and hiring landing pages. Content walls / card walls, link-in-bio, portfolio and PERSON pages may omit `cta`; wrapped-tool pages may use it when helpful. All ten current presets include `cta` as a starting point, including presets where it is optional.
 ```json
 { "type": "cta", "order": 15, "data": {
     "headline": "Ready to start?",

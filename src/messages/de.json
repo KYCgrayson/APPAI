@@ -22,7 +22,7 @@
     "step1Title": "Sag es deinem KI-Agenten",
     "step1Desc": "Sag „Veröffentliche meine App auf AppAI — starte bei appai.info/spec“.",
     "step2Title": "Link öffnen und anmelden",
-    "step2Desc": "Du als Nutzer: Öffne den Link, melde dich bei Bedarf mit Google an, prüfe, ob der Code übereinstimmt, und klicke auf Genehmigen. Der Agent erhält den Schlüssel — nichts zu kopieren oder einzufügen.",
+    "step2Desc": "Der Agent zeigt den Freigabelink und den zurückgegebenen user_code an. Öffne den Link, melde dich bei Bedarf mit Google an, prüfe, ob der Code übereinstimmt, und klicke auf Genehmigen. Der Agent erhält den Schlüssel, ohne dass du etwas kopieren oder einfügen musst.",
     "step3Title": "Du bist online",
     "step3Desc": "Deine Seite ist unter appai.info/p/your-app online, einschließlich Datenschutzrichtlinie und Nutzungsbedingungen.",
     "forAgents": "Für KI-Agenten",

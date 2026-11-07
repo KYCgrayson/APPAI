@@ -19,7 +19,8 @@
           "avatar": {
             "url": "https://appai.info/spec/examples/placeholder-logo.png",
             "alt": "Geometric demo logo"
-          }
+          },
+          "backgroundColor": "#FFFFFF"
         }
       },
       {
@@ -28,7 +29,8 @@
         "data": {
           "id": "details",
           "heading": "Made for everyday progress",
-          "text": "Nova Finch brings a thoughtful approach to the details that matter. Explore the overview, then visit our site to learn more."
+          "text": "Nova Finch brings a thoughtful approach to the details that matter. Explore the overview, then visit our site to learn more.",
+          "backgroundColor": "#F0F9FF"
         }
       },
       {
@@ -44,5 +46,6 @@
     ]
   },
   "locale": "en",
-  "darkMode": false
+  "darkMode": false,
+  "themeColorSecondary": "#0F766E"
 }

@@ -54,6 +54,7 @@ test('each preset is a copyable, clean full POST body matching its served file',
   for (const preset of PRESET_DEFS) {
     const file = JSON.parse(readFileSync(new URL(`../docs/examples/${preset.exampleFile}`, import.meta.url), 'utf8'));
     assert.deepEqual(file, preset.example);
+    assert.equal(checkPagePreview(file).valid, true, preset.id);
     const data = createPageSchema.parse(file);
     assert.ok(data.isPublished);
     assert.ok(data.content.sections.length >= 3 && data.content.sections.length <= 6);
@@ -120,8 +121,11 @@ test('examples match named style kits and explicitly select English', () => {
   const used = new Set();
   for (const { example } of PRESET_DEFS) {
     assert.equal(example.locale, 'en');
-    const kit = PAGE_STYLES.find(kit => ['themeColor', 'fontFamily', 'darkMode'].every(key => example[key] === kit[key as keyof typeof kit]));
+    const kit = PAGE_STYLES.find(kit => ['themeColor', 'themeColorSecondary', 'fontFamily', 'darkMode'].every(key => example[key] === kit[key as keyof typeof kit]));
     assert.ok(kit);
+    for (const section of createPageSchema.parse(example).content.sections) {
+      if (section.type !== 'cta') assert.ok(kit.backgroundColors.includes(section.data.backgroundColor), section.type);
+    }
     used.add(kit.id);
   }
   assert.ok(used.size >= 4);

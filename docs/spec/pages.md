@@ -12,10 +12,10 @@ This platform gives you full control over visual design. Every parameter below i
 | Parameter | Description |
 |-----------|-------------|
 | `template` | `APP_LANDING`, `COMPANY_PROFILE`, `PRODUCT_SHOWCASE`, `PORTFOLIO`, `LINK_IN_BIO`, `PERSON` (classification only; sections control rendering). |
-| `themeColor` | Hex color (e.g. `#6366F1`) — drives CTA buttons, accents, links. Copy `themeColor`, `themeColorSecondary`, `fontFamily` and `darkMode` together from a kit in [Style & logo](https://appai.info/spec/style). |
+| `themeColor` | Hex color (e.g. `#6366F1`) — drives CTA buttons, accents, links. Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a kit in [Style & logo](https://appai.info/spec/style). |
 | `themeColorSecondary` | Hex color — optional accent for secondary buttons. Auto-generated from themeColor if omitted. |
 | `darkMode` | Boolean — renders entire page with dark backgrounds and light text. All sections adapt automatically. |
-| `fontFamily` | Google Fonts name (e.g. `"Inter"`, `"Poppins"`, `"Noto Sans JP"`) — loaded automatically. |
+| `fontFamily` | Google Fonts name, loaded automatically per locale variant. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants. |
 | `headerLogo` | URL — separate logo for the light header (when hero logo is white/light). |
 | `ogImage` | URL — Open Graph image for social sharing. Fallback order: ogImage → heroImage → profile-header avatar → screenshot or icon of the first project item that has one → first screenshots image (valid HTTP(S) URLs only). |
 
@@ -72,7 +72,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 ### Your default workflow
 
 1. **Gather minimum context.** Ask: "What is your product/app and who is it for?" You need: product name, what it does, target audience. That's enough to start.
-2. **Make design decisions yourself.** Copy `themeColor`, `themeColorSecondary`, `fontFamily` and `darkMode` together from a kit in [Style & logo](https://appai.info/spec/style) and use the style kit's suggested backgroundColors. Pick sections based on the product type. Generate features, FAQ, and copy from what the user told you. Generate privacy policy and terms of service automatically.
+2. **Make design decisions yourself.** Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a kit in [Style & logo](https://appai.info/spec/style) and use the style kit's suggested backgroundColors. Pick sections based on the product type. Generate features, FAQ, and copy from what the user told you. Generate privacy policy and terms of service automatically.
 3. **Publish the first draft.** [Authorize](https://appai.info/spec/api#authentication) → **MUST READ [Style & logo](https://appai.info/spec/style)** to pick a style kit and logo → [build](https://appai.info/spec/pages#creating-a-page) with the [section schemas](https://appai.info/spec/sections) → [dry-run, then publish](https://appai.info/spec/api#dry-run) with the same body. Show the user the live URL.
 4. **Iterate.** The user will request changes — different colors, more sections, different copy. Use PATCH to update.
 
@@ -108,11 +108,11 @@ Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/pub
 
 - Languages: always publish the four default locales — English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Other languages are asked about; see [When to ask the user](https://appai.info/spec/pages#when-to-ask-the-user).
 - Which template/sections to use (infer from the product type)
-- themeColor (copy together with themeColorSecondary, fontFamily and darkMode from a kit in [Style & logo](https://appai.info/spec/style))
-- Section ordering (landing pages; PERSON pages: see recipe; follow: hero → stats → features → pricing → testimonials → faq → cta)
+- themeColor (copy together with themeColorSecondary, fontFamily (Chinese variants: Noto Sans TC/SC) and darkMode from a kit in [Style & logo](https://appai.info/spec/style))
+- Section ordering for landing-type pages: hero → stats → features → pricing → testimonials → faq → cta, omitting unsupported sections. Content/card walls, link-in-bio, portfolio and PERSON pages follow their content needs and may omit cta.
 - Privacy policy and terms of service (generate them using the product name + contact email)
 - darkMode (use the same style kit)
-- fontFamily (use the same style kit)
+- fontFamily: Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants.
 - backgroundColor on sections (use the style kit's suggested backgroundColors)
 
 ### When to ask the user
@@ -129,7 +129,7 @@ Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/pub
 - **NEVER** ask for 10 pieces of information before building. Build first, iterate after.
 - Headlines under 60 characters, subheadlines under 140 characters (mobile readability)
 - 5-8 sections per page maximum (landing pages; PERSON pages: see recipe). A focused page beats a comprehensive one.
-- Always include a `cta` section near the bottom (landing pages; PERSON pages: see recipe).
+- Include a `cta` section near the bottom of landing-type pages: app, product, SaaS, company/service, event and hiring landing pages. Content walls / card walls, link-in-bio, portfolio and PERSON pages may omit `cta`; wrapped-tool pages may use it when helpful. All ten current presets include `cta` as a starting point, including presets where it is optional.
 - Logos: every root page should supply a square 512x512 PNG with its own background; see [Logo](https://appai.info/spec/style#logo).
 - Images: hero backgrounds under 500KB, use WebP/JPEG.
 
@@ -153,10 +153,11 @@ curl -X POST https://appai.info/api/v1/pages \
 | `locale` | No | BCP 47 code (default: `en`). Same slug + different locale = language variant |
 | `title` | Yes | Page title |
 | `tagline` | No | Short description |
+| `metaDescription` | No | SEO description, max 500 characters, stored on this locale variant. Used for HTML, Open Graph and Twitter descriptions; falls back to `tagline` when empty or omitted. |
 | `themeColor` | No | Hex color (e.g. `#6366F1`) |
 | `themeColorSecondary` | No | Hex accent color |
 | `darkMode` | No | Boolean (default: false) |
-| `fontFamily` | No | Google Fonts name |
+| `fontFamily` | No | Google Fonts name per locale variant. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants. |
 | `headerLogo` | No | Separate logo URL for light header |
 | `content` | Yes | `{ "sections": [{ "type": "...", "order": N, "data": {...} }] }` |
 | `privacyPolicy` | No | Markdown text |
@@ -173,7 +174,7 @@ curl -X POST https://appai.info/api/v1/pages \
 
 See [recommended compliance flags](https://appai.info/spec/i18n#compliance-pages-recommended-flags).
 
-For App Store / Play Store submissions, create a multi-page site with child pages for privacy, terms, contact, and account deletion.
+For App Store / Play Store submissions, create a multi-page site with child pages for FAQ, contact, and account deletion, with translated `privacyPolicy` and `termsOfService` fields on each root locale variant.
 
 Generate privacy policy and terms of service automatically — any LLM can produce standard legal text using the app name and contact email. Include: data collection practices, user rights, children's privacy clause, contact information.
 
@@ -181,8 +182,8 @@ The canonical compliance setup:
 - Root: marketing landing page
 - Child `faq`: product FAQ
 - Child `contact`: contact form (`"submitTo": "mailto:support@app.com"`)
-- Child `privacy`: privacy policy
-- Child `terms`: terms of service
+- Root variant `privacyPolicy`: translated privacy policy
+- Root variant `termsOfService`: translated terms of service
 - Child `delete-account`: account deletion form
 
 ---

@@ -19,7 +19,8 @@
           "variant": "centered",
           "heroHeight": "medium",
           "ctaText": "Explore",
-          "ctaUrl": "#details"
+          "ctaUrl": "#details",
+          "backgroundColor": "#FFFFFF"
         }
       },
       {
@@ -39,7 +40,8 @@
               "title": "Product designer",
               "description": "Full-time · Remote. Shape clear, accessible product experiences."
             }
-          ]
+          ],
+          "backgroundColor": "#F0F9FF"
         }
       },
       {
@@ -52,7 +54,8 @@
               "title": "Time to recharge",
               "description": "Flexible hours, paid leave, and a learning budget."
             }
-          ]
+          ],
+          "backgroundColor": "#FFFFFF"
         },
         "order": 2
       },
@@ -69,5 +72,6 @@
     ]
   },
   "locale": "en",
-  "darkMode": false
+  "darkMode": false,
+  "themeColorSecondary": "#0F766E"
 }

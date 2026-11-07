@@ -19,7 +19,8 @@
           "variant": "centered",
           "heroHeight": "medium",
           "ctaText": "Read the journal",
-          "ctaUrl": "https://example.com/journal"
+          "ctaUrl": "https://example.com/journal",
+          "backgroundColor": "#1C1917"
         }
       },
       {
@@ -39,7 +40,8 @@
               "url": "https://example.com/contact",
               "title": "Say hello"
             }
-          ]
+          ],
+          "backgroundColor": "#292524"
         }
       },
       {
@@ -55,5 +57,6 @@
     ]
   },
   "locale": "en",
-  "darkMode": true
+  "darkMode": true,
+  "themeColorSecondary": "#FCA5A5"
 }

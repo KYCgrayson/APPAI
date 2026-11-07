@@ -110,7 +110,7 @@ Never ask the user to generate and paste a key. Reuse a securely stored key when
 Hosted Pages are always published in four locales: English (en), Traditional Chinese (zh-TW), Simplified Chinese (zh-CN) and Spanish (es). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.
 
 1. READ ${baseUrl}/spec, then follow ${baseUrl}/spec/api for agent authorization.
-2. MUST READ ${baseUrl}/spec/style before publishing to pick a style kit and check the logo spec. Copy themeColor, themeColorSecondary, fontFamily and darkMode together; use the style kit's suggested backgroundColors.
+2. MUST READ ${baseUrl}/spec/style before publishing to pick a style kit and check the logo spec. Copy themeColor, themeColorSecondary, fontFamily (Chinese variants: Noto Sans TC/SC) and darkMode together; use the style kit's suggested backgroundColors. Use the kit fontFamily for en and es, Noto Sans TC for zh-TW and Noto Sans SC for zh-CN; for other CJK languages chosen by the user, choose the matching font (e.g. Noto Sans JP for Japanese). Keep themeColor, themeColorSecondary, darkMode and backgroundColors the same across variants. If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with POST /api/v1/upload, then publish. A missing logo only warns and never blocks publishing.
 3. Build a first draft using ${baseUrl}/spec/pages and ${baseUrl}/spec/sections.
 4. Dry-run using ${baseUrl}/spec/api#dry-run, then POST ${baseUrl}/api/v1/pages with the same content JSON. The page is live instantly at ${baseUrl}/p/{slug}.
 
@@ -213,7 +213,7 @@ ${baseUrl} (always use this, never use www.appai.info)
 - POST /api/v1/pages — Create a page (?upsert=true to overwrite)
 - PATCH /api/v1/pages/:slug — Partial update with deep section merge
 - POST /api/v1/pages?dryRun=true (identical to POST /api/v1/pages/preview) — Pre-flight validation without saving; returns errors, warnings, sanitizedContent, next
-- Every root page should provide content.logo (or hero data.logo / headerLogo): square 512x512 PNG, app-icon style with its own background; HTTPS or same-origin /path. Upload local files via POST /api/v1/upload. Missing or non-HTTPS logos warn without blocking publishing. Replace demo logos with the real logo.
+- Every root page should provide content.logo (or hero data.logo / headerLogo): square 512x512 PNG, app-icon style with its own background; HTTPS or same-origin /path. Upload local files via POST /api/v1/upload. Missing or non-HTTPS logos warn without blocking publishing. Replace demo logos with the real logo. If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with POST /api/v1/upload, then publish. A missing logo only warns and never blocks publishing.
 - PATCH /api/v1/pages/:slug/sections/:order — Update a single section
 - GET /api/v1/pages/:slug/children — List child pages of a multi-page site
 - POST /api/v1/upload — Upload images (max 5MB)

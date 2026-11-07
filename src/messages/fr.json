@@ -22,7 +22,7 @@
     "step1Title": "Parlez à votre agent IA",
     "step1Desc": "Dites « Publie mon application sur AppAI — commence par appai.info/spec ».",
     "step2Title": "Ouvrez le lien et connectez-vous",
-    "step2Desc": "Vous, en tant qu’utilisateur : Ouvrez le lien, connectez-vous avec Google si nécessaire, vérifiez que le code correspond, puis cliquez sur Approuver ; l’agent reçoit la clé — rien à copier ni à coller.",
+    "step2Desc": "L’agent affiche le lien d’autorisation et le user_code reçu. Ouvrez le lien, connectez-vous avec Google si nécessaire, vérifiez que le code correspond et cliquez sur Approuver ; l’agent reçoit la clé, sans rien copier ni coller.",
     "step3Title": "Vous êtes en ligne",
     "step3Desc": "Votre page est en ligne à appai.info/p/your-app, avec politique de confidentialité et conditions d’utilisation incluses.",
     "forAgents": "Pour les agents IA",

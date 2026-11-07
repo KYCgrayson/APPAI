@@ -1,5 +1,5 @@
 # Design judgment
 
-MUST READ [Style & logo](https://appai.info/spec/style) before publishing. Select a style kit there; copy `themeColor`, `themeColorSecondary`, `fontFamily` and `darkMode` together, and use the style kit's suggested backgroundColors.
+MUST READ [Style & logo](https://appai.info/spec/style) before publishing. Select a style kit there; copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together, and use the style kit's suggested backgroundColors. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants.
 
 Choose a visual direction that supports the product's main action. Keep decorative changes subordinate to readability, and inspect the page at mobile width before adding more visual elements. A category is context for choosing a kit, not a separate palette.

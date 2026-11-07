@@ -19,7 +19,8 @@
           "variant": "centered",
           "heroHeight": "medium",
           "ctaText": "Read the tool guide",
-          "ctaUrl": "https://example.com/guide"
+          "ctaUrl": "https://example.com/guide",
+          "backgroundColor": "#0F172A"
         }
       },
       {
@@ -29,7 +30,8 @@
           "heading": "Try Color Bench",
           "description": "Explore a fictional color tool. Replace this demo deployment URL with your own existing hosted tool before publishing.",
           "src": "https://color-bench-demo.pages.dev",
-          "initialHeight": 560
+          "initialHeight": 560,
+          "backgroundColor": "#1E293B"
         }
       },
       {
@@ -38,7 +40,8 @@
         "data": {
           "id": "details",
           "heading": "Made for everyday progress",
-          "text": "Color Bench brings a thoughtful approach to the details that matter. Explore the overview, then visit our site to learn more."
+          "text": "Color Bench brings a thoughtful approach to the details that matter. Explore the overview, then visit our site to learn more.",
+          "backgroundColor": "#0F172A"
         }
       },
       {
@@ -54,5 +57,6 @@
     ]
   },
   "locale": "en",
-  "darkMode": true
+  "darkMode": true,
+  "themeColorSecondary": "#67E8F9"
 }

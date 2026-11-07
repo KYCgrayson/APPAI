@@ -74,6 +74,8 @@ Previous: [Sections](https://appai.info/spec/sections) · Next: [Publish](https:
 
 **Preview without saving:** `POST /api/v1/pages?dryRun=true` (identical to `POST /api/v1/pages/preview`) — same body; HTTP 200 returns `{valid, errors: [], warnings: [], sanitizedContent, next}`. Always check `valid`; warnings do not block creation. Preview rejects an exact (slug, locale) owned by another organization; it does not check plan limits, parent existence or ownership of the parent root; POST does.
 
+For an existing slug+locale, dry-run with `POST /api/v1/pages?dryRun=true&upsert=true` (or `POST /api/v1/pages/preview?upsert=true`), then publish with `POST /api/v1/pages?upsert=true`. Without `upsert=true`, preview warns that the page already exists; publishing returns 409. Use `PATCH /api/v1/pages/{slug}?locale=xx` for partial updates.
+
 Publish with `POST /api/v1/pages` using the same body and `isPublished: true` (`?upsert=true` to overwrite an existing page). Open `https://appai.info/p/{slug}` and check desktop/mobile layout.
 
 ## Upload images
