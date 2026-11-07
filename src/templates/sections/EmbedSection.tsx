@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { sanitizeUrl } from "@/lib/sanitize";
 
 interface Props {
@@ -190,7 +191,7 @@ const ASPECT_CLASSES: Record<NonNullable<Props["data"]["aspectRatio"]>, string> 
   "4:5": "aspect-[4/5]",
 };
 
-function EmbedContent({ data, themeColor, darkMode, typographyActive = false }: Props & { typographyActive?: boolean }) {
+function EmbedContent({ data, themeColor, darkMode, typographyActive = false, heading }: Props & { typographyActive?: boolean; heading?: ReactNode }) {
   const safeUrl = sanitizeUrl(data.url);
   const provider = detectProvider(safeUrl);
 
@@ -198,6 +199,7 @@ function EmbedContent({ data, themeColor, darkMode, typographyActive = false }: 
     return (
       <section className="py-12 md:py-20 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto text-center">
+          {heading}
           <a data-typography-role={typographyActive ? "card" : undefined}
             href={safeUrl}
             target="_blank"
@@ -220,6 +222,7 @@ function EmbedContent({ data, themeColor, darkMode, typographyActive = false }: 
     return (
       <section className="py-12 md:py-20 px-4 sm:px-6">
         <div className="max-w-xl mx-auto">
+          {heading}
           <a data-typography-role={typographyActive ? "card" : undefined}
             href={safeUrl}
             target="_blank"
@@ -251,6 +254,7 @@ function EmbedContent({ data, themeColor, darkMode, typographyActive = false }: 
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6">
       <div className={`${containerWidth} mx-auto`}>
+        {heading}
         {data.title && (
           <h2 data-typography-role={typographyActive ? "heading" : undefined} className={`text-2xl md:text-3xl font-bold mb-6 text-center ${darkMode ? "text-white" : "text-gray-900"}`}>
             {data.title}
@@ -281,9 +285,9 @@ function EmbedContent({ data, themeColor, darkMode, typographyActive = false }: 
 export function EmbedSection(props: Props & { typographyActive?: boolean }) {
   const { data, themeColor, typographyActive } = props;
   if (!data.heading && !data.subheading) return <EmbedContent {...props} />;
-  return <div>
+  const heading = <>
     {data.heading && <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-3xl font-bold text-center mb-6" style={{ color: themeColor }}>{data.heading}</h2>}
     {data.subheading && <p className="text-center mb-6">{data.subheading}</p>}
-    <EmbedContent {...props} data={{ ...data, title: data.heading ? undefined : data.title }} />
-  </div>;
+  </>;
+  return <EmbedContent {...props} heading={heading} data={{ ...data, title: data.heading ? undefined : data.title }} />;
 }

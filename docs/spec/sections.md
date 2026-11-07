@@ -277,6 +277,6 @@ Sandbox: `allow-scripts allow-same-origin allow-forms allow-downloads allow-popu
 The iframe receives `?locale=` with the current hosted-page locale, normally `en`, `zh-TW`, `zh-CN`, `es` (any supplied BCP 47 locale is passed unchanged), plus `color` and `theme=dark` only in dark mode. If the tool isn't translated, ignore it; the AppAI page around it is still published in four locales.
 Set canonicalUrl only for an app's own primary marketing site (e.g. a custom domain homepage), never the *.vercel.app tool URL embedded in iframe-tool.
 
-Pages saved after 2026-11-07 render section headings and store badges; re-publish an older page to opt in.
+Older pages opt in when their content is saved again through the API (PUT, PATCH, PATCH section, or POST ?upsert=true).
 
 All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
