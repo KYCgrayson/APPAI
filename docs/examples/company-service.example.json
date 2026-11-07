@@ -24,16 +24,6 @@
         }
       },
       {
-        "order": 1,
-        "type": "about",
-        "data": {
-          "id": "details",
-          "heading": "From first sketch to launch",
-          "text": "We help independent teams define their message, design a clear website, and launch with confidence. Start with a focused discovery session and leave with a practical plan.",
-          "backgroundColor": "#ECFDF5"
-        }
-      },
-      {
         "type": "features",
         "data": {
           "heading": "Services",
@@ -46,13 +36,23 @@
           ],
           "backgroundColor": "#FFFFFF"
         },
-        "order": 2
+        "order": 1
+      },
+      {
+        "order": 2,
+        "type": "about",
+        "data": {
+          "id": "details",
+          "heading": "How to order",
+          "text": "Book a discovery call to discuss your website and plan the next steps.",
+          "backgroundColor": "#ECFDF5"
+        }
       },
       {
         "type": "about",
         "data": {
           "heading": "Opening hours",
-          "text": "Monday–Friday: 09:00–17:00. Weekends: closed.",
+          "text": "Monday\u2013Friday: 09:00\u201317:00. Weekends: closed.",
           "backgroundColor": "#ECFDF5"
         },
         "order": 3

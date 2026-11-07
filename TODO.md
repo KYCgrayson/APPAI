@@ -24,6 +24,10 @@ Recorded so future work stops re-deriving them. The boundary itself lives in
 
 ## Spec topic split (ops #34)
 
+- [x] Complete social platform brand icons and accessible labels; add official Facebook/Threads embeds and YouTube Shorts, HTTPS host validation, and publishing guidance.
+
+- [x] First-time agent round 3: social contacts, everyday icons, links headings, consistent local-shop order, and concise kit/logo/media/address guidance.
+
 - [x] Resolve all eleven cold-start ambiguities: warm light kit, backgrounds/CTA, contacts/LINE, required logos, local-shop shape, locale preview URLs, full topic chain, useful style page, store-only compliance children and typography placement.
 
 - [x] One-minute publishing round 3: align device authorization, four use-cases, metadata, translations, topic navigation, dry-run-to-publish flow and skill guidance; strengthen entry-point regression checks.

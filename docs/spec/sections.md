@@ -9,9 +9,8 @@ After [dry-run](https://appai.info/spec/api#preview-without-saving), follow the 
 
 Three formats, all render correctly. Mix freely within a page.
 
-**Ionicons (recommended):** Use one of `icons` (`GET /api/v1/sections`) or any emoji. Bundled names:
-
-globe-outline, logo-github, logo-twitter, logo-linkedin, logo-youtube, logo-instagram, logo-discord, logo-tiktok, logo-facebook, logo-reddit, logo-medium, logo-mastodon, mail-outline, call-outline, location-outline, chatbubble-outline, chatbubbles-outline, send-outline, download-outline, cloud-download-outline, cloud-upload-outline, play-circle-outline, arrow-forward-outline, arrow-back-outline, open-outline, link-outline, copy-outline, share-outline, checkmark-circle, checkmark-circle-outline, close-circle, alert-circle, information-circle, lock-closed, lock-open, eye-outline, eye-off-outline, sparkles-outline, rocket-outline, star-outline, star, heart-outline, heart, flash-outline, shield-checkmark-outline, shield-outline, ribbon-outline, trophy-outline, gift-outline, menu-outline, close-outline, search-outline, settings-outline, options-outline, ellipsis-horizontal, ellipsis-vertical, chevron-down, chevron-up, chevron-forward, chevron-back, add-outline, remove-outline, code-slash-outline, terminal-outline, hardware-chip-outline, server-outline, cloud-outline
+**Ionicons (recommended):** Use built-in icon names or any emoji; discover names via `GET /api/v1/sections`. Bundled names:
+logo-line, logo-threads, logo-whatsapp, people-outline, time-outline, calendar-outline, camera-outline, color-palette-outline, hand-left-outline, leaf-outline, cafe-outline, cut-outline, bicycle-outline, brush-outline, school-outline, globe-outline, logo-github, logo-twitter, logo-linkedin, logo-youtube, logo-instagram, logo-discord, logo-tiktok, logo-facebook, logo-reddit, logo-medium, logo-mastodon, mail-outline, call-outline, location-outline, chatbubble-outline, chatbubbles-outline, send-outline, download-outline, cloud-download-outline, cloud-upload-outline, play-circle-outline, arrow-forward-outline, arrow-back-outline, open-outline, link-outline, copy-outline, share-outline, checkmark-circle, checkmark-circle-outline, close-circle, alert-circle, information-circle, lock-closed, lock-open, eye-outline, eye-off-outline, sparkles-outline, rocket-outline, star-outline, star, heart-outline, heart, flash-outline, shield-checkmark-outline, shield-outline, ribbon-outline, trophy-outline, gift-outline, menu-outline, close-outline, search-outline, settings-outline, options-outline, ellipsis-horizontal, ellipsis-vertical, chevron-down, chevron-up, chevron-forward, chevron-back, add-outline, remove-outline, code-slash-outline, terminal-outline, hardware-chip-outline, server-outline, cloud-outline
 
 **Emoji:** Pass any emoji character. `{ "icon": "🚀" }`
 
@@ -63,6 +62,8 @@ Required: each item's `title`; all top-level fields optional; links require `lab
 }}
 ```
 
+YouTube/Vimeo/mp4 → `video` (iframe player); social posts from Instagram, Facebook, Threads, TikTok, X, YouTube Shorts → `embed`.
+
 ### video
 ```json
 { "type": "video", "order": 2, "data": {
@@ -70,7 +71,7 @@ Required: each item's `title`; all top-level fields optional; links require `lab
     "caption": "Watch the demo"
 }}
 ```
-Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
+Supports YouTube/Vimeo iframe players and direct mp4, webm, gif media (auto-detected). Use `embed` for YouTube Shorts and social posts.
 
 ### features
 
@@ -192,6 +193,8 @@ Use `schedule` for event timelines (`time` + session `title`), and `about.text` 
 }}
 ```
 
+Optional `socials`: `{platform, url, label?}` items; HTTPS only. See canonical [Contact](https://appai.info/spec/pages#contact) for platforms, URL formats and message booking.
+
 ### cta
 
 `buttonUrl` allows `tel:+{E.164 digits}` and renders it as a tappable phone link.
@@ -207,6 +210,8 @@ Use `cta` only on landing-type pages: app, product, SaaS, company/service, event
 ```
 
 ### links
+Optional `heading` and `subheading` appear above the link buttons.
+
 
 `items[].url` allows `tel:+{E.164 digits}` and renders it as a tappable phone link.
 ```json
@@ -235,7 +240,7 @@ Use `cta` only on landing-type pages: app, product, SaaS, company/service, event
     "aspectRatio": "9:16"
 }}
 ```
-Auto-detects provider from URL. Supported: YouTube, Vimeo, TikTok, Loom, Spotify, CodePen, Figma. X (Twitter) and Instagram render as linked preview cards (their iframe policy blocks direct embeds). `aspectRatio` optional — sensible default per provider (TikTok → 9:16, YouTube → 16:9). Iframe is sandboxed.
+Auto-detects provider from URL. Supported: YouTube (including Shorts), Vimeo, Facebook posts/videos, Threads posts, TikTok, Loom, Spotify, CodePen, Figma. Facebook uses official plugin iframes; Threads uses a lazy-loaded sandboxed iframe at `https://www.threads.com/@{user}/post/{id}/embed`. X (Twitter) and Instagram render as linked preview cards. HTTP URLs are upgraded to HTTPS. Existing provider URL patterns remain supported, including mobile/music YouTube watch URLs and YouTube privacy embed URLs. `aspectRatio` optional — sensible default per provider (TikTok → 9:16, YouTube → 16:9). Iframe is sandboxed.
 
 ### Link rel (SEO)
 Links in `links` and `cta` sections accept an optional `rel` string. Use `"nofollow"` for sponsored/affiliate/user-supplied links, `"sponsored"` for paid placements, `"nofollow sponsored"` for both. Leaving it unset produces `rel="noopener noreferrer"` for external links (standard dofollow). Example:

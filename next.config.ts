@@ -77,6 +77,8 @@ const securityHeaders = [
         "https://*.glitch.me",
         "https://*.surge.sh",
         // Media / embed providers
+        "https://www.facebook.com",
+        "https://www.threads.com",
         "https://www.youtube.com",
         "https://www.youtube-nocookie.com",
         "https://player.vimeo.com",

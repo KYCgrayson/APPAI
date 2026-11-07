@@ -144,7 +144,7 @@ test("numeric string section orders render FIRST before SECOND", async () => {
   assert.equal(result.errors.length, 0);
 });
 
-test("default typography is byte-identical to the origin/main fixture for all 29 section types", async (t) => {
+test("default typography matches the baseline with optional links heading for all 29 section types", async (t) => {
   t.mock.method(Date.prototype, "toISOString", () => "2026-01-01T00:00:00.000Z");
   const { readFileSync } = await import("node:fs");
   const page = JSON.parse(readFileSync(new URL("./fixtures/typography-page.json", import.meta.url), "utf8"));
