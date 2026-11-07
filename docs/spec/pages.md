@@ -12,7 +12,7 @@ This platform gives you full control over visual design. Every parameter below i
 | Parameter | Description |
 |-----------|-------------|
 | `template` | `APP_LANDING`, `COMPANY_PROFILE`, `PRODUCT_SHOWCASE`, `PORTFOLIO`, `LINK_IN_BIO`, `PERSON` (classification only; sections control rendering). |
-| `themeColor` | Hex color (e.g. `#6366F1`) — drives CTA buttons, accents, links. Pick vibrant colors, not black. |
+| `themeColor` | Hex color (e.g. `#6366F1`) — drives CTA buttons, accents, links. Copy `themeColor`, `fontFamily` and `darkMode` together from a kit in [Style & logo](https://appai.info/spec/style). |
 | `themeColorSecondary` | Hex color — optional accent for secondary buttons. Auto-generated from themeColor if omitted. |
 | `darkMode` | Boolean — renders entire page with dark backgrounds and light text. All sections adapt automatically. |
 | `fontFamily` | Google Fonts name (e.g. `"Inter"`, `"Poppins"`, `"Noto Sans JP"`) — loaded automatically. |
@@ -72,7 +72,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 ### Your default workflow
 
 1. **Gather minimum context.** Ask: "What is your product/app and who is it for?" You need: product name, what it does, target audience. That's enough to start.
-2. **Make design decisions yourself.** Choose themeColor based on the product category. Pick sections based on the product type. Generate features, FAQ, and copy from what the user told you. Generate privacy policy and terms of service automatically.
+2. **Make design decisions yourself.** Copy `themeColor`, `fontFamily` and `darkMode` together from a kit in [Style & logo](https://appai.info/spec/style) and use its suggested backgrounds. Pick sections based on the product type. Generate features, FAQ, and copy from what the user told you. Generate privacy policy and terms of service automatically.
 3. **Publish the first draft.** [Authorize](https://appai.info/spec/api#authentication) → **MUST READ [Style & logo](https://appai.info/spec/style)** to pick a style kit and logo → [build](https://appai.info/spec/pages#creating-a-page) with the [section schemas](https://appai.info/spec/sections) → [dry-run, then publish](https://appai.info/spec/api#dry-run) with the same body. Show the user the live URL.
 4. **Iterate.** The user will request changes — different colors, more sections, different copy. Use PATCH to update.
 
@@ -107,12 +107,12 @@ Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/pub
 ### What to decide yourself (do NOT ask the user)
 
 - Which template/sections to use (infer from the product type)
-- themeColor (match the product category — finance: blue/green, creative: violet/pink, dev tools: indigo/cyan, health: emerald, food: orange/red)
+- themeColor (copy together with fontFamily and darkMode from a kit in [Style & logo](https://appai.info/spec/style))
 - Section ordering (landing pages; PERSON pages: see recipe; follow: hero → stats → features → pricing → testimonials → faq → cta)
 - Privacy policy and terms of service (generate them using the product name + contact email)
-- Whether to use dark mode (use for: dev tools, media/entertainment, gaming)
-- fontFamily (match the product character)
-- backgroundColor on sections (derive tints from themeColor)
+- darkMode (use the same style kit)
+- fontFamily (use the same style kit)
+- backgroundColor on sections (use the style kit's suggested backgrounds)
 
 ### When to ask the user
 
