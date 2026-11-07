@@ -7,6 +7,7 @@ interface Props {
     items?: Array<{
       icon?: string;
       title: string;
+      price?: string;
       description: string;
     }>;
   };
@@ -49,7 +50,7 @@ export function FeaturesSection({ data, themeColor, darkMode, typographyActive =
                 <div className="mb-4" style={{ color: themeColor }}>
                   <SmartIcon value={iconValue} size={48} />
                 </div>
-                <h3 data-typography-role={typographyActive ? "card" : undefined} className={`text-xl font-semibold mb-2 ${darkMode ? "text-gray-100" : ""}`}>{item.title}</h3>
+                <h3 data-typography-role={typographyActive ? "card" : undefined} className={`text-xl font-semibold mb-2 ${darkMode ? "text-gray-100" : ""}`}>{item.title}{item.price && <span className="ml-3 whitespace-nowrap">{item.price}</span>}</h3>
                 <p data-typography-role={typographyActive ? "card" : undefined} className={darkMode ? "text-gray-400" : "text-gray-600"}>{item.description}</p>
               </div>
             );

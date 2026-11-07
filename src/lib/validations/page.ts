@@ -1,3 +1,4 @@
+import { isBusinessHours } from "../business-hours.ts";
 import { z } from "zod";
 
 export const SUPPORTED_LOCALES = [
@@ -22,7 +23,14 @@ const typographyFields = {
   textContrast: z.enum(["low", "normal", "high"]).optional(),
   typography: z.object({ caption: textStep.optional(), card: textStep.optional(), body: textStep.optional(), heading: textStep.optional(), display: textStep.optional() }).strict().optional(),
 };
-const contentSchema = z.object(typographyFields).catchall(z.any());
+const contentSchema = z.object(typographyFields).catchall(z.any()).superRefine((content, ctx) => {
+  if (!Array.isArray(content.sections)) return;
+  content.sections.forEach((section, index) => {
+    if (section?.type !== "contact" || section.data?.hours === undefined) return;
+    if (!Array.isArray(section.data.hours) || !section.data.hours.every(isBusinessHours))
+      ctx.addIssue({ code: "custom", path: ["sections", index, "data", "hours"], message: "hours must be an array of {days: nonempty mon–sun array, open: HH:MM, close: HH:MM, note?: string}" });
+  });
+});
 
 const pageSchema = z.object({
   slug: z

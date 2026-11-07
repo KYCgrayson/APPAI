@@ -1,3 +1,4 @@
+import { type BusinessHours, isBusinessHours, formatBusinessHours, mapLinks } from "@/lib/business-hours";
 import { SmartIcon } from "@/templates/shared/SmartIcon";
 import { SOCIAL_PLATFORMS, sanitizeSocialUrl, sanitizeUrl } from "@/lib/sanitize";
 
@@ -11,13 +12,17 @@ interface Props {
     email?: string;
     phone?: string;
     address?: string;
+    hours?: BusinessHours[];
+    note?: string;
+    map?: boolean;
     formUrl?: string;
     socials?: Array<{ platform: typeof SOCIAL_PLATFORMS[number]; url: string; label?: string }>;
   };
   themeColor: string;
+  locale?: string;
 }
 
-export function ContactSection({ data, themeColor, typographyActive = false }: Props & { typographyActive?: boolean }) {
+export function ContactSection({ data, themeColor, locale = "en", typographyActive = false }: Props & { typographyActive?: boolean }) {
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6 bg-gray-50">
       <div className="max-w-3xl mx-auto">
@@ -65,6 +70,12 @@ export function ContactSection({ data, themeColor, typographyActive = false }: P
               </div>
             </div>
           )}
+          {data.map && data.address && <div className="flex gap-4 flex-wrap">
+            <a href={mapLinks(data.address).google} target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
+            <a href={mapLinks(data.address).apple} target="_blank" rel="noopener noreferrer">Open in Apple Maps</a>
+          </div>}
+          {data.hours?.length ? <ul className="space-y-2">{data.hours.filter(isBusinessHours).map((hours, i) => <li key={i}>{formatBusinessHours(hours, locale)}{hours.note && <p>{hours.note}</p>}</li>)}</ul> : null}
+          {data.note && <p>{data.note}</p>}
           {data.socials?.map((social, i) => {
             const url = sanitizeSocialUrl(social.url);
             if (url === "#" || !SOCIAL_PLATFORMS.includes(social.platform)) return null;

@@ -199,7 +199,7 @@ function renderSection(
       content = <StatsSection {...props} />;
       break;
     case "contact":
-      content = <ContactSection {...props} />;
+      content = <ContactSection {...props} locale={page.locale} />;
       break;
     case "cta":
       // CTA already has its own background color

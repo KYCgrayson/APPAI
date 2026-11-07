@@ -1,3 +1,4 @@
+import { isBusinessHours } from "./business-hours.ts";
 /**
  * Security sanitization utilities for user-supplied content.
  *
@@ -129,7 +130,9 @@ export function sanitizeContent(
   if (typeof obj === "object") {
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
-      result[key] = sanitizeContent(value, key, warnings, path ? `${path}.${key}` : key);
+      if (key === "hours") {
+        result[key] = Array.isArray(value) ? value.filter(isBusinessHours).map(item => sanitizeContent(item, key, warnings, path ? `${path}.${key}` : key)) : [];
+      } else result[key] = sanitizeContent(value, key, warnings, path ? `${path}.${key}` : key);
     }
     return result;
   }

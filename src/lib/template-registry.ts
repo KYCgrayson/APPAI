@@ -206,6 +206,7 @@ export const SECTION_DEFS: SectionDef[] = [
         items: [
           { name: "icon", type: "string", required: false, description: "One of icons (GET /api/v1/sections) or any emoji" },
           { name: "title", type: "string", required: true, description: "Feature title" },
+          { name: "price", type: "string", required: false, description: "For menus and service price lists, put the price in price (e.g. NT$140)" },
           { name: "description", type: "string", required: true, description: "Feature description" },
         ],
       },
@@ -374,6 +375,14 @@ export const SECTION_DEFS: SectionDef[] = [
       { name: "email", type: "string", required: false, description: "Contact email" },
       { name: "phone", type: "string", required: false, description: "Phone number" },
       { name: "address", type: "string", required: false, description: "Physical address" },
+      { name: "map", type: "boolean", required: false, description: "Show Google Maps and Apple Maps address links; no key or geocoding" },
+      { name: "note", type: "string", required: false, description: "Hours note, e.g. Closed on public holidays" },
+      { name: "hours", type: "array", required: false, description: "Opening intervals; omit closed days; multiple entries allow split shifts or overnight hours", items: [
+        { name: "days", type: "array", required: true, description: "Nonempty array of mon, tue, wed, thu, fri, sat, sun" },
+        { name: "open", type: "string", required: true, pattern: "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$", description: "Opening time HH:MM" },
+        { name: "close", type: "string", required: true, pattern: "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$", description: "Closing time HH:MM" },
+        { name: "note", type: "string", required: false, description: "Optional interval note" },
+      ] },
       { name: "formUrl", type: "url", required: false, description: "External form URL (e.g. Google Forms, Typeform)" },
       { name: "socials", type: "array", required: false, description: "Social / messaging contacts (HTTPS only)", items: [
         { name: "platform", type: "string", required: true, enum: SOCIAL_PLATFORMS, description: "Social platform" },
@@ -633,7 +642,7 @@ export const PRESET_DEFS: PresetDef[] = [
     description: "For conferences, meetups, and launches. Includes hero, about, video, schedule, team (speakers), pricing (tickets), sponsors, FAQ, and call-to-action.",
     sections: ["hero", "about", "video", "schedule", "team", "pricing", "sponsors", "faq", "cta"],
   },
-  { id: "company-service", template: "COMPANY_PROFILE", name: "Company / Service", description: "For businesses and service providers: services, opening hours, and contact information.", sections: ["hero", "features", "about", "about", "contact", "cta"], example: example6, exampleFile: "company-service.example.json" },
+  { id: "company-service", template: "COMPANY_PROFILE", name: "Company / Service", description: "For businesses and service providers: services, opening hours, and contact information. Insert optional video/embed after about sections and before contact.", sections: ["hero", "features", "about", "about", "contact", "cta"], example: example6, exampleFile: "company-service.example.json" },
   { id: "product", template: "PRODUCT_SHOWCASE", name: "Product Showcase", description: "For physical or digital products: features, pricing, and purchase links.", sections: ["hero", "features", "pricing", "cta"], example: example7, exampleFile: "product.example.json" },
   { id: "hiring", template: "COMPANY_PROFILE", name: "Hiring / Job Opening", description: "For recruiting: openings, benefits, and an application link.", sections: ["hero", "features", "features", "cta"], example: example8, exampleFile: "hiring.example.json" },
   { id: "iframe-tool", template: "APP_LANDING", name: "Wrapped Tool", description: "For tools deployed elsewhere: an iframe with a hosted introduction and usage guidance.", sections: ["hero", "iframe-tool", "about"], example: example9, exampleFile: "iframe-tool.example.json" },

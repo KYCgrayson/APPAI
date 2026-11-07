@@ -30,6 +30,8 @@ Recorded so future work stops re-deriving them. The boundary itself lives in
 
 ## Spec topic split (ops #34)
 
+- [x] First-time agent round 4: structured contact hours, LocalBusiness schema, map links, menu prices, official Instagram embeds, and consistent mood/booking/media/background guidance.
+
 - [x] Complete social platform brand icons and accessible labels; add official Facebook/Threads embeds and YouTube Shorts, HTTPS host validation, and publishing guidance.
 
 - [x] First-time agent round 3: social contacts, everyday icons, links headings, consistent local-shop order, and concise kit/logo/media/address guidance.

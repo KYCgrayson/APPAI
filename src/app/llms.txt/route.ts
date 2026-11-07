@@ -114,7 +114,7 @@ Hosted Pages are always published in four locales: English (en), Traditional Chi
 3. Build a first draft using ${baseUrl}/spec/pages and ${baseUrl}/spec/sections.
 4. Dry-run using ${baseUrl}/spec/api#dry-run, then POST ${baseUrl}/api/v1/pages with the same content JSON. The page is live instantly at ${baseUrl}/p/{slug}.
 
-Use hearth for crafts/workshops/studios/wellness/classes; if no kit description matches, pick by light/dark and warm/cool. Use built-in icon names or any emoji. YouTube/Vimeo/mp4 → video; social posts (TikTok/Instagram/X) → embed. Booking by message → hero CTA to the main channel + contact.socials for all channels. If the user gave no street address, omit the address field and any location section; mention the city in copy only if the user gave it. Logo converters: rsvg-convert, macOS qlmanage -t -s 512 -o . logo.svg / sips, or ImageMagick.
+Pick the kit by the user's stated mood first (e.g. 'fresh and calm' → forest), then by business type. If no kit description matches, pick by light/dark and warm/cool. Use built-in icon names or any emoji. YouTube/Vimeo/mp4 → video; social posts (TikTok/Instagram/X) → embed. If the user names several booking channels, use the first one they listed as the hero CTA; list all in contact.socials. If the user gave no street address, omit the address field and any location section; mention the city in copy only if the user gave it. Menus/service price lists: put the price in price on features.items. Contact supports hours ([{days:["mon"],open:"09:00",close:"17:00"}]), optional note, and map:true for Google/Apple Maps links without keys. Optional video/embed goes after about sections and before contact. Instagram posts/reels use official sandboxed iframes. Logo converters: rsvg-convert, macOS qlmanage -t -s 512 -o . logo.svg / sips, or ImageMagick.
 
 Use only supplied contact details; follow ${baseUrl}/spec/pages#contact for phone/LINE links and compliance text.
 
@@ -232,7 +232,7 @@ Universal Apps are login-protected applications with persistent Organization dat
 
 You (the agent) are building pages on behalf of a human. Gather minimum context and build a complete first draft immediately. Decide the template, sections, colors, fonts and compliance pages yourself. Ask only for product-specific facts you cannot infer, unmentioned specific branding preferences, whether to add languages beyond the four defaults, or genuine design tradeoffs; see ${baseUrl}/spec/pages#what-to-decide-yourself-do-not-ask-the-user and ${baseUrl}/spec/pages#when-to-ask-the-user. Hosted Pages are always published in four locales: English (en), Traditional Chinese (zh-TW), Simplified Chinese (zh-CN) and Spanish (es). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four. Translate their intent into a professional, mobile-friendly page and iterate with PATCH.
 
-If appai is missing something you need, finish the page with existing fields, then report it with POST /api/v1/feedback (kind: missing_feature).
+If appai is missing something you need, still publish with existing fields; don’t wait for the feature. Then report it with POST /api/v1/feedback (kind: missing_feature).
 
 ## Complete single-file fallback
 

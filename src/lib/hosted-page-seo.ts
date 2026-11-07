@@ -1,3 +1,4 @@
+import { DAYS, isBusinessHours, type BusinessHours } from "./business-hours.ts";
 import { normalizeHostedContent } from "./hosted-content.ts";
 import { PLATFORM_ORIGIN } from "./platform-identity.ts";
 /* Publisher JSON is intentionally open; all SEO URLs pass the shared sanitizer. */
@@ -73,6 +74,16 @@ export function buildJsonLd(
   }
 
   const graph: any[] = [primary];
+  const contact = content.sections.find((s: any) => s.type === "contact" && (s.data?.address || s.data?.hours?.length))?.data;
+  if (contact) graph.push({
+    "@type": "LocalBusiness", name: page.title, url,
+    address: contact.address || undefined, telephone: contact.phone || undefined,
+    image: safeHttpUrl(content.logo),
+    sameAs: (Array.isArray(contact.socials) ? contact.socials : []).map((s: any) => safeHttpUrl(s?.url)).filter((url: string | undefined) => url?.startsWith("https:")),
+    openingHoursSpecification: (Array.isArray(contact.hours) ? contact.hours : []).filter(isBusinessHours).map((h: BusinessHours) => ({
+      "@type": "OpeningHoursSpecification", dayOfWeek: h.days.map(day => `https://schema.org/${["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][DAYS.indexOf(day)]}`), opens: h.open, closes: h.close,
+    })),
+  });
   if (breadcrumb) graph.push(breadcrumb);
   for (const section of (content?.sections || []).filter((s: any) => s.type === "project-cards").slice(0, 20)) {
     const items = (Array.isArray(section.data?.items) ? section.data.items : []).slice(0, 100).flatMap((item: any) => {

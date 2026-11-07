@@ -66,7 +66,7 @@ If the user has no logo, create a simple square 512×512 PNG following the Logo 
 Copy this complete request body into both the dry-run and publish POSTs. Change the slug and copy, **replace the demo logo with the real logo**, and write `metaDescription`, `privacyPolicy` and `termsOfService` per locale:
 
 ```json
-{"slug":"company-service-demo","template":"COMPANY_PROFILE","title":"Cedar Workshop","tagline":"Clear websites for independent businesses.","themeColor":"#047857","fontFamily":"Lato","isPublished":true,"content":{"logo":"https://appai.info/spec/examples/placeholder-logo.png","sections":[{"order":0,"type":"hero","data":{"headline":"Cedar Workshop","subheadline":"Clear websites for independent businesses.","logo":"https://appai.info/spec/examples/placeholder-logo.png","variant":"centered","heroHeight":"medium","ctaText":"Book a discovery call","ctaUrl":"https://example.com/book","backgroundColor":"#FFFFFF"}},{"type":"features","data":{"heading":"Services","items":[{"icon":"sparkles-outline","title":"Website design","description":"Accessible websites for independent businesses."}],"backgroundColor":"#FFFFFF"},"order":1},{"order":2,"type":"about","data":{"id":"details","heading":"How to order","text":"Book a discovery call to discuss your website and plan the next steps.","backgroundColor":"#ECFDF5"}},{"type":"about","data":{"heading":"Opening hours","text":"Monday–Friday: 09:00–17:00. Weekends: closed.","backgroundColor":"#ECFDF5"},"order":3},{"type":"contact","data":{"heading":"Talk to Cedar","email":"hello@example.com","formUrl":"https://example.com/contact","backgroundColor":"#FFFFFF"},"order":4},{"order":5,"type":"cta","data":{"headline":"Book a discovery call","subheadline":"Clear websites for independent businesses.","buttonText":"Book a discovery call","buttonUrl":"https://example.com/company-service"}}]},"locale":"en","darkMode":false,"themeColorSecondary":"#B45309"}
+{"slug":"company-service-demo","template":"COMPANY_PROFILE","title":"Cedar Workshop","tagline":"Clear websites for independent businesses.","themeColor":"#047857","fontFamily":"Lato","isPublished":true,"content":{"logo":"https://appai.info/spec/examples/placeholder-logo.png","sections":[{"order":0,"type":"hero","data":{"headline":"Cedar Workshop","subheadline":"Clear websites for independent businesses.","logo":"https://appai.info/spec/examples/placeholder-logo.png","variant":"centered","heroHeight":"medium","ctaText":"Book a discovery call","ctaUrl":"https://example.com/book","backgroundColor":"#FFFFFF"}},{"type":"features","data":{"heading":"Services","items":[{"icon":"sparkles-outline","title":"Website design","description":"Accessible websites for independent businesses."}],"backgroundColor":"#ECFDF5"},"order":1},{"order":2,"type":"about","data":{"id":"details","heading":"How to order","text":"Book a discovery call to discuss your website and plan the next steps.","backgroundColor":"#FFFFFF"}},{"type":"about","data":{"heading":"Pickup and visits","text":"Book a call before visiting.","backgroundColor":"#ECFDF5"},"order":3},{"type":"contact","data":{"heading":"Talk to Cedar","email":"hello@example.com","formUrl":"https://example.com/contact","backgroundColor":"#FFFFFF","hours":[{"days":["mon","tue","wed","thu","fri"],"open":"09:00","close":"17:00"}]},"order":4},{"order":5,"type":"cta","data":{"headline":"Book a discovery call","subheadline":"Clear websites for independent businesses.","buttonText":"Book a discovery call","buttonUrl":"https://example.com/company-service"}}]},"locale":"en","darkMode":false,"themeColorSecondary":"#B45309"}
 ```
 
 
@@ -241,7 +241,7 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 | hearth | #92400E | #9A3412 | DM Sans | false | #FFFBEB, #FFF7ED |
 | ember | #FDBA74 | #FCA5A5 | DM Sans | true | #1C1917, #292524 |
 
-Use indigo for light apps/SaaS; forest for light nature/wellbeing pages; editorial for light writing/portfolios; ocean for light services/technical products; hearth for light, warm bakeries, cafes, local food shops, crafts, workshops, studios, wellness and classes; midnight for dark dashboards; ember for dark, warm creative brands. Copy kit fields together into the page request. If no kit description matches, pick by light/dark and warm/cool.
+Pick the kit by the user's stated mood first (e.g. 'fresh and calm' → forest), then by business type. If no kit description matches, pick by light/dark and warm/cool. Copy kit fields together into the page request.
 
 Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a style kit; use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. When a kit has two `backgroundColors`, alternate them section by section, starting with the first. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants.
 
@@ -344,7 +344,7 @@ Use only supplied contact details in sections, `privacyPolicy` and `termsOfServi
 | YouTube | `https://www.youtube.com/@{handle}` |
 | Website | Supplied HTTPS website URL |
 
-Booking by message → hero CTA to the main channel + `contact.socials` for all channels. Use the supplied channel in compliance copy too. Use `simple-order` only for order + payment flows with a supplied `notificationEmail`.
+If the user names several booking channels, use the first one they listed as the hero CTA; list all in contact.socials. Use the supplied channel in compliance copy too. Use `simple-order` only for order + payment flows with a supplied `notificationEmail`.
 
 ## What You Can Build (read this first)
 
@@ -426,7 +426,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 | User intent | Page shape |
 |---|---|
 | **Personal website / portfolio of a person** | template `PERSON` only for the person’s own root page, never project pages; `profile-header` + `project-cards` + `entries`. |
-| **Local shop / small business (bakery, cafe, salon, studio)** | Preset `company-service`, template `COMPANY_PROFILE`: hero → features (products/services) → about (how to order) → about (weekly opening hours as a short Markdown list, plus pickup details) → contact or links (location/contact) → optional cta. No pricing/testimonials required; use only supplied facts. |
+| **Local shop / small business (bakery, cafe, salon, studio)** | Preset `company-service`, template `COMPANY_PROFILE`: hero → features (products/services) → about (how to order) → about (pickup details, if supplied) → optional video/embed → contact (address, structured hours and socials) → optional cta. Optional video/embed goes after about sections and before contact. No pricing/testimonials required; use only supplied facts. |
 | **Landing page for an app/product** | Hero + features + pricing + testimonials + faq + cta. Standard SaaS template. |
 | **Host a vibe-coded tool** | Hero (short tagline) + `iframe-tool` (the tool itself) + 1-2 supporting sections (about / faq). The tool is the page. |
 
@@ -637,6 +637,8 @@ Supports YouTube/Vimeo iframe players and direct mp4, webm, gif media (auto-dete
 
 ### features
 
+For menus and service price lists, put the price in `price` on each `features.items` entry (string, e.g. "NT$140"); it renders next to the title.
+
 `heading` and `subheading` are optional. For a few priced services without feature lists, use `features` with the price in each description; use `pricing` only for plans/tiers with feature lists (each plan requires `features[]`).
 ```json
 { "type": "features", "order": 3, "data": {
@@ -714,7 +716,7 @@ Supports YouTube/Vimeo iframe players and direct mp4, webm, gif media (auto-dete
 
 ### schedule
 
-Use `schedule` for event timelines (`time` + session `title`), and `about.text` with a short Markdown list for weekly opening hours.
+Use `schedule` for event timelines (`time` + session `title`); use `contact.hours` for weekly opening hours.
 ```json
 { "type": "schedule", "order": 11, "data": {
     "items": [
@@ -754,6 +756,10 @@ Use `schedule` for event timelines (`time` + session `title`), and `about.text` 
     "address": "123 Main St"
 }}
 ```
+
+Optional `hours`: array of `{days: ["mon", "tue"], open: "09:00", close: "17:00", note?: "…"}`; days must be nonempty mon–sun values, times 24-hour HH:MM. Omit closed days; use multiple entries for split shifts, and a close earlier than open for overnight hours. Day names follow the page locale. Optional contact `note` adds a general hours note (e.g. "Closed on public holidays"). Address and/or hours emits LocalBusiness JSON-LD with title, logo, phone and social URLs.
+
+Optional `map: true` with `address` shows "Open in Google Maps" / "Open in Apple Maps" links using encoded address queries; no iframe, geocoding, key or secret needed.
 
 Optional `socials`: `{platform, url, label?}` items; HTTPS only. See canonical [Contact](https://appai.info/spec/pages#contact) for platforms, URL formats and message booking.
 
@@ -802,7 +808,7 @@ Optional `heading` and `subheading` appear above the link buttons.
     "aspectRatio": "9:16"
 }}
 ```
-Auto-detects provider from URL. Supported: YouTube (including Shorts), Vimeo, Facebook posts/videos, Threads posts, TikTok, Loom, Spotify, CodePen, Figma. Facebook uses official plugin iframes; Threads uses a lazy-loaded sandboxed iframe at `https://www.threads.com/@{user}/post/{id}/embed`. X (Twitter) and Instagram render as linked preview cards. HTTP URLs are upgraded to HTTPS. Existing provider URL patterns remain supported, including mobile/music YouTube watch URLs and YouTube privacy embed URLs. `aspectRatio` optional — sensible default per provider (TikTok → 9:16, YouTube → 16:9). Iframe is sandboxed.
+Auto-detects provider from URL. Supported: YouTube (including Shorts), Vimeo, Facebook posts/videos, Threads posts, TikTok, Loom, Spotify, CodePen, Figma. Facebook uses official plugin iframes; Threads uses a lazy-loaded sandboxed iframe at `https://www.threads.com/@{user}/post/{id}/embed`. Instagram posts/reels use official sandboxed iframes at `https://www.instagram.com/p/{id}/embed` or `/reel/{id}/embed` (public, embeddable posts only). X (Twitter) renders as a linked preview card. HTTP URLs are upgraded to HTTPS. Existing provider URL patterns remain supported, including mobile/music YouTube watch URLs and YouTube privacy embed URLs. `aspectRatio` optional — sensible default per provider (TikTok → 9:16, YouTube → 16:9). Iframe is sandboxed.
 
 ### Link rel (SEO)
 Links in `links` and `cta` sections accept an optional `rel` string. Use `"nofollow"` for sponsored/affiliate/user-supplied links, `"sponsored"` for paid placements, `"nofollow sponsored"` for both. Leaving it unset produces `rel="noopener noreferrer"` for external links (standard dofollow). Example:
