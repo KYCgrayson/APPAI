@@ -3,8 +3,6 @@ Covers Hosted Page configuration, CRUD, compliance and publishing workflow.
 Previous: [Typography](https://appai.info/spec/typography) · Next: [Sections](https://appai.info/spec/sections)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
-Before writing privacyPolicy, ASK the user what data the app collects, stores, or sends (including photos, analytics, and accounts). Never guess. Publish a delete-account child page only if the app has user accounts; FAQ/contact child pages follow the usual rules.
-
 ## Contact
 
 Use only supplied contact details in sections, `privacyPolicy` and `termsOfService`; never invent an email. If the user gave no street address, omit `address` and any location section; mention the city in copy only if the user gave it. `contact.phone` renders a tappable phone link; buttons also accept `tel:+{E.164 digits}`.
@@ -95,7 +93,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 ### Your default workflow
 
 1. **Gather minimum context.** Ask: "What is your product/app and who is it for?" You need: product name, what it does, target audience. That's enough to start.
-2. **Make design decisions yourself.** Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a kit in [Theme](https://appai.info/spec/theme) and use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`. Pick sections based on the product type. Generate features, FAQ, and copy from what the user told you. Generate privacy policy and terms of service automatically.
+2. **Make design decisions yourself.** Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a kit in [Theme](https://appai.info/spec/theme) and use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`. Pick sections based on the product type. Generate features, FAQ, and copy from what the user told you. Write terms of service yourself; write the privacy policy only after asking the user what data the app collects (see [Compliance pages](#compliance-pages)).
 3. **Publish the first draft.** [Authorize](https://appai.info/spec/api#authentication) → **MUST READ [Style & logo](https://appai.info/spec/style)** for logo rules and [Theme](https://appai.info/spec/theme) for kits → [build](https://appai.info/spec/pages#creating-a-page) with the [section schemas](https://appai.info/spec/sections) → [dry-run, then publish](https://appai.info/spec/api#dry-run) with the same body. Show the user the live URL.
 4. **Iterate.** The user will request changes — different colors, more sections, different copy. Use PATCH to update.
 
@@ -201,9 +199,9 @@ curl -X POST https://appai.info/api/v1/pages \
 
 See [recommended compliance flags](https://appai.info/spec/i18n#compliance-pages-recommended-flags).
 
-For App Store / Play Store submissions, create a multi-page site with child pages for FAQ, contact, and account deletion, with translated `privacyPolicy` and `termsOfService` fields on each root locale variant.
+For App Store / Play Store submissions, create a multi-page site with child pages for FAQ, contact, and account deletion (only if the app has user accounts), with translated `privacyPolicy` and `termsOfService` fields on each root locale variant.
 
-Generate privacy policy and terms of service automatically — any LLM can produce standard legal text using the app name and supplied contact (email, phone, LINE or form URL); never invent an email. Include: data collection practices, user rights, children's privacy clause, contact information.
+Write terms of service yourself — any LLM can produce standard legal text using the app name and supplied contact (email, phone, LINE or form URL); never invent an email. Before writing privacyPolicy, ASK the user what data the app collects, stores, or sends (including photos, analytics, and accounts). Never guess. Publish a delete-account child page only if the app has user accounts; FAQ/contact child pages follow the usual rules. Then write the privacy policy from the user's answer. Include: data collection practices, user rights, children's privacy clause, contact information.
 
 The canonical compliance setup:
 - Root: marketing landing page

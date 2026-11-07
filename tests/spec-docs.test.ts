@@ -325,3 +325,20 @@ test('Hosted Page guidance publishes four default locales without waiting for op
     assert.ok(home.agentSkillDesc.includes('GET /api/v1/sections'), locale);
   }
 });
+
+test('SKILL.md frontmatter holds only name and description', () => {
+  const skill = read('skills/appai-publish/SKILL.md');
+  const match = skill.match(/^---\n([\s\S]*?)\n---\n/);
+  assert.ok(match, 'SKILL.md must start with a frontmatter block');
+  const lines = match[1].split('\n');
+  assert.deepEqual(lines.map(line => line.split(':')[0]), ['name', 'description']);
+  assert.match(lines[0], /^name: appai-publish$/);
+});
+
+test('privacy policy guidance asks the user instead of generating it', () => {
+  const ask = 'Before writing privacyPolicy, ASK the user what data the app collects';
+  for (const content of [docs.get('pages')!, read('skills/appai-publish/SKILL.md'), read('AGENT_INSTRUCTIONS.md')]) {
+    assert.ok(content.includes(ask));
+    assert.ok(!content.includes('Generate privacy policy'));
+  }
+});
