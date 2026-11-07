@@ -93,7 +93,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 ### Your default workflow
 
 1. **Gather minimum context.** Ask: "What is your product/app and who is it for?" You need: product name, what it does, target audience. That's enough to start.
-2. **Make design decisions yourself.** Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a kit in [Theme](https://appai.info/spec/theme) and use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`. Pick sections based on the product type. Generate features, FAQ, and copy from what the user told you. Write terms of service yourself; write the privacy policy only after asking the user what data the app collects (see [Compliance pages](#compliance-pages)).
+2. **Make design decisions yourself.** Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a kit in [Theme](https://appai.info/spec/theme) and use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`. Pick sections based on the product type. Generate features, FAQ, and copy from what the user told you. Write terms of service yourself; write the privacy policy only after asking the user what data the app collects (see [Compliance Pages](https://appai.info/spec/pages#compliance-pages)).
 3. **Publish the first draft.** [Authorize](https://appai.info/spec/api#authentication) → **MUST READ [Style & logo](https://appai.info/spec/style)** for logo rules and [Theme](https://appai.info/spec/theme) for kits → [build](https://appai.info/spec/pages#creating-a-page) with the [section schemas](https://appai.info/spec/sections) → [dry-run, then publish](https://appai.info/spec/api#dry-run) with the same body. Show the user the live URL.
 4. **Iterate.** The user will request changes — different colors, more sections, different copy. Use PATCH to update.
 
@@ -132,7 +132,7 @@ Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/pub
 - Which template/sections to use (infer from the product type)
 - themeColor (copy together with themeColorSecondary, fontFamily (Chinese variants: Noto Sans TC/SC) and darkMode from a kit in [Theme](https://appai.info/spec/theme))
 - Section ordering for app/product landing pages: hero → stats → features → pricing → testimonials → faq → cta, omitting unsupported sections. Use `cta` only on landing-type pages: app, product, SaaS, company/service, event and hiring. Do not add it to PERSON/profile, link-in-bio, portfolio, card-wall or wrapped-tool pages.
-- Privacy policy and terms of service (generate them using the product name + the supplied contact (email, phone, LINE or form URL; never invent an email))
+- Terms of service (write them using the product name + the supplied contact (email, phone, LINE or form URL; never invent an email)). The privacy policy is not decided by you; see [When to ask the user](https://appai.info/spec/pages#when-to-ask-the-user).
 - darkMode (use the same style kit)
 - fontFamily: Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants.
 - backgroundColor on sections (use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`)
@@ -142,6 +142,7 @@ Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/pub
 - Product-specific content you cannot infer (pricing details, specific features they want to highlight)
 - Branding preferences they haven't mentioned (if they have a specific logo or color)
 - Languages beyond the four defaults. Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.
+- What data the app or service collects, stores, or sends (including photos, analytics, and accounts), before writing `privacyPolicy`. Never guess. See [Compliance Pages](https://appai.info/spec/pages#compliance-pages).
 - Any genuine design tradeoff where both options are valid
 
 ### Rules

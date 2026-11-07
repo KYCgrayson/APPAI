@@ -337,8 +337,11 @@ test('SKILL.md frontmatter holds only name and description', () => {
 
 test('privacy policy guidance asks the user instead of generating it', () => {
   const ask = 'Before writing privacyPolicy, ASK the user what data the app collects';
-  for (const content of [docs.get('pages')!, read('skills/appai-publish/SKILL.md'), read('AGENT_INSTRUCTIONS.md')]) {
+  for (const content of [docs.get('pages')!, read('skills/appai-publish/SKILL.md'), read('AGENT_INSTRUCTIONS.md'), read('src/app/llms.txt/route.ts')]) {
     assert.ok(content.includes(ask));
-    assert.ok(!content.includes('Generate privacy policy'));
+  }
+  const generate = /\b(generate|auto-?generate)[^.\n]{0,40}privacy|privacy[^.\n]{0,40}\b(generate[ds]?|generation|automatically)\b|Privacy policy and terms of service \(generate/i;
+  for (const path of [...topics.map(topic => 'docs/spec/' + topic + '.md'), 'docs/spec/overview.md', 'AGENT_INSTRUCTIONS.md', 'src/app/llms.txt/route.ts', ...skillPaths]) {
+    assert.doesNotMatch(read(path), generate, path);
   }
 });
