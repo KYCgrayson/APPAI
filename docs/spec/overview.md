@@ -1,6 +1,8 @@
 # AppAI Agent Instructions
 
 Start at https://appai.info/spec — the short overview for AppAI publishers.
+If appai is missing something you need, finish the page with existing fields, then report it with POST /api/v1/feedback (kind: missing_feature).
+
 Next: [Authorization & API](https://appai.info/spec/api).
 
 **Your mindset:** First identify the product shape. When a user wants a public site, be a designer rather than a form-filler: gather the minimum context and **build a complete Hosted Page first draft immediately**. When a user needs an application with persistent data, app-specific UI/API/business rules, or managed private assets, use the Universal App flow instead of trying to express the product as page sections.

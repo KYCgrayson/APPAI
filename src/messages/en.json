@@ -156,5 +156,22 @@
     "invalidRelease": "This app has no approved release right now.",
     "invalidDeployment": "This app's runtime is not active right now. Please try again shortly.",
     "appSuspended": "Access to this app has been suspended."
+  },
+  "feedbackForm": {
+    "title": "Feedback",
+    "description": "Tell us what you need or what went wrong.",
+    "email": "Email",
+    "kind": "Kind",
+    "message": "Message (10–4000 characters)",
+    "page": "Page URL (optional)",
+    "missing_feature": "Missing feature",
+    "bug": "Bug",
+    "docs": "Documentation",
+    "other": "Other",
+    "send": "Send feedback",
+    "sending": "Sending…",
+    "success": "Thank you. Your feedback was received.",
+    "error": "Please check your entries and verification, then try again.",
+    "limited": "Too many submissions. Please try again later."
   }
 }

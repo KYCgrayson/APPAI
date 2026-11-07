@@ -156,5 +156,22 @@
     "invalidRelease": "Für diese App gibt es derzeit kein freigegebenes Release.",
     "invalidDeployment": "Die Laufzeitumgebung dieser App ist derzeit nicht aktiv. Bitte versuche es in Kürze erneut.",
     "appSuspended": "Der Zugriff auf diese App wurde ausgesetzt."
+  },
+  "feedbackForm": {
+    "title": "Feedback",
+    "description": "Teilen Sie uns mit, was Sie benötigen oder was schiefgelaufen ist.",
+    "email": "E-Mail",
+    "kind": "Art",
+    "message": "Nachricht (10–4000 Zeichen)",
+    "page": "Seiten-URL (optional)",
+    "missing_feature": "Fehlende Funktion",
+    "bug": "Fehler",
+    "docs": "Dokumentation",
+    "other": "Sonstiges",
+    "send": "Feedback senden",
+    "sending": "Wird gesendet…",
+    "success": "Vielen Dank. Ihr Feedback ist eingegangen.",
+    "error": "Bitte prüfen Sie Ihre Eingaben und die Verifizierung und versuchen Sie es erneut.",
+    "limited": "Zu viele Einsendungen. Bitte versuchen Sie es später erneut."
   }
 }

@@ -1,5 +1,9 @@
 # TODO — AppAI Project Roadmap
 
+## Feedback channel
+
+- [x] Agent API, localized public form, optional Turnstile/Resend, admin list, and publishing guidance. SQL migration prepared for manual application; not run.
+
 ## Product decisions (settled — do not re-litigate)
 
 Recorded so future work stops re-deriving them. The boundary itself lives in

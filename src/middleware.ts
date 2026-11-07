@@ -45,6 +45,8 @@ interface RateLimitRule {
 }
 
 const rules: RateLimitRule[] = [
+  { match: (p) => p === "/api/feedback/web", limit: 5, windowMs: 3600000 },
+  { match: (p) => p === "/api/v1/feedback", limit: 20, windowMs: 3600000 },
   {
     match: (p) => p === "/api/v1/auth/register",
     limit: 5,

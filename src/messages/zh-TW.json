@@ -156,5 +156,22 @@
     "invalidRelease": "此應用程式目前沒有已核准的版本。",
     "invalidDeployment": "此應用程式的執行環境目前未啟用，請稍後再試。",
     "appSuspended": "此應用程式的存取已暫停。"
+  },
+  "feedbackForm": {
+    "title": "意見回饋",
+    "description": "告訴我們您需要的功能或遇到的問題。",
+    "email": "電子郵件",
+    "kind": "類型",
+    "message": "訊息（10–4000 字元）",
+    "page": "頁面網址（選填）",
+    "missing_feature": "缺少功能",
+    "bug": "錯誤",
+    "docs": "文件",
+    "other": "其他",
+    "send": "送出回饋",
+    "sending": "傳送中…",
+    "success": "謝謝，我們已收到您的回饋。",
+    "error": "請檢查填寫內容及驗證後重試。",
+    "limited": "提交次數過多，請稍後再試。"
   }
 }

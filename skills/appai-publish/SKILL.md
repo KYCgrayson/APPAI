@@ -16,6 +16,8 @@ Start at https://appai.info/spec — choose the simplest use-case that fits, bui
 
 AppAI does not host arbitrary code or provide an unrestricted upload-and-run path. Tools keep running on their existing host; Universal Apps require platform review. Agents cannot add new backends or connectors: reference an existing owner-maintained connector, and tell the user when an owner must supply one.
 
+If appai is missing something you need, finish the page with existing fields, then report it with POST /api/v1/feedback (kind: missing_feature).
+
 ## Authorization for every use-case
 
 Follow [Authorization & API](https://appai.info/spec/api). Read `APPAI_API_KEY` from the environment first, then check for a securely stored key outside the working tree. Reuse a valid key; discard a rejected stored key and run device flow.

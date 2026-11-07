@@ -156,5 +156,22 @@
     "invalidRelease": "此应用目前没有已批准的版本。",
     "invalidDeployment": "此应用的运行环境当前未启用，请稍后再试。",
     "appSuspended": "此应用的访问已被暂停。"
+  },
+  "feedbackForm": {
+    "title": "意见反馈",
+    "description": "告诉我们您需要的功能或遇到的问题。",
+    "email": "电子邮件",
+    "kind": "类型",
+    "message": "消息（10–4000 字符）",
+    "page": "页面网址（选填）",
+    "missing_feature": "缺少功能",
+    "bug": "错误",
+    "docs": "文档",
+    "other": "其他",
+    "send": "发送反馈",
+    "sending": "发送中…",
+    "success": "谢谢，我们已收到您的反馈。",
+    "error": "请检查填写内容及验证后重试。",
+    "limited": "提交次数过多，请稍后再试。"
   }
 }

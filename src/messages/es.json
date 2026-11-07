@@ -156,5 +156,22 @@
     "invalidRelease": "Esta app no tiene ninguna versión aprobada en este momento.",
     "invalidDeployment": "El entorno de ejecución de esta app no está activo ahora mismo. Inténtalo de nuevo en breve.",
     "appSuspended": "El acceso a esta app se ha suspendido."
+  },
+  "feedbackForm": {
+    "title": "Comentarios",
+    "description": "Cuéntanos qué necesitas o qué salió mal.",
+    "email": "Correo electrónico",
+    "kind": "Tipo",
+    "message": "Mensaje (10–4000 caracteres)",
+    "page": "URL de la página (opcional)",
+    "missing_feature": "Función faltante",
+    "bug": "Error",
+    "docs": "Documentación",
+    "other": "Otro",
+    "send": "Enviar comentarios",
+    "sending": "Enviando…",
+    "success": "Gracias. Hemos recibido tus comentarios.",
+    "error": "Revisa los datos y la verificación e inténtalo de nuevo.",
+    "limited": "Demasiados envíos. Inténtalo más tarde."
   }
 }

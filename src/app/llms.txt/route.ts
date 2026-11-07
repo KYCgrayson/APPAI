@@ -230,6 +230,8 @@ Universal Apps are login-protected applications with persistent Organization dat
 
 You (the agent) are building pages on behalf of a human. Gather minimum context and build a complete first draft immediately. Decide the template, sections, colors, fonts and compliance pages yourself. Ask only for product-specific facts you cannot infer, unmentioned specific branding preferences, whether to add languages beyond the four defaults, or genuine design tradeoffs; see ${baseUrl}/spec/pages#what-to-decide-yourself-do-not-ask-the-user and ${baseUrl}/spec/pages#when-to-ask-the-user. Hosted Pages are always published in four locales: English (en), Traditional Chinese (zh-TW), Simplified Chinese (zh-CN) and Spanish (es). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four. Translate their intent into a professional, mobile-friendly page and iterate with PATCH.
 
+If appai is missing something you need, finish the page with existing fields, then report it with POST /api/v1/feedback (kind: missing_feature).
+
 ## Complete single-file fallback
 
 ${baseUrl}/llms-full.txt — the complete specification when a single file is needed. Start at ${baseUrl}/spec for the short overview and follow its topic pages.
