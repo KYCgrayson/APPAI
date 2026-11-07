@@ -1,7 +1,7 @@
 import { computeTypography, storeTypography, typographySettings } from "./typography.ts";
 import { buildPagePath } from "./parse-page-segments.ts";
 import { createPageSchema } from "./validations/page.ts";
-import { sanitizeContent, type SanitizeWarning } from "./sanitize.ts";
+import { sanitizePageContent, type SanitizeWarning } from "./sanitize.ts";
 import { sectionFieldWarnings } from "./section-field-warnings.ts";
 import { pageLogoWarnings } from "./page-logo.ts";
 import { SECTION_DEFS, type SectionFieldDef } from "./template-registry.ts";
@@ -14,7 +14,7 @@ export function checkPagePreview(body: unknown, iconNames: readonly string[] = [
   for (const field of ["themeColor", "fontFamily"]) {
     if (!context.exists && !(field === "themeColor" && parsed.data.parentSlug) && rawBody[field] === undefined) warnings.push({ path: field, message: `The page will use defaults for ${field}; pick a style kit at ${context.origin || "https://appai.info"}/spec/style.` });
   }
-  const sanitizedContent = sanitizeContent(storeTypography(parsed.data).content, undefined, warnings) as Record<string, unknown>;
+  const sanitizedContent = sanitizePageContent(storeTypography(parsed.data).content, undefined, warnings) as Record<string, unknown>;
 
   const computedTypography = computeTypography(typographySettings(sanitizedContent));
   warnings.push(...computedTypography.warnings);

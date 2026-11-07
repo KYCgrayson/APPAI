@@ -178,3 +178,39 @@ test("extreme hero and contact text render with active shrink and wrap rules", a
   assert.match(result.html, /relative z-10 max-w-3xl min-w-0/);
   assert.match(result.html, /<div class="min-w-0"><p data-typography-role="caption"/);
 });
+
+ test("render version opts existing headings and hero store CTA into new behavior", async () => {
+  const sections = [
+    { type: "pricing", data: { heading: "Custom pricing", subheading: "Pricing detail", items: [{ name: "Free", price: "0", features: [] }] } },
+    { type: "faq", data: { heading: "Custom FAQ", subheading: "FAQ detail", items: [{ question: "Why?", answer: "Because" }] } },
+    { type: "embed", data: { heading: "Custom embed", subheading: "Embed detail", title: "Original embed title", url: "https://youtu.be/abc" } },
+    { type: "hero", data: { headline: "App", ctaText: "Custom download", ctaUrl: "https://apps.apple.com/app/id123" } },
+  ];
+  const render = async (content: unknown) => (await stream(createElement(PageRenderer, { page: { slug: "versions", title: "Versions", template: "APP_LANDING", content } }))).html;
+  const old = await render({ sections });
+  const original = await render({ sections: sections.map(s => { const { heading, subheading, ...data } = s.data; return { ...s, data }; }) });
+  assert.equal(old, original);
+  assert.match(old, />Pricing<\/h2>/);
+  assert.match(old, />FAQ<\/h2>/);
+  assert.match(old, /Original embed title/);
+  assert.match(old, />Custom download<\/a>/);
+  assert.doesNotMatch(old, /aria-label="Download on the App Store"/);
+  for (const renderVersion of [2, 3]) {
+    const modern = await render({ sections, renderVersion });
+    for (const heading of ["Custom pricing", "Custom FAQ", "Custom embed"]) assert.ok(modern.includes(heading));
+    assert.match(modern, /aria-label="Download on the App Store"/);
+    assert.doesNotMatch(modern, /Original embed title|>Custom download<\/a>/);
+  }
+ });
+
+test("legacy features, contact and links retain their previously supported subheadings", async () => {
+  for (const type of ["features", "contact", "links"]) {
+    const result = await stream(createElement(PageRenderer, { page: {
+      slug: "legacy-subheadings", title: "Legacy", template: "APP_LANDING", content: { sections: [
+        { type, data: { heading: "Existing heading", subheading: "Existing supporting copy", items: [{ title: "Item", label: "Link", url: "https://example.com" }] } },
+      ] },
+    } }));
+    assert.equal(result.errors.length, 0);
+    assert.match(result.html, /Existing supporting copy/, type);
+  }
+});

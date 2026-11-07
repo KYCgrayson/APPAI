@@ -19,23 +19,23 @@ test('device ordering keeps both stores with deterministic SSR defaults', () => 
   assert.equal(preferredStore('Android'), 'play');
   assert.equal(preferredStore('Linux desktop'), null);
   for (const variant of ['centered', 'minimal', 'split'] as const) {
-    const html = renderToStaticMarkup(createElement(HeroSection, { themeColor: '#123456', data: { variant, ctaUrl: stores.appStoreUrl, ctaSecondaryUrl: stores.playStoreUrl } }));
+    const html = renderToStaticMarkup(createElement(HeroSection, { renderVersion: 2, themeColor: '#123456', data: { variant, ctaUrl: stores.appStoreUrl, ctaSecondaryUrl: stores.playStoreUrl } }));
     assert.match(html, /aria-label="Download on the App Store"/);
     assert.match(html, /aria-label="Get it on Google Play"/);
     assert.ok(html.indexOf(stores.appStoreUrl) < html.indexOf('play.google.com'));
   }
-  const playFirst = renderToStaticMarkup(createElement(HeroSection, { themeColor: '#123456', data: { ctaUrl: stores.playStoreUrl, ctaSecondaryUrl: stores.appStoreUrl } }));
+  const playFirst = renderToStaticMarkup(createElement(HeroSection, { renderVersion: 2, themeColor: '#123456', data: { ctaUrl: stores.playStoreUrl, ctaSecondaryUrl: stores.appStoreUrl } }));
   assert.match(playFirst, /aria-label="Get it on Google Play" style="order:0"/);
-  const generic = renderToStaticMarkup(createElement(HeroSection, { themeColor: '#123456', data: { ctaText: 'Download' } }));
+  const generic = renderToStaticMarkup(createElement(HeroSection, { renderVersion: 2, themeColor: '#123456', data: { ctaText: 'Download' } }));
   assert.match(generic, /href="#download"/);
-  const html = renderToStaticMarkup(createElement(DownloadSection, { themeColor: '#123456', data: stores }));
+  const html = renderToStaticMarkup(createElement(DownloadSection, { renderVersion: 2, themeColor: '#123456', data: stores }));
   assert.match(html, /Download on the App Store/);
   assert.match(html, /Get it on Google Play/);
 });
 test('pricing and FAQ accept custom headings while preserving old titles', () => {
   assert.ok(SECTION_DEFS.find(s => s.type === 'pricing')!.fields.some(field => field.name === 'subheading'));
   for (const [component, items, fallback] of [[PricingSection, [{ name: 'Free', price: '0', features: [] }], 'Pricing'], [FaqSection, [{ question: 'Why?', answer: 'Because.' }], 'FAQ']] as const) {
-    const render = (extra = {}) => renderToStaticMarkup(createElement(component as any, { themeColor: '#123456', data: { items, ...extra } }));
+    const render = (extra = {}) => renderToStaticMarkup(createElement(component as any, { renderVersion: 2, themeColor: '#123456', data: { items, ...extra } }));
     assert.match(render(), new RegExp('>' + fallback + '</h2>'));
     const custom = render({ heading: 'Custom title', subheading: 'Custom subtitle' });
     assert.match(custom, /Custom title/); assert.match(custom, /Custom subtitle/);
@@ -69,10 +69,31 @@ test('additional sections expose headings and subheadings in schema and renderer
   ] as const;
   for (const [name, data, type] of fixtures) {
     const { [name + 'Section']: Component } = await import('../src/templates/sections/' + name + 'Section.tsx');
-    const html = renderToStaticMarkup(createElement(Component, { themeColor: '#123456', data: { ...data, heading: 'Custom section', subheading: 'Supporting copy' } }));
+    const html = renderToStaticMarkup(createElement(Component, { renderVersion: 2, typographyActive: true, themeColor: '#123456', data: { ...data, heading: 'Custom section', subheading: 'Supporting copy' } }));
     assert.match(html, /Custom section/, type);
+    if (type === "stats" || type === "video") assert.match(html, /<h2 data-typography-role="heading"[^>]*style="color:#123456"/);
     assert.match(html, /Supporting copy/, type);
     for (const field of ['heading', 'subheading']) assert.ok(SECTION_DEFS.find(s => s.type === type)!.fields.some(f => f.name === field), type);
   }
 });
 test.after(() => hooks.deregister());
+
+test('download validates badge hosts and uses plain buttons for other HTTPS URLs', () => {
+  for (const url of ['https://example.com/download', 'https://apps.apple.com.evil.test/app']) {
+    const html = renderToStaticMarkup(createElement(DownloadSection, { renderVersion: 2, themeColor: '#123456', data: { appStoreUrl: url, heading: '', ctaText: '' } }));
+    assert.match(html, /Download Now/);
+    assert.doesNotMatch(html, /aria-label="Download on the App Store"/);
+    assert.ok(html.includes(url));
+  }
+  for (const url of ['http://apps.apple.com/app/id123', 'javascript:alert(1)']) {
+    assert.equal(renderToStaticMarkup(createElement(DownloadSection, { renderVersion: 2, themeColor: '#123456', data: { appStoreUrl: url } })), '');
+  }
+});
+
+test('store badges reserve equal dimensions and render nothing without store URLs', async () => {
+  const { StoreBadges } = await import('../src/templates/shared/StoreBadges.tsx');
+  assert.equal(renderToStaticMarkup(createElement(StoreBadges, {})), '');
+  const html = renderToStaticMarkup(createElement(StoreBadges, stores));
+  assert.equal((html.match(/w-60 h-20 shrink-0/g) || []).length, 2);
+  assert.doesNotMatch(html, /min-h-/);
+});

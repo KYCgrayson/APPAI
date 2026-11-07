@@ -66,3 +66,33 @@ test('publish, upsert, PUT and PATCH persist JSON and return non-blocking typogr
   assert.equal(preview.typographyMobile.display, 54.9);
 });
 test.after(() => { stubs.deregister(); loader.deregister(); });
+
+test('API writes own renderVersion, including metadata-only writes and dry-run', async () => {
+  for (const renderVersion of [undefined, 0, 1, 999, "invalid"]) {
+    state.page = null;
+    const payload = { slug: 'typography-example', title: 'Example', content: { renderVersion, sections: [] } };
+    const response = await POST(req('POST', payload));
+    assert.equal(response.status, 201);
+    assert.equal((await response.json()).content.renderVersion, 2);
+    const preview = await POST(req('POST', payload, '?dryRun=true&upsert=true'));
+    assert.equal((await preview.json()).sanitizedContent.renderVersion, 2);
+    const upsert = await POST(req('POST', payload, '?upsert=true'));
+    assert.equal((await upsert.json()).content.renderVersion, 2);
+    for (const write of [PUT, PATCH]) {
+      for (const body of [{ content: { renderVersion } }, { title: 'Updated' }]) {
+        state.page = Object.assign({}, state.page, { content: { renderVersion: 1, sections: [] } });
+        const result = await write(req('PATCH', body), context);
+        assert.equal(result.status, 200);
+        assert.equal((await result.json()).content.renderVersion, 2);
+      }
+    }
+  }
+});
+
+test('section PATCH also opts the page into render version 2', async () => {
+  const { PATCH: patchSection } = await import('../src/app/api/v1/pages/[slug]/sections/[order]/route.ts');
+  state.page = { id: 'section-page', updatedAt: new Date(), content: { renderVersion: 999, sections: [{ type: 'pricing', order: 0, data: { items: [] } }] } };
+  const result = await patchSection(req('PATCH', { data: { heading: 'Updated heading' } }), { params: Promise.resolve({ slug: 'typography-example', order: '0' }) });
+  assert.equal(result.status, 200);
+  assert.equal((state.page.content as any).renderVersion, 2);
+});

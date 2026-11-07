@@ -35,8 +35,8 @@ function isColorDark(hex: string): boolean {
   return (r * 299 + g * 587 + b * 114) / 1000 < 128;
 }
 
-export function HeroSection({ data, themeColor, themeColorSecondary, darkMode, typographyActive = false }: Props & { typographyActive?: boolean }) {
-  const urls = [data.ctaUrl, data.ctaSecondaryUrl];
+export function HeroSection({ data, themeColor, themeColorSecondary, darkMode, typographyActive = false, renderVersion = 1 }: Props & { typographyActive?: boolean; renderVersion?: number }) {
+  const urls = renderVersion >= 2 ? [data.ctaUrl, data.ctaSecondaryUrl] : [];
   const appStoreUrl = urls.find(url => url && /^https:\/\/apps\.apple\.com\//i.test(url));
   const playStoreUrl = urls.find(url => url && /^https:\/\/play\.google\.com\//i.test(url));
   const storeBadges = appStoreUrl || playStoreUrl ? <StoreBadges firstStore={data.ctaUrl === playStoreUrl ? "play" : "app"} appStoreUrl={appStoreUrl} playStoreUrl={playStoreUrl} typographyActive={typographyActive} /> : null;

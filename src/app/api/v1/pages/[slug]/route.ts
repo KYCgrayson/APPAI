@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
 import { updatePageSchema } from "@/lib/validations/page";
-import { sanitizeContent, type SanitizeWarning } from "@/lib/sanitize";
+import { sanitizePageContent, type SanitizeWarning } from "@/lib/sanitize";
 import { hostedPageApprovalUpdate } from "@/lib/hosted-page-approval";
 import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 
@@ -157,9 +157,7 @@ export async function PUT(
     delete data.locale;
 
     const putWarnings: SanitizeWarning[] = [];
-    if (data.content) {
-      data.content = sanitizeContent(data.content, undefined, putWarnings) as Record<string, unknown>;
-    }
+    data.content = sanitizePageContent(data.content ?? page.content, undefined, putWarnings);
 
     const hadPersonRoot = !!await db.hostedPage.findFirst({
       where: { slug, organizationId: authResult.organizationId, parentSlug: null, template: "PERSON" },
@@ -246,13 +244,11 @@ export async function PATCH(
 
     // Deep merge content with existing content
     const patchWarnings: SanitizeWarning[] = [];
-    if (updateData.content) {
-      updateData.content = sanitizeContent(
-        mergeContent(page.content, updateData.content),
-        undefined,
-        patchWarnings,
-      );
-    }
+    updateData.content = sanitizePageContent(
+      updateData.content ? mergeContent(page.content, updateData.content) : page.content,
+      undefined,
+      patchWarnings,
+    );
 
     const hadPersonRoot = !!await db.hostedPage.findFirst({
       where: { slug, organizationId: authResult.organizationId, parentSlug: null, template: "PERSON" },

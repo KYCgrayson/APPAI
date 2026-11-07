@@ -150,3 +150,5 @@ Check items off as they are completed. Add new items with date and description.
 - [x] Ops #33 round 2: preserve Apps API logos; preview demo warnings, origin/locale links and dry-run flags; discoverable icons/filtered schemas; custom section headings and varied business examples.
 
 - [x] Ops #33 round 3: recursive placeholder warnings and indexed section paths; exact bundled icons with typo suggestions; UTF-8 examples, root-only default lookup, varied style kits and English locale; multiple hiring roles; muted subheadings; mobile header title truncation; unknown-section recovery; logo rules in quick-start step 3.
+
+- [x] Version section headings and hero store badges on API writes; preserve legacy page output and the original typography golden fixture.
