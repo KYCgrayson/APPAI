@@ -17,6 +17,7 @@ curl -sX POST https://appai.info/api/v1/auth/device
 #     "expires_in": 900, "interval": 5 }
 
 # 2. Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it.
+#    Also print the returned `user_code` so the user can compare it with the approval page.
 #    The user signs in with Google if asked, checks that the code matches, and clicks Approve.
 #    Never approve it yourself.
 #    The agent receives the key — nothing to copy or paste.

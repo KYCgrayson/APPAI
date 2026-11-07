@@ -36,8 +36,10 @@ Use the [topic pages](https://appai.info/spec#topic-pages) for details on the ru
 
 ## Publish in one minute
 
+Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.
+
 1. **[Authorization & API](https://appai.info/spec/api):** Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste. Use the [device flow](https://appai.info/spec/api#authentication); send `Authorization: Bearer appai_sk_YOUR_KEY` on API requests.
-2. **MUST READ before publishing — [Style & logo](https://appai.info/spec/style):** open it, pick a style kit, and check the logo spec. Dry-run warns (with this link) when `themeColor` or `fontFamily` is missing. Add a real logo — square 512×512 PNG with its own background in `content.logo`, uploaded with `POST /api/v1/upload` (rules: [Logo](https://appai.info/spec/style#logo)). Copy `themeColor`, `fontFamily`, `darkMode` from a style kit; use its suggested backgrounds for section `data.backgroundColor`.
+2. **MUST READ before publishing — [Style & logo](https://appai.info/spec/style):** open it, pick a style kit, and check the logo spec. Dry-run warns (with this link) when `themeColor` or `fontFamily` is missing. Add a real logo — square 512×512 PNG with its own background in `content.logo`, uploaded with `POST /api/v1/upload` (rules: [Logo](https://appai.info/spec/style#logo)). Copy `themeColor`, `themeColorSecondary`, `fontFamily`, `darkMode` from a style kit; use the style kit's suggested backgroundColors for section `data.backgroundColor`.
 3. **[Pages](https://appai.info/spec/pages):** pick a preset. `GET /api/v1/presets` returns copyable full POST bodies in `example`, section recipes, and named `styles`. Build a complete first draft.
 4. **[Sections](https://appai.info/spec/sections):** use the section schemas and icons. Find schemas with `GET /api/v1/sections?type=features,contact` (comma list supported).
 5. **[Dry-run](https://appai.info/spec/api#dry-run):** `POST /api/v1/pages?dryRun=true` (identical to `POST /api/v1/pages/preview`) with the full body. Review `{valid, errors, warnings, sanitizedContent, next}`; fix errors and unknown section/field warnings before publishing. Nothing is saved. `dryRun` accepts true/1/yes or false/0/no case-insensitively; other non-empty values return 400.
@@ -113,6 +115,7 @@ curl -sX POST https://appai.info/api/v1/auth/device
 #     "expires_in": 900, "interval": 5 }
 
 # 2. Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it.
+#    Also print the returned `user_code` so the user can compare it with the approval page.
 #    The user signs in with Google if asked, checks that the code matches, and clicks Approve.
 #    Never approve it yourself.
 #    The agent receives the key — nothing to copy or paste.
@@ -195,9 +198,11 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 | midnight | #A5B4FC | #67E8F9 | Space Grotesk | true | #0F172A, #1E293B |
 | ember | #FDBA74 | #FCA5A5 | DM Sans | true | #1C1917, #292524 |
 
+Copy `themeColor`, `themeColorSecondary`, `fontFamily` and `darkMode` together from a style kit; use the style kit's suggested backgroundColors.
+
 ### Visual Design Capabilities
 
-- **Section backgrounds:** Any section can have a custom `backgroundColor`. Use tints of your themeColor for visual rhythm.
+- **Section backgrounds:** Any section can have a custom `backgroundColor`. Use the style kit's suggested backgroundColors.
 - **Hero backgrounds:** `backgroundColor` (solid color), `backgroundImage`, or `backgroundVideo`. Dark backgrounds auto-switch text to white.
 - **Dark mode:** Set `darkMode: true` at page level. All sections, cards, borders adapt automatically.
 - **Custom fonts:** Set `fontFamily` at page level. Loaded from Google Fonts automatically. Start from a style kit in the table above. CJK: `Noto Sans TC` / `Noto Sans SC` / `Noto Sans JP`.
@@ -238,7 +243,7 @@ This platform gives you full control over visual design. Every parameter below i
 | Parameter | Description |
 |-----------|-------------|
 | `template` | `APP_LANDING`, `COMPANY_PROFILE`, `PRODUCT_SHOWCASE`, `PORTFOLIO`, `LINK_IN_BIO`, `PERSON` (classification only; sections control rendering). |
-| `themeColor` | Hex color (e.g. `#6366F1`) — drives CTA buttons, accents, links. Copy `themeColor`, `fontFamily` and `darkMode` together from a kit in [Style & logo](https://appai.info/spec/style). |
+| `themeColor` | Hex color (e.g. `#6366F1`) — drives CTA buttons, accents, links. Copy `themeColor`, `themeColorSecondary`, `fontFamily` and `darkMode` together from a kit in [Style & logo](https://appai.info/spec/style). |
 | `themeColorSecondary` | Hex color — optional accent for secondary buttons. Auto-generated from themeColor if omitted. |
 | `darkMode` | Boolean — renders entire page with dark backgrounds and light text. All sections adapt automatically. |
 | `fontFamily` | Google Fonts name (e.g. `"Inter"`, `"Poppins"`, `"Noto Sans JP"`) — loaded automatically. |
@@ -298,7 +303,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 ### Your default workflow
 
 1. **Gather minimum context.** Ask: "What is your product/app and who is it for?" You need: product name, what it does, target audience. That's enough to start.
-2. **Make design decisions yourself.** Copy `themeColor`, `fontFamily` and `darkMode` together from a kit in [Style & logo](https://appai.info/spec/style) and use its suggested backgrounds. Pick sections based on the product type. Generate features, FAQ, and copy from what the user told you. Generate privacy policy and terms of service automatically.
+2. **Make design decisions yourself.** Copy `themeColor`, `themeColorSecondary`, `fontFamily` and `darkMode` together from a kit in [Style & logo](https://appai.info/spec/style) and use the style kit's suggested backgroundColors. Pick sections based on the product type. Generate features, FAQ, and copy from what the user told you. Generate privacy policy and terms of service automatically.
 3. **Publish the first draft.** [Authorize](https://appai.info/spec/api#authentication) → **MUST READ [Style & logo](https://appai.info/spec/style)** to pick a style kit and logo → [build](https://appai.info/spec/pages#creating-a-page) with the [section schemas](https://appai.info/spec/sections) → [dry-run, then publish](https://appai.info/spec/api#dry-run) with the same body. Show the user the live URL.
 4. **Iterate.** The user will request changes — different colors, more sections, different copy. Use PATCH to update.
 
@@ -332,19 +337,20 @@ Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/pub
 
 ### What to decide yourself (do NOT ask the user)
 
+- Languages: always publish the four default locales — English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Other languages are asked about; see [When to ask the user](https://appai.info/spec/pages#when-to-ask-the-user).
 - Which template/sections to use (infer from the product type)
-- themeColor (copy together with fontFamily and darkMode from a kit in [Style & logo](https://appai.info/spec/style))
+- themeColor (copy together with themeColorSecondary, fontFamily and darkMode from a kit in [Style & logo](https://appai.info/spec/style))
 - Section ordering (landing pages; PERSON pages: see recipe; follow: hero → stats → features → pricing → testimonials → faq → cta)
 - Privacy policy and terms of service (generate them using the product name + contact email)
 - darkMode (use the same style kit)
 - fontFamily (use the same style kit)
-- backgroundColor on sections (use the style kit's suggested backgrounds)
+- backgroundColor on sections (use the style kit's suggested backgroundColors)
 
 ### When to ask the user
 
 - Product-specific content you cannot infer (pricing details, specific features they want to highlight)
 - Branding preferences they haven't mentioned (if they have a specific logo or color)
-- Multi-language: "Would you like me to create versions in other languages? It's free."
+- Languages beyond the four defaults. Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.
 - Any genuine design tradeoff where both options are valid
 
 ### Rules
@@ -681,8 +687,10 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 ### Multi-Language (free, automatic)
 
-- **Chinese: MUST publish both `zh-TW` and `zh-CN`.** If only one exists, AppAI converts the other script offline at read time, labels it auto-converted, and serves it with `noindex`; no stored translation.
-- **Proactively create 2-3 locale versions** — user's native language + English + one regional language. Locale variants are free. How: [Multi-Language Details](https://appai.info/spec/i18n#multi-language-details).
+Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.
+
+- The agent publishes both `zh-TW` and `zh-CN` as part of the four defaults. If only one exists, AppAI converts the other script offline at read time, labels it auto-converted, and serves it with `noindex`; no stored translation.
+- Locale variants are free. How: [Multi-Language Details](https://appai.info/spec/i18n#multi-language-details).
 
 ### Multi-Page Sites
 
@@ -693,7 +701,7 @@ Root page + free child pages (`parentSlug`), e.g. Privacy, Terms, FAQ, Contact, 
 Create locale variants with the same slug + different `locale`:
 
 ```bash
-# Japanese version
+# Japanese version (only if the user chooses Japanese beyond the four defaults)
 curl -X POST https://appai.info/api/v1/pages \
   -H "Authorization: Bearer API_KEY" \
   -H "Content-Type: application/json" \
