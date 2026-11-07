@@ -34,7 +34,7 @@
               "description": "Accessible websites for independent businesses."
             }
           ],
-          "backgroundColor": "#FFFFFF"
+          "backgroundColor": "#ECFDF5"
         },
         "order": 1
       },
@@ -45,14 +45,14 @@
           "id": "details",
           "heading": "How to order",
           "text": "Book a discovery call to discuss your website and plan the next steps.",
-          "backgroundColor": "#ECFDF5"
+          "backgroundColor": "#FFFFFF"
         }
       },
       {
         "type": "about",
         "data": {
-          "heading": "Opening hours",
-          "text": "Monday\u2013Friday: 09:00\u201317:00. Weekends: closed.",
+          "heading": "Pickup and visits",
+          "text": "Book a call before visiting.",
           "backgroundColor": "#ECFDF5"
         },
         "order": 3
@@ -63,7 +63,20 @@
           "heading": "Talk to Cedar",
           "email": "hello@example.com",
           "formUrl": "https://example.com/contact",
-          "backgroundColor": "#FFFFFF"
+          "backgroundColor": "#FFFFFF",
+          "hours": [
+            {
+              "days": [
+                "mon",
+                "tue",
+                "wed",
+                "thu",
+                "fri"
+              ],
+              "open": "09:00",
+              "close": "17:00"
+            }
+          ]
         },
         "order": 4
       },

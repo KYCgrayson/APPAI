@@ -75,6 +75,8 @@ Supports YouTube/Vimeo iframe players and direct mp4, webm, gif media (auto-dete
 
 ### features
 
+For menus and service price lists, put the price in `price` on each `features.items` entry (string, e.g. "NT$140"); it renders next to the title.
+
 `heading` and `subheading` are optional. For a few priced services without feature lists, use `features` with the price in each description; use `pricing` only for plans/tiers with feature lists (each plan requires `features[]`).
 ```json
 { "type": "features", "order": 3, "data": {
@@ -152,7 +154,7 @@ Supports YouTube/Vimeo iframe players and direct mp4, webm, gif media (auto-dete
 
 ### schedule
 
-Use `schedule` for event timelines (`time` + session `title`), and `about.text` with a short Markdown list for weekly opening hours.
+Use `schedule` for event timelines (`time` + session `title`); use `contact.hours` for weekly opening hours.
 ```json
 { "type": "schedule", "order": 11, "data": {
     "items": [
@@ -192,6 +194,10 @@ Use `schedule` for event timelines (`time` + session `title`), and `about.text` 
     "address": "123 Main St"
 }}
 ```
+
+Optional `hours`: array of `{days: ["mon", "tue"], open: "09:00", close: "17:00", note?: "…"}`; days must be nonempty mon–sun values, times 24-hour HH:MM. Omit closed days; use multiple entries for split shifts, and a close earlier than open for overnight hours. Day names follow the page locale. Optional contact `note` adds a general hours note (e.g. "Closed on public holidays"). Address and/or hours emits LocalBusiness JSON-LD with title, logo, phone and social URLs.
+
+Optional `map: true` with `address` shows "Open in Google Maps" / "Open in Apple Maps" links using encoded address queries; no iframe, geocoding, key or secret needed.
 
 Optional `socials`: `{platform, url, label?}` items; HTTPS only. See canonical [Contact](https://appai.info/spec/pages#contact) for platforms, URL formats and message booking.
 
@@ -240,7 +246,7 @@ Optional `heading` and `subheading` appear above the link buttons.
     "aspectRatio": "9:16"
 }}
 ```
-Auto-detects provider from URL. Supported: YouTube (including Shorts), Vimeo, Facebook posts/videos, Threads posts, TikTok, Loom, Spotify, CodePen, Figma. Facebook uses official plugin iframes; Threads uses a lazy-loaded sandboxed iframe at `https://www.threads.com/@{user}/post/{id}/embed`. X (Twitter) and Instagram render as linked preview cards. HTTP URLs are upgraded to HTTPS. Existing provider URL patterns remain supported, including mobile/music YouTube watch URLs and YouTube privacy embed URLs. `aspectRatio` optional — sensible default per provider (TikTok → 9:16, YouTube → 16:9). Iframe is sandboxed.
+Auto-detects provider from URL. Supported: YouTube (including Shorts), Vimeo, Facebook posts/videos, Threads posts, TikTok, Loom, Spotify, CodePen, Figma. Facebook uses official plugin iframes; Threads uses a lazy-loaded sandboxed iframe at `https://www.threads.com/@{user}/post/{id}/embed`. Instagram posts/reels use official sandboxed iframes at `https://www.instagram.com/p/{id}/embed` or `/reel/{id}/embed` (public, embeddable posts only). X (Twitter) renders as a linked preview card. HTTP URLs are upgraded to HTTPS. Existing provider URL patterns remain supported, including mobile/music YouTube watch URLs and YouTube privacy embed URLs. `aspectRatio` optional — sensible default per provider (TikTok → 9:16, YouTube → 16:9). Iframe is sandboxed.
 
 ### Link rel (SEO)
 Links in `links` and `cta` sections accept an optional `rel` string. Use `"nofollow"` for sponsored/affiliate/user-supplied links, `"sponsored"` for paid placements, `"nofollow sponsored"` for both. Leaving it unset produces `rel="noopener noreferrer"` for external links (standard dofollow). Example:

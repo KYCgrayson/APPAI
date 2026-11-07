@@ -46,7 +46,11 @@ function detectLegacyProvider(rawUrl: string): Provider {
   }
 
   if (/instagram\.com\/(?:p|reel)\/[a-zA-Z0-9_-]+/.test(url)) {
-    return { kind: "instagram", url };
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol === "https:" && ["instagram.com", "www.instagram.com"].includes(parsed.hostname))
+        return { kind: "instagram", url };
+    } catch { /* Invalid absolute URL. */ }
   }
 
   const sp = url.match(/open\.spotify\.com\/(track|album|playlist|episode|show)\/([a-zA-Z0-9]+)/);
@@ -120,6 +124,10 @@ export function detectProvider(rawUrl: string): Provider {
 
 export function buildEmbed(provider: NonNullable<Provider>): { src: string; defaultAspect: Props["data"]["aspectRatio"]; allow: string } {
   switch (provider.kind) {
+    case "instagram": {
+      const match = provider.url.match(/instagram\.com\/(p|reel)\/([a-zA-Z0-9_-]+)/);
+      return { src: match ? `https://www.instagram.com/${match[1]}/${match[2]}/embed` : "", defaultAspect: "4:5", allow: "" };
+    }
     case "threads":
       return { src: `${provider.url.replace(/\/$/, "")}/embed`, defaultAspect: "4:5", allow: "" };
     case "facebook":
@@ -166,7 +174,7 @@ export function buildEmbed(provider: NonNullable<Provider>): { src: string; defa
         defaultAspect: "4:5",
         allow: "fullscreen",
       };
-    // Twitter and Instagram don't allow plain iframe embeds cross-origin;
+    // Twitter uses a linked card;
     // fall back to a linked card rendered by caller
     default:
       return { src: "", defaultAspect: "16:9", allow: "" };
@@ -205,8 +213,8 @@ export function EmbedSection({ data, themeColor, darkMode, typographyActive = fa
     );
   }
 
-  // Twitter/Instagram: render as linked preview card (no iframe)
-  if (provider.kind === "twitter" || provider.kind === "instagram") {
+  // Twitter: render as linked preview card (no iframe)
+  if (provider.kind === "twitter") {
     return (
       <section className="py-12 md:py-20 px-4 sm:px-6">
         <div className="max-w-xl mx-auto">

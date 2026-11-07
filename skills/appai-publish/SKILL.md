@@ -16,7 +16,7 @@ Start at https://appai.info/spec — choose the simplest use-case that fits, bui
 
 AppAI does not host arbitrary code or provide an unrestricted upload-and-run path. Tools keep running on their existing host; Universal Apps require platform review. Agents cannot add new backends or connectors: reference an existing owner-maintained connector, and tell the user when an owner must supply one.
 
-If appai is missing something you need, finish the page with existing fields, then report it with POST /api/v1/feedback (kind: missing_feature).
+If appai is missing something you need, still publish with existing fields; don’t wait for the feature. Then report it with POST /api/v1/feedback (kind: missing_feature).
 
 ## Authorization for every use-case
 
@@ -44,9 +44,21 @@ Publish `en` first; `en` is the default locale. Then publish `zh-TW`, `zh-CN`, a
 
 Infer the page shape and copy from the user's product and audience. Ask only for missing product facts, specific branding, whether to add languages beyond the four defaults, or genuine tradeoffs. Do not invent pricing, experience, testimonials, metrics or contact details. Keep copy and compliance text grounded in the supplied facts.
 
-Use hearth for crafts/workshops/studios/wellness/classes. If no kit description matches, pick by light/dark and warm/cool. Use built-in icon names or any emoji. YouTube/Vimeo/mp4 → `video`; social posts (TikTok/Instagram/X) → `embed`.
+Pick the kit by the user's stated mood first (e.g. 'fresh and calm' → forest), then by business type. If no kit description matches, pick by light/dark and warm/cool.
 
-Booking by message → hero CTA to the main channel + `contact.socials` for all channels. If the user gave no street address, omit `address` and any location section; mention the city in copy only if the user gave it. Use only supplied contact details; follow [Contact](https://appai.info/spec/pages#contact) for phone/LINE links and compliance text.
+| Kit | Mode | Mood words | Typical businesses |
+|---|---|---|---|
+| indigo | light | crisp, modern, confident | SaaS, software, technology, professional services |
+| forest | light | natural, wellbeing, fresh and calm | nature, wellness, health, sustainable businesses |
+| editorial | light | literary, refined, thoughtful | publishing, portfolios, culture, consulting |
+| ocean | light | clear, cool, trustworthy | travel, education, healthcare, services |
+| midnight | dark | sleek, technical, bold | developer tools, gaming, technology |
+| hearth | light | warm, handmade, welcoming | bakeries, cafés, crafts, classes |
+| ember | dark | warm, intimate, atmospheric | restaurants, bars, hospitality, creative studios |
+
+Use built-in icon names or any emoji. YouTube/Vimeo/mp4 → `video`; social posts (TikTok/Instagram/X) → `embed`.
+
+If the user names several booking channels, use the first one they listed as the hero CTA; list all in contact.socials. If the user gave no street address, omit `address` and any location section; mention the city in copy only if the user gave it. Use only supplied contact details; follow [Contact](https://appai.info/spec/pages#contact) for phone/LINE links and compliance text.
 
 ## Tools
 

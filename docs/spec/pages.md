@@ -22,7 +22,7 @@ Use only supplied contact details in sections, `privacyPolicy` and `termsOfServi
 | YouTube | `https://www.youtube.com/@{handle}` |
 | Website | Supplied HTTPS website URL |
 
-Booking by message → hero CTA to the main channel + `contact.socials` for all channels. Use the supplied channel in compliance copy too. Use `simple-order` only for order + payment flows with a supplied `notificationEmail`.
+If the user names several booking channels, use the first one they listed as the hero CTA; list all in contact.socials. Use the supplied channel in compliance copy too. Use `simple-order` only for order + payment flows with a supplied `notificationEmail`.
 
 ## What You Can Build (read this first)
 
@@ -104,7 +104,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 | User intent | Page shape |
 |---|---|
 | **Personal website / portfolio of a person** | template `PERSON` only for the person’s own root page, never project pages; `profile-header` + `project-cards` + `entries`. |
-| **Local shop / small business (bakery, cafe, salon, studio)** | Preset `company-service`, template `COMPANY_PROFILE`: hero → features (products/services) → about (how to order) → about (weekly opening hours as a short Markdown list, plus pickup details) → contact or links (location/contact) → optional cta. No pricing/testimonials required; use only supplied facts. |
+| **Local shop / small business (bakery, cafe, salon, studio)** | Preset `company-service`, template `COMPANY_PROFILE`: hero → features (products/services) → about (how to order) → about (pickup details, if supplied) → optional video/embed → contact (address, structured hours and socials) → optional cta. Optional video/embed goes after about sections and before contact. No pricing/testimonials required; use only supplied facts. |
 | **Landing page for an app/product** | Hero + features + pricing + testimonials + faq + cta. Standard SaaS template. |
 | **Host a vibe-coded tool** | Hero (short tagline) + `iframe-tool` (the tool itself) + 1-2 supporting sections (about / faq). The tool is the page. |
 
