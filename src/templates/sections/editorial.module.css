@@ -66,3 +66,23 @@
 
 .auto { max-width: 100%; border-radius: 12px; }
 .auto img { width: auto; max-width: 100%; max-height: 500px; object-fit: contain; }
+
+/* Relative typography for editorial sizes that are not Tailwind utilities. */
+:global([data-typography="active"]) .heading[data-typography-role="heading"] { font-size: calc(clamp(32px, 4vw, 48px) * var(--ts-heading)); }
+:global([data-typography="active"]) .eyebrow[data-typography-role="caption"] { font-size: calc(13px * var(--ts-caption)); }
+:global([data-typography="active"]) .name[data-typography-role="display"] { font-size: calc(clamp(32px, 6vw, 72px) * var(--ts-display)); }
+:global([data-typography="active"]) .tagline[data-typography-role="body"] { font-size: calc(18px * var(--ts-body)); }
+:global([data-typography="active"]) .intro[data-typography-role="body"] { font-size: calc(17px * var(--ts-body)); }
+:global([data-typography="active"]) .projectName[data-typography-role="heading"] { font-size: calc(clamp(32px, 4vw, 36px) * var(--ts-heading)); }
+:global([data-typography="active"]) .description[data-typography-role="body"] { font-size: calc(16px * var(--ts-body)); }
+:global([data-typography="active"]) .description[data-typography-role="card"] { font-size: calc(16px * var(--ts-card)); }
+:global([data-typography="active"]) .nav a[data-typography-role="body"] { font-size: calc(15px * var(--ts-body)); }
+:global([data-typography="active"]) .entries :is(h2, h3)[data-typography-role="heading"] { font-size: calc(24px * var(--ts-heading)); }
+@media(min-width:768px) {
+:global([data-typography="active"]) .intro[data-typography-role="body"] { font-size: calc(18px * var(--ts-body)); }
+:global([data-typography="active"]) .description[data-typography-role="body"] { font-size: calc(17px * var(--ts-body)); }
+:global([data-typography="active"]) .description[data-typography-role="card"] { font-size: calc(17px * var(--ts-card)); }
+}
+@media(max-width:639px) {
+:global([data-typography="active"]) .nav a[data-typography-role="body"] { font-size: max(14px, calc(15px * var(--ts-body))); }
+}

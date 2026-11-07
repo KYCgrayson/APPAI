@@ -12,7 +12,7 @@ interface Props {
   themeColor: string;
 }
 
-export function CtaSection({ data, themeColor }: Props) {
+export function CtaSection({ data, themeColor, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const safeUrl = sanitizeUrl(data.buttonUrl);
   const isExternal = /^https?:\/\//i.test(safeUrl);
   const relParts = isExternal ? ["noopener", "noreferrer"] : [];
@@ -21,13 +21,13 @@ export function CtaSection({ data, themeColor }: Props) {
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6" style={{ backgroundColor: themeColor }}>
       <div className="max-w-3xl mx-auto text-center">
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+        <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
           {data.headline}
         </h2>
         {data.subheadline && (
-          <Prose className="prose prose-sm md:prose-base max-w-none text-white/80 mb-8 prose-a:text-white prose-a:underline prose-headings:font-semibold prose-headings:text-white prose-strong:text-white">{data.subheadline}</Prose>
+          <Prose typographyRole={typographyActive ? "body" : undefined} className="prose prose-sm md:prose-base max-w-none text-white/80 mb-8 prose-a:text-white prose-a:underline prose-headings:font-semibold prose-headings:text-white prose-strong:text-white">{data.subheadline}</Prose>
         )}
-        <a
+        <a data-typography-role={typographyActive ? "card" : undefined}
           href={safeUrl}
           target={isExternal ? "_blank" : undefined}
           rel={relAttr}

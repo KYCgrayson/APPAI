@@ -1,3 +1,4 @@
+import { storeTypography, typographyWarnings } from "@/lib/typography";
 import { parseDryRun } from "@/lib/page-preview";
 import { pageLogoUpdate, pageLogoWarnings } from "@/lib/page-logo";
 import { POST as previewPage } from "./preview/route";
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const data = createPageSchema.parse(body);
+    const data = storeTypography(createPageSchema.parse(body));
     const locale = data.locale || "en";
     const parentSlug = data.parentSlug ?? null;
 
@@ -162,7 +163,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      upsertWarnings.push(...pageLogoWarnings(updated));
+      upsertWarnings.push(...pageLogoWarnings(updated), ...typographyWarnings(updated));
       revalidateSeoIndexes(updated.slug);
       return NextResponse.json(
         { ...updated, ...(upsertWarnings.length > 0 ? { warnings: upsertWarnings } : {}) },
@@ -263,7 +264,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    contentWarnings.push(...pageLogoWarnings(page));
+    contentWarnings.push(...pageLogoWarnings(page), ...typographyWarnings(page));
     revalidateSeoIndexes(page.slug);
     return NextResponse.json(
       { ...page, ...(contentWarnings.length > 0 ? { warnings: contentWarnings } : {}) },

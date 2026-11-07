@@ -1,5 +1,5 @@
 import { LOGO_GUIDANCE } from "@/lib/page-logo";
-import { PAGE_STYLES } from "@/lib/page-styles";
+import { PAGE_STYLES, TYPOGRAPHY_RECIPES } from "@/lib/page-styles";
 import { NextResponse } from "next/server";
 import { PRESET_DEFS, getSectionDef } from "@/lib/template-registry";
 
@@ -14,6 +14,7 @@ export async function GET() {
   return NextResponse.json({
     logoGuidance: LOGO_GUIDANCE,
     styles: PAGE_STYLES,
+    typographyRecipes: TYPOGRAPHY_RECIPES,
     presets,
     total: presets.length,
   });

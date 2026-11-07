@@ -34,7 +34,7 @@ function isColorDark(hex: string): boolean {
   return (r * 299 + g * 587 + b * 114) / 1000 < 128;
 }
 
-export function HeroSection({ data, themeColor, themeColorSecondary, darkMode }: Props) {
+export function HeroSection({ data, themeColor, themeColorSecondary, darkMode, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const hasMedia = data.backgroundImage || data.backgroundVideo;
   const hasBg = hasMedia || data.backgroundColor;
   const isDark = hasBg
@@ -50,24 +50,24 @@ export function HeroSection({ data, themeColor, themeColorSecondary, darkMode }:
         style={{ backgroundColor: data.backgroundColor || (darkMode ? "#111827" : undefined) }}
       >
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center w-full">
-          <div>
+          <div className={typographyActive ? "min-w-0" : undefined}>
             {data.logo && (
               <img src={sanitizeUrl(data.logo)} alt="Logo" className="h-16 w-16 mb-6 rounded-2xl object-cover" />
             )}
-            <h1
+            <h1 data-typography-role={typographyActive ? "display" : undefined}
               className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 break-words"
               style={{ color: isDark ? "#fff" : themeColor }}
             >
               {data.headline || "Welcome"}
             </h1>
             {data.subheadline && (
-              <p className={`text-lg sm:text-xl mb-8 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+              <p data-typography-role={typographyActive ? "body" : undefined} className={`text-lg sm:text-xl mb-8 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
                 {data.subheadline}
               </p>
             )}
             <div className="flex flex-wrap gap-4">
               {data.ctaText && (
-                <a
+                <a data-typography-role={typographyActive ? "card" : undefined}
                   href={sanitizeUrl(data.ctaUrl || "#download")}
                   className="inline-block px-8 py-4 rounded-full text-white font-semibold text-lg transition-transform hover:scale-105"
                   style={{ backgroundColor: themeColor }}
@@ -76,7 +76,7 @@ export function HeroSection({ data, themeColor, themeColorSecondary, darkMode }:
                 </a>
               )}
               {data.ctaSecondaryText && (
-                <a
+                <a data-typography-role={typographyActive ? "card" : undefined}
                   href={sanitizeUrl(data.ctaSecondaryUrl || "#")}
                   className="inline-block px-8 py-4 rounded-full font-semibold text-lg transition-transform hover:scale-105 border-2"
                   style={{ borderColor: themeColorSecondary || themeColor, color: isDark ? "#fff" : themeColor }}
@@ -106,23 +106,23 @@ export function HeroSection({ data, themeColor, themeColorSecondary, darkMode }:
         className={`flex items-center justify-center text-center px-4 sm:px-6 py-20 md:py-32 ${data.heroHeight ? heightClass : ""}`}
         style={{ backgroundColor: data.backgroundColor || (darkMode ? "#111827" : undefined) }}
       >
-        <div className="max-w-3xl">
+        <div className={typographyActive ? "max-w-3xl min-w-0" : "max-w-3xl"}>
           {data.logo && (
             <img src={sanitizeUrl(data.logo)} alt="Logo" className="h-12 w-12 mx-auto mb-6 rounded-xl object-cover" />
           )}
-          <h1
+          <h1 data-typography-role={typographyActive ? "display" : undefined}
             className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 break-words"
             style={{ color: isDark ? "#fff" : themeColor }}
           >
             {data.headline || "Welcome"}
           </h1>
           {data.subheadline && (
-            <p className={`text-base sm:text-lg mb-6 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+            <p data-typography-role={typographyActive ? "body" : undefined} className={`text-base sm:text-lg mb-6 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
               {data.subheadline}
             </p>
           )}
           {data.ctaText && (
-            <a
+            <a data-typography-role={typographyActive ? "card" : undefined}
               href={sanitizeUrl(data.ctaUrl || "#download")}
               className="inline-block px-6 py-3 rounded-full text-white font-medium transition-transform hover:scale-105"
               style={{ backgroundColor: themeColor }}
@@ -158,24 +158,24 @@ export function HeroSection({ data, themeColor, themeColorSecondary, darkMode }:
       {hasMedia && (
         <div className="absolute inset-0 bg-black/50" />
       )}
-      <div className="relative z-10 max-w-3xl">
+      <div className={typographyActive ? "relative z-10 max-w-3xl min-w-0" : "relative z-10 max-w-3xl"}>
         {data.logo && (
           <img src={sanitizeUrl(data.logo)} alt="Logo" className="h-16 w-16 mx-auto mb-6 rounded-2xl object-cover" />
         )}
-        <h1
+        <h1 data-typography-role={typographyActive ? "display" : undefined}
           className="text-4xl sm:text-5xl md:text-7xl font-bold mb-6 break-words"
           style={{ color: isDark ? "#fff" : themeColor }}
         >
           {data.headline || "Welcome"}
         </h1>
         {data.subheadline && (
-          <p className={`text-lg sm:text-xl md:text-2xl mb-8 ${isDark ? "text-gray-200" : "text-gray-600"}`}>
+          <p data-typography-role={typographyActive ? "body" : undefined} className={`text-lg sm:text-xl md:text-2xl mb-8 ${isDark ? "text-gray-200" : "text-gray-600"}`}>
             {data.subheadline}
           </p>
         )}
         <div className="flex flex-wrap justify-center gap-4">
           {data.ctaText && (
-            <a
+            <a data-typography-role={typographyActive ? "card" : undefined}
               href={sanitizeUrl(data.ctaUrl || "#download")}
               className="inline-block px-8 py-4 rounded-full text-white font-semibold text-lg transition-transform hover:scale-105"
               style={{ backgroundColor: themeColor }}
@@ -184,7 +184,7 @@ export function HeroSection({ data, themeColor, themeColorSecondary, darkMode }:
             </a>
           )}
           {data.ctaSecondaryText && (
-            <a
+            <a data-typography-role={typographyActive ? "card" : undefined}
               href={sanitizeUrl(data.ctaSecondaryUrl || "#")}
               className="inline-block px-8 py-4 rounded-full font-semibold text-lg transition-transform hover:scale-105 border-2"
               style={{ borderColor: themeColorSecondary || themeColor, color: isDark ? "#fff" : themeColor }}

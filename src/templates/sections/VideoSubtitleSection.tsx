@@ -245,7 +245,7 @@ interface Props {
   darkMode?: boolean;
 }
 
-export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = false }: Props & { isAdmin?: boolean }) {
+export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = false, typographyActive = false }: (Props & { isAdmin?: boolean }) & { typographyActive?: boolean }) {
   const t = { ...DEFAULT_STRINGS, ...data.strings };
   const apiBase = data.apiBase.replace(/\/$/, "");
   const standardMaxDurationSec = data.maxDurationSec ?? 300;
@@ -719,7 +719,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
     <section className="py-12 md:py-16 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto space-y-6">
         {(data.heading ?? t.heading) && (
-          <h2
+          <h2 data-typography-role={typographyActive ? "heading" : undefined}
             className={`text-2xl md:text-3xl font-bold text-center ${
               darkMode ? "text-gray-100" : ""
             }`}
@@ -728,14 +728,14 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
           </h2>
         )}
         {(data.description ?? t.description) && (
-          <p className={`text-sm text-center ${subColor}`}>
+          <p data-typography-role={typographyActive ? "body" : undefined} className={`text-sm text-center ${subColor}`}>
             {data.description ?? t.description}
           </p>
         )}
 
         {isAdmin && (
           <div className="flex justify-center">
-            <span
+            <span data-typography-role={typographyActive ? "caption" : undefined}
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${
                 darkMode
                   ? "border-amber-400/40 bg-amber-400/10 text-amber-200"
@@ -761,14 +761,14 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
 
             {recents.length > 0 && (
               <div className="space-y-2">
-                <h3 className={`text-sm font-medium ${labelColor}`}>
+                <h3 data-typography-role={typographyActive ? "card" : undefined} className={`text-sm font-medium ${labelColor}`}>
                   {t.recentHeading}
                 </h3>
-                <p className={`text-xs ${subColor}`}>{t.recentHint}</p>
+                <p data-typography-role={typographyActive ? "caption" : undefined} className={`text-xs ${subColor}`}>{t.recentHint}</p>
                 <ul className="space-y-1">
                   {recents.map((r) => (
-                    <li key={r.id}>
-                      <button
+                    <li data-typography-role={typographyActive ? "body" : undefined} key={r.id}>
+                      <button data-typography-role={typographyActive ? "card" : undefined}
                         type="button"
                         onClick={() => restoreRecent(r)}
                         disabled={submitting}
@@ -781,7 +781,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                         <span className="block truncate font-medium">
                           {r.title || r.url}
                         </span>
-                        <span className={`block text-xs ${subColor}`}>
+                        <span data-typography-role={typographyActive ? "caption" : undefined} className={`block text-xs ${subColor}`}>
                           {fmtClock(r.trim.start_sec)}–{fmtClock(r.trim.end_sec)}
                           {" · "}
                           {r.subtitles.length} {t.recentSubtitleCount}
@@ -798,7 +798,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
             {source.isValid && (
               <>
                 <div className="space-y-2">
-                  <h3 className={`text-sm font-medium ${labelColor}`}>
+                  <h3 data-typography-role={typographyActive ? "card" : undefined} className={`text-sm font-medium ${labelColor}`}>
                     {maxDurationSec === undefined
                       ? t.trimSectionUnlimited
                       : t.trimSection.replace("{max}", String(Math.floor(maxDurationSec / 60)))}
@@ -822,15 +822,15 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className={`text-sm font-medium ${labelColor}`}>
+                  <h3 data-typography-role={typographyActive ? "card" : undefined} className={`text-sm font-medium ${labelColor}`}>
                     {t.translateSection}
                   </h3>
-                  <p className={`text-xs ${subColor}`}>{t.translateHint}</p>
+                  <p data-typography-role={typographyActive ? "caption" : undefined} className={`text-xs ${subColor}`}>{t.translateHint}</p>
                   <div className="flex flex-wrap gap-2">
                     {supportedLanguages.map((lc) => {
                       const active = targetLangs.includes(lc);
                       return (
-                        <button
+                        <button data-typography-role={typographyActive ? "card" : undefined}
                           key={lc}
                           type="button"
                           onClick={() => toggleLang(lc)}
@@ -854,7 +854,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                 </div>
 
                 <div>
-                  <button
+                  <button data-typography-role={typographyActive ? "card" : undefined}
                     type="button"
                     onClick={() => startTranscribe()}
                     disabled={!canStart}
@@ -864,7 +864,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                     {submitting ? t.startingButton : t.startButton}
                   </button>
                   {submitError && (
-                    <p className="mt-2 text-xs text-red-500 text-center">
+                    <p data-typography-role={typographyActive ? "caption" : undefined} className="mt-2 text-xs text-red-500 text-center">
                       {submitError}
                     </p>
                   )}
@@ -902,11 +902,11 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
         {/* ──────────── Phase: editing ──────────── */}
         {phase === "editing" && (
           <div className="space-y-6">
-            <h3 className={`text-lg font-semibold ${labelColor}`}>
+            <h3 data-typography-role={typographyActive ? "card" : undefined} className={`text-lg font-semibold ${labelColor}`}>
               {t.editingHeading}
             </h3>
             {transcribe.job?.result?.language && (
-              <p className={`text-sm ${subColor}`}>
+              <p data-typography-role={typographyActive ? "body" : undefined} className={`text-sm ${subColor}`}>
                 {t.detectedLanguage.replace(
                   "{language}",
                   langLabel(transcribe.job.result.language),
@@ -916,7 +916,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
 
             {transcribeMeta?.transcript_origin && (
               <div className="flex flex-wrap items-center gap-2">
-                <span className={`text-xs ${subColor}`}>
+                <span data-typography-role={typographyActive ? "caption" : undefined} className={`text-xs ${subColor}`}>
                   {(transcribeMeta.transcript_origin === "original"
                     ? t.sourceUsedOriginal
                     : transcribeMeta.transcript_origin === "auto_caption"
@@ -927,7 +927,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                     langLabel(transcribe.job?.result?.language ?? ""),
                   )}
                 </span>
-                <button
+                <button data-typography-role={typographyActive ? "body" : undefined}
                   type="button"
                   onClick={() => setRereadOpen((v) => !v)}
                   disabled={submitting}
@@ -948,10 +948,10 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                   darkMode ? "border-gray-700" : "border-gray-200"
                 }`}
               >
-                <p className={`text-xs ${subColor}`}>{t.rereadHint}</p>
+                <p data-typography-role={typographyActive ? "caption" : undefined} className={`text-xs ${subColor}`}>{t.rereadHint}</p>
                 <div className="flex flex-wrap gap-2">
                   {availableTracks.map((track) => (
-                    <button
+                    <button data-typography-role={typographyActive ? "card" : undefined}
                       key={`${track.kind}-${track.lang}`}
                       type="button"
                       onClick={() =>
@@ -974,7 +974,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                       ).replace("{lang}", track.name || langLabel(track.lang))}
                     </button>
                   ))}
-                  <button
+                  <button data-typography-role={typographyActive ? "card" : undefined}
                     type="button"
                     onClick={() => reread({ source: "whisper" })}
                     disabled={submitting}
@@ -992,12 +992,12 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
 
             {canSwapScript && (
               <div className="flex items-center gap-2">
-                <span className={`text-xs ${subColor}`}>{t.scriptLabel}</span>
+                <span data-typography-role={typographyActive ? "caption" : undefined} className={`text-xs ${subColor}`}>{t.scriptLabel}</span>
                 <div className="flex gap-1">
                   {(["Hans", "Hant"] as const).map((sc) => {
                     const active = zhScriptOf(primaryLang) === sc;
                     return (
-                      <button
+                      <button data-typography-role={typographyActive ? "caption" : undefined}
                         key={sc}
                         type="button"
                         onClick={active ? undefined : swapScript}
@@ -1026,7 +1026,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
               /* Live preview: real clip + subtitle overlay. Scrub the native
                  controls or click a subtitle row to jump. */
               <div className="space-y-1">
-                <h4 className={`text-sm font-medium ${subColor}`}>
+                <h4 data-typography-role={typographyActive ? "card" : undefined} className={`text-sm font-medium ${subColor}`}>
                   {t.previewHeading}
                 </h4>
                 <div className="relative rounded-lg overflow-hidden bg-black">
@@ -1078,7 +1078,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
             )}
 
             <div className="space-y-2">
-              <h4 className={`text-sm font-medium ${labelColor}`}>
+              <h4 data-typography-role={typographyActive ? "card" : undefined} className={`text-sm font-medium ${labelColor}`}>
                 {t.styleHeading}
               </h4>
               <SubtitleStyleControls
@@ -1094,13 +1094,13 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
 
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-3">
-                <h4 className={`text-sm font-medium ${labelColor}`}>
+                <h4 data-typography-role={typographyActive ? "card" : undefined} className={`text-sm font-medium ${labelColor}`}>
                   {t.subtitleListHeading}
                 </h4>
-                <label
+                <label data-typography-role={typographyActive ? "caption" : undefined}
                   className={`flex items-center gap-1.5 text-xs ${subColor}`}
                 >
-                  <input
+                  <input data-typography-role={typographyActive ? "body" : undefined}
                     type="checkbox"
                     checked={marking}
                     onChange={(e) => setMarking(e.target.checked)}
@@ -1110,7 +1110,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                 </label>
               </div>
               {marking && (
-                <p className={`text-xs ${subColor}`}>{t.markingHint}</p>
+                <p data-typography-role={typographyActive ? "caption" : undefined} className={`text-xs ${subColor}`}>{t.markingHint}</p>
               )}
               {visibleNote !== null && (
                 <div
@@ -1119,10 +1119,10 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className={`text-xs font-medium ${labelColor}`}>
+                    <span data-typography-role={typographyActive ? "caption" : undefined} className={`text-xs font-medium ${labelColor}`}>
                       {t.noteHeading}
                     </span>
-                    <button
+                    <button data-typography-role={typographyActive ? "card" : undefined}
                       type="button"
                       onClick={() => removeNote(visibleNote)}
                       disabled={submitting}
@@ -1131,7 +1131,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                       {t.noteDelete}
                     </button>
                   </div>
-                  <textarea
+                  <textarea data-typography-role={typographyActive ? "card" : undefined}
                     value={annotations[visibleNote].text}
                     onChange={(e) =>
                       updateNote(visibleNote, { text: e.target.value })
@@ -1151,7 +1151,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                       const active =
                         (annotations[visibleNote].preset ?? "note") === preset;
                       return (
-                        <button
+                        <button data-typography-role={typographyActive ? "card" : undefined}
                           key={preset}
                           type="button"
                           onClick={() => updateNote(visibleNote, { preset })}
@@ -1165,7 +1165,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                         />
                       );
                     })}
-                    <span className={`text-xs ${subColor}`}>{t.noteHint}</span>
+                    <span data-typography-role={typographyActive ? "caption" : undefined} className={`text-xs ${subColor}`}>{t.noteHint}</span>
                   </div>
                 </div>
               )}
@@ -1200,7 +1200,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
             </div>
 
             <div>
-              <button
+              <button data-typography-role={typographyActive ? "card" : undefined}
                 type="button"
                 onClick={startRender}
                 disabled={submitting || subtitles.length === 0}
@@ -1210,7 +1210,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                 {submitting ? t.renderingButton : t.renderButton}
               </button>
               {submitError && (
-                <p className="mt-2 text-xs text-red-500 text-center">
+                <p data-typography-role={typographyActive ? "caption" : undefined} className="mt-2 text-xs text-red-500 text-center">
                   {submitError}
                 </p>
               )}
@@ -1221,7 +1221,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                   `editing` on every visit with no route back to their own
                   projects. Reopening a recent project lands here too, which
                   made using that feature the way to lose access to it. */}
-              <button
+              <button data-typography-role={typographyActive ? "body" : undefined}
                 type="button"
                 onClick={reset}
                 disabled={submitting}
@@ -1260,17 +1260,17 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
                 : "bg-red-50 border-red-200"
             }`}
           >
-            <h3 className="text-sm font-semibold text-red-600 mb-1">
+            <h3 data-typography-role={typographyActive ? "card" : undefined} className="text-sm font-semibold text-red-600 mb-1">
               {t.errorHeading}
             </h3>
             {error && (
-              <p
+              <p data-typography-role={typographyActive ? "card" : undefined}
                 className={`text-sm ${darkMode ? "text-red-300" : "text-red-700"}`}
               >
                 {error.detail || error.title}
               </p>
             )}
-            <button
+            <button data-typography-role={typographyActive ? "card" : undefined}
               type="button"
               onClick={reset}
               className="mt-3 text-sm underline text-red-600 hover:opacity-70"

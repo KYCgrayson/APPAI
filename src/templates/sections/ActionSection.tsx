@@ -130,17 +130,17 @@ function ActionButton({ item, themeColor }: { item: ActionItem; themeColor: stri
   );
 }
 
-export function ActionSection({ data, themeColor }: Props) {
+export function ActionSection({ data, themeColor, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const items = data.items || [];
 
   return (
     <section className="py-12 md:py-16 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto">
         {data.heading && (
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-2">{data.heading}</h2>
+          <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-2xl md:text-3xl font-bold text-center mb-2">{data.heading}</h2>
         )}
         {data.description && (
-          <Prose className="prose prose-sm md:prose-base max-w-none text-gray-600 text-center mb-8 prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{data.description}</Prose>
+          <Prose typographyRole={typographyActive ? "body" : undefined} className="prose prose-sm md:prose-base max-w-none text-gray-600 text-center mb-8 prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{data.description}</Prose>
         )}
         <div className="flex flex-col gap-4">
           {items.map((item, i) => (

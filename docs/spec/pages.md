@@ -1,6 +1,6 @@
 # AppAI — Pages
 Covers Hosted Page configuration, CRUD, compliance and publishing workflow.
-Previous: [Style & logo](https://appai.info/spec/style) · Next: [Sections](https://appai.info/spec/sections)
+Previous: [Typography](https://appai.info/spec/typography) · Next: [Sections](https://appai.info/spec/sections)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 ## What You Can Build (read this first)
@@ -36,7 +36,7 @@ Every section supports optional `backgroundColor` (hex) and `id` (anchor for `#l
 | [`profile-header`](https://appai.info/spec/sections#profile-header) | Personal h1 `name`, `eyebrow`, `tagline`, Markdown `intro`, optional `avatar: {url, alt}`, `links: [{label, url}]`, `nav: [{label, href}]` anchors. |
 | [`project-cards`](https://appai.info/spec/sections#project-cards) | `heading`, `eyebrow`, `items: [{name, category, description, icon: {url, alt}, monogram, screenshot: {url, alt, kind: phone/web, width, height}, links: [{label, url}]}]`. |
 | [`entries`](https://appai.info/spec/sections#entries) | `heading`, `eyebrow`, Markdown `intro`, `items: [{title, description}]`, `links: [{label, url}]`; reuse for focus, experience or contact. |
-| [`hero`](https://appai.info/spec/sections#hero) | [Hero variants and height](https://appai.info/spec/style#hero-variants). |
+| [`hero`](https://appai.info/spec/sections#hero) | [Hero variants and height](https://appai.info/spec/theme#hero-variants). |
 | [`stats`](https://appai.info/spec/sections#stats) | Key numbers (e.g. "10K+ Users", "99.9% Uptime"). 2-column grid on mobile, 4-column on desktop. |
 | [`features`](https://appai.info/spec/sections#features) | Feature cards with icons in a responsive grid. 3-6 items recommended. |
 | [`pricing`](https://appai.info/spec/sections#pricing) | Pricing comparison cards. 3 tiers recommended. Supports `highlighted` flag. |
@@ -219,4 +219,4 @@ Moved to [Section Reference](https://appai.info/spec/sections#section-reference)
 
 Prefix every child slug with its root slug because `(slug, locale)` is unique across the whole platform; an unprefixed `contact` can collide with another user’s page.
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)

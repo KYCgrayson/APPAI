@@ -143,3 +143,38 @@ test("numeric string section orders render FIRST before SECOND", async () => {
   assert.match(result.html, /FIRST[\s\S]*SECOND/);
   assert.equal(result.errors.length, 0);
 });
+
+test("default typography is byte-identical to the origin/main fixture for all 29 section types", async (t) => {
+  t.mock.method(Date.prototype, "toISOString", () => "2026-01-01T00:00:00.000Z");
+  const { readFileSync } = await import("node:fs");
+  const page = JSON.parse(readFileSync(new URL("./fixtures/typography-page.json", import.meta.url), "utf8"));
+  const expected = readFileSync(new URL("./fixtures/typography-default.html", import.meta.url), "utf8");
+  assert.equal(new Set(page.content.sections.map((section: { type: string }) => section.type)).size, 29);
+  for (const settings of [{}, { textSize: "md", textContrast: "normal" }, { textSize: "md", textContrast: "normal", typography: {} }, { textSize: "md", textContrast: "normal", typography: { caption: "md", card: "md", body: "md", heading: "md", display: "md" } }]) {
+    const result = await stream(createElement(PageRenderer, { page: { ...page, content: { ...page.content, ...settings } } }));
+    assert.equal(result.errors.length, 0);
+    assert.equal(result.html, expected);
+    assert.doesNotMatch(result.html, /data-typography|--type-/);
+  }
+  const active = await stream(createElement(PageRenderer, { page: { ...page, content: { ...page.content, textSize: "4xl", textContrast: "high", typography: { display: "4xl" } } } }));
+  for (const role of ["display", "heading", "card", "body"]) assert.ok(active.html.includes(`data-typography-role="${role}"`));
+  assert.match(active.html, /overflow-wrap:anywhere/);
+  assert.match(active.html, /--ts-display:2.5/);
+});
+
+test("extreme hero and contact text render with active shrink and wrap rules", async () => {
+  const result = await stream(createElement(PageRenderer, { page: {
+    slug: "long-typography", title: "Long typography", template: "APP_LANDING", content: {
+      textSize: "4xl", textContrast: "high", sections: [
+        { type: "hero", order: 0, data: { headline: "Internationalization", subheadline: "Internationalization" } },
+        { type: "contact", order: 1, data: { email: "Internationalization@internationalization.example.com" } },
+      ],
+    },
+  } }));
+  assert.equal(result.errors.length, 0);
+  assert.match(result.html, /Internationalization/);
+  assert.match(result.html, /Internationalization@internationalization.example.com/);
+  assert.match(result.html, /\[data-typography-role\]\{overflow-wrap:anywhere;min-width:0\}/);
+  assert.match(result.html, /relative z-10 max-w-3xl min-w-0/);
+  assert.match(result.html, /<div class="min-w-0"><p data-typography-role="caption"/);
+});

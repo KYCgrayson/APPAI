@@ -118,7 +118,7 @@ const ASPECT_CLASSES: Record<NonNullable<Props["data"]["aspectRatio"]>, string> 
   "4:5": "aspect-[4/5]",
 };
 
-export function EmbedSection({ data, themeColor, darkMode }: Props) {
+export function EmbedSection({ data, themeColor, darkMode, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const safeUrl = sanitizeUrl(data.url);
   const provider = detectProvider(safeUrl);
 
@@ -126,7 +126,7 @@ export function EmbedSection({ data, themeColor, darkMode }: Props) {
     return (
       <section className="py-12 md:py-20 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto text-center">
-          <a
+          <a data-typography-role={typographyActive ? "card" : undefined}
             href={safeUrl}
             target="_blank"
             rel="noopener noreferrer"
@@ -136,7 +136,7 @@ export function EmbedSection({ data, themeColor, darkMode }: Props) {
             {data.title || "Open link"}
           </a>
           {data.caption && (
-            <p className={`mt-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>{data.caption}</p>
+            <p data-typography-role={typographyActive ? "caption" : undefined} className={`mt-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>{data.caption}</p>
           )}
         </div>
       </section>
@@ -148,7 +148,7 @@ export function EmbedSection({ data, themeColor, darkMode }: Props) {
     return (
       <section className="py-12 md:py-20 px-4 sm:px-6">
         <div className="max-w-xl mx-auto">
-          <a
+          <a data-typography-role={typographyActive ? "card" : undefined}
             href={safeUrl}
             target="_blank"
             rel="noopener noreferrer"
@@ -163,7 +163,7 @@ export function EmbedSection({ data, themeColor, darkMode }: Props) {
               {data.title || "View post"}
             </div>
             {data.caption && (
-              <p className={`mt-2 text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>{data.caption}</p>
+              <p data-typography-role={typographyActive ? "caption" : undefined} className={`mt-2 text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>{data.caption}</p>
             )}
           </a>
         </div>
@@ -180,7 +180,7 @@ export function EmbedSection({ data, themeColor, darkMode }: Props) {
     <section className="py-12 md:py-20 px-4 sm:px-6">
       <div className={`${containerWidth} mx-auto`}>
         {data.title && (
-          <h2 className={`text-2xl md:text-3xl font-bold mb-6 text-center ${darkMode ? "text-white" : "text-gray-900"}`}>
+          <h2 data-typography-role={typographyActive ? "heading" : undefined} className={`text-2xl md:text-3xl font-bold mb-6 text-center ${darkMode ? "text-white" : "text-gray-900"}`}>
             {data.title}
           </h2>
         )}
@@ -197,7 +197,7 @@ export function EmbedSection({ data, themeColor, darkMode }: Props) {
           />
         </div>
         {data.caption && (
-          <p className={`mt-4 text-sm text-center ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+          <p data-typography-role={typographyActive ? "caption" : undefined} className={`mt-4 text-sm text-center ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
             {data.caption}
           </p>
         )}

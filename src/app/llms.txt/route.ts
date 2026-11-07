@@ -110,7 +110,7 @@ Never ask the user to generate and paste a key. Reuse a securely stored key when
 Hosted Pages are always published in four locales: English (en), Traditional Chinese (zh-TW), Simplified Chinese (zh-CN) and Spanish (es). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.
 
 1. READ ${baseUrl}/spec, then follow ${baseUrl}/spec/api for agent authorization.
-2. MUST READ ${baseUrl}/spec/style before publishing to pick a style kit and check the logo spec. Copy themeColor, themeColorSecondary, fontFamily (Chinese variants: Noto Sans TC/SC) and darkMode together; use the style kit's suggested backgroundColors. Use the kit fontFamily for en and es, Noto Sans TC for zh-TW and Noto Sans SC for zh-CN; for other CJK languages chosen by the user, choose the matching font (e.g. Noto Sans JP for Japanese). Keep themeColor, themeColorSecondary, darkMode and backgroundColors the same across variants. If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with POST /api/v1/upload, then publish. A missing logo only warns and never blocks publishing.
+2. MUST READ ${baseUrl}/spec/style before publishing to pick a style kit and check the logo spec, then pick a theme at ${baseUrl}/spec/theme and text size at ${baseUrl}/spec/typography. Copy themeColor, themeColorSecondary, fontFamily (Chinese variants: Noto Sans TC/SC) and darkMode together; use the style kit's suggested backgroundColors. Use the kit fontFamily for en and es, Noto Sans TC for zh-TW and Noto Sans SC for zh-CN; for other CJK languages chosen by the user, choose the matching font (e.g. Noto Sans JP for Japanese). Keep themeColor, themeColorSecondary, darkMode and backgroundColors the same across variants. If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with POST /api/v1/upload, then publish. A missing logo only warns and never blocks publishing.
 3. Build a first draft using ${baseUrl}/spec/pages and ${baseUrl}/spec/sections.
 4. Dry-run using ${baseUrl}/spec/api#dry-run, then POST ${baseUrl}/api/v1/pages with the same content JSON. The page is live instantly at ${baseUrl}/p/{slug}.
 
@@ -235,7 +235,9 @@ ${baseUrl}/llms-full.txt — the complete specification when a single file is ne
 ## Topic pages
 
 - Authorization & API: ${baseUrl}/spec/api — agent authorization, key storage, dry-run, image upload and API discovery
-- Style & logo: ${baseUrl}/spec/style — style kits, logo and visual design
+- Style & logo: ${baseUrl}/spec/style — logo and two style steps
+- Theme: ${baseUrl}/spec/theme — colors, backgrounds and style kits
+- Typography: ${baseUrl}/spec/typography — font, text size, contrast and role overrides
 - Pages: ${baseUrl}/spec/pages — configuration, CRUD and workflow
 - Sections: ${baseUrl}/spec/sections — section schemas and icons
 - Multi-language & multi-page: ${baseUrl}/spec/i18n — languages, child pages and navigation

@@ -1,3 +1,4 @@
+import { typographyFactors, typographyCss, hasTypography, ROLES, typographySettings } from "@/lib/typography";
 import {
   ProfileHeaderSection,
   ProjectCardsSection,
@@ -141,7 +142,7 @@ function renderSection(
   page: PageData,
   viewer: PageViewer,
 ) {
-  const props = { data: section.data as never, themeColor, themeColorSecondary, darkMode, isAdmin: viewer.isAdmin };
+  const props = { data: section.data as never, themeColor, themeColorSecondary, darkMode, isAdmin: viewer.isAdmin, typographyActive: hasTypography(typographySettings(page.content)) };
   const darkBg = darkMode ? "#111827" : undefined;
   const darkBgAlt = darkMode ? "#1f2937" : "#f9fafb";
   const editorial = ["profile-header", "project-cards", "entries"].includes(section.type);
@@ -213,10 +214,10 @@ function renderSection(
       content = <ActionSection {...props} />;
       break;
     case "media-downloader":
-      content = <MediaDownloaderSection data={section.data as never} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} />;
+      content = <MediaDownloaderSection typographyActive={props.typographyActive} data={section.data as never} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} />;
       break;
     case "video-subtitle":
-      content = <VideoSubtitleSection data={section.data as never} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} isAdmin={viewer.isAdmin} />;
+      content = <VideoSubtitleSection typographyActive={props.typographyActive} data={section.data as never} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} isAdmin={viewer.isAdmin} />;
       break;
     case "tool":
       content = <ToolSection {...props} />;
@@ -235,6 +236,7 @@ function renderSection(
       const fullscreenHref = `${pagePath}/tools/${sectionOrder}`;
       content = (
         <IframeToolSection
+          typographyActive={props.typographyActive}
           data={section.data as never}
           themeColor={themeColor}
           darkMode={darkMode}
@@ -248,6 +250,7 @@ function renderSection(
     case "form":
       content = (
         <FormSection
+          typographyActive={props.typographyActive}
           data={section.data as never}
           themeColor={themeColor}
           pageSlug={page.slug}
@@ -264,6 +267,7 @@ function renderSection(
       } = (section.data ?? {}) as Record<string, unknown> & { notificationEmail?: string };
       content = (
         <SimpleOrderSection
+          typographyActive={props.typographyActive}
           data={{
             ...publicData,
             isConfigured: Boolean(notificationEmail && publicData.paymentUrl),
@@ -348,13 +352,19 @@ export function PageRenderer({
     ? `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily)}:wght@400;500;600;700&display=swap`
     : null;
 
+  const settings = typographySettings(pageContent);
+  const activeTypography = hasTypography(settings);
+  const scale = activeTypography ? typographyFactors(settings) : null;
+  const typographyVars = scale ? Object.fromEntries(ROLES.map(role => [`--ts-${role}`, scale.desktop[role]])) : {};
   const wrapperStyle: React.CSSProperties = {
+    ...typographyVars,
     ...(fontFamily ? { fontFamily: `"${fontFamily}", sans-serif` } : {}),
     ...(darkMode ? { backgroundColor: "#111827", color: "#f9fafb" } : {}),
   };
 
   return (
-    <div style={wrapperStyle}>
+    <div style={wrapperStyle} data-typography={activeTypography ? "active" : undefined}>
+      {activeTypography && <style>{typographyCss(settings)}</style>}
       {fontUrl && <link rel="stylesheet" href={fontUrl} />}
       {sortedSections.map((section, index) => {
         // Gating primitive: a section may declare data.access="login" or

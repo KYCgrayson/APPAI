@@ -55,8 +55,8 @@ function Shell({ data, themeColor, darkMode = false, children }: Props<Base> & {
     backgroundColor: data.backgroundColor || (darkMode ? "#182322" : "#f6f5f0"),
   } as CSSProperties}><div className={styles.inner}>{children}</div></section>;
 }
-function Heading({ data }: { data: Base }) {
-  return <>{data.eyebrow && <p className={styles.eyebrow}>{data.eyebrow}</p>}{data.heading && <h2 className={styles.heading}>{data.heading}</h2>}</>;
+function Heading({ data, typographyActive = false }: { data: Base; typographyActive?: boolean }) {
+  return <>{data.eyebrow && <p data-typography-role={typographyActive ? "caption" : undefined} className={styles.eyebrow}>{data.eyebrow}</p>}{data.heading && <h2 data-typography-role={typographyActive ? "heading" : undefined} className={styles.heading}>{data.heading}</h2>}</>;
 }
 function Links({ items }: { items?: Link[] }) {
   const origin = process.env.NEXTAUTH_URL || "https://appai.info";
@@ -69,9 +69,9 @@ function Links({ items }: { items?: Link[] }) {
     <a key={i} href={item.href} target={item.external ? "_blank" : undefined} rel={item.external ? "noreferrer" : undefined}>{item.label}</a>
   ))}</div>;
 }
-export function ProfileHeaderSection(props: Props<Base & {
+export function ProfileHeaderSection(props: (Props<Base & {
   name: string; tagline?: string; avatar?: Image; links?: Link[]; nav?: { label: string; href: string }[];
-}>) {
+}>) & { typographyActive?: boolean }) {
   const raw = record(props.data);
   const data = { ...base(raw), name: text(raw.name), tagline: text(raw.tagline), avatar: image(raw.avatar), links: links(raw.links) };
   const nav = Array.isArray(raw.nav) ? raw.nav.map((value) => {
@@ -79,20 +79,20 @@ export function ProfileHeaderSection(props: Props<Base & {
     return { label: text(item.label), href: text(item.href) };
   }).filter((item) => item.label && /^#[a-zA-Z][\w-]*$/.test(item.href)) : [];
   return <Shell {...props} data={data}>
-    {!!nav?.length && <nav className={styles.nav}>{nav.map((item, i) => <a key={i} href={item.href}>{item.label}</a>)}</nav>}
+    {!!nav?.length && <nav className={styles.nav}>{nav.map((item, i) => <a data-typography-role={props.typographyActive ? "body" : undefined} key={i} href={item.href}>{item.label}</a>)}</nav>}
     <div className={styles.header}>
-      <div><Heading data={{ eyebrow: data.eyebrow }} /><div className={styles.identity}>
+      <div><Heading typographyActive={props.typographyActive} data={{ eyebrow: data.eyebrow }} /><div className={styles.identity}>
         {(data.name || data.avatar.url) && <div className={styles.avatar}>{data.avatar?.url ? <img src={data.avatar.url} alt={data.avatar.alt || ""} width={96} height={96} loading="lazy" decoding="async" /> : (data.name || "").trim().split(/\s+/).slice(0, 2).map((word) => Array.from(word)[0]).join("")}</div>}
-        <div>{data.name && <h1 className={styles.name}>{data.name}</h1>}{data.tagline && <p className={styles.tagline}>{data.tagline}</p>}</div>
+        <div>{data.name && <h1 data-typography-role={props.typographyActive ? "display" : undefined} className={styles.name}>{data.name}</h1>}{data.tagline && <p data-typography-role={props.typographyActive ? "body" : undefined} className={styles.tagline}>{data.tagline}</p>}</div>
       </div><Links items={data.links} /></div>
-      {data.intro && <Prose editorialLinks className={styles.intro}>{data.intro}</Prose>}
+      {data.intro && <Prose typographyRole={props.typographyActive ? "body" : undefined} editorialLinks className={styles.intro}>{data.intro}</Prose>}
     </div>
   </Shell>;
 }
-export function ProjectCardsSection(props: Props<Base & { items?: {
+export function ProjectCardsSection(props: (Props<Base & { items?: {
   name: string; category?: string; description?: string; icon?: Image; monogram?: string;
   screenshot?: Image & { kind: "phone" | "web"; width?: number; height?: number }; links?: Link[];
-}[] }>) {
+}[] }>) & { typographyActive?: boolean }) {
   const raw = record(props.data);
   const data = { ...base(raw), items: Array.isArray(raw.items) ? raw.items.map((value) => {
     const item = record(value);
@@ -102,23 +102,23 @@ export function ProjectCardsSection(props: Props<Base & { items?: {
       screenshot: { ...image(screenshot), kind: screenshot.kind === "phone" ? "phone" : "web",
         width: dimension(screenshot.width), height: dimension(screenshot.height) } };
   }).filter((item) => !!item.name) : [] };
-  return <Shell {...props} data={data}><Heading data={data} />{!!data.items?.length && <ProjectReveal>{data.items.map((item, i) => <article key={i} className={styles.card}>
+  return <Shell {...props} data={data}><Heading typographyActive={props.typographyActive} data={data} />{!!data.items?.length && <ProjectReveal>{data.items.map((item, i) => <article key={i} className={styles.card}>
     <div className={styles.identity}>{item.icon?.url ? <img className={styles.icon} src={item.icon.url} alt={item.icon.alt || ""} width={64} height={64} loading="lazy" decoding="async" /> : item.monogram ? <span className={styles.icon}>{Array.from(item.monogram).slice(0, 2).join("")}</span> : null}
-      <div>{item.category && <p className={styles.eyebrow}>{item.category}</p>}{data.heading ? <h3 className={styles.projectName}>{item.name}</h3> : <h2 className={styles.projectName}>{item.name}</h2>}</div>
+      <div>{item.category && <p data-typography-role={props.typographyActive ? "caption" : undefined} className={styles.eyebrow}>{item.category}</p>}{data.heading ? <h3 data-typography-role={props.typographyActive ? "heading" : undefined} className={styles.projectName}>{item.name}</h3> : <h2 data-typography-role={props.typographyActive ? "heading" : undefined} className={styles.projectName}>{item.name}</h2>}</div>
     </div>
-    {item.description && <p className={styles.description}>{item.description}</p>}
+    {item.description && <p data-typography-role={props.typographyActive ? "card" : undefined} className={styles.description}>{item.description}</p>}
     {item.screenshot?.url && <ScreenshotFrame image={item.screenshot} />}
     <Links items={item.links} />
   </article>)}</ProjectReveal>}</Shell>;
 }
-export function EntriesSection(props: Props<Base & { items?: { title: string; description?: string }[]; links?: Link[] }>) {
+export function EntriesSection(props: (Props<Base & { items?: { title: string; description?: string }[]; links?: Link[] }>) & { typographyActive?: boolean }) {
   const raw = record(props.data);
   const data = { ...base(raw), links: links(raw.links), items: Array.isArray(raw.items) ? raw.items.map((value) => {
     const item = record(value);
     return { title: text(item.title), description: text(item.description) };
   }).filter((item) => !!item.title) : [] };
-  return <Shell {...props} data={data}><Heading data={data} />{data.intro && <Prose editorialLinks className={styles.description}>{data.intro}</Prose>}
-    {!!data.items?.length && <div className={styles.entries}>{data.items.map((item, i) => <article key={i}>{data.heading ? <h3>{item.title}</h3> : <h2>{item.title}</h2>}{item.description && <p className={styles.description}>{item.description}</p>}</article>)}</div>}
+  return <Shell {...props} data={data}><Heading typographyActive={props.typographyActive} data={data} />{data.intro && <Prose typographyRole={props.typographyActive ? "body" : undefined} editorialLinks className={styles.description}>{data.intro}</Prose>}
+    {!!data.items?.length && <div className={styles.entries}>{data.items.map((item, i) => <article key={i}>{data.heading ? <h3 data-typography-role={props.typographyActive ? "heading" : undefined}>{item.title}</h3> : <h2 data-typography-role={props.typographyActive ? "heading" : undefined}>{item.title}</h2>}{item.description && <p data-typography-role={props.typographyActive ? "body" : undefined} className={styles.description}>{item.description}</p>}</article>)}</div>}
     <Links items={data.links} />
   </Shell>;
 }

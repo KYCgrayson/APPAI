@@ -10,7 +10,7 @@ interface Props {
   darkMode?: boolean;
 }
 
-export function StatsSection({ data, themeColor, darkMode }: Props) {
+export function StatsSection({ data, themeColor, darkMode, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const items = data.items || [];
   if (items.length === 0) return null;
 
@@ -20,10 +20,10 @@ export function StatsSection({ data, themeColor, darkMode }: Props) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
           {items.map((item, i) => (
             <div key={i} className="text-center">
-              <p className="text-3xl md:text-5xl font-bold" style={{ color: themeColor }}>
+              <p data-typography-role={typographyActive ? "display" : undefined} className="text-3xl md:text-5xl font-bold" style={{ color: themeColor }}>
                 {item.value}
               </p>
-              <p className={`mt-2 text-sm uppercase tracking-wide ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+              <p data-typography-role={typographyActive ? "caption" : undefined} className={`mt-2 text-sm uppercase tracking-wide ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
                 {item.label}
               </p>
             </div>

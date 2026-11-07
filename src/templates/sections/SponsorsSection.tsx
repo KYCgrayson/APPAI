@@ -11,14 +11,14 @@ interface Props {
   themeColor: string;
 }
 
-export function SponsorsSection({ data, themeColor }: Props) {
+export function SponsorsSection({ data, themeColor, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const items = data.items || [];
   if (items.length === 0) return null;
 
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6 bg-gray-50">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>
+        <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>
           Sponsors
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8 items-center">
@@ -32,7 +32,7 @@ export function SponsorsSection({ data, themeColor }: Props) {
             );
 
             return item.url ? (
-              <a key={i} href={sanitizeUrl(item.url)} target="_blank" rel="noopener noreferrer">
+              <a data-typography-role={typographyActive ? "body" : undefined} key={i} href={sanitizeUrl(item.url)} target="_blank" rel="noopener noreferrer">
                 {content}
               </a>
             ) : (

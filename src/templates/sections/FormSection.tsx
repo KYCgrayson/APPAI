@@ -48,7 +48,8 @@ export function FormSection({
   parentSlug,
   locale,
   sectionOrder,
-}: Props) {
+  typographyActive = false,
+}: Props & { typographyActive?: boolean }) {
   const fields = data.fields || [];
   const [values, setValues] = useState<Record<string, string>>({});
   const [state, setState] = useState<State>({ kind: "idle" });
@@ -120,7 +121,7 @@ export function FormSection({
       <section className="py-12 md:py-20 px-4 sm:px-6">
         <div className="max-w-xl mx-auto text-center">
           {data.heading && (
-            <h2
+            <h2 data-typography-role={typographyActive ? "heading" : undefined}
               className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6"
               style={{ color: themeColor }}
             >
@@ -128,7 +129,7 @@ export function FormSection({
             </h2>
           )}
           <div className="rounded-2xl border-2 p-8" style={{ borderColor: themeColor }}>
-            <p className="text-lg font-medium text-gray-900">
+            <p data-typography-role={typographyActive ? "card" : undefined} className="text-lg font-medium text-gray-900">
               {data.successMessage || "Thanks — your message has been sent."}
             </p>
           </div>
@@ -141,7 +142,7 @@ export function FormSection({
     <section className="py-12 md:py-20 px-4 sm:px-6">
       <div className="max-w-xl mx-auto">
         {data.heading && (
-          <h2
+          <h2 data-typography-role={typographyActive ? "heading" : undefined}
             className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-4"
             style={{ color: themeColor }}
           >
@@ -149,7 +150,7 @@ export function FormSection({
           </h2>
         )}
         {data.description && (
-          <p className="text-center text-gray-600 mb-8 md:mb-10">{data.description}</p>
+          <p data-typography-role={typographyActive ? "body" : undefined} className="text-center text-gray-600 mb-8 md:mb-10">{data.description}</p>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5 bg-white rounded-2xl shadow-sm p-6 md:p-8 border border-gray-100">
@@ -167,18 +168,18 @@ export function FormSection({
             };
             return (
               <div key={f.name}>
-                <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label data-typography-role={typographyActive ? "caption" : undefined} htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1.5">
                   {f.label}
                   {f.required && <span className="text-red-500 ml-1">*</span>}
                 </label>
                 {f.type === "textarea" ? (
-                  <textarea
+                  <textarea data-typography-role={typographyActive ? "card" : undefined}
                     {...common}
                     rows={5}
                     onChange={(e) => setField(f.name, e.target.value)}
                   />
                 ) : f.type === "select" ? (
-                  <select
+                  <select data-typography-role={typographyActive ? "card" : undefined}
                     {...common}
                     onChange={(e) => setField(f.name, e.target.value)}
                   >
@@ -190,14 +191,14 @@ export function FormSection({
                     ))}
                   </select>
                 ) : (
-                  <input
+                  <input data-typography-role={typographyActive ? "card" : undefined}
                     {...common}
                     type={f.type}
                     onChange={(e) => setField(f.name, e.target.value)}
                   />
                 )}
                 {f.type === "select" && values[f.name] && (
-                  <p className="text-xs text-gray-500 mt-1.5">
+                  <p data-typography-role={typographyActive ? "caption" : undefined} className="text-xs text-gray-500 mt-1.5">
                     {(f.options || []).find((o) => o.value === values[f.name])?.description}
                   </p>
                 )}
@@ -211,7 +212,7 @@ export function FormSection({
             </div>
           )}
 
-          <button
+          <button data-typography-role={typographyActive ? "card" : undefined}
             type="submit"
             disabled={state.kind === "submitting"}
             className="w-full px-8 py-4 rounded-full text-white font-semibold text-lg transition-transform hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"

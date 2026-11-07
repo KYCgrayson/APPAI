@@ -12,14 +12,14 @@ interface Props {
   themeColor: string;
 }
 
-export function ScheduleSection({ data, themeColor }: Props) {
+export function ScheduleSection({ data, themeColor, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const items = data.items || [];
   if (items.length === 0) return null;
 
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto">
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>
+        <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>
           Schedule
         </h2>
         <div className="relative">
@@ -36,15 +36,15 @@ export function ScheduleSection({ data, themeColor }: Props) {
                   className="absolute left-2.5 top-1.5 w-3 h-3 rounded-full"
                   style={{ backgroundColor: themeColor }}
                 />
-                <p className="text-sm font-semibold" style={{ color: themeColor }}>
+                <p data-typography-role={typographyActive ? "caption" : undefined} className="text-sm font-semibold" style={{ color: themeColor }}>
                   {item.time}
                 </p>
-                <h3 className="text-base md:text-lg font-semibold mt-1">{item.title}</h3>
+                <h3 data-typography-role={typographyActive ? "card" : undefined} className="text-base md:text-lg font-semibold mt-1">{item.title}</h3>
                 {item.speaker && (
-                  <p className="text-sm text-gray-400 mt-1">{item.speaker}</p>
+                  <p data-typography-role={typographyActive ? "caption" : undefined} className="text-sm text-gray-400 mt-1">{item.speaker}</p>
                 )}
                 {item.description && (
-                  <Prose className="prose prose-sm md:prose-base max-w-none text-gray-600 mt-2 prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{item.description}</Prose>
+                  <Prose typographyRole={typographyActive ? "body" : undefined} className="prose prose-sm md:prose-base max-w-none text-gray-600 mt-2 prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{item.description}</Prose>
                 )}
               </div>
             ))}

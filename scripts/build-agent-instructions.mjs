@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
-export const specTopics = ['api', 'style', 'pages', 'sections', 'i18n', 'tools', 'apps'];
+export const specTopics = ['api', 'style', 'theme', 'typography', 'pages', 'sections', 'i18n', 'tools', 'apps'];
 
 function headingSlug(heading) {
   return heading.toLowerCase().replace(/[^\p{L}\p{N}_\s-]/gu, '').replace(/ /g, '-');

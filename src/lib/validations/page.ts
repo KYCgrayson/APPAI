@@ -16,6 +16,14 @@ export function isValidLocale(locale: string): boolean {
   return /^[a-z]{2}(-[A-Z]{2})?$/.test(locale);
 }
 
+const textStep = z.enum(["xs", "sm", "md", "lg", "xl", "2xl", "3xl", "4xl"]);
+const typographyFields = {
+  textSize: textStep.optional(),
+  textContrast: z.enum(["low", "normal", "high"]).optional(),
+  typography: z.object({ caption: textStep.optional(), card: textStep.optional(), body: textStep.optional(), heading: textStep.optional(), display: textStep.optional() }).strict().optional(),
+};
+const contentSchema = z.object(typographyFields).catchall(z.any());
+
 const pageSchema = z.object({
   slug: z
     .string()
@@ -34,7 +42,8 @@ const pageSchema = z.object({
   tagline: z.string().max(500).optional(),
   heroImage: z.string().url().optional(),
   headerLogo: z.string().refine(value => /^\/(?![\/\\])/.test(value) || URL.canParse(value), "Must be a URL or same-origin /path").optional(),
-  content: z.record(z.string(), z.any()).default({}),
+  content: contentSchema.default({}),
+  ...typographyFields,
   privacyPolicy: z.string().optional(),
   termsOfService: z.string().optional(),
   metaTitle: z.string().max(200).optional(),

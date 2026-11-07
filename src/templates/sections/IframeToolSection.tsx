@@ -46,8 +46,7 @@ export function IframeToolSection({
   darkMode = false,
   locale = "en",
   fullscreenHref,
-  identity = null,
-}: Props) {
+  identity = null, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [height, setHeight] = useState<number>(
     Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, data.initialHeight ?? DEFAULT_HEIGHT)),
@@ -90,7 +89,7 @@ export function IframeToolSection({
         {(data.heading || data.description) && (
           <div className="text-center mb-8 md:mb-10">
             {data.heading && (
-              <h2
+              <h2 data-typography-role={typographyActive ? "heading" : undefined}
                 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3"
                 style={{ color: themeColor }}
               >
@@ -98,7 +97,7 @@ export function IframeToolSection({
               </h2>
             )}
             {data.description && (
-              <p
+              <p data-typography-role={typographyActive ? "body" : undefined}
                 className={`text-base md:text-lg max-w-2xl mx-auto ${darkMode ? "text-gray-300" : "text-gray-600"}`}
               >
                 {data.description}
@@ -110,7 +109,7 @@ export function IframeToolSection({
         {data.features && data.features.length > 0 && (
           <ul className={`max-w-2xl mx-auto mb-8 grid gap-2 sm:grid-cols-2 text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
             {data.features.map((f, i) => (
-              <li key={i} className="flex items-start gap-2">
+              <li data-typography-role={typographyActive ? "body" : undefined} key={i} className="flex items-start gap-2">
                 <span
                   className="inline-block w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0"
                   style={{ backgroundColor: themeColor }}
@@ -151,7 +150,7 @@ export function IframeToolSection({
             />
             {fullscreenHref && (
               <div className="flex justify-end px-3 py-2 border-t" style={{ borderColor: darkMode ? "#374151" : "#e5e7eb" }}>
-                <a
+                <a data-typography-role={typographyActive ? "caption" : undefined}
                   href={fullscreenHref}
                   className="text-xs font-medium hover:underline"
                   style={{ color: themeColor }}
@@ -165,8 +164,8 @@ export function IframeToolSection({
           <div
             className={`rounded-2xl border-2 border-dashed p-8 text-center ${darkMode ? "border-gray-700 text-gray-400" : "border-gray-300 text-gray-500"}`}
           >
-            <p className="font-medium mb-1">Tool unavailable</p>
-            <p className="text-sm">{check.reason}</p>
+            <p data-typography-role={typographyActive ? "card" : undefined} className="font-medium mb-1">Tool unavailable</p>
+            <p data-typography-role={typographyActive ? "card" : undefined} className="text-sm">{check.reason}</p>
           </div>
         )}
       </div>
