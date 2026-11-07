@@ -19,7 +19,8 @@
           "variant": "centered",
           "heroHeight": "medium",
           "ctaText": "Read the journal",
-          "ctaUrl": "https://example.com/journal"
+          "ctaUrl": "https://example.com/journal",
+          "backgroundColor": "#1C1917"
         }
       },
       {
@@ -39,21 +40,13 @@
               "url": "https://example.com/contact",
               "title": "Say hello"
             }
-          ]
-        }
-      },
-      {
-        "order": 2,
-        "type": "cta",
-        "data": {
-          "headline": "Read the journal",
-          "subheadline": "Find our latest work, notes, and experiments.",
-          "buttonText": "Read the journal",
-          "buttonUrl": "https://example.com/link-in-bio"
+          ],
+          "backgroundColor": "#292524"
         }
       }
     ]
   },
   "locale": "en",
-  "darkMode": true
+  "darkMode": true,
+  "themeColorSecondary": "#FCA5A5"
 }

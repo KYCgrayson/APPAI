@@ -626,7 +626,7 @@ export const PRESET_DEFS: PresetDef[] = [
   { id: "company-service", template: "COMPANY_PROFILE", name: "Company / Service", description: "For businesses and service providers: services, opening hours, and contact information.", sections: ["hero", "about", "features", "contact", "cta"], example: example6, exampleFile: "company-service.example.json" },
   { id: "product", template: "PRODUCT_SHOWCASE", name: "Product Showcase", description: "For physical or digital products: features, pricing, and purchase links.", sections: ["hero", "features", "pricing", "cta"], example: example7, exampleFile: "product.example.json" },
   { id: "hiring", template: "COMPANY_PROFILE", name: "Hiring / Job Opening", description: "For recruiting: openings, benefits, and an application link.", sections: ["hero", "features", "features", "cta"], example: example8, exampleFile: "hiring.example.json" },
-  { id: "iframe-tool", template: "APP_LANDING", name: "Wrapped Tool", description: "For tools deployed elsewhere: an iframe with a hosted introduction and usage guidance.", sections: ["hero", "iframe-tool", "about", "cta"], example: example9, exampleFile: "iframe-tool.example.json" },
+  { id: "iframe-tool", template: "APP_LANDING", name: "Wrapped Tool", description: "For tools deployed elsewhere: an iframe with a hosted introduction and usage guidance.", sections: ["hero", "iframe-tool", "about"], example: example9, exampleFile: "iframe-tool.example.json" },
 ];
 
 // --- Lookup helpers ---

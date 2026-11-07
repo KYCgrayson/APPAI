@@ -36,12 +36,14 @@ Use the [topic pages](https://appai.info/spec#topic-pages) for details on the ru
 
 ## Publish in one minute
 
-1. **[Authorization & API](https://appai.info/spec/api):** Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste. Use the [device flow](https://appai.info/spec/api#authentication); send `Authorization: Bearer appai_sk_YOUR_KEY` on API requests.
-2. **MUST READ before publishing — [Style & logo](https://appai.info/spec/style):** open it, pick a style kit, and check the logo spec. Dry-run warns (with this link) when `themeColor` or `fontFamily` is missing. Add a real logo — square 512×512 PNG with its own background in `content.logo`, uploaded with `POST /api/v1/upload` (rules: [Logo](https://appai.info/spec/style#logo)). Copy `themeColor`, `fontFamily`, `darkMode` from a style kit; use its suggested backgrounds for section `data.backgroundColor`.
+Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.
+
+1. **[Authorization & API](https://appai.info/spec/api):** Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. Also print the returned `user_code` so the user can compare it with the approval page. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste. Use the [device flow](https://appai.info/spec/api#authentication); send `Authorization: Bearer appai_sk_YOUR_KEY` on API requests.
+2. **MUST READ before publishing — [Style & logo](https://appai.info/spec/style):** open it, pick a style kit, and check the logo spec. Dry-run warns (with this link) when `themeColor` or `fontFamily` is missing. If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with `POST /api/v1/upload`, then publish. A missing logo only warns and never blocks publishing. Add a real logo — square 512×512 PNG with its own background in `content.logo`, uploaded with `POST /api/v1/upload` (rules: [Logo](https://appai.info/spec/style#logo)). Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`), `darkMode` from a style kit; use the style kit's suggested backgroundColors for section `data.backgroundColor`. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW` and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and backgroundColors the same across variants.
 3. **[Pages](https://appai.info/spec/pages):** pick a preset. `GET /api/v1/presets` returns copyable full POST bodies in `example`, section recipes, and named `styles`. Build a complete first draft.
 4. **[Sections](https://appai.info/spec/sections):** use the section schemas and icons. Find schemas with `GET /api/v1/sections?type=features,contact` (comma list supported).
-5. **[Dry-run](https://appai.info/spec/api#dry-run):** `POST /api/v1/pages?dryRun=true` (identical to `POST /api/v1/pages/preview`) with the full body. Review `{valid, errors, warnings, sanitizedContent, next}`; fix errors and unknown section/field warnings before publishing. Nothing is saved. `dryRun` accepts true/1/yes or false/0/no case-insensitively; other non-empty values return 400.
-6. **Publish:** `POST /api/v1/pages` with the same body (`?upsert=true` to overwrite an existing page).
+5. **[Dry-run](https://appai.info/spec/api#dry-run):** `POST /api/v1/pages?dryRun=true` (identical to `POST /api/v1/pages/preview`) with the full body. Review `{valid, errors, warnings, sanitizedContent, next}`; fix errors and unknown section/field warnings before publishing. To update an existing page, use `?dryRun=true&upsert=true` then `POST ?upsert=true`; omitting `upsert=true` in preview produces an existing-page warning. Nothing is saved. `dryRun` accepts true/1/yes or false/0/no case-insensitively; other non-empty values return 400.
+6. **Publish:** `POST /api/v1/pages` with the same body. To update an existing page, use `POST /api/v1/pages?upsert=true` after `?dryRun=true&upsert=true`. Use `PATCH /api/v1/pages/{slug}?locale=xx` for partial updates.
 7. **Open:** `https://appai.info/p/{slug}` and check desktop/mobile layout.
 
 | Type | Preset id | Example POST body |
@@ -57,10 +59,12 @@ Use the [topic pages](https://appai.info/spec#topic-pages) for details on the ru
 | Hiring / job opening | `hiring` | [JSON](https://appai.info/spec/examples/hiring.example.json) |
 | Wrapped tool | `iframe-tool` | [JSON](https://appai.info/spec/examples/iframe-tool.example.json) |
 
-Copy this complete request body into both the dry-run and publish POSTs. Change the slug, copy, and **replace the demo logo with the real logo**:
+If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with `POST /api/v1/upload`, then publish. A missing logo only warns and never blocks publishing.
+
+Copy this complete request body into both the dry-run and publish POSTs. Change the slug and copy, **replace the demo logo with the real logo**, and write `metaDescription`, `privacyPolicy` and `termsOfService` per locale:
 
 ```json
-{"slug":"company-service-demo","template":"COMPANY_PROFILE","title":"Cedar Workshop","tagline":"Clear websites for independent businesses.","themeColor":"#047857","fontFamily":"Lato","isPublished":true,"content":{"logo":"https://appai.info/spec/examples/placeholder-logo.png","sections":[{"order":0,"type":"hero","data":{"headline":"Cedar Workshop","subheadline":"Clear websites for independent businesses.","logo":"https://appai.info/spec/examples/placeholder-logo.png","variant":"centered","heroHeight":"medium","ctaText":"Book a discovery call","ctaUrl":"https://example.com/book"}},{"order":1,"type":"about","data":{"id":"details","heading":"From first sketch to launch","text":"We help independent teams define their message, design a clear website, and launch with confidence. Start with a focused discovery session and leave with a practical plan."}},{"type":"features","data":{"heading":"Services","items":[{"icon":"sparkles-outline","title":"Website design","description":"Accessible websites for independent businesses."}]},"order":2},{"type":"about","data":{"heading":"Opening hours","text":"Monday–Friday: 09:00–17:00. Weekends: closed."},"order":3},{"type":"contact","data":{"heading":"Talk to Cedar","email":"hello@example.com","formUrl":"https://example.com/contact"},"order":4},{"order":5,"type":"cta","data":{"headline":"Book a discovery call","subheadline":"Clear websites for independent businesses.","buttonText":"Book a discovery call","buttonUrl":"https://example.com/company-service"}}]},"locale":"en","darkMode":false}
+{"slug":"company-service-demo","template":"COMPANY_PROFILE","title":"Cedar Workshop","tagline":"Clear websites for independent businesses.","themeColor":"#047857","fontFamily":"Lato","isPublished":true,"content":{"logo":"https://appai.info/spec/examples/placeholder-logo.png","sections":[{"order":0,"type":"hero","data":{"headline":"Cedar Workshop","subheadline":"Clear websites for independent businesses.","logo":"https://appai.info/spec/examples/placeholder-logo.png","variant":"centered","heroHeight":"medium","ctaText":"Book a discovery call","ctaUrl":"https://example.com/book","backgroundColor":"#FFFFFF"}},{"order":1,"type":"about","data":{"id":"details","heading":"From first sketch to launch","text":"We help independent teams define their message, design a clear website, and launch with confidence. Start with a focused discovery session and leave with a practical plan.","backgroundColor":"#ECFDF5"}},{"type":"features","data":{"heading":"Services","items":[{"icon":"sparkles-outline","title":"Website design","description":"Accessible websites for independent businesses."}],"backgroundColor":"#FFFFFF"},"order":2},{"type":"about","data":{"heading":"Opening hours","text":"Monday–Friday: 09:00–17:00. Weekends: closed.","backgroundColor":"#ECFDF5"},"order":3},{"type":"contact","data":{"heading":"Talk to Cedar","email":"hello@example.com","formUrl":"https://example.com/contact","backgroundColor":"#FFFFFF"},"order":4},{"order":5,"type":"cta","data":{"headline":"Book a discovery call","subheadline":"Clear websites for independent businesses.","buttonText":"Book a discovery call","buttonUrl":"https://example.com/company-service"}}]},"locale":"en","darkMode":false,"themeColorSecondary":"#B45309"}
 ```
 
 
@@ -113,6 +117,7 @@ curl -sX POST https://appai.info/api/v1/auth/device
 #     "expires_in": 900, "interval": 5 }
 
 # 2. Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it.
+#    Also print the returned `user_code` so the user can compare it with the approval page.
 #    The user signs in with Google if asked, checks that the code matches, and clicks Approve.
 #    Never approve it yourself.
 #    The agent receives the key — nothing to copy or paste.
@@ -169,6 +174,8 @@ Previous: [Sections](https://appai.info/spec/sections) · Next: [Publish](https:
 
 **Preview without saving:** `POST /api/v1/pages?dryRun=true` (identical to `POST /api/v1/pages/preview`) — same body; HTTP 200 returns `{valid, errors: [], warnings: [], sanitizedContent, next}`. Always check `valid`; warnings do not block creation. Preview rejects an exact (slug, locale) owned by another organization; it does not check plan limits, parent existence or ownership of the parent root; POST does.
 
+For an existing slug+locale, dry-run with `POST /api/v1/pages?dryRun=true&upsert=true` (or `POST /api/v1/pages/preview?upsert=true`), then publish with `POST /api/v1/pages?upsert=true`. Without `upsert=true`, preview warns that the page already exists; publishing returns 409. Use `PATCH /api/v1/pages/{slug}?locale=xx` for partial updates.
+
 Publish with `POST /api/v1/pages` using the same body and `isPublished: true` (`?upsert=true` to overwrite an existing page). Open `https://appai.info/p/{slug}` and check desktop/mobile layout.
 
 ## Upload images
@@ -195,16 +202,21 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 | midnight | #A5B4FC | #67E8F9 | Space Grotesk | true | #0F172A, #1E293B |
 | ember | #FDBA74 | #FCA5A5 | DM Sans | true | #1C1917, #292524 |
 
+Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a style kit; use the style kit's suggested backgroundColors. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants.
+
 ### Visual Design Capabilities
 
-- **Section backgrounds:** Any section can have a custom `backgroundColor`. Use tints of your themeColor for visual rhythm.
+- **Section backgrounds:** Any section can have a custom `backgroundColor`. Use the style kit's suggested backgroundColors.
 - **Hero backgrounds:** `backgroundColor` (solid color), `backgroundImage`, or `backgroundVideo`. Dark backgrounds auto-switch text to white.
 - **Dark mode:** Set `darkMode: true` at page level. All sections, cards, borders adapt automatically.
-- **Custom fonts:** Set `fontFamily` at page level. Loaded from Google Fonts automatically. Start from a style kit in the table above. CJK: `Noto Sans TC` / `Noto Sans SC` / `Noto Sans JP`.
+- **Custom fonts:** Each locale variant stores its own page-level `fontFamily`, loaded from Google Fonts and rendered as `"<font>", sans-serif`. There is no automatic CJK font selection. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants.
 - **Icons:** Three formats — Ionicons name (e.g. `globe-outline`), emoji, or image URL. Use one of `icons` (`GET /api/v1/sections`) or any emoji
 - **Markdown:** Supported in: `about.text`, `faq.items[].answer`, `testimonials.items[].quote`, `team.items[].bio`, `schedule.items[].description`, `pricing.items[].description`, `cta.subheadline`, `form.description`
 
 ### Logo
+
+
+If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with `POST /api/v1/upload`, then publish. A missing logo only warns and never blocks publishing.
 
 **Every root page should provide a logo (strong recommendation; publishing is never blocked):** square 512x512 PNG, app-icon style with its own background color. Set `content.logo` (or hero `data.logo` / `headerLogo`) to an HTTPS URL or same-origin `/path`. For local files, upload with `POST /api/v1/upload` and use the returned URL. Missing or non-HTTPS logos produce `warnings` on create/upsert, PUT, PATCH and dry-run. Child pages inherit the root header logo and need no separate logo. `heroImage` does not count for directory cards or the missing-logo warning; the header still falls back to it. Dry-run warns to replace the placeholder with the real logo and `https://color-bench-demo.pages.dev` with your deployed tool URL wherever that value appears.
 
@@ -238,10 +250,10 @@ This platform gives you full control over visual design. Every parameter below i
 | Parameter | Description |
 |-----------|-------------|
 | `template` | `APP_LANDING`, `COMPANY_PROFILE`, `PRODUCT_SHOWCASE`, `PORTFOLIO`, `LINK_IN_BIO`, `PERSON` (classification only; sections control rendering). |
-| `themeColor` | Hex color (e.g. `#6366F1`) — drives CTA buttons, accents, links. Pick vibrant colors, not black. |
+| `themeColor` | Hex color (e.g. `#6366F1`) — drives CTA buttons, accents, links. Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a kit in [Style & logo](https://appai.info/spec/style). |
 | `themeColorSecondary` | Hex color — optional accent for secondary buttons. Auto-generated from themeColor if omitted. |
 | `darkMode` | Boolean — renders entire page with dark backgrounds and light text. All sections adapt automatically. |
-| `fontFamily` | Google Fonts name (e.g. `"Inter"`, `"Poppins"`, `"Noto Sans JP"`) — loaded automatically. |
+| `fontFamily` | Google Fonts name, loaded automatically per locale variant. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants. |
 | `headerLogo` | URL — separate logo for the light header (when hero logo is white/light). |
 | `ogImage` | URL — Open Graph image for social sharing. Fallback order: ogImage → heroImage → profile-header avatar → screenshot or icon of the first project item that has one → first screenshots image (valid HTTP(S) URLs only). |
 
@@ -268,7 +280,7 @@ Every section supports optional `backgroundColor` (hex) and `id` (anchor for `#l
 | [`pricing`](https://appai.info/spec/sections#pricing) | Pricing comparison cards. 3 tiers recommended. Supports `highlighted` flag. |
 | [`testimonials`](https://appai.info/spec/sections#testimonials) | User quote cards with name, role, avatar. |
 | [`faq`](https://appai.info/spec/sections#faq) | Expandable Q&A accordion. 5-10 items recommended. Auto-generates FAQ schema for SEO. |
-| [`cta`](https://appai.info/spec/sections#cta) | Bold call-to-action banner. Uses themeColor as background automatically. Place near bottom. |
+| [`cta`](https://appai.info/spec/sections#cta) | Bold call-to-action banner. Uses themeColor as background automatically. Use only on landing-type pages, near bottom. |
 | [`video`](https://appai.info/spec/sections#video) | Embedded video. Supports YouTube, Vimeo, mp4, webm, gif (auto-detected). |
 | [`screenshots`](https://appai.info/spec/sections#screenshots) | Horizontal scrollable image carousel. |
 | [`download`](https://appai.info/spec/sections#download) | App Store / Play Store download buttons. Also adds a Download button to the sticky header. |
@@ -298,7 +310,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 ### Your default workflow
 
 1. **Gather minimum context.** Ask: "What is your product/app and who is it for?" You need: product name, what it does, target audience. That's enough to start.
-2. **Make design decisions yourself.** Choose themeColor based on the product category. Pick sections based on the product type. Generate features, FAQ, and copy from what the user told you. Generate privacy policy and terms of service automatically.
+2. **Make design decisions yourself.** Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a kit in [Style & logo](https://appai.info/spec/style) and use the style kit's suggested backgroundColors. Pick sections based on the product type. Generate features, FAQ, and copy from what the user told you. Generate privacy policy and terms of service automatically.
 3. **Publish the first draft.** [Authorize](https://appai.info/spec/api#authentication) → **MUST READ [Style & logo](https://appai.info/spec/style)** to pick a style kit and logo → [build](https://appai.info/spec/pages#creating-a-page) with the [section schemas](https://appai.info/spec/sections) → [dry-run, then publish](https://appai.info/spec/api#dry-run) with the same body. Show the user the live URL.
 4. **Iterate.** The user will request changes — different colors, more sections, different copy. Use PATCH to update.
 
@@ -310,7 +322,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 |---|---|
 | **Personal website / portfolio of a person** | template `PERSON` only for the person’s own root page, never project pages; `profile-header` + `project-cards` + `entries`. |
 | **Landing page for an app/product** | Hero + features + pricing + testimonials + faq + cta. Standard SaaS template. |
-| **Host a vibe-coded tool** | Hero (short tagline) + `iframe-tool` (the tool itself) + 1-2 supporting sections (about / faq / cta). The tool is the page. |
+| **Host a vibe-coded tool** | Hero (short tagline) + `iframe-tool` (the tool itself) + 1-2 supporting sections (about / faq). The tool is the page. |
 
 For personal sites, upload images via [`POST /api/v1/upload`](https://appai.info/spec/api#upload-images) first; publish each project as its own `/p/` page (or link the product’s own site) and link to it; never invent experience, numbers or contact details.
 
@@ -320,31 +332,32 @@ their own tool, it is `iframe-tool`. `embed` is for media posts (TikTok/YouTube)
 `tool` is for form-input → backend API.
 
 ### Person site recipe
-Project pages use `template: "PRODUCT_SHOWCASE"` (or `APP_LANDING` for an app with downloads), never `PERSON`; `PERSON` is only for the person’s own root page. Publish projects as **child pages** (`parentSlug` = person slug): `/p/jordan-example/jordan-sample-notes` (ja: `/p/jordan-example/ja/jordan-sample-notes`). Slugs are globally unique per locale, children included; prefix child slugs with the parent slug. Children and locale variants do not count toward the free plan's 3-root limit. A project with its own product site can link there instead.
+Project pages use `template: "PRODUCT_SHOWCASE"` (or `APP_LANDING` for an app with downloads), never `PERSON`; `PERSON` is only for the person’s own root page. Publish projects as **child pages** (`parentSlug` = person slug): `/p/jordan-example/jordan-example-sample-notes` (zh-TW: `/p/jordan-example/zh-TW/jordan-example-sample-notes`). Slugs are globally unique per locale, children included; prefix child slugs with the parent slug. Children and locale variants do not count toward the free plan's 3-root limit. A project with its own product site can link there instead.
 ```json
-{"slug":"jordan-example","template":"PERSON","title":"Jordan Example","isPublished":true,"content":{"sections":[{"type":"profile-header","order":0,"data":{"name":"Jordan Example"}},{"type":"project-cards","order":1,"data":{"items":[{"name":"Sample Notes","links":[{"label":"Details","url":"/p/jordan-example/jordan-sample-notes"}]}]}},{"type":"entries","order":2,"data":{"items":[{"title":"Focus","description":"Small useful tools."}]}}]}}
-{"slug":"jordan-sample-notes","parentSlug":"jordan-example","template":"PRODUCT_SHOWCASE","title":"Sample Notes","isPublished":true,"content":{"sections":[{"type":"profile-header","order":0,"data":{"name":"Sample Notes","eyebrow":"Notes","avatar":{"url":"https://example.com/icon.png","alt":""},"links":[{"label":"Website","url":"https://example.com"}]}},{"type":"screenshots","order":1,"data":{"images":[{"url":"https://example.com/screen.png","alt":"Notes screen","kind":"web"}]}}]}}
+{"slug":"jordan-example","template":"PERSON","title":"Jordan Example","isPublished":true,"content":{"sections":[{"type":"profile-header","order":0,"data":{"name":"Jordan Example"}},{"type":"project-cards","order":1,"data":{"items":[{"name":"Sample Notes","links":[{"label":"Details","url":"/p/jordan-example/jordan-example-sample-notes"}]}]}},{"type":"entries","order":2,"data":{"items":[{"title":"Focus","description":"Small useful tools."}]}}]}}
+{"slug":"jordan-example-sample-notes","parentSlug":"jordan-example","template":"PRODUCT_SHOWCASE","title":"Sample Notes","isPublished":true,"content":{"sections":[{"type":"profile-header","order":0,"data":{"name":"Sample Notes","eyebrow":"Notes","avatar":{"url":"https://example.com/icon.png","alt":""},"links":[{"label":"Website","url":"https://example.com"}]}},{"type":"screenshots","order":1,"data":{"images":[{"url":"https://example.com/screen.png","alt":"Notes screen","kind":"web"}]}}]}}
 ```
 Send each object separately; set `locale` for each variant. Project shape: profile-header (project h1, icon as avatar, category as eyebrow, links) + screenshots (omit when absent) + optional entries; avoid repeating the project in project-cards.
-Data uses `{slug, page?: {themeColor, fontFamily}, locales: {en: {title?, metaDescription?, sections: [...]}}}`; section array order is preserved and `id` becomes `data.id`.
-Project cards can use existing links or `page: {slug, as: "child"|"root", linkLabel, template?, entries?}`; roots count toward the plan limit. Only `avatar`/`icon`/`screenshot` object `url`s and `images` array strings or `{url}` items [upload once](https://appai.info/spec/api#upload-images): relative .png/.jpg/.jpeg/.gif/.webp/.svg paths must resolve inside the real data directory; absolute paths, .env* segments and symlink escapes are refused, and links pass through. `page` allows only themeColor/fontFamily/darkMode; locales need sections arrays and project-cards need items arrays; first locale is default. Compute every locale's root and project URLs first: roots `/p/{root}[/{locale}]`, child projects `/p/{root}[/{locale}]/{slug}`, root-type projects `/p/{slug}[/{locale}]`. Publish complete, published person root locale variants with those card links, then child projects, then root-type projects, all with `?upsert=true`; no unpublished intermediate state or second pass. [Dry-run preview](https://appai.info/spec/api#preview-without-saving) does not check parents, so its order does not matter.
-Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/publish-person-site.mjs), with [fictional input](https://appai.info/spec/examples/person-site.example.json); [placeholder.svg](https://appai.info/spec/examples/placeholder.svg) and [placeholder-screen.svg](https://appai.info/spec/examples/placeholder-screen.svg) are included; [`--dry-run`](https://appai.info/spec/api#preview-without-saving) uploads images and validates every payload without publishing pages.
+Data uses `{slug, logo?: "./logo.svg" or HTTPS URL, page?: {themeColor, themeColorSecondary, fontFamily, darkMode}, locales: {en: {title?, metaDescription?, fontFamily?, sections: [...]}}}`; section array order is preserved and `id` becomes `data.id`.
+Project cards can use existing links or `page: {slug, as: "child"|"root", linkLabel, template?, entries?}`; roots count toward the plan limit. Top-level `logo` becomes `content.logo` on every person root locale; child pages inherit it. The root `logo`, `avatar`/`icon`/`screenshot` object `url`s and `images` array strings or `{url}` items [upload once](https://appai.info/spec/api#upload-images): relative .png/.jpg/.jpeg/.gif/.webp/.svg paths must resolve inside the real data directory; absolute paths, .env* segments and symlink escapes are refused, and links pass through. `page` allows only themeColor/themeColorSecondary/fontFamily/darkMode; each locale may override fontFamily, defaulting to Noto Sans TC for zh-TW, Noto Sans SC for zh-CN, and page.fontFamily otherwise (for root, child and root-type project payloads); themeColor/themeColorSecondary/darkMode stay identical; locales need sections arrays and project-cards need items arrays; publish en first (default), then zh-TW, zh-CN and es. Compute every locale's root and project URLs first: roots `/p/{root}[/{locale}]`, child projects `/p/{root}[/{locale}]/{slug}`, root-type projects `/p/{slug}[/{locale}]`. Publish complete, published person root locale variants with those card links, then child projects, then root-type projects, all with `?upsert=true`; no unpublished intermediate state or second pass. [Dry-run preview](https://appai.info/spec/api#preview-without-saving) does not check parents, so its order does not matter.
+Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/publish-person-site.mjs), with [fictional input](https://appai.info/spec/examples/person-site.example.json); [placeholder.svg](https://appai.info/spec/examples/placeholder.svg) and [placeholder-screen.svg](https://appai.info/spec/examples/placeholder-screen.svg) are included; [`--dry-run`](https://appai.info/spec/api#preview-without-saving) replaces relative images with HTTPS placeholders and validates every payload using only the preview endpoint, without uploading or saving anything.
 
 ### What to decide yourself (do NOT ask the user)
 
+- Languages: always publish the four default locales — English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Other languages are asked about; see [When to ask the user](https://appai.info/spec/pages#when-to-ask-the-user).
 - Which template/sections to use (infer from the product type)
-- themeColor (match the product category — finance: blue/green, creative: violet/pink, dev tools: indigo/cyan, health: emerald, food: orange/red)
-- Section ordering (landing pages; PERSON pages: see recipe; follow: hero → stats → features → pricing → testimonials → faq → cta)
+- themeColor (copy together with themeColorSecondary, fontFamily (Chinese variants: Noto Sans TC/SC) and darkMode from a kit in [Style & logo](https://appai.info/spec/style))
+- Section ordering for landing-type pages: hero → stats → features → pricing → testimonials → faq → cta, omitting unsupported sections. Use `cta` only on landing-type pages: app, product, SaaS, company/service, event and hiring. Do not add it to PERSON/profile, link-in-bio, portfolio, card-wall or wrapped-tool pages.
 - Privacy policy and terms of service (generate them using the product name + contact email)
-- Whether to use dark mode (use for: dev tools, media/entertainment, gaming)
-- fontFamily (match the product character)
-- backgroundColor on sections (derive tints from themeColor)
+- darkMode (use the same style kit)
+- fontFamily: Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants.
+- backgroundColor on sections (use the style kit's suggested backgroundColors)
 
 ### When to ask the user
 
 - Product-specific content you cannot infer (pricing details, specific features they want to highlight)
 - Branding preferences they haven't mentioned (if they have a specific logo or color)
-- Multi-language: "Would you like me to create versions in other languages? It's free."
+- Languages beyond the four defaults. Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.
 - Any genuine design tradeoff where both options are valid
 
 ### Rules
@@ -354,7 +367,7 @@ Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/pub
 - **NEVER** ask for 10 pieces of information before building. Build first, iterate after.
 - Headlines under 60 characters, subheadlines under 140 characters (mobile readability)
 - 5-8 sections per page maximum (landing pages; PERSON pages: see recipe). A focused page beats a comprehensive one.
-- Always include a `cta` section near the bottom (landing pages; PERSON pages: see recipe).
+- Use `cta` only on landing-type pages: app, product, SaaS, company/service, event and hiring. Do not add it to PERSON/profile, link-in-bio, portfolio, card-wall or wrapped-tool pages.
 - Logos: every root page should supply a square 512x512 PNG with its own background; see [Logo](https://appai.info/spec/style#logo).
 - Images: hero backgrounds under 500KB, use WebP/JPEG.
 
@@ -378,10 +391,11 @@ curl -X POST https://appai.info/api/v1/pages \
 | `locale` | No | BCP 47 code (default: `en`). Same slug + different locale = language variant |
 | `title` | Yes | Page title |
 | `tagline` | No | Short description |
+| `metaDescription` | No | SEO description, max 500 characters, stored on this locale variant. Used for HTML, Open Graph and Twitter descriptions; falls back to `tagline` when empty or omitted. |
 | `themeColor` | No | Hex color (e.g. `#6366F1`) |
 | `themeColorSecondary` | No | Hex accent color |
 | `darkMode` | No | Boolean (default: false) |
-| `fontFamily` | No | Google Fonts name |
+| `fontFamily` | No | Google Fonts name per locale variant. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants. |
 | `headerLogo` | No | Separate logo URL for light header |
 | `content` | Yes | `{ "sections": [{ "type": "...", "order": N, "data": {...} }] }` |
 | `privacyPolicy` | No | Markdown text |
@@ -390,7 +404,7 @@ curl -X POST https://appai.info/api/v1/pages \
 | `canonicalUrl` | No | Full URL of the app's main site. Sends SEO credit there instead of appai.info, and marks the page as a satellite landing: header shows "Official site: {host}", footer becomes "Landing page · Hosted on AppAI · {host}", `/apps` directory card gets a "Landing page" tag. Set this whenever the app already has a primary website. |
 | `isPublished` | No | Set `true` to publish immediately |
 | `parentSlug` | No | Root slug for a child page (same 2–100 character slug rules); omitted/null creates a root |
-| `hideFromNav` | No | `true` to keep the page off the auto-generated site nav (still reachable by URL). Use for Privacy, Terms, or compliance-only pages already linked from the footer. |
+| `hideFromNav` | No | `true` to keep the page off the auto-generated site nav (still reachable by URL). Use for Delete Account, or compliance-only pages already linked from the footer. |
 | `navOrder` | No | Integer. Controls nav ordering; smaller numbers appear first. Nulls sort last by `createdAt`. |
 | `category` | No | For app listing: `WRITING`, `CODING`, `DESIGN`, `AUTOMATION`, `PRODUCTIVITY`, `SOCIAL`, `FINANCE`, `HEALTH`, `EDUCATION`, `FOOD`, `TRAVEL`, `ENTERTAINMENT`, `GAMES`, `MEDIA`, `UTILITIES`, `COMMERCE`, `OTHER` |
 
@@ -398,17 +412,17 @@ curl -X POST https://appai.info/api/v1/pages \
 
 See [recommended compliance flags](https://appai.info/spec/i18n#compliance-pages-recommended-flags).
 
-For App Store / Play Store submissions, create a multi-page site with child pages for privacy, terms, contact, and account deletion.
+For App Store / Play Store submissions, create a multi-page site with child pages for FAQ, contact, and account deletion, with translated `privacyPolicy` and `termsOfService` fields on each root locale variant.
 
 Generate privacy policy and terms of service automatically — any LLM can produce standard legal text using the app name and contact email. Include: data collection practices, user rights, children's privacy clause, contact information.
 
 The canonical compliance setup:
 - Root: marketing landing page
-- Child `faq`: product FAQ
-- Child `contact`: contact form (`"submitTo": "mailto:support@app.com"`)
-- Child `privacy`: privacy policy
-- Child `terms`: terms of service
-- Child `delete-account`: account deletion form
+- Child `my-app-faq`: product FAQ
+- Child `my-app-contact`: contact form (`"submitTo": "mailto:support@app.com"`)
+- Root variant `privacyPolicy`: translated privacy policy
+- Root variant `termsOfService`: translated terms of service
+- Child `my-app-delete-account`: account deletion form
 
 ---
 
@@ -440,6 +454,8 @@ Moved to [Icons](https://appai.info/spec/sections#icons).
 ## Section Reference
 
 Moved to [Section Reference](https://appai.info/spec/sections#section-reference).
+
+Prefix every child slug with its root slug because `(slug, locale)` is unique across the whole platform; an unprefixed `contact` can collide with another user’s page.
 
 All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
 
@@ -475,8 +491,10 @@ JSON schemas for page sections below; the eight interactive section schemas are 
 Required: `name`; avatar requires `url`, `alt`; links require `label`, `url`; nav requires `label`, `href` (`#anchor`). Links: HTTPS or `/path`; no mailto/tel, bare `#`, or unsafe schemes; invalid links omitted.
 
 ### project-cards
+
+Use for a card wall or summary wall: a responsive grid of items, each with a name and optional short description, image/icon and links.
 ```json
-{"type":"project-cards","order":1,"data":{"id":"work","heading":"Selected work","eyebrow":"Tools","items":[{"name":"Sample Notes","category":"Notes","description":"A fictional notebook.","icon":{"url":"https://example.com/icon.png","alt":""},"monogram":"SN","screenshot":{"url":"https://example.com/screen.png","alt":"Notes screen","kind":"web","width":1440,"height":900},"links":[{"label":"Details","url":"/p/jordan-example/jordan-sample-notes"}]}]}}
+{"type":"project-cards","order":1,"data":{"id":"work","heading":"Selected work","eyebrow":"Tools","items":[{"name":"Sample Notes","category":"Notes","description":"A fictional notebook.","icon":{"url":"https://example.com/icon.png","alt":""},"monogram":"SN","screenshot":{"url":"https://example.com/screen.png","alt":"Notes screen","kind":"web","width":1440,"height":900},"links":[{"label":"Details","url":"/p/jordan-example/jordan-example-sample-notes"}]}]}}
 ```
 Required: each item's `name`; image objects require `url`, `alt`; screenshot requires `kind`: `phone|web`, optional positive `width`/`height` in px; monogram 1–2 characters; links follow profile-header rules. Icon, monogram, screenshot and links may all be omitted.
 
@@ -624,6 +642,8 @@ Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
 ```
 
 ### cta
+
+Use `cta` only on landing-type pages: app, product, SaaS, company/service, event and hiring. Do not add it to PERSON/profile, link-in-bio, portfolio, card-wall or wrapped-tool pages.
 ```json
 { "type": "cta", "order": 15, "data": {
     "headline": "Ready to start?",
@@ -681,21 +701,25 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 ### Multi-Language (free, automatic)
 
-- **Chinese: MUST publish both `zh-TW` and `zh-CN`.** If only one exists, AppAI converts the other script offline at read time, labels it auto-converted, and serves it with `noindex`; no stored translation.
-- **Proactively create 2-3 locale versions** — user's native language + English + one regional language. Locale variants are free. How: [Multi-Language Details](https://appai.info/spec/i18n#multi-language-details).
+Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.
+
+Publish `en` first; `en` is the default locale. Then publish `zh-TW`, `zh-CN`, and `es`. Send each locale as its own POST request with the same slug and `locale`; dry-run every locale body before publishing it. Publish child pages (`my-app-faq`, `my-app-contact`, `my-app-delete-account`, …) in all four locales with `parentSlug`. Put translated privacy policy and terms in each variant’s `privacyPolicy` / `termsOfService`, not in child pages. Later updates target a locale with `?locale=`, e.g. `PATCH /api/v1/pages/{slug}?locale=zh-TW`.
+
+- The agent publishes both `zh-TW` and `zh-CN` as part of the four defaults. If only one exists, AppAI converts the other script offline at read time, labels it auto-converted, and serves it with `noindex`; no stored translation.
+- Locale variants are free. How: [Multi-Language Details](https://appai.info/spec/i18n#multi-language-details).
 
 ### Multi-Page Sites
 
-Root page + free child pages (`parentSlug`), e.g. Privacy, Terms, FAQ, Contact, Delete Account for App Store compliance. How: [Multi-Page Site Details](https://appai.info/spec/i18n#multi-page-site-details).
+Root page + free child pages (`parentSlug`), e.g. FAQ, Contact, Delete Account for App Store compliance. How: [Multi-Page Site Details](https://appai.info/spec/i18n#multi-page-site-details).
 
 ## Multi-Language Details
 
 Create locale variants with the same slug + different `locale`:
 
 ```bash
-# Japanese version
+# Japanese version (only if the user chooses Japanese beyond the four defaults)
 curl -X POST https://appai.info/api/v1/pages \
-  -H "Authorization: Bearer API_KEY" \
+  -H "Authorization: Bearer appai_sk_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{"slug": "my-app", "locale": "ja", "title": "...", "content": {...}, "isPublished": true}'
 ```
@@ -715,10 +739,10 @@ One root page + unlimited child pages. Set `parentSlug` on child pages to the ro
 
 ```json
 POST /api/v1/pages
-{ "slug": "faq", "parentSlug": "my-app", "title": "FAQ", "content": {...} }
+{ "slug": "my-app-faq", "parentSlug": "my-app", "title": "FAQ", "content": {...} }
 ```
 
-- URLs: `/p/my-app` (root), `/p/my-app/faq` (child), `/p/my-app/ja/faq` (locale variant of child)
+- URLs: `/p/my-app` (root), `/p/my-app/my-app-faq` (child), `/p/my-app/zh-TW/my-app-faq` (locale variant of child)
 - Children and locale variants are free (only root slugs count)
 - Structure is two levels deep (root + children, no grandchildren)
 - List children: `GET /api/v1/pages/{root-slug}/children`
@@ -731,24 +755,26 @@ Child slugs matching `^[a-z]{2}(-[A-Z]{2})?$` or `privacy`, `terms`, `tools` are
 
 Branding (logo + site title + language switcher + Privacy/Terms) lives in the layout's sticky header. The site nav below it lists child pages only — no branding. You don't need to build any nav chrome yourself.
 
-- **Locale dedup is automatic.** If you create `{slug: "contact", locale: "en"}` and `{slug: "contact", locale: "zh-TW"}`, the nav shows one "Contact" entry, titled in whichever locale the visitor is on. Just create every locale variant and trust the renderer.
+- **Locale dedup is automatic.** If you create `{slug: "my-app-contact", locale: "en"}` and `{slug: "my-app-contact", locale: "zh-TW"}`, the nav shows one "Contact" entry, titled in whichever locale the visitor is on. Just create every locale variant and trust the renderer.
 - **"Home" is auto-localized** (en/zh-TW/zh-CN/ja/ko/es/fr/de/pt/ar/hi/th/vi + more). No action needed.
 - **Ordering** defaults to `createdAt`. Set `navOrder: <int>` on a child page to force position (smaller = first).
-- **Hide from nav**: set `hideFromNav: true` on any page that should exist but not appear in the nav — typical for `privacy` and `terms` (already linked from the footer), or compliance-only pages reached from a CTA.
-- **Custom nav (escape hatch)**: set `content.nav: [{label, target}, ...]` on the root page to bypass auto-generation entirely. Target resolution: `https://...` → new tab, `#anchor` → in-page jump, `faq` → child page.
+- **Hide from nav**: set `hideFromNav: true` on any page that should exist but not appear in the nav — typical for compliance-only child pages such as `my-app-delete-account` reached from a link.
+- **Custom nav (escape hatch)**: set `content.nav: [{label, target}, ...]` on the root page to bypass auto-generation entirely. Target resolution: `https://...` → new tab, `#anchor` → in-page jump, `my-app-faq` → child page.
 
 ### Compliance pages: recommended flags
+
+Privacy and terms use each locale variant’s `privacyPolicy` and `termsOfService` fields. They are served at `/p/{slug}/privacy` and `/p/{slug}/terms` for the default locale, and `/p/{slug}/{locale}/privacy` and `/p/{slug}/{locale}/terms` for other locales. These reserved slugs cannot be child pages.
 
 See the [compliance page recipe](https://appai.info/spec/pages#compliance-pages).
 
 ```json
-{ "slug": "privacy",  "parentSlug": "my-app", "hideFromNav": true, ... }
-{ "slug": "terms",    "parentSlug": "my-app", "hideFromNav": true, ... }
-{ "slug": "contact",  "parentSlug": "my-app", "navOrder": 1, ... }
-{ "slug": "delete-account", "parentSlug": "my-app", "hideFromNav": true, ... }
+{ "slug": "my-app-contact",  "parentSlug": "my-app", "navOrder": 1, ... }
+{ "slug": "my-app-delete-account", "parentSlug": "my-app", "hideFromNav": true, ... }
 ```
 
 This keeps the nav clean (only Contact shows) while every compliance URL stays reachable for App Store / Play Store review.
+
+Prefix every child slug with its root slug because `(slug, locale)` is unique across the whole platform; an unprefixed `contact` can collide with another user’s page.
 
 All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
 
@@ -1009,7 +1035,7 @@ monitoring.
 
 #### Natural release flow
 
-1. **Authorize the agent** through the [device flow](https://appai.info/spec/api#authentication): Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste. Reuse a key already stored securely when available.
+1. **Authorize the agent** through the [device flow](https://appai.info/spec/api#authentication): Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. Also print the returned `user_code` so the user can compare it with the approval page. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste. Reuse a key already stored securely when available.
 2. **Add `appai.app.json`** at the application root. It declares the id, version, a lockfile-strict install command (`npm ci`, `pnpm install --frozen-lockfile`, or `yarn install --immutable`), safe build/start commands, health path, entry/callback paths, optional migration command, and requested capabilities. The workspace `package.json` must define `test` and `typecheck` scripts.
 3. **Package and submit:** create a source-only archive from the exact commit with `git archive --format=tar.gz --output=appai-release.tar.gz HEAD`. Exclude `node_modules`, build output, `.git`, environment files except a values-free `.env.example`, and secrets. Call `POST /api/v1/apps/{appId}/release-packages`, upload the archive privately with its short-lived client token, calculate `sha256:<digest>`, then submit `POST /api/v1/apps/{appId}/releases` with `source: { type: "package", uploadId, digest, sizeBytes }`. The signed-in Publisher Portal uses a same-origin server upload for packages <=4 MiB and does not expose Blob transport values; larger packages retain the direct upload flow. The public package limit remains 20 MiB. The manifest `id` must equal `{appId}`. A repository URL is optional provenance metadata, never a requirement. This creates a `PENDING` managed release receipt.
 4. **Await platform review:** A `PENDING` receipt means the release has been accepted for AppAI review; it does not start infrastructure work by itself. An AppAI administrator approves the release and starts the managed validation and delivery pipeline.

@@ -28,7 +28,7 @@
 你：“在 AppAI 上发布我的应用 — 从 appai.info/spec 开始”
 
 你的 AI Agent：
-  1. Agent 必须打印 verification_uri_complete，并尽可能在用户自己的浏览器中打开。用户按提示使用 Google 登录，确认代码一致，然后点击“批准”。Agent 绝不能自行批准。
+  1. Agent 必须打印 verification_uri_complete，并尽可能在用户自己的浏览器中打开。Agent 还必须打印返回的 `user_code`，供用户与批准页面比较。用户按提示使用 Google 登录，确认代码一致，然后点击“批准”。Agent 绝不能自行批准。
     Agent 会收到密钥，无需复制或粘贴。
   2. 询问你的应用信息（名称、功能、截图等）
   3. 调用 AppAI API 创建你的页面

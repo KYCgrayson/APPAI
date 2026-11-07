@@ -54,9 +54,11 @@ test('each preset is a copyable, clean full POST body matching its served file',
   for (const preset of PRESET_DEFS) {
     const file = JSON.parse(readFileSync(new URL(`../docs/examples/${preset.exampleFile}`, import.meta.url), 'utf8'));
     assert.deepEqual(file, preset.example);
+    assert.equal(checkPagePreview(file).valid, true, preset.id);
     const data = createPageSchema.parse(file);
     assert.ok(data.isPublished);
-    assert.ok(data.content.sections.length >= 3 && data.content.sections.length <= 6);
+    if (['profile', 'link-in-bio', 'portfolio', 'iframe-tool'].includes(preset.id)) assert.ok(!data.content.sections.some((section: { type: string }) => section.type === 'cta'));
+    assert.ok(data.content.sections.length >= 2 && data.content.sections.length <= 6);
     for (const section of data.content.sections) assert.ok(SECTION_DEFS.some(def => def.type === section.type));
     assert.deepEqual(pageLogoWarnings(data), []);
     const warnings: Parameters<typeof sanitizeContent>[2] = [];
@@ -120,8 +122,11 @@ test('examples match named style kits and explicitly select English', () => {
   const used = new Set();
   for (const { example } of PRESET_DEFS) {
     assert.equal(example.locale, 'en');
-    const kit = PAGE_STYLES.find(kit => ['themeColor', 'fontFamily', 'darkMode'].every(key => example[key] === kit[key as keyof typeof kit]));
+    const kit = PAGE_STYLES.find(kit => ['themeColor', 'themeColorSecondary', 'fontFamily', 'darkMode'].every(key => example[key] === kit[key as keyof typeof kit]));
     assert.ok(kit);
+    for (const section of createPageSchema.parse(example).content.sections) {
+      if (section.type !== 'cta') assert.ok(kit.backgroundColors.includes(section.data.backgroundColor), section.type);
+    }
     used.add(kit.id);
   }
   assert.ok(used.size >= 4);
@@ -206,4 +211,19 @@ test('production preview context scopes style warnings to newly created pages', 
   assert.match(route, /checkPagePreview\(body, ICON_NAMES, \{ origin: request.nextUrl.origin, exists: !!existing \}\)/);
   const publish = readFileSync(new URL('../src/app/api/v1/pages/route.ts', import.meta.url), 'utf8');
   assert.match(publish, /if \(dryRun\) return previewPage\(request\)/);
+});
+
+
+test('preset recipes reserve cta for landing pages', () => {
+  const nonLanding = ['profile', 'link-in-bio', 'portfolio', 'iframe-tool'];
+  const landing = ['app-landing', 'saas-landing', 'event', 'company-service', 'product', 'hiring'];
+  for (const id of [...nonLanding, ...landing]) {
+    const preset = PRESET_DEFS.find(preset => preset.id === id)!;
+    assert.ok(preset, id);
+    const expectsCta = landing.includes(id);
+    assert.equal(preset.sections.includes('cta'), expectsCta, id);
+    const example = createPageSchema.parse(preset.example);
+    assert.equal(example.content.sections.some((section: { type: string }) => section.type === 'cta'), expectsCta, id);
+    if (!expectsCta) assert.doesNotMatch(preset.description, /call-to-action|\bCTA\b/i, id);
+  }
 });

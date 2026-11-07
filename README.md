@@ -30,7 +30,7 @@ Built an app with AI but don't have a website? AppAI gives you:
 You: "Publish my app on AppAI — start at appai.info/spec"
 
 Your AI Agent:
-  1. Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste.
+  1. Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. Also print the returned `user_code` so the user can compare it with the approval page. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste.
   2. Asks you about your app (name, features, screenshots, etc.)
   3. Calls the AppAI API to create your page
   4. Done — your page is live at appai.info/p/your-app
@@ -99,7 +99,7 @@ Use a Universal App when the software has its own UI/API/business rules or persi
 
 ### Natural Universal App publishing flow
 
-1. Authorize with the AppAI device flow: the agent shows a link; open the link, sign in with Google if asked, check the code matches, and click Approve; the agent receives the key — nothing to copy or paste. Reuse a securely stored key when available.
+1. Authorize with the AppAI device flow: the agent shows a link; also print the returned `user_code` so the user can compare it with the approval page; open the link, sign in with Google if asked, check the code matches, and click Approve; the agent receives the key — nothing to copy or paste. Reuse a securely stored key when available.
 2. Add `appai.app.json` to the app repository, including a lockfile-strict `installCommand`: `npm ci`, `pnpm install --frozen-lockfile`, or `yarn install --immutable`. The repository's `package.json` must define `test` and `typecheck` scripts.
 3. Submit `POST /api/v1/apps/{appId}/releases` with a credential-free public GitHub repository URL (`https://github.com/{owner}/{repo}`) and exact 40-character Git commit SHA; AppAI returns `PENDING`.
 4. The `PENDING` release awaits AppAI platform review. An AppAI administrator approves it and starts the managed pipeline.

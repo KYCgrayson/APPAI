@@ -19,7 +19,8 @@
           "variant": "centered",
           "heroHeight": "medium",
           "ctaText": "Explore",
-          "ctaUrl": "#details"
+          "ctaUrl": "#details",
+          "backgroundColor": "#0F172A"
         }
       },
       {
@@ -39,7 +40,8 @@
               "title": "Share progress",
               "description": "Bring your team along with clear updates."
             }
-          ]
+          ],
+          "backgroundColor": "#1E293B"
         }
       },
       {
@@ -48,7 +50,8 @@
         "data": {
           "id": "details",
           "heading": "Made for everyday progress",
-          "text": "Harbor Board brings a thoughtful approach to the details that matter. Explore the overview, then visit our site to learn more."
+          "text": "Harbor Board brings a thoughtful approach to the details that matter. Explore the overview, then visit our site to learn more.",
+          "backgroundColor": "#0F172A"
         }
       },
       {
@@ -64,5 +67,6 @@
     ]
   },
   "locale": "en",
-  "darkMode": true
+  "darkMode": true,
+  "themeColorSecondary": "#67E8F9"
 }

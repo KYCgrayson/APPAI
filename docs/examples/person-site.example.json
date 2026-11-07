@@ -1,5 +1,6 @@
 {
   "slug": "jordan-example",
+  "logo": "./placeholder-logo.png",
   "locales": {
     "en": {
       "title": "Jordan Example",
@@ -21,7 +22,8 @@
                 "label": "Projects",
                 "href": "#projects"
               }
-            ]
+            ],
+            "backgroundColor": "#FFFBEB"
           }
         },
         {
@@ -33,7 +35,8 @@
               {
                 "title": "Small useful tools"
               }
-            ]
+            ],
+            "backgroundColor": "#FFF1F2"
           }
         },
         {
@@ -64,7 +67,7 @@
                   }
                 ],
                 "page": {
-                  "slug": "jordan-sample-notes",
+                  "slug": "jordan-example-sample-notes",
                   "as": "child",
                   "linkLabel": "Details"
                 }
@@ -87,7 +90,8 @@
                   }
                 ]
               }
-            ]
+            ],
+            "backgroundColor": "#FFFBEB"
           }
         },
         {
@@ -100,118 +104,341 @@
                 "label": "Website",
                 "url": "https://example.com"
               }
-            ]
+            ],
+            "backgroundColor": "#FFF1F2"
           }
         }
       ]
     },
-    "ja": {
+    "zh-TW": {
       "title": "Jordan Example",
-      "metaDescription": "架空の制作者",
+      "metaDescription": "虛構的創作者",
       "sections": [
         {
           "type": "profile-header",
           "id": "intro",
           "data": {
             "name": "Jordan Example",
-            "eyebrow": "制作者",
-            "tagline": "架空の制作者",
+            "eyebrow": "創作者",
+            "tagline": "虛構的創作者",
             "avatar": {
               "url": "./placeholder.svg",
               "alt": ""
             },
             "nav": [
               {
-                "label": "プロジェクト",
+                "label": "專案",
                 "href": "#projects"
               }
-            ]
+            ],
+            "backgroundColor": "#FFFBEB"
           }
         },
         {
           "type": "entries",
           "id": "focus",
           "data": {
-            "heading": "取り組み",
+            "heading": "研究方向",
             "items": [
               {
-                "title": "小さな便利ツール"
+                "title": "實用的小工具"
               }
-            ]
+            ],
+            "backgroundColor": "#FFF1F2"
           }
         },
         {
           "type": "project-cards",
           "id": "projects",
           "data": {
-            "heading": "プロジェクト",
+            "heading": "專案",
             "items": [
               {
-                "name": "Sample Notes",
-                "category": "メモ",
-                "description": "架空のノート。",
+                "name": "範例筆記",
+                "category": "筆記",
+                "description": "虛構的筆記工具。",
                 "icon": {
                   "url": "./placeholder.svg",
                   "alt": ""
                 },
                 "screenshot": {
                   "url": "./placeholder-screen.svg",
-                  "alt": "架空のメモ画面",
+                  "alt": "虛構的筆記畫面",
                   "kind": "web",
                   "width": 1440,
                   "height": 900
                 },
                 "links": [
                   {
-                    "label": "ウェブサイト",
+                    "label": "網站",
                     "url": "https://example.com/notes"
                   }
                 ],
                 "page": {
-                  "slug": "jordan-sample-notes",
+                  "slug": "jordan-example-sample-notes",
                   "as": "child",
-                  "linkLabel": "詳細"
+                  "linkLabel": "詳細介紹"
                 }
               },
               {
-                "name": "Sample Timer",
-                "description": "スクリーンショットのない架空のタイマー。",
+                "name": "範例計時器",
+                "description": "沒有螢幕截圖的虛構計時器。",
                 "page": {
                   "slug": "jordan-sample-timer",
                   "as": "root",
-                  "linkLabel": "詳細"
+                  "linkLabel": "詳細介紹"
                 }
               },
               {
-                "name": "External example",
+                "name": "外部範例",
                 "links": [
                   {
-                    "label": "Website",
+                    "label": "網站",
                     "url": "https://example.com"
                   }
                 ]
               }
-            ]
+            ],
+            "backgroundColor": "#FFFBEB"
           }
         },
         {
           "type": "entries",
           "id": "contact",
           "data": {
-            "heading": "連絡先",
+            "heading": "聯絡方式",
             "links": [
               {
-                "label": "Website",
+                "label": "網站",
                 "url": "https://example.com"
               }
-            ]
+            ],
+            "backgroundColor": "#FFF1F2"
+          }
+        }
+      ]
+    },
+    "zh-CN": {
+      "title": "Jordan Example",
+      "metaDescription": "虚构的创作者",
+      "sections": [
+        {
+          "type": "profile-header",
+          "id": "intro",
+          "data": {
+            "name": "Jordan Example",
+            "eyebrow": "创作者",
+            "tagline": "虚构的创作者",
+            "avatar": {
+              "url": "./placeholder.svg",
+              "alt": ""
+            },
+            "nav": [
+              {
+                "label": "项目",
+                "href": "#projects"
+              }
+            ],
+            "backgroundColor": "#FFFBEB"
+          }
+        },
+        {
+          "type": "entries",
+          "id": "focus",
+          "data": {
+            "heading": "研究方向",
+            "items": [
+              {
+                "title": "实用的小工具"
+              }
+            ],
+            "backgroundColor": "#FFF1F2"
+          }
+        },
+        {
+          "type": "project-cards",
+          "id": "projects",
+          "data": {
+            "heading": "项目",
+            "items": [
+              {
+                "name": "示例笔记",
+                "category": "笔记",
+                "description": "虚构的笔记工具。",
+                "icon": {
+                  "url": "./placeholder.svg",
+                  "alt": ""
+                },
+                "screenshot": {
+                  "url": "./placeholder-screen.svg",
+                  "alt": "虚构的笔记画面",
+                  "kind": "web",
+                  "width": 1440,
+                  "height": 900
+                },
+                "links": [
+                  {
+                    "label": "网站",
+                    "url": "https://example.com/notes"
+                  }
+                ],
+                "page": {
+                  "slug": "jordan-example-sample-notes",
+                  "as": "child",
+                  "linkLabel": "详细介绍"
+                }
+              },
+              {
+                "name": "示例计时器",
+                "description": "没有屏幕截图的虚构计时器。",
+                "page": {
+                  "slug": "jordan-sample-timer",
+                  "as": "root",
+                  "linkLabel": "详细介绍"
+                }
+              },
+              {
+                "name": "外部示例",
+                "links": [
+                  {
+                    "label": "网站",
+                    "url": "https://example.com"
+                  }
+                ]
+              }
+            ],
+            "backgroundColor": "#FFFBEB"
+          }
+        },
+        {
+          "type": "entries",
+          "id": "contact",
+          "data": {
+            "heading": "联系方式",
+            "links": [
+              {
+                "label": "网站",
+                "url": "https://example.com"
+              }
+            ],
+            "backgroundColor": "#FFF1F2"
+          }
+        }
+      ]
+    },
+    "es": {
+      "title": "Jordan Example",
+      "metaDescription": "Creador ficticio",
+      "sections": [
+        {
+          "type": "profile-header",
+          "id": "intro",
+          "data": {
+            "name": "Jordan Example",
+            "eyebrow": "Creador",
+            "tagline": "Creador ficticio",
+            "avatar": {
+              "url": "./placeholder.svg",
+              "alt": ""
+            },
+            "nav": [
+              {
+                "label": "Proyectos",
+                "href": "#projects"
+              }
+            ],
+            "backgroundColor": "#FFFBEB"
+          }
+        },
+        {
+          "type": "entries",
+          "id": "focus",
+          "data": {
+            "heading": "Enfoque",
+            "items": [
+              {
+                "title": "Pequeñas herramientas útiles"
+              }
+            ],
+            "backgroundColor": "#FFF1F2"
+          }
+        },
+        {
+          "type": "project-cards",
+          "id": "projects",
+          "data": {
+            "heading": "Proyectos",
+            "items": [
+              {
+                "name": "Notas de muestra",
+                "category": "Notas",
+                "description": "Una libreta ficticia.",
+                "icon": {
+                  "url": "./placeholder.svg",
+                  "alt": ""
+                },
+                "screenshot": {
+                  "url": "./placeholder-screen.svg",
+                  "alt": "Pantalla de notas ficticia",
+                  "kind": "web",
+                  "width": 1440,
+                  "height": 900
+                },
+                "links": [
+                  {
+                    "label": "Sitio web",
+                    "url": "https://example.com/notes"
+                  }
+                ],
+                "page": {
+                  "slug": "jordan-example-sample-notes",
+                  "as": "child",
+                  "linkLabel": "Ver detalles"
+                }
+              },
+              {
+                "name": "Temporizador de muestra",
+                "description": "Un temporizador ficticio sin captura de pantalla.",
+                "page": {
+                  "slug": "jordan-sample-timer",
+                  "as": "root",
+                  "linkLabel": "Ver detalles"
+                }
+              },
+              {
+                "name": "Ejemplo externo",
+                "links": [
+                  {
+                    "label": "Sitio web",
+                    "url": "https://example.com"
+                  }
+                ]
+              }
+            ],
+            "backgroundColor": "#FFFBEB"
+          }
+        },
+        {
+          "type": "entries",
+          "id": "contact",
+          "data": {
+            "heading": "Contacto",
+            "links": [
+              {
+                "label": "Sitio web",
+                "url": "https://example.com"
+              }
+            ],
+            "backgroundColor": "#FFF1F2"
           }
         }
       ]
     }
   },
   "page": {
-    "themeColor": "#0f5e63",
-    "fontFamily": "Newsreader"
+    "themeColor": "#9F1239",
+    "themeColorSecondary": "#57534E",
+    "fontFamily": "Lora",
+    "darkMode": false
   }
 }
