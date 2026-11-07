@@ -229,17 +229,18 @@ test('preset recipes reserve cta for landing pages', () => {
 });
 
 
-test('preview next uses locale paths before publishing and respects an existing default', () => {
+test('preview next makes the first root locale default and respects an existing default', () => {
   for (const locale of ['zh-TW', 'zh-CN', 'es']) {
-    assert.ok(pagePreviewNext({ slug: 'bakery', locale }).endsWith(`/p/bakery/${locale}`));
-    assert.ok(checkPagePreview({ slug: 'bakery', title: 'Bakery', locale }).next.endsWith(`/p/bakery/${locale}`));
+    assert.ok(pagePreviewNext({ slug: 'bakery', locale }).endsWith(`/p/bakery`));
+    assert.ok(checkPagePreview({ slug: 'bakery', title: 'Bakery', locale }).next.endsWith(`/p/bakery`));
+    assert.ok(pagePreviewNext({ slug: 'bakery', locale }, { isDefault: false }).endsWith(`/p/bakery/${locale}`));
     assert.ok(pagePreviewNext({ slug: 'bakery-contact', parentSlug: 'bakery', locale }).endsWith(`/p/bakery/${locale}/bakery-contact`));
   }
   assert.ok(pagePreviewNext({ slug: 'bakery', locale: 'en' }).endsWith('/p/bakery'));
   assert.ok(pagePreviewNext({ slug: 'bakery', locale: 'ja' }, { isDefault: true }).endsWith('/p/bakery'));
   assert.ok(pagePreviewNext({ slug: 'bakery', locale: 'en' }, { isDefault: false }).endsWith('/p/bakery/en'));
   const route = readFileSync(new URL('../src/app/api/v1/pages/preview/route.ts', import.meta.url), 'utf8');
-  assert.match(route, /rootDefault \? rootDefault.locale === data.locale : data.locale === "en"/);
+  assert.match(route, /rootDefault \? rootDefault.locale === data.locale : true/);
 });
 
 test('hearth is a light warm kit mirrored in the theme spec with readable white CTA text', () => {

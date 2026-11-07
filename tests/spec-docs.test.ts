@@ -151,7 +151,7 @@ test('every spec topic and heading link resolves across docs, skill, llms and ho
     // Static example assets are handled by their own route, outside topic links.
     const content = text.replace(/https:\/\/appai\.info\/spec\/examples\/[^\s)"`]+/g, '');
     for (const match of content.matchAll(/https:\/\/appai\.info\/spec(?:\/[\w-]+)?(?:#[\w-]+)?/g)) checkLink(match[0], path);
-    assert.doesNotMatch(content, /https:\/\/appai\.info\/spec\/pages#(?:icons|section-reference|profile-header|project-cards|entries|hero|video|features|screenshots|download|pricing|testimonials|faq|gallery|team|schedule|sponsors|stats|contact|cta|links|about|embed|link-rel-seo)\b/);
+    assert.doesNotMatch(content, /https:\/\/appai\.info\/spec\/pages#(?:icons|section-reference|profile-header|project-cards|entries|hero|video|features|screenshots|download|pricing|testimonials|faq|gallery|team|schedule|sponsors|stats|cta|links|about|embed|link-rel-seo)\b/);
   }
   const cardArray = homepage.match(/\{\(\[([^{}]*?)\] as const\)\.map\(\(\[kind, topic\]\)/)?.[1];
   assert.ok(cardArray, 'homepage card array');
@@ -278,8 +278,9 @@ test('section index links every type to its schema and dry-run ends with publica
   }
 });
 
-test('dry-run links forward to publish and retains its legacy anchor', () => {
-  assert.ok(headingSlugs(docs.get('api')!).has('dry-run--publish'));
+test('dry-run links forward to publish under one preview heading', () => {
+  assert.ok(headingSlugs(docs.get('api')!).has('preview-without-saving'));
+  assert.doesNotMatch(docs.get('api')!, /### Dry-run & publish/);
   assert.match(docs.get('api')!.split('## Dry-run\n')[1], /Publish: \[send the validated body\]\(https:\/\/appai.info\/spec#publish-in-one-minute\)/);
   assert.match(read('skills/appai-publish/SKILL.md'), /# AppAI Publish\n\nStart at https:\/\/appai.info\/spec —/);
 });

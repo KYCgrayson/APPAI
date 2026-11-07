@@ -113,7 +113,7 @@ function checkFields(value: unknown, fields: SectionFieldDef[], path: string, wa
 }
 
 export function pagePreviewNext(page: { slug: string; locale?: string; parentSlug?: string | null }, context: { origin?: string; isDefault?: boolean; exists?: boolean } = {}) {
-  const path = buildPagePath(page.parentSlug || page.slug, page.locale || "en", null, context.isDefault ?? ((page.locale || "en") === "en")) + (page.parentSlug ? `/${page.slug}` : "");
+  const path = buildPagePath(page.parentSlug || page.slug, page.locale || "en", null, context.isDefault ?? (page.parentSlug ? (page.locale || "en") === "en" : true)) + (page.parentSlug ? `/${page.slug}` : "");
   return `Review warnings, then POST the same body to /api/v1/pages${context.exists ? "?upsert=true" : ""} and open ${context.origin || ""}${path}`;
 }
 

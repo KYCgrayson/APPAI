@@ -3,7 +3,9 @@ Covers Hosted Page configuration, CRUD, compliance and publishing workflow.
 Previous: [Typography](https://appai.info/spec/typography) · Next: [Sections](https://appai.info/spec/sections)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
-Use only the supplied contact in contact sections, privacyPolicy and termsOfService. With only LINE/phone, write “Contact us via LINE: {id/link}” or “Contact us by phone: {phone}”; never invent an email. `contact` has no LINE field: use `links` or a hero CTA for LINE, and `contact.phone` for phone. LINE URLs use `https://line.me/R/ti/p/@{id}` (id without a leading @); in `links.items[].url` or hero `ctaUrl` this is a normal HTTPS URL. Use `simple-order` only for an order + payment flow with a supplied `notificationEmail`; for orders taken by message, use a plain LINE/message link.
+## Contact
+
+Use only supplied contact details in sections, `privacyPolicy` and `termsOfService`; never invent an email. With only phone/LINE, write “Contact us by phone: {phone}” or “Contact us via LINE: {id/link}”. `contact.phone` renders a tappable phone link; `contact` has no LINE field. For buttons, use hero `ctaUrl`, cta `buttonUrl` or `links.items[].url`: `tel:+{E.164 digits}` is allowed and renders as a tappable link. LINE Official Accounts use `https://line.me/R/ti/p/@{id}` (id without a leading @); personal IDs use `https://line.me/ti/p/~{id}`. Use `simple-order` only for an order + payment flow with a supplied `notificationEmail`; for orders taken by message, use a plain LINE/message link.
 
 ## What You Can Build (read this first)
 
@@ -85,7 +87,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 | User intent | Page shape |
 |---|---|
 | **Personal website / portfolio of a person** | template `PERSON` only for the person’s own root page, never project pages; `profile-header` + `project-cards` + `entries`. |
-| **Local shop / small business (bakery, cafe, salon, studio)** | Preset `company-service`, template `COMPANY_PROFILE`: hero → features (products/services) → about (how to order) → about (hours/pickup) → contact or links (location/contact) → optional cta. No pricing/testimonials required; use only supplied facts. |
+| **Local shop / small business (bakery, cafe, salon, studio)** | Preset `company-service`, template `COMPANY_PROFILE`: hero → features (products/services) → about (how to order) → about (weekly opening hours as a short Markdown list, plus pickup details) → contact or links (location/contact) → optional cta. No pricing/testimonials required; use only supplied facts. |
 | **Landing page for an app/product** | Hero + features + pricing + testimonials + faq + cta. Standard SaaS template. |
 | **Host a vibe-coded tool** | Hero (short tagline) + `iframe-tool` (the tool itself) + 1-2 supporting sections (about / faq). The tool is the page. |
 

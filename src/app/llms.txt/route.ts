@@ -114,6 +114,8 @@ Hosted Pages are always published in four locales: English (en), Traditional Chi
 3. Build a first draft using ${baseUrl}/spec/pages and ${baseUrl}/spec/sections.
 4. Dry-run using ${baseUrl}/spec/api#dry-run, then POST ${baseUrl}/api/v1/pages with the same content JSON. The page is live instantly at ${baseUrl}/p/{slug}.
 
+Use only supplied contact details; follow ${baseUrl}/spec/pages#contact for phone/LINE links and compliance text.
+
 ## Optional shortcut: Claude Code skill
 
 The official skill provides design guidance and the device authorization flow, and points to GET /api/v1/sections for current section schemas:

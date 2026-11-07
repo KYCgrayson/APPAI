@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     where: { slug: data.parentSlug || data.slug, organizationId: authResult.organizationId, parentSlug: null, isDefault: true },
     select: { locale: true },
   });
-  result.next = pagePreviewNext(data, { origin: request.nextUrl.origin, exists: !!existing, isDefault: rootDefault ? rootDefault.locale === data.locale : data.locale === "en" });
+  result.next = pagePreviewNext(data, { origin: request.nextUrl.origin, exists: !!existing, isDefault: rootDefault ? rootDefault.locale === data.locale : true });
   if (existing && existing.organizationId !== authResult.organizationId) {
     return NextResponse.json({ valid: false, errors: [{ path: "slug", message: `Slug "${data.slug}" is already used for locale "${data.locale || "en"}" by another organization.` }], warnings, sanitizedContent: sanitized, next: "Fix errors and dry-run again." });
   }

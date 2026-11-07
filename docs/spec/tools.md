@@ -3,7 +3,7 @@ Covers Wrapped tool and Connected tool configuration, connectors, identity, acce
 Previous: [Multi-language & multi-page](https://appai.info/spec/i18n) · Next: [Universal App](https://appai.info/spec/apps)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
-Use only the supplied contact in contact sections, privacyPolicy and termsOfService. With only LINE/phone, write “Contact us via LINE: {id/link}” or “Contact us by phone: {phone}”; never invent an email. `contact` has no LINE field: use `links` or a hero CTA for LINE, and `contact.phone` for phone. LINE URLs use `https://line.me/R/ti/p/@{id}` (id without a leading @); in `links.items[].url` or hero `ctaUrl` this is a normal HTTPS URL. Use `simple-order` only for an order + payment flow with a supplied `notificationEmail`; for orders taken by message, use a plain LINE/message link.
+Use `simple-order` only for an order + payment flow with a supplied `notificationEmail`; for message orders, use a plain link following [Contact](https://appai.info/spec/pages#contact).
 
 For generic section configuration, see [Section Reference](https://appai.info/spec/sections#section-reference).
 

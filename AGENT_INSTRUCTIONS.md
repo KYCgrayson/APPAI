@@ -170,8 +170,6 @@ Validate and preview the page before publishing with the same request body.
 
 Publish: [send the validated body](https://appai.info/spec#publish-in-one-minute)
 
-### Dry-run & publish
-
 ### Preview without saving
 
 **Preview without saving:** `POST /api/v1/pages?dryRun=true` (identical to `POST /api/v1/pages/preview`) — same body; HTTP 200 returns `{valid, errors: [], warnings: [], sanitizedContent, next}`. Always check `valid`; warnings do not block creation. Preview rejects an exact (slug, locale) owned by another organization; it does not check plan limits, parent existence or ownership of the parent root; POST does.
@@ -186,7 +184,7 @@ Publish with `POST /api/v1/pages` using the same body and `isPublished: true` (`
 
 ## API discovery
 
-`GET /api/v1/sections` returns section schemas and icons (`?format=jsonschema` for JSON Schema; `?type=features,contact` to filter). `GET /api/v1/presets` returns 10 copyable preset examples and 6 named style kits.
+`GET /api/v1/sections` returns section schemas and icons (`?format=jsonschema` for JSON Schema; `?type=features,contact` to filter). `GET /api/v1/presets` returns 10 copyable preset examples and 7 named style kits.
 
 All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
 
@@ -234,7 +232,7 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 Use indigo for light apps/SaaS; forest for light nature/wellbeing pages; editorial for light writing/portfolios; ocean for light services/technical products; hearth for light, warm bakeries, cafes and local food shops; midnight for dark dashboards; ember for dark, warm creative brands. Copy kit fields together into the page request.
 
-Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a style kit; use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants.
+Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a style kit; use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. When a kit has two `backgroundColors`, alternate them section by section, starting with the first. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants.
 
 `themeColor` sets the primary accent; `themeColorSecondary` sets the secondary accent. When omitted, the secondary color is automatically derived from the primary.
 
@@ -316,7 +314,9 @@ Covers Hosted Page configuration, CRUD, compliance and publishing workflow.
 Previous: [Typography](https://appai.info/spec/typography) · Next: [Sections](https://appai.info/spec/sections)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
-Use only the supplied contact in contact sections, privacyPolicy and termsOfService. With only LINE/phone, write “Contact us via LINE: {id/link}” or “Contact us by phone: {phone}”; never invent an email. `contact` has no LINE field: use `links` or a hero CTA for LINE, and `contact.phone` for phone. LINE URLs use `https://line.me/R/ti/p/@{id}` (id without a leading @); in `links.items[].url` or hero `ctaUrl` this is a normal HTTPS URL. Use `simple-order` only for an order + payment flow with a supplied `notificationEmail`; for orders taken by message, use a plain LINE/message link.
+## Contact
+
+Use only supplied contact details in sections, `privacyPolicy` and `termsOfService`; never invent an email. With only phone/LINE, write “Contact us by phone: {phone}” or “Contact us via LINE: {id/link}”. `contact.phone` renders a tappable phone link; `contact` has no LINE field. For buttons, use hero `ctaUrl`, cta `buttonUrl` or `links.items[].url`: `tel:+{E.164 digits}` is allowed and renders as a tappable link. LINE Official Accounts use `https://line.me/R/ti/p/@{id}` (id without a leading @); personal IDs use `https://line.me/ti/p/~{id}`. Use `simple-order` only for an order + payment flow with a supplied `notificationEmail`; for orders taken by message, use a plain LINE/message link.
 
 ## What You Can Build (read this first)
 
@@ -398,7 +398,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 | User intent | Page shape |
 |---|---|
 | **Personal website / portfolio of a person** | template `PERSON` only for the person’s own root page, never project pages; `profile-header` + `project-cards` + `entries`. |
-| **Local shop / small business (bakery, cafe, salon, studio)** | Preset `company-service`, template `COMPANY_PROFILE`: hero → features (products/services) → about (how to order) → about (hours/pickup) → contact or links (location/contact) → optional cta. No pricing/testimonials required; use only supplied facts. |
+| **Local shop / small business (bakery, cafe, salon, studio)** | Preset `company-service`, template `COMPANY_PROFILE`: hero → features (products/services) → about (how to order) → about (weekly opening hours as a short Markdown list, plus pickup details) → contact or links (location/contact) → optional cta. No pricing/testimonials required; use only supplied facts. |
 | **Landing page for an app/product** | Hero + features + pricing + testimonials + faq + cta. Standard SaaS template. |
 | **Host a vibe-coded tool** | Hero (short tagline) + `iframe-tool` (the tool itself) + 1-2 supporting sections (about / faq). The tool is the page. |
 
@@ -578,6 +578,8 @@ Required: each item's `name`; image objects require `url`, `alt`; screenshot req
 Required: each item's `title`; all top-level fields optional; links require `label`, `url` and follow profile-header rules. No automatic heading text.
 
 ### hero
+
+`ctaUrl` (and `ctaSecondaryUrl`) allows `tel:+{E.164 digits}` and renders it as a tappable phone link.
 ```json
 { "type": "hero", "order": 1, "data": {
     "headline": "Your App Name",
@@ -605,8 +607,12 @@ Required: each item's `title`; all top-level fields optional; links require `lab
 Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
 
 ### features
+
+`heading` and `subheading` are optional. For a few priced services without feature lists, use `features` with the price in each description; use `pricing` only for plans/tiers with feature lists (each plan requires `features[]`).
 ```json
 { "type": "features", "order": 3, "data": {
+    "heading": "Optional section title",
+    "subheading": "Optional supporting text",
     "items": [
       { "icon": "rocket-outline", "title": "Fast", "description": "Blazing fast performance" }
     ]
@@ -678,6 +684,8 @@ Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
 ```
 
 ### schedule
+
+Use `schedule` for event timelines (`time` + session `title`), and `about.text` with a short Markdown list for weekly opening hours.
 ```json
 { "type": "schedule", "order": 11, "data": {
     "items": [
@@ -706,8 +714,12 @@ Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
 ```
 
 ### contact
+
+`heading` and `subheading` are optional.
 ```json
 { "type": "contact", "order": 14, "data": {
+    "heading": "Optional section title",
+    "subheading": "Optional supporting text",
     "email": "hello@example.com",
     "phone": "+1-555-0123",
     "address": "123 Main St"
@@ -715,6 +727,8 @@ Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
 ```
 
 ### cta
+
+`buttonUrl` allows `tel:+{E.164 digits}` and renders it as a tappable phone link.
 
 Use `cta` only on landing-type pages: app, product, SaaS, company/service, event and hiring. Do not add it to PERSON/profile, link-in-bio, portfolio, card-wall or wrapped-tool pages.
 ```json
@@ -727,6 +741,8 @@ Use `cta` only on landing-type pages: app, product, SaaS, company/service, event
 ```
 
 ### links
+
+`items[].url` allows `tel:+{E.164 digits}` and renders it as a tappable phone link.
 ```json
 { "type": "links", "order": 16, "data": {
     "items": [
@@ -856,7 +872,7 @@ Covers Wrapped tool and Connected tool configuration, connectors, identity, acce
 Previous: [Multi-language & multi-page](https://appai.info/spec/i18n) · Next: [Universal App](https://appai.info/spec/apps)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
-Use only the supplied contact in contact sections, privacyPolicy and termsOfService. With only LINE/phone, write “Contact us via LINE: {id/link}” or “Contact us by phone: {phone}”; never invent an email. `contact` has no LINE field: use `links` or a hero CTA for LINE, and `contact.phone` for phone. LINE URLs use `https://line.me/R/ti/p/@{id}` (id without a leading @); in `links.items[].url` or hero `ctaUrl` this is a normal HTTPS URL. Use `simple-order` only for an order + payment flow with a supplied `notificationEmail`; for orders taken by message, use a plain LINE/message link.
+Use `simple-order` only for an order + payment flow with a supplied `notificationEmail`; for message orders, use a plain link following [Contact](https://appai.info/spec/pages#contact).
 
 For generic section configuration, see [Section Reference](https://appai.info/spec/sections#section-reference).
 
