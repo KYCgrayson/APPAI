@@ -58,6 +58,7 @@ interface ToolResult {
 
 interface Props {
   data: {
+    subheading?: string;
     heading?: string;
     description?: string;
     apiBase: string;
@@ -407,6 +408,7 @@ export function ToolSection({ data, themeColor, typographyActive = false }: Prop
             {data.heading}
           </h2>
         )}
+        {data.subheading && <p className="text-center mb-6">{data.subheading}</p>}
         {data.description && (
           <p data-typography-role={typographyActive ? "body" : undefined} className="text-gray-500 text-sm text-center mb-8">
             {data.description}

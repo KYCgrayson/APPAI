@@ -3,6 +3,8 @@ import { Prose } from "@/templates/shared/Prose";
 
 interface Props {
   data: {
+    subheading?: string;
+    heading?: string;
     items: Array<{
       name: string;
       role?: string;
@@ -30,8 +32,9 @@ export function TestimonialsSection({ data, themeColor, typographyActive = false
     <section className="py-12 md:py-20 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
         <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>
-          Testimonials
+          {data.heading ?? "Testimonials"}
         </h2>
+        {data.subheading && <p className="text-center mb-6">{data.subheading}</p>}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {items.map((item, i) => (
             <div key={i} className="bg-white rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow border border-gray-100">

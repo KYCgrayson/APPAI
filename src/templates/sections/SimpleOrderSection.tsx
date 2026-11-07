@@ -11,6 +11,7 @@ interface OrderItem {
 
 interface Props {
   data: {
+    subheading?: string;
     heading?: string;
     description?: string;
     storeName?: string;
@@ -108,6 +109,7 @@ export function SimpleOrderSection({
       <section className="py-12 md:py-20 px-4 sm:px-6">
         <div className="max-w-2xl mx-auto rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
           <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-xl font-bold">Simple Order is not configured</h2>
+        {data.subheading && <p className="text-center mb-6">{data.subheading}</p>}
           <p data-typography-role={typographyActive ? "card" : undefined} className="mt-2 text-sm leading-6">
             Add the private notification recipient and payment URL before publishing.
           </p>
@@ -248,6 +250,7 @@ export function SimpleOrderSection({
           <h2 data-typography-role={typographyActive ? "heading" : undefined} className={`mt-2 text-3xl md:text-5xl font-bold ${darkMode ? "text-white" : "text-gray-950"}`}>
             {data.heading || "Place an order"}
           </h2>
+          {data.subheading && <p className="text-center mb-6">{data.subheading}</p>}
           {(data.description || data.storeDescription) && (
             <p data-typography-role={typographyActive ? "body" : undefined} className={`mt-4 max-w-2xl mx-auto leading-7 ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
               {data.description || data.storeDescription}

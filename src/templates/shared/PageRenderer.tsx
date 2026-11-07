@@ -142,7 +142,15 @@ function renderSection(
   page: PageData,
   viewer: PageViewer,
 ) {
-  const props = { data: section.data as never, themeColor, themeColorSecondary, darkMode, isAdmin: viewer.isAdmin, typographyActive: hasTypography(typographySettings(page.content)) };
+  const renderVersion = asPageContent(page.content).renderVersion;
+  const modern = typeof renderVersion === "number" && renderVersion >= 2;
+  const data = { ...section.data };
+  // These fields were ignored before v2. Never reinterpret existing live content.
+  if (!modern) {
+    if (!["features", "contact", "links"].includes(section.type)) delete data.subheading;
+    if (["pricing", "faq", "video", "download", "testimonials", "gallery", "team", "schedule", "sponsors", "stats", "embed"].includes(section.type)) delete data.heading;
+  }
+  const props = { renderVersion: modern ? 2 : 1, data: data as never, themeColor, themeColorSecondary, darkMode, isAdmin: viewer.isAdmin, typographyActive: hasTypography(typographySettings(page.content)) };
   const darkBg = darkMode ? "#111827" : undefined;
   const darkBgAlt = darkMode ? "#1f2937" : "#f9fafb";
   const editorial = ["profile-header", "project-cards", "entries"].includes(section.type);
@@ -214,10 +222,10 @@ function renderSection(
       content = <ActionSection {...props} />;
       break;
     case "media-downloader":
-      content = <MediaDownloaderSection typographyActive={props.typographyActive} data={section.data as never} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} />;
+      content = <MediaDownloaderSection typographyActive={props.typographyActive} data={data as never} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} />;
       break;
     case "video-subtitle":
-      content = <VideoSubtitleSection typographyActive={props.typographyActive} data={section.data as never} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} isAdmin={viewer.isAdmin} />;
+      content = <VideoSubtitleSection typographyActive={props.typographyActive} data={data as never} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} isAdmin={viewer.isAdmin} />;
       break;
     case "tool":
       content = <ToolSection {...props} />;
@@ -237,7 +245,7 @@ function renderSection(
       content = (
         <IframeToolSection
           typographyActive={props.typographyActive}
-          data={section.data as never}
+          data={data as never}
           themeColor={themeColor}
           darkMode={darkMode}
           locale={page.locale ?? "en"}
@@ -251,7 +259,7 @@ function renderSection(
       content = (
         <FormSection
           typographyActive={props.typographyActive}
-          data={section.data as never}
+          data={data as never}
           themeColor={themeColor}
           pageSlug={page.slug}
           parentSlug={page.parentSlug ?? null}
@@ -264,7 +272,7 @@ function renderSection(
       const {
         notificationEmail,
         ...publicData
-      } = (section.data ?? {}) as Record<string, unknown> & { notificationEmail?: string };
+      } = data as Record<string, unknown> & { notificationEmail?: string };
       content = (
         <SimpleOrderSection
           typographyActive={props.typographyActive}

@@ -231,6 +231,7 @@ function relativeTime(ms: number): string {
 
 interface SectionData {
   heading?: string;
+  subheading?: string;
   description?: string;
   apiBase: string;
   maxDurationSec?: number;
@@ -727,6 +728,7 @@ export function VideoSubtitleSection({ data, themeColor, darkMode, isAdmin = fal
             {data.heading ?? t.heading}
           </h2>
         )}
+        {data.subheading && <p className="text-center mb-6">{data.subheading}</p>}
         {(data.description ?? t.description) && (
           <p data-typography-role={typographyActive ? "body" : undefined} className={`text-sm text-center ${subColor}`}>
             {data.description ?? t.description}

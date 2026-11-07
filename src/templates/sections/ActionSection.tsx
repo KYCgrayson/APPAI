@@ -21,6 +21,7 @@ interface ActionItem {
 
 interface Props {
   data: {
+    subheading?: string;
     heading?: string;
     description?: string;
     items: ActionItem[];
@@ -139,6 +140,7 @@ export function ActionSection({ data, themeColor, typographyActive = false }: Pr
         {data.heading && (
           <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-2xl md:text-3xl font-bold text-center mb-2">{data.heading}</h2>
         )}
+        {data.subheading && <p className="text-center mb-6">{data.subheading}</p>}
         {data.description && (
           <Prose typographyRole={typographyActive ? "body" : undefined} className="prose prose-sm md:prose-base max-w-none text-gray-600 text-center mb-8 prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{data.description}</Prose>
         )}

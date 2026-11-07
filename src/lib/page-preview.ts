@@ -1,7 +1,7 @@
 import { computeTypography, storeTypography, typographySettings } from "./typography.ts";
 import { buildPagePath } from "./parse-page-segments.ts";
 import { createPageSchema } from "./validations/page.ts";
-import { sanitizeContent, type SanitizeWarning } from "./sanitize.ts";
+import { sanitizePageContent, type SanitizeWarning } from "./sanitize.ts";
 import { sectionFieldWarnings } from "./section-field-warnings.ts";
 import { pageLogoWarnings } from "./page-logo.ts";
 import { SECTION_DEFS, type SectionFieldDef } from "./template-registry.ts";
@@ -14,7 +14,7 @@ export function checkPagePreview(body: unknown, iconNames: readonly string[] = [
   for (const field of ["themeColor", "fontFamily"]) {
     if (!context.exists && !(field === "themeColor" && parsed.data.parentSlug) && rawBody[field] === undefined) warnings.push({ path: field, message: `The page will use defaults for ${field}; pick a style kit at ${context.origin || "https://appai.info"}/spec/style.` });
   }
-  const sanitizedContent = sanitizeContent(storeTypography(parsed.data).content, undefined, warnings) as Record<string, unknown>;
+  const sanitizedContent = sanitizePageContent(storeTypography(parsed.data).content, undefined, warnings) as Record<string, unknown>;
 
   const computedTypography = computeTypography(typographySettings(sanitizedContent));
   warnings.push(...computedTypography.warnings);
@@ -127,6 +127,7 @@ export function parseDryRun(value: string | null): boolean | "invalid" {
 function demoValueWarnings(value: unknown, path: string, warnings: SanitizeWarning[]) {
   if (value === "https://color-bench-demo.pages.dev") warnings.push({ path, message: "Replace demo value: replace with your deployed tool URL." });
   if (typeof value === "string" && /^(?:[hH][tT][tT][pP][sS]?:\/\/[^/]+)?\/spec\/examples\/placeholder-logo\.png(?:[?#].*)?$/.test(value)) warnings.push({ path, message: "Replace demo logo: supply the user’s logo, or create a square 512×512 PNG with its own background; upload local files with POST /api/v1/upload and replace this value with the returned url before publishing." });
+  if (typeof value === "string" && /(?:^|\/)placeholder-screen[^/?#]*\.(?:svg|png|webp|jpg)(?:[?#].*)?$/i.test(value)) warnings.push({ path, message: "Replace demo screenshot: upload a real screenshot of the user’s app and replace this URL before publishing." });
   if (Array.isArray(value)) value.forEach((child, index) => {
     const type = path === "content.sections" && child && typeof child === "object" ? child.type : undefined;
     demoValueWarnings(child, `${path}[${index}]${type ? `(${type})` : ""}`, warnings);

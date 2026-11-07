@@ -15,6 +15,7 @@ interface FormField {
 
 interface Props {
   data: {
+    subheading?: string;
     heading?: string;
     description?: string;
     fields: FormField[];
@@ -128,6 +129,7 @@ export function FormSection({
               {data.heading}
             </h2>
           )}
+        {data.subheading && <p className="text-center mb-6">{data.subheading}</p>}
           <div className="rounded-2xl border-2 p-8" style={{ borderColor: themeColor }}>
             <p data-typography-role={typographyActive ? "card" : undefined} className="text-lg font-medium text-gray-900">
               {data.successMessage || "Thanks — your message has been sent."}

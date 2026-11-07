@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
-import { sanitizeContent, type SanitizeWarning } from "@/lib/sanitize";
+import { sanitizeContent, sanitizePageContent, type SanitizeWarning } from "@/lib/sanitize";
 import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 
 /**
@@ -104,7 +104,7 @@ export async function PATCH(
 
   const updated = await db.hostedPage.update({
     where: { id: page.id },
-    data: { content: { ...content, sections } as any },
+    data: { content: sanitizePageContent({ ...content, sections }) as any },
   });
 
   revalidateSeoIndexes(updated.slug);

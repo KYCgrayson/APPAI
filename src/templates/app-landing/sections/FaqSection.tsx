@@ -3,6 +3,8 @@ import { Prose } from "@/templates/shared/Prose";
 
 interface Props {
   data: {
+    heading?: string;
+    subheading?: string;
     items?: Array<{
       question: string;
       answer: string;
@@ -50,8 +52,9 @@ export function FaqSection({ data, themeColor, darkMode, typographyActive = fals
       />
       <div className="max-w-3xl mx-auto">
         <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>
-          FAQ
+          {data.heading ?? "FAQ"}
         </h2>
+        {data.subheading && <p className="text-center mb-8" style={{ color: darkMode ? "#d1d5db" : "#4b5563" }}>{data.subheading}</p>}
         <div className="space-y-4 md:space-y-6">
           {items.map((item, i) => (
             <details key={i} className={`group border rounded-xl p-5 md:p-6 ${darkMode ? "border-gray-700" : ""}`}>

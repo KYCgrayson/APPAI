@@ -19,6 +19,7 @@ import {
 
 interface Props {
   data: {
+    subheading?: string;
     heading?: string;
     description?: string;
     features?: string[];
@@ -86,7 +87,7 @@ export function IframeToolSection({
   return (
     <section className="py-12 md:py-16 px-4 sm:px-6">
       <div className="max-w-5xl mx-auto">
-        {(data.heading || data.description) && (
+        {(data.heading || data.subheading || data.description) && (
           <div className="text-center mb-8 md:mb-10">
             {data.heading && (
               <h2 data-typography-role={typographyActive ? "heading" : undefined}
@@ -96,6 +97,7 @@ export function IframeToolSection({
                 {data.heading}
               </h2>
             )}
+        {data.subheading && <p className="text-center mb-6">{data.subheading}</p>}
             {data.description && (
               <p data-typography-role={typographyActive ? "body" : undefined}
                 className={`text-base md:text-lg max-w-2xl mx-auto ${darkMode ? "text-gray-300" : "text-gray-600"}`}
@@ -140,7 +142,7 @@ export function IframeToolSection({
               src={finalSrc}
               title={data.heading || "Embedded tool"}
               loading="lazy"
-              allow={data.allowFullscreen === false ? undefined : "fullscreen; clipboard-write; gamepad; accelerometer; gyroscope"}
+              allow={data.allowFullscreen === false ? "clipboard-write; gamepad; accelerometer; gyroscope" : "fullscreen; clipboard-write; gamepad; accelerometer; gyroscope"}
               sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-popups allow-popups-to-escape-sandbox"
               referrerPolicy="strict-origin-when-cross-origin"
               style={{ width: "100%", height: `${height}px`, border: 0, display: "block" }}

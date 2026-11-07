@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
 import { createPageSchema } from "@/lib/validations/page";
-import { sanitizeContent, type SanitizeWarning } from "@/lib/sanitize";
+import { sanitizePageContent, type SanitizeWarning } from "@/lib/sanitize";
 import { hostedPageApprovalUpdate } from "@/lib/hosted-page-approval";
 import { pageParentConflict } from "@/lib/page-parent-conflict";
 import { slugOwnershipDecision } from "@/lib/slug-ownership";
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
       }
 
       const upsertWarnings: SanitizeWarning[] = [];
-      data.content = sanitizeContent(data.content, undefined, upsertWarnings) as Record<string, unknown>;
+      data.content = sanitizePageContent(data.content, undefined, upsertWarnings) as Record<string, unknown>;
       // parentSlug is intentionally excluded from upsert mutations: reparenting
       // a page (root <-> child) is destructive and must go through delete+create.
       const { category: appCategory, ...pageData } = data;
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
 
     // Sanitize content before saving: strip HTML tags and validate URLs
     const contentWarnings: SanitizeWarning[] = [];
-    data.content = sanitizeContent(data.content, undefined, contentWarnings) as Record<string, unknown>;
+    data.content = sanitizePageContent(data.content, undefined, contentWarnings) as Record<string, unknown>;
 
     // parentSlug is set explicitly below from the validated `parentSlug`
     // local, so it's stripped here from the spread to avoid double-set.

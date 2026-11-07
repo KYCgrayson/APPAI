@@ -44,6 +44,7 @@ const DEFAULT_STRINGS: Required<MediaDownloaderStrings> = {
 
 interface Props {
   data: {
+    subheading?: string;
     heading?: string;
     description?: string;
     apiBase: string;
@@ -168,6 +169,7 @@ export function MediaDownloaderSection({ data, themeColor, darkMode, typographyA
             {data.heading}
           </h2>
         )}
+        {data.subheading && <p className="text-center mb-6">{data.subheading}</p>}
         {data.description && (
           <p data-typography-role={typographyActive ? "body" : undefined} className={`text-sm text-center mb-8 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
             {data.description}

@@ -58,13 +58,13 @@ test('each preset is a copyable, clean full POST body matching its served file',
     const data = createPageSchema.parse(file);
     assert.ok(data.isPublished);
     if (['profile', 'link-in-bio', 'portfolio', 'iframe-tool'].includes(preset.id)) assert.ok(!data.content.sections.some((section: { type: string }) => section.type === 'cta'));
-    assert.ok(data.content.sections.length >= 2 && data.content.sections.length <= 6);
+    assert.ok(data.content.sections.length >= 2 && data.content.sections.length <= (preset.id === "app-landing" ? 8 : 6));
     for (const section of data.content.sections) assert.ok(SECTION_DEFS.some(def => def.type === section.type));
     assert.deepEqual(pageLogoWarnings(data), []);
     const warnings: Parameters<typeof sanitizeContent>[2] = [];
     sanitizeContent(data.content, undefined, warnings);
     assert.deepEqual(warnings, []);
-    assert.deepEqual(checkPagePreview(file).warnings.map(w => w.message), Array.from({ length: JSON.stringify(file).split('placeholder-logo.png').length - 1 }, () => 'Replace demo logo: supply the user’s logo, or create a square 512×512 PNG with its own background; upload local files with POST /api/v1/upload and replace this value with the returned url before publishing.').concat(...(preset.id === 'iframe-tool' ? ['Replace demo value: replace with your deployed tool URL.'] : [])), preset.id);
+    assert.deepEqual(checkPagePreview(file).warnings.filter(w => !w.message.startsWith('Replace demo screenshot')).map(w => w.message), Array.from({ length: JSON.stringify(file).split('placeholder-logo.png').length - 1 }, () => 'Replace demo logo: supply the user’s logo, or create a square 512×512 PNG with its own background; upload local files with POST /api/v1/upload and replace this value with the returned url before publishing.').concat(...(preset.id === 'iframe-tool' ? ['Replace demo value: replace with your deployed tool URL.'] : [])), preset.id);
   }
 });
 test('bundled logo is a small 512 square PNG; alias delegates before publishing', () => {

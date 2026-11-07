@@ -2,6 +2,7 @@ import { Prose } from "@/templates/shared/Prose";
 
 interface Props {
   data: {
+    subheading?: string;
     heading?: string;
     text: string;
   };
@@ -17,6 +18,7 @@ export function AboutSection({ data, themeColor, typographyActive = false }: Pro
             {data.heading}
           </h2>
         )}
+        {data.subheading && <p className="text-center mb-6">{data.subheading}</p>}
         <Prose typographyRole={typographyActive ? "body" : undefined} className="prose prose-sm md:prose-base max-w-none text-gray-600 leading-relaxed prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{data.text}</Prose>
       </div>
     </section>

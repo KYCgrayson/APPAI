@@ -2,6 +2,8 @@ import { Prose } from "@/templates/shared/Prose";
 
 interface Props {
   data: {
+    subheading?: string;
+    heading?: string;
     items: Array<{
       time: string;
       title: string;
@@ -20,8 +22,9 @@ export function ScheduleSection({ data, themeColor, typographyActive = false }: 
     <section className="py-12 md:py-20 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto">
         <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>
-          Schedule
+          {data.heading ?? "Schedule"}
         </h2>
+        {data.subheading && <p className="text-center mb-6">{data.subheading}</p>}
         <div className="relative">
           {/* Vertical line */}
           <div
