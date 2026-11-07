@@ -1,6 +1,9 @@
 import { SmartIcon } from "@/templates/shared/SmartIcon";
 import { SOCIAL_PLATFORMS, sanitizeSocialUrl, sanitizeUrl } from "@/lib/sanitize";
 
+export const SOCIAL_NAMES = { instagram: "Instagram", line: "LINE", facebook: "Facebook", threads: "Threads", whatsapp: "WhatsApp", x: "X", youtube: "YouTube", tiktok: "TikTok", website: "Website" };
+export const SOCIAL_ICONS = { instagram: "logo-instagram", line: "logo-line", facebook: "logo-facebook", threads: "logo-threads", whatsapp: "logo-whatsapp", x: "logo-twitter", youtube: "logo-youtube", tiktok: "logo-tiktok", website: "globe-outline" } satisfies Record<typeof SOCIAL_PLATFORMS[number], string>;
+
 interface Props {
   data: {
     heading?: string;
@@ -65,13 +68,12 @@ export function ContactSection({ data, themeColor, typographyActive = false }: P
           {data.socials?.map((social, i) => {
             const url = sanitizeSocialUrl(social.url);
             if (url === "#" || !SOCIAL_PLATFORMS.includes(social.platform)) return null;
-            const names: Record<string, string> = { instagram: "Instagram", line: "LINE", facebook: "Facebook", threads: "Threads", whatsapp: "WhatsApp", x: "X", youtube: "YouTube", tiktok: "TikTok", website: "Website" };
-            const icons: Record<string, string> = { instagram: "logo-instagram", facebook: "logo-facebook", youtube: "logo-youtube", tiktok: "logo-tiktok", website: "globe-outline" };
             return <a key={i} href={url} target="_blank" rel="noopener noreferrer"
               data-typography-role={typographyActive ? "card" : undefined}
               className="flex items-center gap-4 font-semibold hover:underline" style={{ color: themeColor }}>
-              <span aria-hidden="true"><SmartIcon value={icons[social.platform] || "chatbubble-outline"} /></span>
-              {social.label || names[social.platform]}
+              <span aria-hidden="true"><SmartIcon value={SOCIAL_ICONS[social.platform]} /></span>
+              {social.label || SOCIAL_NAMES[social.platform]}
+              {social.label && <span className="sr-only">{SOCIAL_NAMES[social.platform]}</span>}
             </a>;
           })}
           {data.formUrl && (

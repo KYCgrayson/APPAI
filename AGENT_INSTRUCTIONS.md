@@ -377,7 +377,7 @@ Every section supports `id` (anchor for `#links`). Use kit backgroundColors when
 | [`testimonials`](https://appai.info/spec/sections#testimonials) | User quote cards with name, role, avatar. |
 | [`faq`](https://appai.info/spec/sections#faq) | Expandable Q&A accordion. 5-10 items recommended. Auto-generates FAQ schema for SEO. |
 | [`cta`](https://appai.info/spec/sections#cta) | Bold call-to-action banner. Uses themeColor as background automatically; ignores data.backgroundColor. Use only on landing-type pages, near bottom. |
-| [`video`](https://appai.info/spec/sections#video) | Embedded video. Supports YouTube, Vimeo, mp4, webm, gif (auto-detected). |
+| [`video`](https://appai.info/spec/sections#video) | YouTube/Vimeo iframe player; direct mp4, webm, gif media (auto-detected). |
 | [`screenshots`](https://appai.info/spec/sections#screenshots) | Horizontal scrollable image carousel. |
 | [`download`](https://appai.info/spec/sections#download) | App Store / Play Store download buttons. Also adds a Download button to the sticky header. |
 | [`gallery`](https://appai.info/spec/sections#gallery) | Image/video grid (masonry layout). |
@@ -393,7 +393,7 @@ Every section supports `id` (anchor for `#links`). Use kit backgroundColors when
 | [`video-subtitle`](https://appai.info/spec/tools#video-subtitle) | Interactive YouTube subtitle generator. Visitor pastes a YouTube link, trims ≤5 min, auto-transcribes via ASR, translates into chosen languages, tweaks subtitle style, and downloads a burned mp4. Requires the Video Subtitle backend service. |
 | [`tool`](https://appai.info/spec/tools#tool) | Universal interactive tool (file upload, processing, download). Connect any backend API. |
 | [`pdf-viewer`](https://appai.info/spec/tools#pdf-viewer) | Client-side PDF viewer with password unlock. No backend needed. |
-| [`embed`](https://appai.info/spec/sections#embed) | Embed TikTok / Loom / YouTube / Vimeo / Spotify / CodePen / Figma / X / Instagram. Auto-detects provider from URL. |
+| [`embed`](https://appai.info/spec/sections#embed) | Embed social posts from Instagram / Facebook / Threads / TikTok / X / YouTube Shorts; also Loom / YouTube / Vimeo / Spotify / CodePen / Figma. Auto-detects provider from URL. |
 | [`iframe-tool`](https://appai.info/spec/tools#iframe-tool) | **Host a tool the user vibe-coded.** Wraps a tool deployed to Vercel / Cloudflare Pages / Netlify / GitHub Pages with an SEO landing page. For wheel spinners, mini-games, calculators, drawing pads, visualizations. Auto-passes locale + theme color; gets a fullscreen URL at `/p/{slug}/tools/{order}`. **Use this — not `embed` — when the URL is a tool the user built, not a media post.** |
 | [`simple-order`](https://appai.info/spec/tools#simple-order) | Native small-shop order request section. Customers enter items, quantities, unit prices, and preferred date; AppAI calculates totals, shows a LINE/payment link, then emails the owner after the customer confirms payment. Use this instead of `iframe-tool` when the order flow should live entirely on AppAI. |
 
@@ -425,7 +425,7 @@ For personal sites, upload images via [`POST /api/v1/upload`](https://appai.info
 
 Three sections look similar — do not confuse them. If the user gives you a
 `*.vercel.app` / `*.pages.dev` / `*.netlify.app` / `*.github.io` URL and calls it
-their own tool, it is `iframe-tool`. `embed` is for media posts (TikTok/YouTube).
+their own tool, it is `iframe-tool`. YouTube/Vimeo/mp4 → `video` (iframe player); social posts from Instagram, Facebook, Threads, TikTok, X, YouTube Shorts → `embed`.
 `tool` is for form-input → backend API.
 
 ### Person site recipe
@@ -563,8 +563,7 @@ After [dry-run](https://appai.info/spec/api#preview-without-saving), follow the 
 Three formats, all render correctly. Mix freely within a page.
 
 **Ionicons (recommended):** Use built-in icon names or any emoji; discover names via `GET /api/v1/sections`. Bundled names:
-
-people-outline, time-outline, calendar-outline, camera-outline, color-palette-outline, hand-left-outline, leaf-outline, cafe-outline, cut-outline, bicycle-outline, brush-outline, school-outline, globe-outline, logo-github, logo-twitter, logo-linkedin, logo-youtube, logo-instagram, logo-discord, logo-tiktok, logo-facebook, logo-reddit, logo-medium, logo-mastodon, mail-outline, call-outline, location-outline, chatbubble-outline, chatbubbles-outline, send-outline, download-outline, cloud-download-outline, cloud-upload-outline, play-circle-outline, arrow-forward-outline, arrow-back-outline, open-outline, link-outline, copy-outline, share-outline, checkmark-circle, checkmark-circle-outline, close-circle, alert-circle, information-circle, lock-closed, lock-open, eye-outline, eye-off-outline, sparkles-outline, rocket-outline, star-outline, star, heart-outline, heart, flash-outline, shield-checkmark-outline, shield-outline, ribbon-outline, trophy-outline, gift-outline, menu-outline, close-outline, search-outline, settings-outline, options-outline, ellipsis-horizontal, ellipsis-vertical, chevron-down, chevron-up, chevron-forward, chevron-back, add-outline, remove-outline, code-slash-outline, terminal-outline, hardware-chip-outline, server-outline, cloud-outline
+logo-line, logo-threads, logo-whatsapp, people-outline, time-outline, calendar-outline, camera-outline, color-palette-outline, hand-left-outline, leaf-outline, cafe-outline, cut-outline, bicycle-outline, brush-outline, school-outline, globe-outline, logo-github, logo-twitter, logo-linkedin, logo-youtube, logo-instagram, logo-discord, logo-tiktok, logo-facebook, logo-reddit, logo-medium, logo-mastodon, mail-outline, call-outline, location-outline, chatbubble-outline, chatbubbles-outline, send-outline, download-outline, cloud-download-outline, cloud-upload-outline, play-circle-outline, arrow-forward-outline, arrow-back-outline, open-outline, link-outline, copy-outline, share-outline, checkmark-circle, checkmark-circle-outline, close-circle, alert-circle, information-circle, lock-closed, lock-open, eye-outline, eye-off-outline, sparkles-outline, rocket-outline, star-outline, star, heart-outline, heart, flash-outline, shield-checkmark-outline, shield-outline, ribbon-outline, trophy-outline, gift-outline, menu-outline, close-outline, search-outline, settings-outline, options-outline, ellipsis-horizontal, ellipsis-vertical, chevron-down, chevron-up, chevron-forward, chevron-back, add-outline, remove-outline, code-slash-outline, terminal-outline, hardware-chip-outline, server-outline, cloud-outline
 
 **Emoji:** Pass any emoji character. `{ "icon": "🚀" }`
 
@@ -616,7 +615,7 @@ Required: each item's `title`; all top-level fields optional; links require `lab
 }}
 ```
 
-YouTube/Vimeo/mp4 → `video`; social posts (TikTok/Instagram/X) → `embed`.
+YouTube/Vimeo/mp4 → `video` (iframe player); social posts from Instagram, Facebook, Threads, TikTok, X, YouTube Shorts → `embed`.
 
 ### video
 ```json
@@ -625,7 +624,7 @@ YouTube/Vimeo/mp4 → `video`; social posts (TikTok/Instagram/X) → `embed`.
     "caption": "Watch the demo"
 }}
 ```
-Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
+Supports YouTube/Vimeo iframe players and direct mp4, webm, gif media (auto-detected). Use `embed` for YouTube Shorts and social posts.
 
 ### features
 
@@ -794,7 +793,7 @@ Optional `heading` and `subheading` appear above the link buttons.
     "aspectRatio": "9:16"
 }}
 ```
-Auto-detects provider from URL. Supported: YouTube, Vimeo, TikTok, Loom, Spotify, CodePen, Figma. X (Twitter) and Instagram render as linked preview cards (their iframe policy blocks direct embeds). `aspectRatio` optional — sensible default per provider (TikTok → 9:16, YouTube → 16:9). Iframe is sandboxed.
+Auto-detects provider from URL. Supported: YouTube (including Shorts), Vimeo, Facebook posts/videos, Threads posts, TikTok, Loom, Spotify, CodePen, Figma. Facebook uses official plugin iframes; Threads uses the official blockquote + embed.js pattern, loaded near the viewport. X (Twitter) and Instagram render as linked preview cards. HTTPS URLs on supported provider hosts only. `aspectRatio` optional — sensible default per provider (TikTok → 9:16, YouTube → 16:9). Iframe is sandboxed.
 
 ### Link rel (SEO)
 Links in `links` and `cta` sections accept an optional `rel` string. Use `"nofollow"` for sponsored/affiliate/user-supplied links, `"sponsored"` for paid placements, `"nofollow sponsored"` for both. Leaving it unset produces `rel="noopener noreferrer"` for external links (standard dofollow). Example:

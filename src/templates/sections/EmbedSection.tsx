@@ -1,3 +1,4 @@
+import { ThreadsEmbed } from "./ThreadsEmbed";
 import { sanitizeUrl } from "@/lib/sanitize";
 
 interface Props {
@@ -14,6 +15,8 @@ interface Props {
 
 type Provider =
   | { kind: "youtube"; id: string }
+  | { kind: "facebook"; url: string; video: boolean }
+  | { kind: "threads"; url: string }
   | { kind: "vimeo"; id: string }
   | { kind: "tiktok"; id: string; user: string }
   | { kind: "loom"; id: string }
@@ -24,44 +27,61 @@ type Provider =
   | { kind: "figma"; url: string }
   | null;
 
-function detectProvider(rawUrl: string): Provider {
-  const url = rawUrl.trim();
-
-  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
-  if (yt) return { kind: "youtube", id: yt[1] };
-
+export function detectProvider(rawUrl: string): Provider {
+  let parsed: URL;
+  try { parsed = new URL(rawUrl.trim()); } catch { return null; }
+  if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.port) return null;
+  const host = parsed.hostname.replace(/^www\./, "");
+  const allowedHosts = ["youtube.com", "youtu.be", "vimeo.com", "player.vimeo.com", "tiktok.com", "loom.com", "twitter.com", "x.com", "instagram.com", "open.spotify.com", "codepen.io", "figma.com", "facebook.com", "threads.net", "threads.com"];
+  if (!allowedHosts.includes(host)) return null;
+  const url = `https://${host}${parsed.pathname}${parsed.search}`;
+  if (host === "facebook.com") {
+    const video = /^\/[^/]+\/videos\/\d+\/?$/.test(parsed.pathname) || /^\/reel\/\d+\/?$/.test(parsed.pathname) || (["/watch/", "/watch", "/video.php"].includes(parsed.pathname) && /^\d+$/.test(parsed.searchParams.get("v") || ""));
+    const post = /^\/[^/]+\/posts\/[a-zA-Z0-9_-]+\/?$/.test(parsed.pathname) || (["/permalink.php", "/story.php"].includes(parsed.pathname) && /^[a-zA-Z0-9_-]+$/.test(parsed.searchParams.get("story_fbid") || "") && /^\d+$/.test(parsed.searchParams.get("id") || ""));
+    return video || post ? { kind: "facebook", url, video } : null;
+  }
+  if (host === "threads.net" || host === "threads.com") {
+    return /^\/@[a-zA-Z0-9_.]+\/post\/[a-zA-Z0-9_-]+\/?$/.test(parsed.pathname)
+      ? { kind: "threads", url: `https://www.threads.com${parsed.pathname}` } : null;
+  }
+  if (host === "youtube.com" || host === "youtu.be") {
+    const id = host === "youtu.be" ? parsed.pathname.slice(1) : parsed.pathname === "/watch" ? parsed.searchParams.get("v") : parsed.pathname.match(/^\/(?:embed|shorts)\/([^/]+)\/?$/)?.[1];
+    return id && /^[a-zA-Z0-9_-]{11}$/.test(id) ? { kind: "youtube", id } : null;
+  }
   const vi = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-  if (vi) return { kind: "vimeo", id: vi[1] };
+  if (vi && ["vimeo.com", "player.vimeo.com"].includes(host)) return { kind: "vimeo", id: vi[1] };
 
   const tt = url.match(/tiktok\.com\/@([^/]+)\/video\/(\d+)/);
-  if (tt) return { kind: "tiktok", user: tt[1], id: tt[2] };
+  if (tt && host === "tiktok.com") return { kind: "tiktok", user: tt[1], id: tt[2] };
 
   const lm = url.match(/loom\.com\/share\/([a-zA-Z0-9]+)/);
-  if (lm) return { kind: "loom", id: lm[1] };
+  if (lm && host === "loom.com") return { kind: "loom", id: lm[1] };
 
-  if (/(?:twitter\.com|x\.com)\/[^/]+\/status\/\d+/.test(url)) {
+  if (["twitter.com", "x.com"].includes(host) && /(?:twitter\.com|x\.com)\/[^/]+\/status\/\d+/.test(url)) {
     return { kind: "twitter", url };
   }
 
-  if (/instagram\.com\/(?:p|reel)\/[a-zA-Z0-9_-]+/.test(url)) {
+  if (host === "instagram.com" && /instagram\.com\/(?:p|reel)\/[a-zA-Z0-9_-]+/.test(url)) {
     return { kind: "instagram", url };
   }
 
   const sp = url.match(/open\.spotify\.com\/(track|album|playlist|episode|show)\/([a-zA-Z0-9]+)/);
-  if (sp) return { kind: "spotify", path: `${sp[1]}/${sp[2]}` };
+  if (sp && host === "open.spotify.com") return { kind: "spotify", path: `${sp[1]}/${sp[2]}` };
 
   const cp = url.match(/codepen\.io\/([^/]+)\/(?:pen|details)\/([a-zA-Z0-9]+)/);
-  if (cp) return { kind: "codepen", user: cp[1], id: cp[2] };
+  if (cp && host === "codepen.io") return { kind: "codepen", user: cp[1], id: cp[2] };
 
-  if (/figma\.com\/(?:file|proto|design|board|community\/file)\//.test(url)) {
+  if (host === "figma.com" && /figma\.com\/(?:file|proto|design|board|community\/file)\//.test(url)) {
     return { kind: "figma", url };
   }
 
   return null;
 }
 
-function buildEmbed(provider: NonNullable<Provider>): { src: string; defaultAspect: Props["data"]["aspectRatio"]; allow: string } {
+export function buildEmbed(provider: NonNullable<Provider>): { src: string; defaultAspect: Props["data"]["aspectRatio"]; allow: string } {
   switch (provider.kind) {
+    case "facebook":
+      return { src: `https://www.facebook.com/plugins/${provider.video ? "video" : "post"}.php?href=${encodeURIComponent(provider.url)}&show_text=true`, defaultAspect: "4:5", allow: "autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share" };
     case "youtube":
       return {
         src: `https://www.youtube.com/embed/${provider.id}`,
@@ -169,6 +189,14 @@ export function EmbedSection({ data, themeColor, darkMode, typographyActive = fa
         </div>
       </section>
     );
+  }
+
+  if (provider.kind === "threads") {
+    return <section className="py-12 md:py-20 px-4 sm:px-6"><div className="max-w-xl mx-auto">
+      {data.title && <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-2xl font-bold mb-6">{data.title}</h2>}
+      <ThreadsEmbed url={provider.url} />
+      {data.caption && <p data-typography-role={typographyActive ? "caption" : undefined} className="mt-4 text-sm text-center">{data.caption}</p>}
+    </div></section>;
   }
 
   const embed = buildEmbed(provider);
