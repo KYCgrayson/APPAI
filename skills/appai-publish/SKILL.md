@@ -44,7 +44,7 @@ Infer the page shape and copy from the user's product and audience. Ask only for
 
 Use hearth for crafts/workshops/studios/wellness/classes. If no kit description matches, pick by light/dark and warm/cool. Use built-in icon names or any emoji. YouTube/Vimeo/mp4 → `video`; social posts (TikTok/Instagram/X) → `embed`.
 
-Booking by message → hero CTA to the main channel + `contact.socials` for all channels. No street address: omit location/address; mention the city in copy only if the user gave it. Use only supplied contact details; follow [Contact](https://appai.info/spec/pages#contact) for phone/LINE links and compliance text.
+Booking by message → hero CTA to the main channel + `contact.socials` for all channels. If the user gave no street address, omit `address` and any location section; mention the city in copy only if the user gave it. Use only supplied contact details; follow [Contact](https://appai.info/spec/pages#contact) for phone/LINE links and compliance text.
 
 ## Tools
 

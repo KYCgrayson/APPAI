@@ -318,7 +318,7 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 ## Contact
 
-Use only supplied contact details in sections, `privacyPolicy` and `termsOfService`; never invent an email. No street address: omit location/address; mention the city in copy only if the user gave it. `contact.phone` renders a tappable phone link; buttons also accept `tel:+{E.164 digits}`.
+Use only supplied contact details in sections, `privacyPolicy` and `termsOfService`; never invent an email. If the user gave no street address, omit `address` and any location section; mention the city in copy only if the user gave it. `contact.phone` renders a tappable phone link; buttons also accept `tel:+{E.164 digits}`.
 
 `contact.socials` is optional: `[{"platform":"instagram","url":"https://www.instagram.com/example/","label":"Message us"}]`. Platforms: `instagram`, `line`, `facebook`, `threads`, `whatsapp`, `x`, `youtube`, `tiktok`, `website`; `label` is optional (defaults to platform name). URLs must be HTTPS; no new URL schemes.
 
