@@ -66,7 +66,7 @@ After authorization: Hosted Page → [Style & logo](https://appai.info/spec/styl
 
 Validate and preview the page before publishing with the same request body.
 
-Previous: [Sections](https://appai.info/spec/sections) · Next: [Publish](https://appai.info/spec#publish-in-one-minute)
+Publish: [send the validated body](https://appai.info/spec#publish-in-one-minute)
 
 ### Dry-run & publish
 

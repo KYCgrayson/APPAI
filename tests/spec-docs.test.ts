@@ -59,7 +59,7 @@ function assertOrder(content: string) {
 
 function nav(topic: string) {
   const lines = docs.get(topic)!.split('\n');
-  const match = lines[2].match(/^Previous: \[([^\]]+)\]\(([^)]+)\) · Next: \[([^\]]+)\]\(([^)]+)\)$/);
+  const match = lines[2].match(/^Previous: \[([^\]]+)\]\(([^)]+)\)(?: · Next: \[([^\]]+)\]\(([^)]+)\))?$/);
   assert.ok(match, `${topic}: navigation must be the second line after the title`);
   return { previous: match[2], next: match[4] };
 }
@@ -105,17 +105,19 @@ test('topic headers have purpose then Previous/Next with a consistent happy path
     assert.equal(lines[4], '', topic + ': header stays within four lines');
     const links = nav(topic);
     checkLink(links.previous, topic);
-    checkLink(links.next, topic);
+    if (links.next) checkLink(links.next, topic);
     assert.doesNotMatch(lines.slice(0, 4).join('\n'), /\[Overview\].*\[Pages\].*\[Style\]/);
   }
-  const chain = ['overview', 'api', 'style', 'theme', 'typography', 'pages', 'sections'];
+  const routeTopics = JSON.parse(read('src/app/spec/[topic]/route.ts').match(/const topics = (\[[^;]+\]);/)![1]);
+  assert.deepEqual(topics, routeTopics);
+  const chain = ['overview', ...topics];
   const url = (topic: string) => 'https://appai.info/spec' + (topic === 'overview' ? '' : '/' + topic);
   assert.ok(overview.includes(`Next: [Authorization & API](${url('api')})`));
   for (let i = 1; i < chain.length; i++) {
     assert.equal(nav(chain[i]).previous, url(chain[i - 1]));
     if (i < chain.length - 1) assert.equal(nav(chain[i]).next, url(chain[i + 1]));
   }
-  assert.equal(nav('sections').next, 'https://appai.info/spec/api#dry-run');
+  assert.equal(nav('apps').next, undefined);
   assert.ok(docs.get('sections')!.includes('https://appai.info/spec#publish-in-one-minute'));
   const steps = overview.split('## Publish in one minute')[1].split('| Type |')[0];
   let position = -1;
@@ -127,14 +129,12 @@ test('topic headers have purpose then Previous/Next with a consistent happy path
   assert.match(docs.get('api')!, /^# AppAI — Authorization & API\nThe agent obtains a key with the user's approval via device flow;/);
 });
 
-test('all legacy level-two headings remain in docs and moved reference anchors have stubs', () => {
+test('legacy headings remain at their owning topic without stubs', () => {
   // Old section → new page intentionally lives only in the generated appendix.
   const headings = ['Pick the rung first (30 seconds, before anything else)', 'Publish in one minute', 'Topic pages', 'Document Guide', 'What You Can Build (read this first)', 'How to Work with the User', 'Creating a Page', 'Compliance Pages', 'Managing Pages (CRUD)', 'Icons', 'Section Reference', 'Hero variants', 'Multi-Language Details', 'Multi-Page Site Details', 'Authentication'];
   const source = [...docs.values()].join('\n');
   for (const heading of headings) assert.ok(source.includes('## ' + heading + '\n'), heading);
-  for (const heading of ['Icons', 'Section Reference']) {
-    assert.ok(docs.get('pages')!.includes(`## ${heading}\n\nMoved to [${heading}](https://appai.info/spec/sections#`));
-  }
+  assert.doesNotMatch(docs.get('pages')!, /Moved to/);
   assert.doesNotMatch(docs.get('pages')!, /^### (hero|profile-header|Link rel \(SEO\))$/m);
   assert.match(docs.get('sections')!, /^### Link rel \(SEO\)$/m);
 });
@@ -271,7 +271,7 @@ test('section index links every type to its schema and dry-run ends with publica
   assert.match(dryRun, /Open `https:\/\/appai\.info\/p\/\{slug\}`/);
   assert.match(api, /Universal App → return to.*spec\/apps#natural-release-flow/);
   assert.match(docs.get('apps')!, /for the key, then return here for the release steps/);
-  assert.equal(nav('i18n').next, 'https://appai.info/spec/api#dry-run');
+  assert.equal(nav('i18n').next, 'https://appai.info/spec/tools');
   for (const content of [...docs.values(), ...skillPaths.map(read)]) {
     assert.doesNotMatch(content, /(?<![(`])https:\/\/[^\s<>`]+\.(?=\s|$)/);
     assert.doesNotMatch(content, /alias: `POST \/api\/v1\/pages/);
@@ -280,7 +280,7 @@ test('section index links every type to its schema and dry-run ends with publica
 
 test('dry-run links forward to publish and retains its legacy anchor', () => {
   assert.ok(headingSlugs(docs.get('api')!).has('dry-run--publish'));
-  assert.match(docs.get('api')!.split('## Dry-run\n')[1], /Next: \[Publish\]\(https:\/\/appai.info\/spec#publish-in-one-minute\)/);
+  assert.match(docs.get('api')!.split('## Dry-run\n')[1], /Publish: \[send the validated body\]\(https:\/\/appai.info\/spec#publish-in-one-minute\)/);
   assert.match(read('skills/appai-publish/SKILL.md'), /# AppAI Publish\n\nStart at https:\/\/appai.info\/spec —/);
 });
 
@@ -299,13 +299,14 @@ test('device instructions separate agent duties from human approval', () => {
   }
 });
 
-test('style retains the origin/main heading anchors after theme extraction', () => {
-  for (const heading of ['Visual Design Capabilities', 'Logo', 'Hero variants']) {
-    assert.ok(docs.get('style')!.includes(heading));
-  }
-  for (const anchor of ['visual-design-capabilities', 'hero-variants']) {
-    assert.ok(docs.get('style')!.includes(`Moved to [Theme](https://appai.info/spec/theme#${anchor})`));
-  }
+test('style is actionable and points to theme and typography without stubs', () => {
+  const style = docs.get('style')!;
+  assert.match(style, /## How to choose/);
+  assert.match(style, /Agents MUST provide a logo/);
+  assert.match(style, /POST \/api\/v1\/upload/);
+  assert.ok(style.includes('https://appai.info/spec/theme'));
+  assert.ok(style.includes('https://appai.info/spec/typography'));
+  assert.doesNotMatch(style, /Moved to|strong recommendation/);
 });
 
 test('Hosted Page guidance publishes four default locales without waiting for optional languages', () => {

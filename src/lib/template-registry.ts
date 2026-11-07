@@ -38,7 +38,7 @@ export const COMMON_SECTION_FIELDS: SectionFieldDef[] = [
     name: "backgroundColor",
     type: "string",
     required: false,
-    description: "CSS color for the section background (e.g. \"#EEF2FF\", \"#1E293B\"). Use tints of your themeColor for visual rhythm. If omitted, sections alternate between white and light gray; profile-header, project-cards and entries default to #f6f5f0.",
+    description: "CSS color for the section background (e.g. \"#EEF2FF\", \"#1E293B\"). Use the kit's suggested backgroundColors when provided; otherwise leave unset. cta ignores backgroundColor and always uses themeColor. If omitted, sections alternate between white and light gray; profile-header, project-cards and entries default to #f6f5f0.",
   },
 ];
 

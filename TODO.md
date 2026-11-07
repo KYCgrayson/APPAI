@@ -24,6 +24,8 @@ Recorded so future work stops re-deriving them. The boundary itself lives in
 
 ## Spec topic split (ops #34)
 
+- [x] Resolve all eleven cold-start ambiguities: warm light kit, backgrounds/CTA, contacts/LINE, required logos, local-shop shape, locale preview URLs, full topic chain, useful style page, store-only compliance children and typography placement.
+
 - [x] One-minute publishing round 3: align device authorization, four use-cases, metadata, translations, topic navigation, dry-run-to-publish flow and skill guidance; strengthen entry-point regression checks.
 
 - [x] Ops #34 / PR #37 follow-up: align agent entry points on four use-cases and device approval; translate homepage guidance in nine locales; add Sections, chained topic headers and generated legacy mapping; preserve publishing rules and add consistency checks.

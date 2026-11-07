@@ -10,17 +10,18 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 | editorial | #9F1239 | #57534E | Lora | false | #FFFBEB, #FFF1F2 |
 | ocean | #0369A1 | #0F766E | Manrope | false | #FFFFFF, #F0F9FF |
 | midnight | #A5B4FC | #67E8F9 | Space Grotesk | true | #0F172A, #1E293B |
+| hearth | #92400E | #9A3412 | DM Sans | false | #FFFBEB, #FFF7ED |
 | ember | #FDBA74 | #FCA5A5 | DM Sans | true | #1C1917, #292524 |
 
-Use indigo for apps/SaaS; forest for nature and wellbeing; editorial for writing and portfolios; ocean for services and technical products; midnight for dark dashboards; ember for warm creative brands. Copy kit fields into the page request; backgrounds remain opt-in.
+Use indigo for light apps/SaaS; forest for light nature/wellbeing pages; editorial for light writing/portfolios; ocean for light services/technical products; hearth for light, warm bakeries, cafes and local food shops; midnight for dark dashboards; ember for dark, warm creative brands. Copy kit fields together into the page request.
 
-Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a style kit; use the style kit's suggested backgroundColors. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants.
+Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a style kit; use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants.
 
 `themeColor` sets the primary accent; `themeColorSecondary` sets the secondary accent. When omitted, the secondary color is automatically derived from the primary.
 
 ### Visual Design Capabilities
 
-- **Section backgrounds:** Any section can have a custom `backgroundColor`. Use the style kit's suggested backgroundColors.
+- **Section backgrounds:** Sections except `cta` can have a custom `backgroundColor`. Use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`.
 - **Hero backgrounds:** `backgroundColor` (solid color), `backgroundImage`, or `backgroundVideo`. Dark backgrounds auto-switch text to white.
 - **Dark mode:** Set `darkMode: true` at page level. All sections, cards, borders adapt automatically.
 - **Icons:** Three formats — Ionicons name (e.g. `globe-outline`), emoji, or image URL. Use one of `icons` (`GET /api/v1/sections`) or any emoji

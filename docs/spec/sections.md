@@ -1,6 +1,6 @@
 # AppAI — Sections
 Covers section schemas and icons; interactive section schemas remain on /spec/tools.
-Previous: [Pages](https://appai.info/spec/pages) · Next: [Dry-run](https://appai.info/spec/api#dry-run)
+Previous: [Pages](https://appai.info/spec/pages) · Next: [Multi-language & multi-page](https://appai.info/spec/i18n)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 After [dry-run](https://appai.info/spec/api#preview-without-saving), follow the [publish steps](https://appai.info/spec#publish-in-one-minute).
