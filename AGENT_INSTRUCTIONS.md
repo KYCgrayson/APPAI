@@ -39,7 +39,7 @@ Use the [topic pages](https://appai.info/spec#topic-pages) for details on the ru
 Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.
 
 1. **[Authorization & API](https://appai.info/spec/api):** Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. Also print the returned `user_code` so the user can compare it with the approval page. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste. Use the [device flow](https://appai.info/spec/api#authentication); send `Authorization: Bearer appai_sk_YOUR_KEY` on API requests.
-2. **MUST READ before publishing — [Style & logo](https://appai.info/spec/style):** open it, pick a style kit, and check the logo spec, then pick a [theme](https://appai.info/spec/theme) and [text size](https://appai.info/spec/typography). Dry-run warns (with this link) when `themeColor` or `fontFamily` is missing. If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with `POST /api/v1/upload`, then publish. A missing logo only warns and never blocks publishing. Add a real logo — square 512×512 PNG with its own background in `content.logo`, uploaded with `POST /api/v1/upload` (rules: [Logo](https://appai.info/spec/style#logo)). Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`), `darkMode` from a style kit; use the style kit's suggested backgroundColors for section `data.backgroundColor`. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW` and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and backgroundColors the same across variants.
+2. **MUST READ before publishing — [Style & logo](https://appai.info/spec/style):** open it for logo rules; choose kits at [Theme](https://appai.info/spec/theme), then pick [text size](https://appai.info/spec/typography). Dry-run warns (with this link) when `themeColor` or `fontFamily` is missing. If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with `POST /api/v1/upload`, then publish. Agents MUST supply a logo. Non-blocking platform warnings are a fallback, not permission to skip it. Add a real logo — square 512×512 PNG with its own background in `content.logo`, uploaded with `POST /api/v1/upload` (rules: [Logo](https://appai.info/spec/style#logo)). Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`), `darkMode` from a style kit; use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW` and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and backgroundColors the same across variants.
 3. **[Pages](https://appai.info/spec/pages):** pick a preset. `GET /api/v1/presets` returns copyable full POST bodies in `example`, section recipes, and named `styles`. Build a complete first draft.
 4. **[Sections](https://appai.info/spec/sections):** use the section schemas and icons. Find schemas with `GET /api/v1/sections?type=features,contact` (comma list supported).
 5. **[Dry-run](https://appai.info/spec/api#dry-run):** `POST /api/v1/pages?dryRun=true` (identical to `POST /api/v1/pages/preview`) with the full body. Review `{valid, errors, warnings, sanitizedContent, next}`; fix errors and unknown section/field warnings before publishing. To update an existing page, use `?dryRun=true&upsert=true` then `POST ?upsert=true`; omitting `upsert=true` in preview produces an existing-page warning. Nothing is saved. `dryRun` accepts true/1/yes or false/0/no case-insensitively; other non-empty values return 400.
@@ -59,7 +59,7 @@ Hosted Pages are always published in four locales: English (`en`), Traditional C
 | Hiring / job opening | `hiring` | [JSON](https://appai.info/spec/examples/hiring.example.json) |
 | Wrapped tool | `iframe-tool` | [JSON](https://appai.info/spec/examples/iframe-tool.example.json) |
 
-If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with `POST /api/v1/upload`, then publish. A missing logo only warns and never blocks publishing.
+If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with `POST /api/v1/upload`, then publish. Agents MUST supply a logo. Non-blocking platform warnings are a fallback, not permission to skip it.
 
 Copy this complete request body into both the dry-run and publish POSTs. Change the slug and copy, **replace the demo logo with the real logo**, and write `metaDescription`, `privacyPolicy` and `termsOfService` per locale:
 
@@ -168,9 +168,7 @@ After authorization: Hosted Page → [Style & logo](https://appai.info/spec/styl
 
 Validate and preview the page before publishing with the same request body.
 
-Previous: [Sections](https://appai.info/spec/sections) · Next: [Publish](https://appai.info/spec#publish-in-one-minute)
-
-### Dry-run & publish
+Publish: [send the validated body](https://appai.info/spec#publish-in-one-minute)
 
 ### Preview without saving
 
@@ -186,7 +184,7 @@ Publish with `POST /api/v1/pages` using the same body and `isPublished: true` (`
 
 ## API discovery
 
-`GET /api/v1/sections` returns section schemas and icons (`?format=jsonschema` for JSON Schema; `?type=features,contact` to filter). `GET /api/v1/presets` returns 10 copyable preset examples and 6 named style kits.
+`GET /api/v1/sections` returns section schemas and icons (`?format=jsonschema` for JSON Schema; `?type=features,contact` to filter). `GET /api/v1/presets` returns 10 copyable preset examples and 7 named style kits.
 
 All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
 
@@ -195,25 +193,18 @@ Check the logo, then choose a theme and text size.
 Previous: [Authorization & API](https://appai.info/spec/api) · Next: [Theme](https://appai.info/spec/theme)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
-1. [Pick a theme](https://appai.info/spec/theme): colors, backgrounds and ready-made style kits.
-2. [Pick text size](https://appai.info/spec/typography): font, overall size, contrast and optional role overrides.
+## How to choose
 
-Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a style kit; use the style kit's suggested backgroundColors. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants.
-
-### Visual Design Capabilities
-
-Moved to [Theme](https://appai.info/spec/theme#visual-design-capabilities).
-
-## Hero variants
-
-Moved to [Theme](https://appai.info/spec/theme#hero-variants).
+1. Check the [logo rules](https://appai.info/spec/style#logo) below; supply a logo before publishing.
+2. Choose a light or dark kit in [Theme](https://appai.info/spec/theme); copy its colors, font and darkMode together; use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`.
+3. Choose text size, contrast and role overrides in [Typography](https://appai.info/spec/typography); use the kit font for en/es, Noto Sans TC for zh-TW and Noto Sans SC for zh-CN.
 
 ### Logo
 
 
-If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with `POST /api/v1/upload`, then publish. A missing logo only warns and never blocks publishing.
+If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with `POST /api/v1/upload`, then publish. Agents MUST supply a logo. Non-blocking platform warnings are a fallback, not permission to skip it.
 
-**Every root page should provide a logo (strong recommendation; publishing is never blocked):** square 512x512 PNG, app-icon style with its own background color. Set `content.logo` (or hero `data.logo` / `headerLogo`) to an HTTPS URL or same-origin `/path`. For local files, upload with `POST /api/v1/upload` and use the returned URL. Missing or non-HTTPS logos produce `warnings` on create/upsert, PUT, PATCH and dry-run. Child pages inherit the root header logo and need no separate logo. `heroImage` does not count for directory cards or the missing-logo warning; the header still falls back to it. Dry-run warns to replace the placeholder with the real logo and `https://color-bench-demo.pages.dev` with your deployed tool URL wherever that value appears.
+**Agents MUST provide a logo for every root page:** square 512x512 PNG, app-icon style with its own background color. Set `content.logo` (or hero `data.logo` / `headerLogo`) to an HTTPS URL or same-origin `/path`. For local files, upload with `POST /api/v1/upload` and use the returned URL. Missing or non-HTTPS logos produce `warnings` on create/upsert, PUT, PATCH and dry-run. Child pages inherit the root header logo and need no separate logo. `heroImage` does not count for directory cards or the missing-logo warning; the header still falls back to it. Dry-run warns to replace the placeholder with the real logo and `https://color-bench-demo.pages.dev` with your deployed tool URL wherever that value appears.
 
 | Context | Uses | Fallback |
 |---------|------|----------|
@@ -236,17 +227,18 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 | editorial | #9F1239 | #57534E | Lora | false | #FFFBEB, #FFF1F2 |
 | ocean | #0369A1 | #0F766E | Manrope | false | #FFFFFF, #F0F9FF |
 | midnight | #A5B4FC | #67E8F9 | Space Grotesk | true | #0F172A, #1E293B |
+| hearth | #92400E | #9A3412 | DM Sans | false | #FFFBEB, #FFF7ED |
 | ember | #FDBA74 | #FCA5A5 | DM Sans | true | #1C1917, #292524 |
 
-Use indigo for apps/SaaS; forest for nature and wellbeing; editorial for writing and portfolios; ocean for services and technical products; midnight for dark dashboards; ember for warm creative brands. Copy kit fields into the page request; backgrounds remain opt-in.
+Use indigo for light apps/SaaS; forest for light nature/wellbeing pages; editorial for light writing/portfolios; ocean for light services/technical products; hearth for light, warm bakeries, cafes and local food shops; midnight for dark dashboards; ember for dark, warm creative brands. Copy kit fields together into the page request.
 
-Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a style kit; use the style kit's suggested backgroundColors. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants.
+Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a style kit; use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. When a kit has two `backgroundColors`, alternate them section by section, starting with the first. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants.
 
 `themeColor` sets the primary accent; `themeColorSecondary` sets the secondary accent. When omitted, the secondary color is automatically derived from the primary.
 
 ### Visual Design Capabilities
 
-- **Section backgrounds:** Any section can have a custom `backgroundColor`. Use the style kit's suggested backgroundColors.
+- **Section backgrounds:** Sections except `cta` can have a custom `backgroundColor`. Use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`.
 - **Hero backgrounds:** `backgroundColor` (solid color), `backgroundImage`, or `backgroundVideo`. Dark backgrounds auto-switch text to white.
 - **Dark mode:** Set `darkMode: true` at page level. All sections, cards, borders adapt automatically.
 - **Icons:** Three formats — Ionicons name (e.g. `globe-outline`), emoji, or image URL. Use one of `icons` (`GET /api/v1/sections`) or any emoji
@@ -322,6 +314,10 @@ Covers Hosted Page configuration, CRUD, compliance and publishing workflow.
 Previous: [Typography](https://appai.info/spec/typography) · Next: [Sections](https://appai.info/spec/sections)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
+## Contact
+
+Use only supplied contact details in sections, `privacyPolicy` and `termsOfService`; never invent an email. With only phone/LINE, write “Contact us by phone: {phone}” or “Contact us via LINE: {id/link}”. `contact.phone` renders a tappable phone link; `contact` has no LINE field. For buttons, use hero `ctaUrl`, cta `buttonUrl` or `links.items[].url`: `tel:+{E.164 digits}` is allowed and renders as a tappable link. LINE Official Accounts use `https://line.me/R/ti/p/@{id}` (id without a leading @); personal IDs use `https://line.me/ti/p/~{id}`. Use `simple-order` only for an order + payment flow with a supplied `notificationEmail`; for orders taken by message, use a plain LINE/message link.
+
 ## What You Can Build (read this first)
 
 This platform gives you full control over visual design. Every parameter below is available for you to use.
@@ -331,7 +327,7 @@ This platform gives you full control over visual design. Every parameter below i
 | Parameter | Description |
 |-----------|-------------|
 | `template` | `APP_LANDING`, `COMPANY_PROFILE`, `PRODUCT_SHOWCASE`, `PORTFOLIO`, `LINK_IN_BIO`, `PERSON` (classification only; sections control rendering). |
-| `themeColor` | Hex color (e.g. `#6366F1`) — drives CTA buttons, accents, links. Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a kit in [Style & logo](https://appai.info/spec/style). |
+| `themeColor` | Hex color (e.g. `#6366F1`) — drives CTA buttons, accents, links. Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a kit in [Theme](https://appai.info/spec/theme). |
 | `themeColorSecondary` | Hex color — optional accent for secondary buttons. Auto-generated from themeColor if omitted. |
 | `darkMode` | Boolean — renders entire page with dark backgrounds and light text. All sections adapt automatically. |
 | `fontFamily` | Google Fonts name, loaded automatically per locale variant. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants. |
@@ -348,7 +344,7 @@ Force a hosted page's kind on its corresponding App record: `PUT /api/v1/apps/{i
 
 ### 29 Section Types
 
-Every section supports optional `backgroundColor` (hex) and `id` (anchor for `#links`).
+Every section supports `id` (anchor for `#links`). Use kit backgroundColors when provided; otherwise leave `data.backgroundColor` unset. `cta` ignores backgroundColor and always uses themeColor.
 
 | Type | What it does |
 |------|-------------|
@@ -361,7 +357,7 @@ Every section supports optional `backgroundColor` (hex) and `id` (anchor for `#l
 | [`pricing`](https://appai.info/spec/sections#pricing) | Pricing comparison cards. 3 tiers recommended. Supports `highlighted` flag. |
 | [`testimonials`](https://appai.info/spec/sections#testimonials) | User quote cards with name, role, avatar. |
 | [`faq`](https://appai.info/spec/sections#faq) | Expandable Q&A accordion. 5-10 items recommended. Auto-generates FAQ schema for SEO. |
-| [`cta`](https://appai.info/spec/sections#cta) | Bold call-to-action banner. Uses themeColor as background automatically. Use only on landing-type pages, near bottom. |
+| [`cta`](https://appai.info/spec/sections#cta) | Bold call-to-action banner. Uses themeColor as background automatically; ignores data.backgroundColor. Use only on landing-type pages, near bottom. |
 | [`video`](https://appai.info/spec/sections#video) | Embedded video. Supports YouTube, Vimeo, mp4, webm, gif (auto-detected). |
 | [`screenshots`](https://appai.info/spec/sections#screenshots) | Horizontal scrollable image carousel. |
 | [`download`](https://appai.info/spec/sections#download) | App Store / Play Store download buttons. Also adds a Download button to the sticky header. |
@@ -391,8 +387,8 @@ Every page automatically gets: sticky header (with logo, title, language switche
 ### Your default workflow
 
 1. **Gather minimum context.** Ask: "What is your product/app and who is it for?" You need: product name, what it does, target audience. That's enough to start.
-2. **Make design decisions yourself.** Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a kit in [Style & logo](https://appai.info/spec/style) and use the style kit's suggested backgroundColors. Pick sections based on the product type. Generate features, FAQ, and copy from what the user told you. Generate privacy policy and terms of service automatically.
-3. **Publish the first draft.** [Authorize](https://appai.info/spec/api#authentication) → **MUST READ [Style & logo](https://appai.info/spec/style)** to pick a style kit and logo → [build](https://appai.info/spec/pages#creating-a-page) with the [section schemas](https://appai.info/spec/sections) → [dry-run, then publish](https://appai.info/spec/api#dry-run) with the same body. Show the user the live URL.
+2. **Make design decisions yourself.** Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a kit in [Theme](https://appai.info/spec/theme) and use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`. Pick sections based on the product type. Generate features, FAQ, and copy from what the user told you. Generate privacy policy and terms of service automatically.
+3. **Publish the first draft.** [Authorize](https://appai.info/spec/api#authentication) → **MUST READ [Style & logo](https://appai.info/spec/style)** for logo rules and [Theme](https://appai.info/spec/theme) for kits → [build](https://appai.info/spec/pages#creating-a-page) with the [section schemas](https://appai.info/spec/sections) → [dry-run, then publish](https://appai.info/spec/api#dry-run) with the same body. Show the user the live URL.
 4. **Iterate.** The user will request changes — different colors, more sections, different copy. Use PATCH to update.
 
 ### Page shape per intent
@@ -402,6 +398,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 | User intent | Page shape |
 |---|---|
 | **Personal website / portfolio of a person** | template `PERSON` only for the person’s own root page, never project pages; `profile-header` + `project-cards` + `entries`. |
+| **Local shop / small business (bakery, cafe, salon, studio)** | Preset `company-service`, template `COMPANY_PROFILE`: hero → features (products/services) → about (how to order) → about (weekly opening hours as a short Markdown list, plus pickup details) → contact or links (location/contact) → optional cta. No pricing/testimonials required; use only supplied facts. |
 | **Landing page for an app/product** | Hero + features + pricing + testimonials + faq + cta. Standard SaaS template. |
 | **Host a vibe-coded tool** | Hero (short tagline) + `iframe-tool` (the tool itself) + 1-2 supporting sections (about / faq). The tool is the page. |
 
@@ -427,12 +424,12 @@ Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/pub
 
 - Languages: always publish the four default locales — English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Other languages are asked about; see [When to ask the user](https://appai.info/spec/pages#when-to-ask-the-user).
 - Which template/sections to use (infer from the product type)
-- themeColor (copy together with themeColorSecondary, fontFamily (Chinese variants: Noto Sans TC/SC) and darkMode from a kit in [Style & logo](https://appai.info/spec/style))
-- Section ordering for landing-type pages: hero → stats → features → pricing → testimonials → faq → cta, omitting unsupported sections. Use `cta` only on landing-type pages: app, product, SaaS, company/service, event and hiring. Do not add it to PERSON/profile, link-in-bio, portfolio, card-wall or wrapped-tool pages.
-- Privacy policy and terms of service (generate them using the product name + contact email)
+- themeColor (copy together with themeColorSecondary, fontFamily (Chinese variants: Noto Sans TC/SC) and darkMode from a kit in [Theme](https://appai.info/spec/theme))
+- Section ordering for app/product landing pages: hero → stats → features → pricing → testimonials → faq → cta, omitting unsupported sections. Use `cta` only on landing-type pages: app, product, SaaS, company/service, event and hiring. Do not add it to PERSON/profile, link-in-bio, portfolio, card-wall or wrapped-tool pages.
+- Privacy policy and terms of service (generate them using the product name + the supplied contact (email, phone, LINE or form URL; never invent an email))
 - darkMode (use the same style kit)
 - fontFamily: Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants.
-- backgroundColor on sections (use the style kit's suggested backgroundColors)
+- backgroundColor on sections (use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`)
 
 ### When to ask the user
 
@@ -449,7 +446,7 @@ Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/pub
 - Headlines under 60 characters, subheadlines under 140 characters (mobile readability)
 - 5-8 sections per page maximum (landing pages; PERSON pages: see recipe). A focused page beats a comprehensive one.
 - Use `cta` only on landing-type pages: app, product, SaaS, company/service, event and hiring. Do not add it to PERSON/profile, link-in-bio, portfolio, card-wall or wrapped-tool pages.
-- Logos: every root page should supply a square 512x512 PNG with its own background; see [Logo](https://appai.info/spec/style#logo).
+- Logos: every root page MUST supply a square 512x512 PNG with its own background; see [Logo](https://appai.info/spec/style#logo).
 - Images: hero backgrounds under 500KB, use WebP/JPEG.
 
 ---
@@ -477,6 +474,9 @@ curl -X POST https://appai.info/api/v1/pages \
 | `themeColorSecondary` | No | Hex accent color |
 | `darkMode` | No | Boolean (default: false) |
 | `fontFamily` | No | Google Fonts name per locale variant. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants. |
+| `textSize` | No | Top level or `content.textSize`; `xs`, `sm`, `md` (default), `lg`, `xl`, `2xl`, `3xl`, `4xl`. |
+| `textContrast` | No | Top level or `content.textContrast`; `low`, `normal` (default), `high`. |
+| `typography` | No | Top level or `content.typography`; optional role overrides `{caption, card, body, heading, display}`, each using textSize steps. Top-level settings win and persist under content; `{}` clears overrides. |
 | `headerLogo` | No | Separate logo URL for light header |
 | `content` | Yes | `{ "sections": [{ "type": "...", "order": N, "data": {...} }] }` |
 | `privacyPolicy` | No | Markdown text |
@@ -495,12 +495,12 @@ See [recommended compliance flags](https://appai.info/spec/i18n#compliance-pages
 
 For App Store / Play Store submissions, create a multi-page site with child pages for FAQ, contact, and account deletion, with translated `privacyPolicy` and `termsOfService` fields on each root locale variant.
 
-Generate privacy policy and terms of service automatically — any LLM can produce standard legal text using the app name and contact email. Include: data collection practices, user rights, children's privacy clause, contact information.
+Generate privacy policy and terms of service automatically — any LLM can produce standard legal text using the app name and supplied contact (email, phone, LINE or form URL); never invent an email. Include: data collection practices, user rights, children's privacy clause, contact information.
 
 The canonical compliance setup:
 - Root: marketing landing page
 - Child `my-app-faq`: product FAQ
-- Child `my-app-contact`: contact form (`"submitTo": "mailto:support@app.com"`)
+- Child `my-app-contact`: supplied contact details or form URL (use a mailto form only when an email was supplied)
 - Root variant `privacyPolicy`: translated privacy policy
 - Root variant `termsOfService`: translated terms of service
 - Child `my-app-delete-account`: account deletion form
@@ -528,21 +528,13 @@ Upsert requires the same `parentSlug` as the existing page (omitted means root);
 
 Error responses: `{ "error": "message", "hint": "suggested fix" }`. Status codes: 400 (validation), 401 (auth), 403 (plan limit), 404 (not found), 409 (own-org slug taken: use PATCH or ?upsert=true; another org: choose a different slug).
 
-## Icons
-
-Moved to [Icons](https://appai.info/spec/sections#icons).
-
-## Section Reference
-
-Moved to [Section Reference](https://appai.info/spec/sections#section-reference).
-
 Prefix every child slug with its root slug because `(slug, locale)` is unique across the whole platform; an unprefixed `contact` can collide with another user’s page.
 
 All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
 
 # AppAI — Sections
 Covers section schemas and icons; interactive section schemas remain on /spec/tools.
-Previous: [Pages](https://appai.info/spec/pages) · Next: [Dry-run](https://appai.info/spec/api#dry-run)
+Previous: [Pages](https://appai.info/spec/pages) · Next: [Multi-language & multi-page](https://appai.info/spec/i18n)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 After [dry-run](https://appai.info/spec/api#preview-without-saving), follow the [publish steps](https://appai.info/spec#publish-in-one-minute).
@@ -586,6 +578,8 @@ Required: each item's `name`; image objects require `url`, `alt`; screenshot req
 Required: each item's `title`; all top-level fields optional; links require `label`, `url` and follow profile-header rules. No automatic heading text.
 
 ### hero
+
+`ctaUrl` (and `ctaSecondaryUrl`) allows `tel:+{E.164 digits}` and renders it as a tappable phone link.
 ```json
 { "type": "hero", "order": 1, "data": {
     "headline": "Your App Name",
@@ -613,8 +607,12 @@ Required: each item's `title`; all top-level fields optional; links require `lab
 Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
 
 ### features
+
+`heading` and `subheading` are optional. For a few priced services without feature lists, use `features` with the price in each description; use `pricing` only for plans/tiers with feature lists (each plan requires `features[]`).
 ```json
 { "type": "features", "order": 3, "data": {
+    "heading": "Optional section title",
+    "subheading": "Optional supporting text",
     "items": [
       { "icon": "rocket-outline", "title": "Fast", "description": "Blazing fast performance" }
     ]
@@ -686,6 +684,8 @@ Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
 ```
 
 ### schedule
+
+Use `schedule` for event timelines (`time` + session `title`), and `about.text` with a short Markdown list for weekly opening hours.
 ```json
 { "type": "schedule", "order": 11, "data": {
     "items": [
@@ -714,8 +714,12 @@ Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
 ```
 
 ### contact
+
+`heading` and `subheading` are optional.
 ```json
 { "type": "contact", "order": 14, "data": {
+    "heading": "Optional section title",
+    "subheading": "Optional supporting text",
     "email": "hello@example.com",
     "phone": "+1-555-0123",
     "address": "123 Main St"
@@ -723,6 +727,8 @@ Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
 ```
 
 ### cta
+
+`buttonUrl` allows `tel:+{E.164 digits}` and renders it as a tappable phone link.
 
 Use `cta` only on landing-type pages: app, product, SaaS, company/service, event and hiring. Do not add it to PERSON/profile, link-in-bio, portfolio, card-wall or wrapped-tool pages.
 ```json
@@ -735,6 +741,8 @@ Use `cta` only on landing-type pages: app, product, SaaS, company/service, event
 ```
 
 ### links
+
+`items[].url` allows `tel:+{E.164 digits}` and renders it as a tappable phone link.
 ```json
 { "type": "links", "order": 16, "data": {
     "items": [
@@ -777,14 +785,14 @@ All topics: [Overview](https://appai.info/spec) · [Authorization & API](https:/
 
 # AppAI — Multi-language & multi-page
 Covers multi-language variants, multi-page sites and automatic site navigation.
-Previous: [Pages](https://appai.info/spec/pages) · Next: [Dry-run](https://appai.info/spec/api#dry-run)
+Previous: [Sections](https://appai.info/spec/sections) · Next: [Tools](https://appai.info/spec/tools)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 ### Multi-Language (free, automatic)
 
 Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.
 
-Publish `en` first; `en` is the default locale. Then publish `zh-TW`, `zh-CN`, and `es`. Send each locale as its own POST request with the same slug and `locale`; dry-run every locale body before publishing it. Publish child pages (`my-app-faq`, `my-app-contact`, `my-app-delete-account`, …) in all four locales with `parentSlug`. Put translated privacy policy and terms in each variant’s `privacyPolicy` / `termsOfService`, not in child pages. Later updates target a locale with `?locale=`, e.g. `PATCH /api/v1/pages/{slug}?locale=zh-TW`.
+Publish `en` first; `en` is the default locale. Then publish `zh-TW`, `zh-CN`, and `es`. Send each locale as its own POST request with the same slug and `locale`; dry-run every locale body before publishing it. For App Store / Play Store submissions only, publish compliance child pages (`my-app-faq`, `my-app-contact`, `my-app-delete-account`, …) in all four locales with `parentSlug`. Put translated privacy policy and terms in each variant’s `privacyPolicy` / `termsOfService`, not in child pages. Later updates target a locale with `?locale=`, e.g. `PATCH /api/v1/pages/{slug}?locale=zh-TW`.
 
 - The agent publishes both `zh-TW` and `zh-CN` as part of the four defaults. If only one exists, AppAI converts the other script offline at read time, labels it auto-converted, and serves it with `noindex`; no stored translation.
 - Locale variants are free. How: [Multi-Language Details](https://appai.info/spec/i18n#multi-language-details).
@@ -861,8 +869,10 @@ All topics: [Overview](https://appai.info/spec) · [Authorization & API](https:/
 
 # AppAI — Tools
 Covers Wrapped tool and Connected tool configuration, connectors, identity, access and interactive section schemas.
-Previous: [Overview](https://appai.info/spec) · Next: [Pages](https://appai.info/spec/pages)
+Previous: [Multi-language & multi-page](https://appai.info/spec/i18n) · Next: [Universal App](https://appai.info/spec/apps)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
+
+Use `simple-order` only for an order + payment flow with a supplied `notificationEmail`; for message orders, use a plain link following [Contact](https://appai.info/spec/pages#contact).
 
 For generic section configuration, see [Section Reference](https://appai.info/spec/sections#section-reference).
 
@@ -1093,7 +1103,7 @@ All topics: [Overview](https://appai.info/spec) · [Authorization & API](https:/
 
 # AppAI — Universal App
 Covers Universal App manifests, immutable releases, platform review and runtime contracts.
-Previous: [Overview](https://appai.info/spec) · Next: [Authorization & API](https://appai.info/spec/api)
+Previous: [Tools](https://appai.info/spec/tools)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 Follow [Authorization & API](https://appai.info/spec/api) for the key, then return here for the release steps.
@@ -1247,8 +1257,8 @@ All topics: [Overview](https://appai.info/spec) · [Authorization & API](https:/
 | Document Guide | https://appai.info/spec#document-guide |
 | Authentication | https://appai.info/spec/api#authentication |
 | Where the key goes afterwards | https://appai.info/spec/api#where-the-key-goes-afterwards |
-| Visual Design Capabilities | https://appai.info/spec/theme#visual-design-capabilities |
 | Logo | https://appai.info/spec/style#logo |
+| Visual Design Capabilities | https://appai.info/spec/theme#visual-design-capabilities |
 | What You Can Build (read this first) | https://appai.info/spec/pages#what-you-can-build-read-this-first |
 | Page-Level Configuration | https://appai.info/spec/pages#page-level-configuration |
 | Directory classification | https://appai.info/spec/pages#directory-classification |

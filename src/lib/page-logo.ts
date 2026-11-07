@@ -1,6 +1,6 @@
 import type { SanitizeWarning } from "./sanitize.ts";
 
-export const LOGO_GUIDANCE = "Every root page should provide a logo: square 512x512 PNG, app-icon style with its own background. Set content.logo (or hero data.logo / headerLogo) to an HTTPS URL or appai.info /path. For a local file, use POST /api/v1/upload and use the returned URL. heroImage does not count as a logo for directory cards or this warning; the header still falls back to it. Publishing is never blocked for a missing logo.";
+export const LOGO_GUIDANCE = "Agents MUST provide a logo for every root page; create one if the user has none: square 512x512 PNG, app-icon style with its own background. Set content.logo (or hero data.logo / headerLogo) to an HTTPS URL or appai.info /path. For a local file, use POST /api/v1/upload and use the returned URL. heroImage does not count as a logo for directory cards or this warning; the header still falls back to it. Non-blocking publishing is a platform fallback, not permission to skip the logo.";
 
 type LogoPage = { content?: unknown; headerLogo?: unknown; parentSlug?: unknown };
 

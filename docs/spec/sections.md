@@ -1,6 +1,6 @@
 # AppAI — Sections
 Covers section schemas and icons; interactive section schemas remain on /spec/tools.
-Previous: [Pages](https://appai.info/spec/pages) · Next: [Dry-run](https://appai.info/spec/api#dry-run)
+Previous: [Pages](https://appai.info/spec/pages) · Next: [Multi-language & multi-page](https://appai.info/spec/i18n)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 After [dry-run](https://appai.info/spec/api#preview-without-saving), follow the [publish steps](https://appai.info/spec#publish-in-one-minute).
@@ -44,6 +44,8 @@ Required: each item's `name`; image objects require `url`, `alt`; screenshot req
 Required: each item's `title`; all top-level fields optional; links require `label`, `url` and follow profile-header rules. No automatic heading text.
 
 ### hero
+
+`ctaUrl` (and `ctaSecondaryUrl`) allows `tel:+{E.164 digits}` and renders it as a tappable phone link.
 ```json
 { "type": "hero", "order": 1, "data": {
     "headline": "Your App Name",
@@ -71,8 +73,12 @@ Required: each item's `title`; all top-level fields optional; links require `lab
 Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
 
 ### features
+
+`heading` and `subheading` are optional. For a few priced services without feature lists, use `features` with the price in each description; use `pricing` only for plans/tiers with feature lists (each plan requires `features[]`).
 ```json
 { "type": "features", "order": 3, "data": {
+    "heading": "Optional section title",
+    "subheading": "Optional supporting text",
     "items": [
       { "icon": "rocket-outline", "title": "Fast", "description": "Blazing fast performance" }
     ]
@@ -144,6 +150,8 @@ Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
 ```
 
 ### schedule
+
+Use `schedule` for event timelines (`time` + session `title`), and `about.text` with a short Markdown list for weekly opening hours.
 ```json
 { "type": "schedule", "order": 11, "data": {
     "items": [
@@ -172,8 +180,12 @@ Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
 ```
 
 ### contact
+
+`heading` and `subheading` are optional.
 ```json
 { "type": "contact", "order": 14, "data": {
+    "heading": "Optional section title",
+    "subheading": "Optional supporting text",
     "email": "hello@example.com",
     "phone": "+1-555-0123",
     "address": "123 Main St"
@@ -181,6 +193,8 @@ Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
 ```
 
 ### cta
+
+`buttonUrl` allows `tel:+{E.164 digits}` and renders it as a tappable phone link.
 
 Use `cta` only on landing-type pages: app, product, SaaS, company/service, event and hiring. Do not add it to PERSON/profile, link-in-bio, portfolio, card-wall or wrapped-tool pages.
 ```json
@@ -193,6 +207,8 @@ Use `cta` only on landing-type pages: app, product, SaaS, company/service, event
 ```
 
 ### links
+
+`items[].url` allows `tel:+{E.164 digits}` and renders it as a tappable phone link.
 ```json
 { "type": "links", "order": 16, "data": {
     "items": [

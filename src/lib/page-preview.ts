@@ -113,7 +113,7 @@ function checkFields(value: unknown, fields: SectionFieldDef[], path: string, wa
 }
 
 export function pagePreviewNext(page: { slug: string; locale?: string; parentSlug?: string | null }, context: { origin?: string; isDefault?: boolean; exists?: boolean } = {}) {
-  const path = buildPagePath(page.parentSlug || page.slug, page.locale || "en", null, context.isDefault ?? true) + (page.parentSlug ? `/${page.slug}` : "");
+  const path = buildPagePath(page.parentSlug || page.slug, page.locale || "en", null, context.isDefault ?? (page.parentSlug ? (page.locale || "en") === "en" : true)) + (page.parentSlug ? `/${page.slug}` : "");
   return `Review warnings, then POST the same body to /api/v1/pages${context.exists ? "?upsert=true" : ""} and open ${context.origin || ""}${path}`;
 }
 
@@ -126,7 +126,7 @@ export function parseDryRun(value: string | null): boolean | "invalid" {
 
 function demoValueWarnings(value: unknown, path: string, warnings: SanitizeWarning[]) {
   if (value === "https://color-bench-demo.pages.dev") warnings.push({ path, message: "Replace demo value: replace with your deployed tool URL." });
-  if (typeof value === "string" && /^(?:[hH][tT][tT][pP][sS]?:\/\/[^/]+)?\/spec\/examples\/placeholder-logo\.png(?:[?#].*)?$/.test(value)) warnings.push({ path, message: "Replace demo value: replace with the real logo." });
+  if (typeof value === "string" && /^(?:[hH][tT][tT][pP][sS]?:\/\/[^/]+)?\/spec\/examples\/placeholder-logo\.png(?:[?#].*)?$/.test(value)) warnings.push({ path, message: "Replace demo logo: supply the user’s logo, or create a square 512×512 PNG with its own background; upload local files with POST /api/v1/upload and replace this value with the returned url before publishing." });
   if (Array.isArray(value)) value.forEach((child, index) => {
     const type = path === "content.sections" && child && typeof child === "object" ? child.type : undefined;
     demoValueWarnings(child, `${path}[${index}]${type ? `(${type})` : ""}`, warnings);

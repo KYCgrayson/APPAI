@@ -64,7 +64,7 @@ test('each preset is a copyable, clean full POST body matching its served file',
     const warnings: Parameters<typeof sanitizeContent>[2] = [];
     sanitizeContent(data.content, undefined, warnings);
     assert.deepEqual(warnings, []);
-    assert.deepEqual(checkPagePreview(file).warnings.map(w => w.message), Array.from({ length: JSON.stringify(file).split('placeholder-logo.png').length - 1 }, () => 'Replace demo value: replace with the real logo.').concat(...(preset.id === 'iframe-tool' ? ['Replace demo value: replace with your deployed tool URL.'] : [])), preset.id);
+    assert.deepEqual(checkPagePreview(file).warnings.map(w => w.message), Array.from({ length: JSON.stringify(file).split('placeholder-logo.png').length - 1 }, () => 'Replace demo logo: supply the user’s logo, or create a square 512×512 PNG with its own background; upload local files with POST /api/v1/upload and replace this value with the returned url before publishing.').concat(...(preset.id === 'iframe-tool' ? ['Replace demo value: replace with your deployed tool URL.'] : [])), preset.id);
   }
 });
 test('bundled logo is a small 512 square PNG; alias delegates before publishing', () => {
@@ -226,4 +226,31 @@ test('preset recipes reserve cta for landing pages', () => {
     assert.equal(example.content.sections.some((section: { type: string }) => section.type === 'cta'), expectsCta, id);
     if (!expectsCta) assert.doesNotMatch(preset.description, /call-to-action|\bCTA\b/i, id);
   }
+});
+
+
+test('preview next makes the first root locale default and respects an existing default', () => {
+  for (const locale of ['zh-TW', 'zh-CN', 'es']) {
+    assert.ok(pagePreviewNext({ slug: 'bakery', locale }).endsWith(`/p/bakery`));
+    assert.ok(checkPagePreview({ slug: 'bakery', title: 'Bakery', locale }).next.endsWith(`/p/bakery`));
+    assert.ok(pagePreviewNext({ slug: 'bakery', locale }, { isDefault: false }).endsWith(`/p/bakery/${locale}`));
+    assert.ok(pagePreviewNext({ slug: 'bakery-contact', parentSlug: 'bakery', locale }).endsWith(`/p/bakery/${locale}/bakery-contact`));
+  }
+  assert.ok(pagePreviewNext({ slug: 'bakery', locale: 'en' }).endsWith('/p/bakery'));
+  assert.ok(pagePreviewNext({ slug: 'bakery', locale: 'ja' }, { isDefault: true }).endsWith('/p/bakery'));
+  assert.ok(pagePreviewNext({ slug: 'bakery', locale: 'en' }, { isDefault: false }).endsWith('/p/bakery/en'));
+  const route = readFileSync(new URL('../src/app/api/v1/pages/preview/route.ts', import.meta.url), 'utf8');
+  assert.match(route, /rootDefault \? rootDefault.locale === data.locale : true/);
+});
+
+test('hearth is a light warm kit mirrored in the theme spec with readable white CTA text', () => {
+  const kit = PAGE_STYLES.find(style => style.id === 'hearth')!;
+  assert.equal(kit.darkMode, false);
+  const theme = readFileSync(new URL('../docs/spec/theme.md', import.meta.url), 'utf8');
+  for (const value of [kit.id, kit.themeColor, kit.themeColorSecondary, kit.fontFamily, ...kit.backgroundColors]) assert.ok(theme.includes(value));
+  const luminance = (hex: string) => {
+    const rgb = hex.slice(1).match(/../g)!.map(c => parseInt(c, 16) / 255).map(c => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+    return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+  };
+  assert.ok(1.05 / (luminance(kit.themeColor) + 0.05) >= 4.5);
 });

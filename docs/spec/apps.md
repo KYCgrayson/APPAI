@@ -1,6 +1,6 @@
 # AppAI — Universal App
 Covers Universal App manifests, immutable releases, platform review and runtime contracts.
-Previous: [Overview](https://appai.info/spec) · Next: [Authorization & API](https://appai.info/spec/api)
+Previous: [Tools](https://appai.info/spec/tools)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 Follow [Authorization & API](https://appai.info/spec/api) for the key, then return here for the release steps.

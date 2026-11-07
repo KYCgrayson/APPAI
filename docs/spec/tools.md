@@ -1,7 +1,9 @@
 # AppAI — Tools
 Covers Wrapped tool and Connected tool configuration, connectors, identity, access and interactive section schemas.
-Previous: [Overview](https://appai.info/spec) · Next: [Pages](https://appai.info/spec/pages)
+Previous: [Multi-language & multi-page](https://appai.info/spec/i18n) · Next: [Universal App](https://appai.info/spec/apps)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
+
+Use `simple-order` only for an order + payment flow with a supplied `notificationEmail`; for message orders, use a plain link following [Contact](https://appai.info/spec/pages#contact).
 
 For generic section configuration, see [Section Reference](https://appai.info/spec/sections#section-reference).
 
