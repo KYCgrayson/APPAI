@@ -5,7 +5,24 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 ## Contact
 
-Use only supplied contact details in sections, `privacyPolicy` and `termsOfService`; never invent an email. With only phone/LINE, write “Contact us by phone: {phone}” or “Contact us via LINE: {id/link}”. `contact.phone` renders a tappable phone link; `contact` has no LINE field. For buttons, use hero `ctaUrl`, cta `buttonUrl` or `links.items[].url`: `tel:+{E.164 digits}` is allowed and renders as a tappable link. LINE Official Accounts use `https://line.me/R/ti/p/@{id}` (id without a leading @); personal IDs use `https://line.me/ti/p/~{id}`. Use `simple-order` only for an order + payment flow with a supplied `notificationEmail`; for orders taken by message, use a plain LINE/message link.
+Use only supplied contact details in sections, `privacyPolicy` and `termsOfService`; never invent an email. If the user gave no street address, omit `address` and any location section; mention the city in copy only if the user gave it. `contact.phone` renders a tappable phone link; buttons also accept `tel:+{E.164 digits}`.
+
+`contact.socials` is optional: `[{"platform":"instagram","url":"https://www.instagram.com/example/","label":"Message us"}]`. Platforms: `instagram`, `line`, `facebook`, `threads`, `whatsapp`, `x`, `youtube`, `tiktok`, `website`; `label` is optional (defaults to platform name). URLs must be HTTPS; no new URL schemes.
+
+| Channel | Canonical URL |
+|---|---|
+| Instagram profile / DM | `https://www.instagram.com/{handle}/` / `https://ig.me/m/{handle}` |
+| LINE official | `https://line.me/R/ti/p/@{id}` (id without leading @) |
+| LINE personal | `https://line.me/ti/p/~{id}` |
+| WhatsApp | `https://wa.me/{E.164 digits}` (digits only, no +) |
+| Facebook | `https://www.facebook.com/{handle}` |
+| Threads | `https://www.threads.com/@{handle}` |
+| X | `https://x.com/{handle}` |
+| TikTok | `https://www.tiktok.com/@{handle}` |
+| YouTube | `https://www.youtube.com/@{handle}` |
+| Website | Supplied HTTPS website URL |
+
+Booking by message → hero CTA to the main channel + `contact.socials` for all channels. Use the supplied channel in compliance copy too. Use `simple-order` only for order + payment flows with a supplied `notificationEmail`.
 
 ## What You Can Build (read this first)
 
@@ -47,7 +64,7 @@ Every section supports `id` (anchor for `#links`). Use kit backgroundColors when
 | [`testimonials`](https://appai.info/spec/sections#testimonials) | User quote cards with name, role, avatar. |
 | [`faq`](https://appai.info/spec/sections#faq) | Expandable Q&A accordion. 5-10 items recommended. Auto-generates FAQ schema for SEO. |
 | [`cta`](https://appai.info/spec/sections#cta) | Bold call-to-action banner. Uses themeColor as background automatically; ignores data.backgroundColor. Use only on landing-type pages, near bottom. |
-| [`video`](https://appai.info/spec/sections#video) | Embedded video. Supports YouTube, Vimeo, mp4, webm, gif (auto-detected). |
+| [`video`](https://appai.info/spec/sections#video) | YouTube/Vimeo iframe player; direct mp4, webm, gif media (auto-detected). |
 | [`screenshots`](https://appai.info/spec/sections#screenshots) | Horizontal scrollable image carousel. |
 | [`download`](https://appai.info/spec/sections#download) | App Store / Play Store download buttons. Also adds a Download button to the sticky header. |
 | [`gallery`](https://appai.info/spec/sections#gallery) | Image/video grid (masonry layout). |
@@ -63,7 +80,7 @@ Every section supports `id` (anchor for `#links`). Use kit backgroundColors when
 | [`video-subtitle`](https://appai.info/spec/tools#video-subtitle) | Interactive YouTube subtitle generator. Visitor pastes a YouTube link, trims ≤5 min, auto-transcribes via ASR, translates into chosen languages, tweaks subtitle style, and downloads a burned mp4. Requires the Video Subtitle backend service. |
 | [`tool`](https://appai.info/spec/tools#tool) | Universal interactive tool (file upload, processing, download). Connect any backend API. |
 | [`pdf-viewer`](https://appai.info/spec/tools#pdf-viewer) | Client-side PDF viewer with password unlock. No backend needed. |
-| [`embed`](https://appai.info/spec/sections#embed) | Embed TikTok / Loom / YouTube / Vimeo / Spotify / CodePen / Figma / X / Instagram. Auto-detects provider from URL. |
+| [`embed`](https://appai.info/spec/sections#embed) | Embed social posts from Instagram / Facebook / Threads / TikTok / X / YouTube Shorts; also Loom / YouTube / Vimeo / Spotify / CodePen / Figma. Auto-detects provider from URL. |
 | [`iframe-tool`](https://appai.info/spec/tools#iframe-tool) | **Host a tool the user vibe-coded.** Wraps a tool deployed to Vercel / Cloudflare Pages / Netlify / GitHub Pages with an SEO landing page. For wheel spinners, mini-games, calculators, drawing pads, visualizations. Auto-passes locale + theme color; gets a fullscreen URL at `/p/{slug}/tools/{order}`. **Use this — not `embed` — when the URL is a tool the user built, not a media post.** |
 | [`simple-order`](https://appai.info/spec/tools#simple-order) | Native small-shop order request section. Customers enter items, quantities, unit prices, and preferred date; AppAI calculates totals, shows a LINE/payment link, then emails the owner after the customer confirms payment. Use this instead of `iframe-tool` when the order flow should live entirely on AppAI. |
 
@@ -95,7 +112,7 @@ For personal sites, upload images via [`POST /api/v1/upload`](https://appai.info
 
 Three sections look similar — do not confuse them. If the user gives you a
 `*.vercel.app` / `*.pages.dev` / `*.netlify.app` / `*.github.io` URL and calls it
-their own tool, it is `iframe-tool`. `embed` is for media posts (TikTok/YouTube).
+their own tool, it is `iframe-tool`. YouTube/Vimeo/mp4 → `video` (iframe player); social posts from Instagram, Facebook, Threads, TikTok, X, YouTube Shorts → `embed`.
 `tool` is for form-input → backend API.
 
 ### Person site recipe

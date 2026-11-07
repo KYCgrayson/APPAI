@@ -9,6 +9,8 @@ import {
 
 type JsonSchema = {
   type?: string;
+  enum?: readonly string[];
+  pattern?: string;
   anyOf?: JsonSchema[];
   description?: string;
   properties?: Record<string, JsonSchema>;
@@ -65,6 +67,8 @@ function fieldToJsonSchema(field: SectionFieldDef): JsonSchema {
       }
       break;
   }
+  if (field.enum) base.enum = field.enum;
+  if (field.pattern) base.pattern = field.pattern;
   return base;
 }
 

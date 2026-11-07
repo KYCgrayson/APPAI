@@ -66,7 +66,7 @@ If the user has no logo, create a simple square 512×512 PNG following the Logo 
 Copy this complete request body into both the dry-run and publish POSTs. Change the slug and copy, **replace the demo logo with the real logo**, and write `metaDescription`, `privacyPolicy` and `termsOfService` per locale:
 
 ```json
-{"slug":"company-service-demo","template":"COMPANY_PROFILE","title":"Cedar Workshop","tagline":"Clear websites for independent businesses.","themeColor":"#047857","fontFamily":"Lato","isPublished":true,"content":{"logo":"https://appai.info/spec/examples/placeholder-logo.png","sections":[{"order":0,"type":"hero","data":{"headline":"Cedar Workshop","subheadline":"Clear websites for independent businesses.","logo":"https://appai.info/spec/examples/placeholder-logo.png","variant":"centered","heroHeight":"medium","ctaText":"Book a discovery call","ctaUrl":"https://example.com/book","backgroundColor":"#FFFFFF"}},{"order":1,"type":"about","data":{"id":"details","heading":"From first sketch to launch","text":"We help independent teams define their message, design a clear website, and launch with confidence. Start with a focused discovery session and leave with a practical plan.","backgroundColor":"#ECFDF5"}},{"type":"features","data":{"heading":"Services","items":[{"icon":"sparkles-outline","title":"Website design","description":"Accessible websites for independent businesses."}],"backgroundColor":"#FFFFFF"},"order":2},{"type":"about","data":{"heading":"Opening hours","text":"Monday–Friday: 09:00–17:00. Weekends: closed.","backgroundColor":"#ECFDF5"},"order":3},{"type":"contact","data":{"heading":"Talk to Cedar","email":"hello@example.com","formUrl":"https://example.com/contact","backgroundColor":"#FFFFFF"},"order":4},{"order":5,"type":"cta","data":{"headline":"Book a discovery call","subheadline":"Clear websites for independent businesses.","buttonText":"Book a discovery call","buttonUrl":"https://example.com/company-service"}}]},"locale":"en","darkMode":false,"themeColorSecondary":"#B45309"}
+{"slug":"company-service-demo","template":"COMPANY_PROFILE","title":"Cedar Workshop","tagline":"Clear websites for independent businesses.","themeColor":"#047857","fontFamily":"Lato","isPublished":true,"content":{"logo":"https://appai.info/spec/examples/placeholder-logo.png","sections":[{"order":0,"type":"hero","data":{"headline":"Cedar Workshop","subheadline":"Clear websites for independent businesses.","logo":"https://appai.info/spec/examples/placeholder-logo.png","variant":"centered","heroHeight":"medium","ctaText":"Book a discovery call","ctaUrl":"https://example.com/book","backgroundColor":"#FFFFFF"}},{"type":"features","data":{"heading":"Services","items":[{"icon":"sparkles-outline","title":"Website design","description":"Accessible websites for independent businesses."}],"backgroundColor":"#FFFFFF"},"order":1},{"order":2,"type":"about","data":{"id":"details","heading":"How to order","text":"Book a discovery call to discuss your website and plan the next steps.","backgroundColor":"#ECFDF5"}},{"type":"about","data":{"heading":"Opening hours","text":"Monday–Friday: 09:00–17:00. Weekends: closed.","backgroundColor":"#ECFDF5"},"order":3},{"type":"contact","data":{"heading":"Talk to Cedar","email":"hello@example.com","formUrl":"https://example.com/contact","backgroundColor":"#FFFFFF"},"order":4},{"order":5,"type":"cta","data":{"headline":"Book a discovery call","subheadline":"Clear websites for independent businesses.","buttonText":"Book a discovery call","buttonUrl":"https://example.com/company-service"}}]},"locale":"en","darkMode":false,"themeColorSecondary":"#B45309"}
 ```
 
 
@@ -211,9 +211,11 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 ### Logo
 
 
-If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with `POST /api/v1/upload`, then publish. Agents MUST supply a logo. Non-blocking platform warnings are a fallback, not permission to skip it.
+**“no logo” means you make one.** If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with `POST /api/v1/upload`, then publish. Agents MUST supply a logo. Non-blocking platform warnings are a fallback, not permission to skip it.
 
 **Agents MUST provide a logo for every root page:** square 512x512 PNG, app-icon style with its own background color. Set `content.logo` (or hero `data.logo` / `headerLogo`) to an HTTPS URL or same-origin `/path`. For local files, upload with `POST /api/v1/upload` and use the returned URL. Missing or non-HTTPS logos produce `warnings` on create/upsert, PUT, PATCH and dry-run. Child pages inherit the root header logo and need no separate logo. `heroImage` does not count for directory cards or the missing-logo warning; the header still falls back to it. Dry-run warns to replace the placeholder with the real logo and `https://color-bench-demo.pages.dev` with your deployed tool URL wherever that value appears.
+
+Create a simple SVG with a solid background and initial/shape, then convert: `rsvg-convert -w 512 -h 512 logo.svg -o logo.png`; on macOS `qlmanage -t -s 512 -o . logo.svg` then `sips -s format png -z 512 512 logo.svg.png --out logo.png`; or ImageMagick. Upload the resulting PNG.
 
 | Context | Uses | Fallback |
 |---------|------|----------|
@@ -239,7 +241,7 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 | hearth | #92400E | #9A3412 | DM Sans | false | #FFFBEB, #FFF7ED |
 | ember | #FDBA74 | #FCA5A5 | DM Sans | true | #1C1917, #292524 |
 
-Use indigo for light apps/SaaS; forest for light nature/wellbeing pages; editorial for light writing/portfolios; ocean for light services/technical products; hearth for light, warm bakeries, cafes and local food shops; midnight for dark dashboards; ember for dark, warm creative brands. Copy kit fields together into the page request.
+Use indigo for light apps/SaaS; forest for light nature/wellbeing pages; editorial for light writing/portfolios; ocean for light services/technical products; hearth for light, warm bakeries, cafes, local food shops, crafts, workshops, studios, wellness and classes; midnight for dark dashboards; ember for dark, warm creative brands. Copy kit fields together into the page request. If no kit description matches, pick by light/dark and warm/cool.
 
 Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a style kit; use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. When a kit has two `backgroundColors`, alternate them section by section, starting with the first. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants.
 
@@ -325,7 +327,24 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 ## Contact
 
-Use only supplied contact details in sections, `privacyPolicy` and `termsOfService`; never invent an email. With only phone/LINE, write “Contact us by phone: {phone}” or “Contact us via LINE: {id/link}”. `contact.phone` renders a tappable phone link; `contact` has no LINE field. For buttons, use hero `ctaUrl`, cta `buttonUrl` or `links.items[].url`: `tel:+{E.164 digits}` is allowed and renders as a tappable link. LINE Official Accounts use `https://line.me/R/ti/p/@{id}` (id without a leading @); personal IDs use `https://line.me/ti/p/~{id}`. Use `simple-order` only for an order + payment flow with a supplied `notificationEmail`; for orders taken by message, use a plain LINE/message link.
+Use only supplied contact details in sections, `privacyPolicy` and `termsOfService`; never invent an email. If the user gave no street address, omit `address` and any location section; mention the city in copy only if the user gave it. `contact.phone` renders a tappable phone link; buttons also accept `tel:+{E.164 digits}`.
+
+`contact.socials` is optional: `[{"platform":"instagram","url":"https://www.instagram.com/example/","label":"Message us"}]`. Platforms: `instagram`, `line`, `facebook`, `threads`, `whatsapp`, `x`, `youtube`, `tiktok`, `website`; `label` is optional (defaults to platform name). URLs must be HTTPS; no new URL schemes.
+
+| Channel | Canonical URL |
+|---|---|
+| Instagram profile / DM | `https://www.instagram.com/{handle}/` / `https://ig.me/m/{handle}` |
+| LINE official | `https://line.me/R/ti/p/@{id}` (id without leading @) |
+| LINE personal | `https://line.me/ti/p/~{id}` |
+| WhatsApp | `https://wa.me/{E.164 digits}` (digits only, no +) |
+| Facebook | `https://www.facebook.com/{handle}` |
+| Threads | `https://www.threads.com/@{handle}` |
+| X | `https://x.com/{handle}` |
+| TikTok | `https://www.tiktok.com/@{handle}` |
+| YouTube | `https://www.youtube.com/@{handle}` |
+| Website | Supplied HTTPS website URL |
+
+Booking by message → hero CTA to the main channel + `contact.socials` for all channels. Use the supplied channel in compliance copy too. Use `simple-order` only for order + payment flows with a supplied `notificationEmail`.
 
 ## What You Can Build (read this first)
 
@@ -367,7 +386,7 @@ Every section supports `id` (anchor for `#links`). Use kit backgroundColors when
 | [`testimonials`](https://appai.info/spec/sections#testimonials) | User quote cards with name, role, avatar. |
 | [`faq`](https://appai.info/spec/sections#faq) | Expandable Q&A accordion. 5-10 items recommended. Auto-generates FAQ schema for SEO. |
 | [`cta`](https://appai.info/spec/sections#cta) | Bold call-to-action banner. Uses themeColor as background automatically; ignores data.backgroundColor. Use only on landing-type pages, near bottom. |
-| [`video`](https://appai.info/spec/sections#video) | Embedded video. Supports YouTube, Vimeo, mp4, webm, gif (auto-detected). |
+| [`video`](https://appai.info/spec/sections#video) | YouTube/Vimeo iframe player; direct mp4, webm, gif media (auto-detected). |
 | [`screenshots`](https://appai.info/spec/sections#screenshots) | Horizontal scrollable image carousel. |
 | [`download`](https://appai.info/spec/sections#download) | App Store / Play Store download buttons. Also adds a Download button to the sticky header. |
 | [`gallery`](https://appai.info/spec/sections#gallery) | Image/video grid (masonry layout). |
@@ -383,7 +402,7 @@ Every section supports `id` (anchor for `#links`). Use kit backgroundColors when
 | [`video-subtitle`](https://appai.info/spec/tools#video-subtitle) | Interactive YouTube subtitle generator. Visitor pastes a YouTube link, trims ≤5 min, auto-transcribes via ASR, translates into chosen languages, tweaks subtitle style, and downloads a burned mp4. Requires the Video Subtitle backend service. |
 | [`tool`](https://appai.info/spec/tools#tool) | Universal interactive tool (file upload, processing, download). Connect any backend API. |
 | [`pdf-viewer`](https://appai.info/spec/tools#pdf-viewer) | Client-side PDF viewer with password unlock. No backend needed. |
-| [`embed`](https://appai.info/spec/sections#embed) | Embed TikTok / Loom / YouTube / Vimeo / Spotify / CodePen / Figma / X / Instagram. Auto-detects provider from URL. |
+| [`embed`](https://appai.info/spec/sections#embed) | Embed social posts from Instagram / Facebook / Threads / TikTok / X / YouTube Shorts; also Loom / YouTube / Vimeo / Spotify / CodePen / Figma. Auto-detects provider from URL. |
 | [`iframe-tool`](https://appai.info/spec/tools#iframe-tool) | **Host a tool the user vibe-coded.** Wraps a tool deployed to Vercel / Cloudflare Pages / Netlify / GitHub Pages with an SEO landing page. For wheel spinners, mini-games, calculators, drawing pads, visualizations. Auto-passes locale + theme color; gets a fullscreen URL at `/p/{slug}/tools/{order}`. **Use this — not `embed` — when the URL is a tool the user built, not a media post.** |
 | [`simple-order`](https://appai.info/spec/tools#simple-order) | Native small-shop order request section. Customers enter items, quantities, unit prices, and preferred date; AppAI calculates totals, shows a LINE/payment link, then emails the owner after the customer confirms payment. Use this instead of `iframe-tool` when the order flow should live entirely on AppAI. |
 
@@ -415,7 +434,7 @@ For personal sites, upload images via [`POST /api/v1/upload`](https://appai.info
 
 Three sections look similar — do not confuse them. If the user gives you a
 `*.vercel.app` / `*.pages.dev` / `*.netlify.app` / `*.github.io` URL and calls it
-their own tool, it is `iframe-tool`. `embed` is for media posts (TikTok/YouTube).
+their own tool, it is `iframe-tool`. YouTube/Vimeo/mp4 → `video` (iframe player); social posts from Instagram, Facebook, Threads, TikTok, X, YouTube Shorts → `embed`.
 `tool` is for form-input → backend API.
 
 ### Person site recipe
@@ -552,9 +571,8 @@ After [dry-run](https://appai.info/spec/api#preview-without-saving), follow the 
 
 Three formats, all render correctly. Mix freely within a page.
 
-**Ionicons (recommended):** Use one of `icons` (`GET /api/v1/sections`) or any emoji. Bundled names:
-
-globe-outline, logo-github, logo-twitter, logo-linkedin, logo-youtube, logo-instagram, logo-discord, logo-tiktok, logo-facebook, logo-reddit, logo-medium, logo-mastodon, mail-outline, call-outline, location-outline, chatbubble-outline, chatbubbles-outline, send-outline, download-outline, cloud-download-outline, cloud-upload-outline, play-circle-outline, arrow-forward-outline, arrow-back-outline, open-outline, link-outline, copy-outline, share-outline, checkmark-circle, checkmark-circle-outline, close-circle, alert-circle, information-circle, lock-closed, lock-open, eye-outline, eye-off-outline, sparkles-outline, rocket-outline, star-outline, star, heart-outline, heart, flash-outline, shield-checkmark-outline, shield-outline, ribbon-outline, trophy-outline, gift-outline, menu-outline, close-outline, search-outline, settings-outline, options-outline, ellipsis-horizontal, ellipsis-vertical, chevron-down, chevron-up, chevron-forward, chevron-back, add-outline, remove-outline, code-slash-outline, terminal-outline, hardware-chip-outline, server-outline, cloud-outline
+**Ionicons (recommended):** Use built-in icon names or any emoji; discover names via `GET /api/v1/sections`. Bundled names:
+logo-line, logo-threads, logo-whatsapp, people-outline, time-outline, calendar-outline, camera-outline, color-palette-outline, hand-left-outline, leaf-outline, cafe-outline, cut-outline, bicycle-outline, brush-outline, school-outline, globe-outline, logo-github, logo-twitter, logo-linkedin, logo-youtube, logo-instagram, logo-discord, logo-tiktok, logo-facebook, logo-reddit, logo-medium, logo-mastodon, mail-outline, call-outline, location-outline, chatbubble-outline, chatbubbles-outline, send-outline, download-outline, cloud-download-outline, cloud-upload-outline, play-circle-outline, arrow-forward-outline, arrow-back-outline, open-outline, link-outline, copy-outline, share-outline, checkmark-circle, checkmark-circle-outline, close-circle, alert-circle, information-circle, lock-closed, lock-open, eye-outline, eye-off-outline, sparkles-outline, rocket-outline, star-outline, star, heart-outline, heart, flash-outline, shield-checkmark-outline, shield-outline, ribbon-outline, trophy-outline, gift-outline, menu-outline, close-outline, search-outline, settings-outline, options-outline, ellipsis-horizontal, ellipsis-vertical, chevron-down, chevron-up, chevron-forward, chevron-back, add-outline, remove-outline, code-slash-outline, terminal-outline, hardware-chip-outline, server-outline, cloud-outline
 
 **Emoji:** Pass any emoji character. `{ "icon": "🚀" }`
 
@@ -606,6 +624,8 @@ Required: each item's `title`; all top-level fields optional; links require `lab
 }}
 ```
 
+YouTube/Vimeo/mp4 → `video` (iframe player); social posts from Instagram, Facebook, Threads, TikTok, X, YouTube Shorts → `embed`.
+
 ### video
 ```json
 { "type": "video", "order": 2, "data": {
@@ -613,7 +633,7 @@ Required: each item's `title`; all top-level fields optional; links require `lab
     "caption": "Watch the demo"
 }}
 ```
-Supports YouTube, Vimeo, mp4, webm, gif (auto-detected).
+Supports YouTube/Vimeo iframe players and direct mp4, webm, gif media (auto-detected). Use `embed` for YouTube Shorts and social posts.
 
 ### features
 
@@ -735,6 +755,8 @@ Use `schedule` for event timelines (`time` + session `title`), and `about.text` 
 }}
 ```
 
+Optional `socials`: `{platform, url, label?}` items; HTTPS only. See canonical [Contact](https://appai.info/spec/pages#contact) for platforms, URL formats and message booking.
+
 ### cta
 
 `buttonUrl` allows `tel:+{E.164 digits}` and renders it as a tappable phone link.
@@ -750,6 +772,8 @@ Use `cta` only on landing-type pages: app, product, SaaS, company/service, event
 ```
 
 ### links
+Optional `heading` and `subheading` appear above the link buttons.
+
 
 `items[].url` allows `tel:+{E.164 digits}` and renders it as a tappable phone link.
 ```json
@@ -778,7 +802,7 @@ Use `cta` only on landing-type pages: app, product, SaaS, company/service, event
     "aspectRatio": "9:16"
 }}
 ```
-Auto-detects provider from URL. Supported: YouTube, Vimeo, TikTok, Loom, Spotify, CodePen, Figma. X (Twitter) and Instagram render as linked preview cards (their iframe policy blocks direct embeds). `aspectRatio` optional — sensible default per provider (TikTok → 9:16, YouTube → 16:9). Iframe is sandboxed.
+Auto-detects provider from URL. Supported: YouTube (including Shorts), Vimeo, Facebook posts/videos, Threads posts, TikTok, Loom, Spotify, CodePen, Figma. Facebook uses official plugin iframes; Threads uses a lazy-loaded sandboxed iframe at `https://www.threads.com/@{user}/post/{id}/embed`. X (Twitter) and Instagram render as linked preview cards. HTTP URLs are upgraded to HTTPS. Existing provider URL patterns remain supported, including mobile/music YouTube watch URLs and YouTube privacy embed URLs. `aspectRatio` optional — sensible default per provider (TikTok → 9:16, YouTube → 16:9). Iframe is sandboxed.
 
 ### Link rel (SEO)
 Links in `links` and `cta` sections accept an optional `rel` string. Use `"nofollow"` for sponsored/affiliate/user-supplied links, `"sponsored"` for paid placements, `"nofollow sponsored"` for both. Leaving it unset produces `rel="noopener noreferrer"` for external links (standard dofollow). Example:

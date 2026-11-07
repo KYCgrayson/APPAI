@@ -35,6 +35,17 @@ export function sanitizeUrl(url: string): string {
   return "#";
 }
 
+/** Social contacts accept absolute HTTPS URLs only. */
+export function sanitizeSocialUrl(url: string): string {
+  if (typeof url !== "string" || !/^https:\/\//i.test(url.trim())) return "#";
+  try {
+    const parsed = new URL(url.trim());
+    return parsed.protocol === "https:" && parsed.hostname && !parsed.username && !parsed.password ? parsed.href : "#";
+  } catch { return "#"; }
+}
+
+export const SOCIAL_PLATFORMS = ["instagram", "line", "facebook", "threads", "whatsapp", "x", "youtube", "tiktok", "website"] as const;
+
 // Keys that indicate a URL field in content JSON
 const URL_KEY_PATTERNS =
   /url|Url|URL|src|href|image|logo|photo|avatar|background|ogImage|heroImage/i;
@@ -91,7 +102,7 @@ export function sanitizeContent(
     }
     result = stripped;
     if (parentKey && isUrlKey(parentKey)) {
-      const safe = sanitizeUrl(stripped);
+      const safe = /(?:^|\.)socials\[\d+\]\.url$/.test(path) ? sanitizeSocialUrl(stripped) : sanitizeUrl(stripped);
       if (safe !== stripped && warnings) {
         warnings.push({
           path: path || parentKey || "unknown",
