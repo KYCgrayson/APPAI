@@ -4,6 +4,8 @@ import { Prose } from "@/templates/shared/Prose";
 
 interface Props {
   data: {
+    heading?: string;
+    subheading?: string;
     items: Array<{
       name: string;
       price: string;
@@ -98,8 +100,9 @@ export function PricingSection({ data, themeColor, darkMode, typographyActive = 
       />
       <div className="max-w-6xl mx-auto">
         <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16" style={{ color: themeColor }}>
-          Pricing
+          {data.heading ?? "Pricing"}
         </h2>
+        {data.subheading && <p className="text-center mb-8" style={{ color: darkMode ? "#d1d5db" : "#4b5563" }}>{data.subheading}</p>}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {items.map((item, i) => (
             <div

@@ -1,3 +1,4 @@
+import { StoreBadges } from "@/templates/shared/StoreBadges";
 import { sanitizeUrl } from "@/lib/sanitize";
 
 interface Props {
@@ -35,6 +36,10 @@ function isColorDark(hex: string): boolean {
 }
 
 export function HeroSection({ data, themeColor, themeColorSecondary, darkMode, typographyActive = false }: Props & { typographyActive?: boolean }) {
+  const urls = [data.ctaUrl, data.ctaSecondaryUrl];
+  const appStoreUrl = urls.find(url => url && /^https:\/\/apps\.apple\.com\//i.test(url));
+  const playStoreUrl = urls.find(url => url && /^https:\/\/play\.google\.com\//i.test(url));
+  const storeBadges = appStoreUrl || playStoreUrl ? <StoreBadges firstStore={data.ctaUrl === playStoreUrl ? "play" : "app"} appStoreUrl={appStoreUrl} playStoreUrl={playStoreUrl} typographyActive={typographyActive} /> : null;
   const hasMedia = data.backgroundImage || data.backgroundVideo;
   const hasBg = hasMedia || data.backgroundColor;
   const isDark = hasBg
@@ -66,7 +71,8 @@ export function HeroSection({ data, themeColor, themeColorSecondary, darkMode, t
               </p>
             )}
             <div className="flex flex-wrap gap-4">
-              {data.ctaText && (
+              {storeBadges}
+          {data.ctaText && (!appStoreUrl || data.ctaUrl !== appStoreUrl) && (!playStoreUrl || data.ctaUrl !== playStoreUrl) && (
                 <a data-typography-role={typographyActive ? "card" : undefined}
                   href={sanitizeUrl(data.ctaUrl || "#download")}
                   className="inline-block px-8 py-4 rounded-full text-white font-semibold text-lg transition-transform hover:scale-105"
@@ -75,7 +81,7 @@ export function HeroSection({ data, themeColor, themeColorSecondary, darkMode, t
                   {data.ctaText}
                 </a>
               )}
-              {data.ctaSecondaryText && (
+              {data.ctaSecondaryText && (!appStoreUrl || data.ctaSecondaryUrl !== appStoreUrl) && (!playStoreUrl || data.ctaSecondaryUrl !== playStoreUrl) && (
                 <a data-typography-role={typographyActive ? "card" : undefined}
                   href={sanitizeUrl(data.ctaSecondaryUrl || "#")}
                   className="inline-block px-8 py-4 rounded-full font-semibold text-lg transition-transform hover:scale-105 border-2"
@@ -121,7 +127,8 @@ export function HeroSection({ data, themeColor, themeColorSecondary, darkMode, t
               {data.subheadline}
             </p>
           )}
-          {data.ctaText && (
+          {storeBadges}
+          {data.ctaText && (!appStoreUrl || data.ctaUrl !== appStoreUrl) && (!playStoreUrl || data.ctaUrl !== playStoreUrl) && (
             <a data-typography-role={typographyActive ? "card" : undefined}
               href={sanitizeUrl(data.ctaUrl || "#download")}
               className="inline-block px-6 py-3 rounded-full text-white font-medium transition-transform hover:scale-105"
@@ -174,7 +181,8 @@ export function HeroSection({ data, themeColor, themeColorSecondary, darkMode, t
           </p>
         )}
         <div className="flex flex-wrap justify-center gap-4">
-          {data.ctaText && (
+          {storeBadges}
+          {data.ctaText && (!appStoreUrl || data.ctaUrl !== appStoreUrl) && (!playStoreUrl || data.ctaUrl !== playStoreUrl) && (
             <a data-typography-role={typographyActive ? "card" : undefined}
               href={sanitizeUrl(data.ctaUrl || "#download")}
               className="inline-block px-8 py-4 rounded-full text-white font-semibold text-lg transition-transform hover:scale-105"
@@ -183,7 +191,7 @@ export function HeroSection({ data, themeColor, themeColorSecondary, darkMode, t
               {data.ctaText}
             </a>
           )}
-          {data.ctaSecondaryText && (
+          {data.ctaSecondaryText && (!appStoreUrl || data.ctaSecondaryUrl !== appStoreUrl) && (!playStoreUrl || data.ctaSecondaryUrl !== playStoreUrl) && (
             <a data-typography-role={typographyActive ? "card" : undefined}
               href={sanitizeUrl(data.ctaSecondaryUrl || "#")}
               className="inline-block px-8 py-4 rounded-full font-semibold text-lg transition-transform hover:scale-105 border-2"

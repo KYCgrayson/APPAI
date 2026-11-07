@@ -8,7 +8,7 @@ import styles from "./editorial.module.css";
 
 type Image = { url: string; alt?: string };
 type Link = { label: string; url: string };
-type Base = { heading?: string; eyebrow?: string; intro?: string; backgroundColor?: string };
+type Base = { subheading?: string; heading?: string; eyebrow?: string; intro?: string; backgroundColor?: string };
 type Props<T> = { data: T; themeColor: string; darkMode?: boolean };
 
 // Normalize publisher JSON at the rendering boundary, including nested records.
@@ -28,7 +28,7 @@ function links(value: unknown): Link[] {
 }
 function base(value: unknown): Base {
   const data = record(value);
-  return { heading: text(data.heading), eyebrow: text(data.eyebrow), intro: text(data.intro), backgroundColor: text(data.backgroundColor) };
+  return { subheading: text(data.subheading), heading: text(data.heading), eyebrow: text(data.eyebrow), intro: text(data.intro), backgroundColor: text(data.backgroundColor) };
 }
 function dimension(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
@@ -56,7 +56,7 @@ function Shell({ data, themeColor, darkMode = false, children }: Props<Base> & {
   } as CSSProperties}><div className={styles.inner}>{children}</div></section>;
 }
 function Heading({ data, typographyActive = false }: { data: Base; typographyActive?: boolean }) {
-  return <>{data.eyebrow && <p data-typography-role={typographyActive ? "caption" : undefined} className={styles.eyebrow}>{data.eyebrow}</p>}{data.heading && <h2 data-typography-role={typographyActive ? "heading" : undefined} className={styles.heading}>{data.heading}</h2>}</>;
+  return <>{data.eyebrow && <p data-typography-role={typographyActive ? "caption" : undefined} className={styles.eyebrow}>{data.eyebrow}</p>}{data.heading && <h2 data-typography-role={typographyActive ? "heading" : undefined} className={styles.heading}>{data.heading}</h2>}{data.subheading && <p data-typography-role={typographyActive ? "body" : undefined} className={styles.description}>{data.subheading}</p>}</>;
 }
 function Links({ items }: { items?: Link[] }) {
   const origin = process.env.NEXTAUTH_URL || "https://appai.info";

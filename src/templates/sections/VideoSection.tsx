@@ -3,6 +3,8 @@ import { sanitizeUrl } from "@/lib/sanitize";
 
 interface Props {
   data: {
+    subheading?: string;
+    heading?: string;
     url: string;
     caption?: string;
   };
@@ -57,6 +59,8 @@ export function VideoSection({ data, themeColor, typographyActive = false }: Pro
 
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6">
+      {data.heading && <h2 className="text-3xl font-bold text-center mb-6">{data.heading}</h2>}
+      {data.subheading && <p className="text-center mb-6">{data.subheading}</p>}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(videoSchema) }}

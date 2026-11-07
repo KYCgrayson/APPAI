@@ -1,5 +1,7 @@
 # TODO — AppAI Project Roadmap
 
+- [x] App promotion headings/store badges, screenshot demo warnings, preset consistency, and wrapped-tool publishing guidance.
+
 ## Feedback channel
 
 - [x] Security review: production Turnstile requirement, serialized database web quota, 16 KB body limits, and missing-table admin notice.

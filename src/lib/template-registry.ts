@@ -106,6 +106,7 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Project Cards",
     description: "Two-column editorial project grid with optional app icons, phone or web screenshots and project links.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional supporting text below the heading." },
       { name: "heading", type: "string", required: false, description: "Optional section heading above the content." },
       { name: "eyebrow", type: "string", required: false, description: "Short accent label above the heading." },
       {
@@ -148,6 +149,7 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Entries",
     description: "Editorial focus, experience or contact entries with Markdown intro and optional links.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional supporting text below the heading." },
       { name: "heading", type: "string", required: false, description: "Optional section heading above the content." },
       { name: "eyebrow", type: "string", required: false, description: "Short accent label above the heading." },
       { name: "intro", type: "markdown", required: false, description: "Introductory Markdown paragraphs; supports HTTPS and relative /path links." },
@@ -190,6 +192,8 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Video",
     description: "Embedded video section. Supports YouTube, Vimeo, mp4/webm files, and GIFs. Auto-detects format.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
+      { name: "heading", type: "string", required: false, description: "Optional section heading." },
       { name: "url", type: "url", required: true, description: "Video URL (YouTube/Vimeo link, .mp4, .webm, or .gif)" },
       { name: "caption", type: "string", required: false, description: "Caption text below the video" },
     ],
@@ -217,6 +221,7 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Screenshots",
     description: "Horizontal scrollable image carousel for app screenshots or product images.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
       { name: "heading", type: "string", required: false, description: "Optional heading; omitted by default." },
       {
         name: "images", type: "array", required: true, allowStringItems: true, description: "Image URL strings or objects {url, alt, kind?, width?, height?}; kind phone|web, dimensions in px",
@@ -235,6 +240,8 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Download",
     description: "App download buttons for App Store and Google Play.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
+      { name: "heading", type: "string", required: false, description: "Optional section heading." },
       { name: "appStoreUrl", type: "url", required: false, description: "Apple App Store URL" },
       { name: "playStoreUrl", type: "url", required: false, description: "Google Play Store URL" },
       { name: "ctaText", type: "string", required: false, description: "Headline text (default: 'Download Now')" },
@@ -245,6 +252,8 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Pricing",
     description: "Pricing plan comparison cards.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
+      { name: "heading", type: "string", required: false, description: "Optional section heading." },
       {
         name: "items", type: "array", required: true, description: "List of pricing plans",
         items: [
@@ -264,6 +273,8 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Testimonials",
     description: "User testimonial/review cards.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
+      { name: "heading", type: "string", required: false, description: "Optional section heading." },
       {
         name: "items", type: "array", required: true, description: "List of testimonials",
         items: [
@@ -280,6 +291,8 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "FAQ",
     description: "Frequently asked questions with expandable answers.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
+      { name: "heading", type: "string", required: false, description: "Optional section heading." },
       {
         name: "items", type: "array", required: true, description: "List of Q&A pairs",
         items: [
@@ -294,6 +307,8 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Gallery",
     description: "Image/video gallery grid for showcasing work, products, or portfolio items.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
+      { name: "heading", type: "string", required: false, description: "Optional section heading." },
       {
         name: "items", type: "array", required: true, description: "List of gallery items",
         items: [
@@ -309,6 +324,8 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Team",
     description: "Team member cards with photo, name, role, and bio.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
+      { name: "heading", type: "string", required: false, description: "Optional section heading." },
       {
         name: "items", type: "array", required: true, description: "List of team members",
         items: [
@@ -325,6 +342,8 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Schedule",
     description: "Timeline or agenda for events, conferences, or launches.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
+      { name: "heading", type: "string", required: false, description: "Optional section heading." },
       {
         name: "items", type: "array", required: true, description: "List of schedule entries",
         items: [
@@ -341,6 +360,8 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Sponsors / Partners",
     description: "Logo wall for sponsors, partners, or integrations.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
+      { name: "heading", type: "string", required: false, description: "Optional section heading." },
       {
         name: "items", type: "array", required: true, description: "List of sponsors/partners",
         items: [
@@ -356,6 +377,8 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Stats",
     description: "Key metrics or numbers displayed prominently (e.g. '10K+ Users', '99.9% Uptime').",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
+      { name: "heading", type: "string", required: false, description: "Optional section heading." },
       {
         name: "items", type: "array", required: true, description: "List of stats",
         items: [
@@ -427,6 +450,7 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "About",
     description: "Text content section for descriptions, introductions, or stories. Supports Markdown.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
       { name: "heading", type: "string", required: false, description: "Section heading (default: 'About')" },
       { name: "text", type: "markdown", required: true, description: "Content text in Markdown format" },
     ],
@@ -436,6 +460,7 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Action Buttons",
     description: "Interactive buttons that send HTTP requests to custom URLs. Use for webhooks, API triggers, admin tools, or test panels. Each button displays the response after execution.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
       { name: "heading", type: "string", required: false, description: "Section heading" },
       { name: "description", type: "markdown", required: false, description: "Description text (Markdown supported)" },
       {
@@ -457,6 +482,7 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Media Downloader",
     description: "Interactive media download tool. Users paste a URL from YouTube, Instagram, TikTok, Twitter, or 1000+ platforms, choose format (video/MP3) and quality, then download the file. Requires a backend API endpoint.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
       { name: "heading", type: "string", required: false, description: "Section heading (e.g. 'Media Downloader')" },
       { name: "description", type: "string", required: false, description: "Short description below heading" },
       { name: "apiBase", type: "url", required: true, description: "Base URL of the download API (e.g. https://your-tunnel.trycloudflare.com)" },
@@ -469,6 +495,7 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Video Subtitle",
     description: "Interactive YouTube subtitle generator. Visitors paste a YouTube URL, trim a clip up to 5 minutes, auto-transcribe via ASR, translate into chosen languages, customise subtitle style (size, position, background, animation, single/bilingual), and download a new mp4 with the subtitles burned in. Requires a backend service implementing the AppAI Video Subtitle API (OpenAPI spec at docs/video-subtitle/api-spec.yaml — job kinds 'transcribe' + 'render', AIP-151 LRO, RFC 7807 errors).",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
       { name: "heading", type: "string", required: false, description: "Section heading (e.g. 'YouTube Subtitle Studio')" },
       { name: "description", type: "string", required: false, description: "Short description below heading" },
       { name: "apiBase", type: "url", required: true, description: "Base URL of the video-subtitle backend API. On appai.info use \"/api/connect/video-subtitle\" — the generic connector proxy that enforces login + quota, records usage, and injects server auth. A direct backend URL (e.g. https://subtitle.myaiapp.uk/v1) only works if that backend accepts anonymous requests." },
@@ -481,6 +508,7 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Tool",
     description: "Universal interactive tool section. Supports text inputs, file uploads (single/multiple with drag & drop), toggle/select options, and displays results as file downloads, image previews, or text. Connect any backend API. Use this for PDF tools, image processing, file conversion, or any custom tool.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
       { name: "heading", type: "string", required: false, description: "Section heading (e.g. 'PDF Merger', 'Image Compressor')" },
       { name: "description", type: "string", required: false, description: "Short description of what the tool does" },
       { name: "apiBase", type: "url", required: true, description: "Base URL of the backend API (e.g. https://your-api.trycloudflare.com)" },
@@ -514,6 +542,7 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "PDF Viewer",
     description: "Interactive PDF viewer with password unlock and save-as-unlocked functionality. Users upload a PDF (drag & drop), preview pages with zoom and navigation, enter a password if the file is encrypted, and save an unlocked copy. Fully client-side — no backend required.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
       { name: "heading", type: "string", required: false, description: "Section heading (e.g. 'PDF Viewer', 'Unlock PDF')" },
       { name: "description", type: "string", required: false, description: "Short description of the tool" },
     ],
@@ -523,6 +552,7 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Iframe Tool",
     description: "Embed any tool you (or an agent) deployed to a free static host as an interactive section on the page. Use this for vibe-coded tools — wheel spinners, calculators, mini-games, drawing pads, visualizations — that the agent built and pushed to Vercel / Cloudflare Pages / Netlify / GitHub Pages. AppAI wraps it in a multi-language SEO landing page. The iframe is sandboxed (no top-nav, isolated origin) and auto-resizes when the tool sends a postMessage(`{type:'resize', height}`). The locale, theme color, and dark-mode flag are appended to the iframe URL as query params (`?locale=...&color=...&theme=dark`) so the tool can match the host page. Set `identity: true` to also hand the tool a verifiable AppAI identity. Each section also gets a standalone fullscreen URL at /p/{slug}/tools/{order}.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
       { name: "heading", type: "string", required: true, description: "Section heading. Required because iframes are invisible to search engines — this text is what gets indexed. Minimum 5 characters." },
       { name: "description", type: "string", required: true, description: "Short paragraph describing what the tool does. Required for SEO. Minimum 30 characters." },
       { name: "features", type: "array", required: false, description: "Optional list of bullet-point feature strings rendered above the iframe." },
@@ -537,6 +567,8 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Embed",
     description: "Embed content from TikTok, Loom, YouTube, Vimeo, Spotify, CodePen, or Figma. Auto-detects the provider from the URL and renders a sandboxed iframe with the right aspect ratio. X (Twitter) and Instagram render as linked preview cards (their iframe policy blocks direct embedding). Use this when showing a short-form video, design prototype, music track, code demo, or tutorial recording.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
+      { name: "heading", type: "string", required: false, description: "Optional section heading." },
       { name: "url", type: "url", required: true, description: "URL of the content to embed. Examples: https://www.tiktok.com/@user/video/123, https://www.loom.com/share/abc, https://youtu.be/xyz, https://open.spotify.com/track/abc, https://codepen.io/user/pen/abc, https://www.figma.com/file/..." },
       { name: "title", type: "string", required: false, description: "Optional heading rendered above the embed" },
       { name: "caption", type: "string", required: false, description: "Optional caption rendered below the embed" },
@@ -548,6 +580,7 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Form",
     description: "Contact or account-management form. Renders a real HTML form with typed fields. On submit, our backend relays to either an email address (submitTo: 'mailto:...') or a webhook (submitTo: 'https://...') — the user's device does not need a configured mail client. Required for App Store compliance pages like contact, delete-account, or data-export.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
       { name: "heading", type: "string", required: false, description: "Section heading" },
       { name: "description", type: "markdown", required: false, description: "Short description above the form (Markdown supported)" },
       {
@@ -571,6 +604,7 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Simple Order",
     description: "Native order request section for small shops. Visitors enter free-form items, quantities, unit prices, and preferred date; the section calculates totals, shows a payment/LINE link, then emails the shop owner after the visitor confirms payment. No external app or iframe required.",
     fields: [
+      { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
       { name: "heading", type: "string", required: false, description: "Section heading (e.g. 'Place an order')" },
       { name: "description", type: "markdown", required: false, description: "Short description above the order form" },
       { name: "storeName", type: "string", required: false, description: "Shop name shown above the heading and in owner notification emails" },

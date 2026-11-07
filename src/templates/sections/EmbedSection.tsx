@@ -2,6 +2,8 @@ import { sanitizeUrl } from "@/lib/sanitize";
 
 interface Props {
   data: {
+    subheading?: string;
+    heading?: string;
     url: string;
     title?: string;
     caption?: string;
@@ -188,7 +190,7 @@ const ASPECT_CLASSES: Record<NonNullable<Props["data"]["aspectRatio"]>, string> 
   "4:5": "aspect-[4/5]",
 };
 
-export function EmbedSection({ data, themeColor, darkMode, typographyActive = false }: Props & { typographyActive?: boolean }) {
+function EmbedContent({ data, themeColor, darkMode, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const safeUrl = sanitizeUrl(data.url);
   const provider = detectProvider(safeUrl);
 
@@ -274,4 +276,14 @@ export function EmbedSection({ data, themeColor, darkMode, typographyActive = fa
       </div>
     </section>
   );
+}
+
+export function EmbedSection(props: Props & { typographyActive?: boolean }) {
+  const { data, themeColor, typographyActive } = props;
+  if (!data.heading && !data.subheading) return <EmbedContent {...props} />;
+  return <div>
+    {data.heading && <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-3xl font-bold text-center mb-6" style={{ color: themeColor }}>{data.heading}</h2>}
+    {data.subheading && <p className="text-center mb-6">{data.subheading}</p>}
+    <EmbedContent {...props} data={{ ...data, title: data.heading ? undefined : data.title }} />
+  </div>;
 }

@@ -230,4 +230,19 @@ Two optional fields decide who may use it and what it is told about them:
 ```
 For small shops that need an order request flow hosted entirely on AppAI. Customers type free-form line items, quantity, unit price, and preferred date. AppAI calculates subtotals and totals in the browser, shows the configured LINE/payment link, and sends an owner notification after the customer confirms payment. This does not automatically verify payment.
 
+### Wrapped tool publishing checks
+The tool stays on the user's host; AppAI does not build or deploy it. Before publishing run `curl -sI https://your-tool.vercel.app` (check the final response after redirects). Fix blocking headers on the user's host: remove X-Frame-Options DENY/SAMEORIGIN and set `Content-Security-Policy: frame-ancestors 'self' https://appai.info`. Preserve other CSP directives.
+
+Minimal vercel.json:
+```json
+{"headers":[{"source":"/(.*)","headers":[{"key":"Content-Security-Policy","value":"frame-ancestors 'self' https://appai.info"}]}]}
+```
+Netlify `_headers`: under `/*`, add `  Content-Security-Policy: frame-ancestors 'self' https://appai.info`.
+Cloudflare Pages `_headers`: under `/*`, add `  Content-Security-Policy: frame-ancestors 'self' https://appai.info`.
+
+Sandbox: `allow-scripts allow-same-origin allow-forms allow-downloads allow-popups allow-popups-to-escape-sandbox`. The existing scripts/same-origin model is restricted to allowlisted external hosts; no top navigation token. Permissions `allow`: `fullscreen; clipboard-write; gamepad; accelerometer; gyroscope`; `allowFullscreen:false` removes only fullscreen. Downloads generated in-browser and clipboard writes are permitted (browser permission/user activation rules still apply).
+
+The iframe receives `?locale=` with the current hosted-page locale, normally `en`, `zh-TW`, `zh-CN`, `es` (any supplied BCP 47 locale is passed unchanged), plus `color` and `theme=dark` only in dark mode. If the tool isn't translated, ignore it; the AppAI page around it is still published in four locales.
+Set canonicalUrl only for an app's own primary marketing site (e.g. a custom domain homepage), never the *.vercel.app tool URL embedded in iframe-tool.
+
 All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)

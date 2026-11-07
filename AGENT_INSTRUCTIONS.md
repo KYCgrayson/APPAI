@@ -213,7 +213,7 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 **“no logo” means you make one.** If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with `POST /api/v1/upload`, then publish. Agents MUST supply a logo. Non-blocking platform warnings are a fallback, not permission to skip it.
 
-**Agents MUST provide a logo for every root page:** square 512x512 PNG, app-icon style with its own background color. Set `content.logo` (or hero `data.logo` / `headerLogo`) to an HTTPS URL or same-origin `/path`. For local files, upload with `POST /api/v1/upload` and use the returned URL. Missing or non-HTTPS logos produce `warnings` on create/upsert, PUT, PATCH and dry-run. Child pages inherit the root header logo and need no separate logo. `heroImage` does not count for directory cards or the missing-logo warning; the header still falls back to it. Dry-run warns to replace the placeholder with the real logo and `https://color-bench-demo.pages.dev` with your deployed tool URL wherever that value appears.
+**Agents MUST provide a logo for every root page:** square PNG, 512×512 recommended, 1024×1024 accepted, app-icon style with its own background color. Set `content.logo` (or hero `data.logo` / `headerLogo`) to an HTTPS URL or same-origin `/path`. For local files, upload with `POST /api/v1/upload` and use the returned URL. Missing or non-HTTPS logos produce `warnings` on create/upsert, PUT, PATCH and dry-run. Child pages inherit the root header logo and need no separate logo. `heroImage` does not count for directory cards or the missing-logo warning; the header still falls back to it. Dry-run warns to replace the placeholder with the real logo and `https://color-bench-demo.pages.dev` with your deployed tool URL wherever that value appears.
 
 Create a simple SVG with a solid background and initial/shape, then convert: `rsvg-convert -w 512 -h 512 logo.svg -o logo.png`; on macOS `qlmanage -t -s 512 -o . logo.svg` then `sips -s format png -z 512 512 logo.svg.png --out logo.png`; or ImageMagick. Upload the resulting PNG.
 
@@ -337,6 +337,8 @@ Covers Hosted Page configuration, CRUD, compliance and publishing workflow.
 Previous: [Typography](https://appai.info/spec/typography) · Next: [Sections](https://appai.info/spec/sections)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
+Before writing privacyPolicy, ASK the user what data the app collects, stores, or sends (including photos, analytics, and accounts). Never guess. Publish a delete-account child page only if the app has user accounts; FAQ/contact child pages follow the usual rules.
+
 ## Contact
 
 Use only supplied contact details in sections, `privacyPolicy` and `termsOfService`; never invent an email. If the user gave no street address, omit `address` and any location section; mention the city in copy only if the user gave it. `contact.phone` renders a tappable phone link; buttons also accept `tel:+{E.164 digits}`.
@@ -356,7 +358,7 @@ Use only supplied contact details in sections, `privacyPolicy` and `termsOfServi
 | YouTube | `https://www.youtube.com/@{handle}` |
 | Website | Supplied HTTPS website URL |
 
-If the user names several booking channels, use the first one they listed as the hero CTA; list all in contact.socials. Use the supplied channel in compliance copy too. Use `simple-order` only for order + payment flows with a supplied `notificationEmail`.
+For the primary action (store, booking channel, or tool), use the first one the user listed as the hero CTA; include all store URLs in download and all booking channels in contact.socials. Use the supplied channel in compliance copy too. Use `simple-order` only for order + payment flows with a supplied `notificationEmail`.
 
 ## What You Can Build (read this first)
 
@@ -486,7 +488,7 @@ Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/pub
 - Headlines under 60 characters, subheadlines under 140 characters (mobile readability)
 - 5-8 sections per page maximum (landing pages; PERSON pages: see recipe). A focused page beats a comprehensive one.
 - Use `cta` only on landing-type pages: app, product, SaaS, company/service, event and hiring. Do not add it to PERSON/profile, link-in-bio, portfolio, card-wall or wrapped-tool pages.
-- Logos: every root page MUST supply a square 512x512 PNG with its own background; see [Logo](https://appai.info/spec/style#logo).
+- Logos: every root page MUST supply a square PNG, 512×512 recommended, 1024×1024 accepted with its own background; see [Logo](https://appai.info/spec/style#logo).
 - Images: hero backgrounds under 500KB, use WebP/JPEG.
 
 ---
@@ -522,7 +524,7 @@ curl -X POST https://appai.info/api/v1/pages \
 | `privacyPolicy` | No | Markdown text |
 | `termsOfService` | No | Markdown text |
 | `ogImage` | No | URL for social sharing image |
-| `canonicalUrl` | No | Full URL of the app's main site. Sends SEO credit there instead of appai.info, and marks the page as a satellite landing: header shows "Official site: {host}", footer becomes "Landing page · Hosted on AppAI · {host}", `/apps` directory card gets a "Landing page" tag. Set this whenever the app already has a primary website. |
+| `canonicalUrl` | No | Full URL of the app's main site. Sends SEO credit there instead of appai.info, and marks the page as a satellite landing: header shows "Official site: {host}", footer becomes "Landing page · Hosted on AppAI · {host}", `/apps` directory card gets a "Landing page" tag. Set it only when the tool/app has its own primary marketing site (e.g. a custom domain homepage); do NOT set it to the *.vercel.app tool URL embedded in iframe-tool. |
 | `isPublished` | No | Set `true` to publish immediately |
 | `parentSlug` | No | Root slug for a child page (same 2–100 character slug rules); omitted/null creates a root |
 | `hideFromNav` | No | `true` to keep the page off the auto-generated site nav (still reachable by URL). Use for Delete Account, or compliance-only pages already linked from the footer. |
@@ -543,7 +545,7 @@ The canonical compliance setup:
 - Child `my-app-contact`: supplied contact details or form URL (use a mailto form only when an email was supplied)
 - Root variant `privacyPolicy`: translated privacy policy
 - Root variant `termsOfService`: translated terms of service
-- Child `my-app-delete-account`: account deletion form
+- Child `my-app-delete-account`: account deletion instructions/form only if the app has user accounts
 
 ---
 
@@ -576,6 +578,10 @@ All topics: [Overview](https://appai.info/spec) · [Authorization & API](https:/
 Covers section schemas and icons; interactive section schemas remain on /spec/tools.
 Previous: [Pages](https://appai.info/spec/pages) · Next: [Multi-language & multi-page](https://appai.info/spec/i18n)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
+
+Optional heading/subheading: pricing, faq, features, screenshots, download (heading overrides ctaText), video, testimonials, gallery, team, schedule, sponsors, stats, contact, links, about, action, form, media-downloader, tool, pdf-viewer, embed, iframe-tool, video-subtitle, simple-order, project-cards, entries. Hero/cta use headline/subheadline; profile-header uses name/tagline; entries also supports intro. Omitted fields preserve existing rendering.
+
+Give both store URLs; the page picks the right one per device. Hero primary button = the store the user listed first. Set hero ctaUrl/ctaSecondaryUrl to the store URLs in that order; recognized apps.apple.com and play.google.com URLs render badges in every hero variant. Both badges render server-side; iOS emphasizes App Store first, Android Google Play first; desktop keeps both. Badge dimensions stay fixed during client reordering.
 
 After [dry-run](https://appai.info/spec/api#preview-without-saving), follow the [publish steps](https://appai.info/spec#publish-in-one-minute).
 
@@ -832,6 +838,21 @@ Links in `links` and `cta` sections accept an optional `rel` string. Use `"nofol
 ]}}
 ```
 
+### Wrapped tool publishing checks
+The tool stays on the user's host; AppAI does not build or deploy it. Before publishing run `curl -sI https://your-tool.vercel.app` (check the final response after redirects). Fix blocking headers on the user's host: remove X-Frame-Options DENY/SAMEORIGIN and set `Content-Security-Policy: frame-ancestors 'self' https://appai.info`. Preserve other CSP directives.
+
+Minimal vercel.json:
+```json
+{"headers":[{"source":"/(.*)","headers":[{"key":"Content-Security-Policy","value":"frame-ancestors 'self' https://appai.info"}]}]}
+```
+Netlify `_headers`: under `/*`, add `  Content-Security-Policy: frame-ancestors 'self' https://appai.info`.
+Cloudflare Pages `_headers`: under `/*`, add `  Content-Security-Policy: frame-ancestors 'self' https://appai.info`.
+
+Sandbox: `allow-scripts allow-same-origin allow-forms allow-downloads allow-popups allow-popups-to-escape-sandbox`. The existing scripts/same-origin model is restricted to allowlisted external hosts; no top navigation token. Permissions `allow`: `fullscreen; clipboard-write; gamepad; accelerometer; gyroscope`; `allowFullscreen:false` removes only fullscreen. Downloads generated in-browser and clipboard writes are permitted (browser permission/user activation rules still apply).
+
+The iframe receives `?locale=` with the current hosted-page locale, normally `en`, `zh-TW`, `zh-CN`, `es` (any supplied BCP 47 locale is passed unchanged), plus `color` and `theme=dark` only in dark mode. If the tool isn't translated, ignore it; the AppAI page around it is still published in four locales.
+Set canonicalUrl only for an app's own primary marketing site (e.g. a custom domain homepage), never the *.vercel.app tool URL embedded in iframe-tool.
+
 All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
 
 # AppAI — Multi-language & multi-page
@@ -843,7 +864,7 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.
 
-Publish `en` first; `en` is the default locale. Then publish `zh-TW`, `zh-CN`, and `es`. Send each locale as its own POST request with the same slug and `locale`; dry-run every locale body before publishing it. For App Store / Play Store submissions only, publish compliance child pages (`my-app-faq`, `my-app-contact`, `my-app-delete-account`, …) in all four locales with `parentSlug`. Put translated privacy policy and terms in each variant’s `privacyPolicy` / `termsOfService`, not in child pages. Later updates target a locale with `?locale=`, e.g. `PATCH /api/v1/pages/{slug}?locale=zh-TW`.
+Publish `en` first; `en` is the default locale. Then publish `zh-TW`, `zh-CN`, and `es`. Send each locale as its own POST request with the same slug and `locale`; dry-run every locale body before publishing it. For App Store / Play Store submissions only, publish compliance child pages (`my-app-faq`, `my-app-contact`, `my-app-delete-account` only if the app has user accounts, …) in all four locales with `parentSlug`. Put translated privacy policy and terms in each variant’s `privacyPolicy` / `termsOfService`, not in child pages. Later updates target a locale with `?locale=`, e.g. `PATCH /api/v1/pages/{slug}?locale=zh-TW`.
 
 - The agent publishes both `zh-TW` and `zh-CN` as part of the four defaults. If only one exists, AppAI converts the other script offline at read time, labels it auto-converted, and serves it with `noindex`; no stored translation.
 - Locale variants are free. How: [Multi-Language Details](https://appai.info/spec/i18n#multi-language-details).
@@ -1149,6 +1170,21 @@ Two optional fields decide who may use it and what it is told about them:
 }}
 ```
 For small shops that need an order request flow hosted entirely on AppAI. Customers type free-form line items, quantity, unit price, and preferred date. AppAI calculates subtotals and totals in the browser, shows the configured LINE/payment link, and sends an owner notification after the customer confirms payment. This does not automatically verify payment.
+
+### Wrapped tool publishing checks
+The tool stays on the user's host; AppAI does not build or deploy it. Before publishing run `curl -sI https://your-tool.vercel.app` (check the final response after redirects). Fix blocking headers on the user's host: remove X-Frame-Options DENY/SAMEORIGIN and set `Content-Security-Policy: frame-ancestors 'self' https://appai.info`. Preserve other CSP directives.
+
+Minimal vercel.json:
+```json
+{"headers":[{"source":"/(.*)","headers":[{"key":"Content-Security-Policy","value":"frame-ancestors 'self' https://appai.info"}]}]}
+```
+Netlify `_headers`: under `/*`, add `  Content-Security-Policy: frame-ancestors 'self' https://appai.info`.
+Cloudflare Pages `_headers`: under `/*`, add `  Content-Security-Policy: frame-ancestors 'self' https://appai.info`.
+
+Sandbox: `allow-scripts allow-same-origin allow-forms allow-downloads allow-popups allow-popups-to-escape-sandbox`. The existing scripts/same-origin model is restricted to allowlisted external hosts; no top navigation token. Permissions `allow`: `fullscreen; clipboard-write; gamepad; accelerometer; gyroscope`; `allowFullscreen:false` removes only fullscreen. Downloads generated in-browser and clipboard writes are permitted (browser permission/user activation rules still apply).
+
+The iframe receives `?locale=` with the current hosted-page locale, normally `en`, `zh-TW`, `zh-CN`, `es` (any supplied BCP 47 locale is passed unchanged), plus `color` and `theme=dark` only in dark mode. If the tool isn't translated, ignore it; the AppAI page around it is still published in four locales.
+Set canonicalUrl only for an app's own primary marketing site (e.g. a custom domain homepage), never the *.vercel.app tool URL embedded in iframe-tool.
 
 All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
 

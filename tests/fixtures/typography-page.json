@@ -36,7 +36,6 @@
       {
         "type": "pricing",
         "data": {
-          "heading": "Pricing",
           "items": [
             {
               "name": "Starter",
@@ -136,7 +135,6 @@
       {
         "type": "video",
         "data": {
-          "heading": "video heading",
           "title": "video title",
           "name": "Example",
           "caption": "Example caption",
@@ -210,7 +208,6 @@
       {
         "type": "download",
         "data": {
-          "heading": "download heading",
           "title": "download title",
           "name": "Example",
           "caption": "Example caption",
@@ -248,7 +245,6 @@
       {
         "type": "testimonials",
         "data": {
-          "heading": "testimonials heading",
           "title": "testimonials title",
           "name": "Example",
           "caption": "Example caption",
@@ -285,7 +281,6 @@
       {
         "type": "faq",
         "data": {
-          "heading": "faq heading",
           "title": "faq title",
           "name": "Example",
           "caption": "Example caption",
@@ -322,7 +317,6 @@
       {
         "type": "gallery",
         "data": {
-          "heading": "gallery heading",
           "title": "gallery title",
           "name": "Example",
           "caption": "Example caption",
@@ -359,7 +353,6 @@
       {
         "type": "team",
         "data": {
-          "heading": "team heading",
           "title": "team title",
           "name": "Example",
           "caption": "Example caption",
@@ -396,7 +389,6 @@
       {
         "type": "schedule",
         "data": {
-          "heading": "schedule heading",
           "title": "schedule title",
           "name": "Example",
           "caption": "Example caption",
@@ -433,7 +425,6 @@
       {
         "type": "sponsors",
         "data": {
-          "heading": "sponsors heading",
           "title": "sponsors title",
           "name": "Example",
           "caption": "Example caption",
@@ -470,7 +461,6 @@
       {
         "type": "stats",
         "data": {
-          "heading": "stats heading",
           "title": "stats title",
           "name": "Example",
           "caption": "Example caption",
@@ -803,7 +793,6 @@
       {
         "type": "embed",
         "data": {
-          "heading": "embed heading",
           "title": "embed title",
           "name": "Example",
           "caption": "Example caption",

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const simpleOrderSectionDataSchema = z.object({
+  subheading: z.string().max(1000).optional(),
   heading: z.string().max(200).optional(),
   description: z.string().max(1000).optional(),
   storeName: z.string().max(200).optional(),

@@ -3,6 +3,8 @@ Covers Hosted Page configuration, CRUD, compliance and publishing workflow.
 Previous: [Typography](https://appai.info/spec/typography) · Next: [Sections](https://appai.info/spec/sections)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
+Before writing privacyPolicy, ASK the user what data the app collects, stores, or sends (including photos, analytics, and accounts). Never guess. Publish a delete-account child page only if the app has user accounts; FAQ/contact child pages follow the usual rules.
+
 ## Contact
 
 Use only supplied contact details in sections, `privacyPolicy` and `termsOfService`; never invent an email. If the user gave no street address, omit `address` and any location section; mention the city in copy only if the user gave it. `contact.phone` renders a tappable phone link; buttons also accept `tel:+{E.164 digits}`.
@@ -22,7 +24,7 @@ Use only supplied contact details in sections, `privacyPolicy` and `termsOfServi
 | YouTube | `https://www.youtube.com/@{handle}` |
 | Website | Supplied HTTPS website URL |
 
-If the user names several booking channels, use the first one they listed as the hero CTA; list all in contact.socials. Use the supplied channel in compliance copy too. Use `simple-order` only for order + payment flows with a supplied `notificationEmail`.
+For the primary action (store, booking channel, or tool), use the first one the user listed as the hero CTA; include all store URLs in download and all booking channels in contact.socials. Use the supplied channel in compliance copy too. Use `simple-order` only for order + payment flows with a supplied `notificationEmail`.
 
 ## What You Can Build (read this first)
 
@@ -152,7 +154,7 @@ Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/pub
 - Headlines under 60 characters, subheadlines under 140 characters (mobile readability)
 - 5-8 sections per page maximum (landing pages; PERSON pages: see recipe). A focused page beats a comprehensive one.
 - Use `cta` only on landing-type pages: app, product, SaaS, company/service, event and hiring. Do not add it to PERSON/profile, link-in-bio, portfolio, card-wall or wrapped-tool pages.
-- Logos: every root page MUST supply a square 512x512 PNG with its own background; see [Logo](https://appai.info/spec/style#logo).
+- Logos: every root page MUST supply a square PNG, 512×512 recommended, 1024×1024 accepted with its own background; see [Logo](https://appai.info/spec/style#logo).
 - Images: hero backgrounds under 500KB, use WebP/JPEG.
 
 ---
@@ -188,7 +190,7 @@ curl -X POST https://appai.info/api/v1/pages \
 | `privacyPolicy` | No | Markdown text |
 | `termsOfService` | No | Markdown text |
 | `ogImage` | No | URL for social sharing image |
-| `canonicalUrl` | No | Full URL of the app's main site. Sends SEO credit there instead of appai.info, and marks the page as a satellite landing: header shows "Official site: {host}", footer becomes "Landing page · Hosted on AppAI · {host}", `/apps` directory card gets a "Landing page" tag. Set this whenever the app already has a primary website. |
+| `canonicalUrl` | No | Full URL of the app's main site. Sends SEO credit there instead of appai.info, and marks the page as a satellite landing: header shows "Official site: {host}", footer becomes "Landing page · Hosted on AppAI · {host}", `/apps` directory card gets a "Landing page" tag. Set it only when the tool/app has its own primary marketing site (e.g. a custom domain homepage); do NOT set it to the *.vercel.app tool URL embedded in iframe-tool. |
 | `isPublished` | No | Set `true` to publish immediately |
 | `parentSlug` | No | Root slug for a child page (same 2–100 character slug rules); omitted/null creates a root |
 | `hideFromNav` | No | `true` to keep the page off the auto-generated site nav (still reachable by URL). Use for Delete Account, or compliance-only pages already linked from the footer. |
@@ -209,7 +211,7 @@ The canonical compliance setup:
 - Child `my-app-contact`: supplied contact details or form URL (use a mailto form only when an email was supplied)
 - Root variant `privacyPolicy`: translated privacy policy
 - Root variant `termsOfService`: translated terms of service
-- Child `my-app-delete-account`: account deletion form
+- Child `my-app-delete-account`: account deletion instructions/form only if the app has user accounts
 
 ---
 

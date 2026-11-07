@@ -19,12 +19,22 @@
           "variant": "centered",
           "heroHeight": "medium",
           "ctaText": "Get the app",
-          "ctaUrl": "https://example.com/download",
-          "backgroundColor": "#FFFFFF"
+          "ctaUrl": "https://apps.apple.com/app/id000000000",
+          "backgroundColor": "#FFFFFF",
+          "ctaSecondaryUrl": "https://play.google.com/store/apps/details?id=com.example.app",
+          "ctaSecondaryText": "Get it on Google Play"
         }
       },
       {
-        "order": 1,
+        "type": "video",
+        "data": {
+          "url": "https://example.com/demo.mp4",
+          "backgroundColor": "#EEF2FF"
+        },
+        "order": 1
+      },
+      {
+        "order": 2,
         "type": "features",
         "data": {
           "items": [
@@ -41,21 +51,62 @@
               "description": "Bring your team along with clear updates."
             }
           ],
-          "backgroundColor": "#EEF2FF"
-        }
-      },
-      {
-        "order": 2,
-        "type": "about",
-        "data": {
-          "id": "details",
-          "heading": "Made for everyday progress",
-          "text": "Pocket Orbit brings a thoughtful approach to the details that matter. Explore the overview, then visit our site to learn more.",
           "backgroundColor": "#FFFFFF"
         }
       },
       {
-        "order": 3,
+        "type": "screenshots",
+        "data": {
+          "images": [
+            {
+              "url": "https://appai.info/spec/examples/placeholder-screen.svg",
+              "alt": "Demo screen: replace before publishing",
+              "kind": "phone",
+              "width": 390,
+              "height": 844
+            }
+          ],
+          "backgroundColor": "#EEF2FF"
+        },
+        "order": 3
+      },
+      {
+        "type": "download",
+        "data": {
+          "appStoreUrl": "https://apps.apple.com/app/id000000000",
+          "playStoreUrl": "https://play.google.com/store/apps/details?id=com.example.app",
+          "backgroundColor": "#FFFFFF"
+        },
+        "order": 4
+      },
+      {
+        "type": "testimonials",
+        "data": {
+          "items": [
+            {
+              "name": "Demo reviewer",
+              "quote": "Replace with a real review before publishing."
+            }
+          ],
+          "backgroundColor": "#EEF2FF"
+        },
+        "order": 5
+      },
+      {
+        "type": "faq",
+        "data": {
+          "items": [
+            {
+              "question": "How does it work?",
+              "answer": "Replace with the app\u2019s actual workflow."
+            }
+          ],
+          "backgroundColor": "#FFFFFF"
+        },
+        "order": 6
+      },
+      {
+        "order": 7,
         "type": "cta",
         "data": {
           "headline": "Download the app",

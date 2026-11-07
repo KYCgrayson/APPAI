@@ -22,6 +22,7 @@ export const formFieldSchema = z.object({
 });
 
 export const formSectionDataSchema = z.object({
+  subheading: z.string().max(1000).optional(),
   heading: z.string().max(200).optional(),
   description: z.string().max(1000).optional(),
   fields: z.array(formFieldSchema).min(1).max(20),
