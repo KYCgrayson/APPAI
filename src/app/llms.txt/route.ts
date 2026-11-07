@@ -114,7 +114,19 @@ Hosted Pages are always published in four locales: English (en), Traditional Chi
 3. Build a first draft using ${baseUrl}/spec/pages and ${baseUrl}/spec/sections.
 4. Dry-run using ${baseUrl}/spec/api#dry-run, then POST ${baseUrl}/api/v1/pages with the same content JSON. The page is live instantly at ${baseUrl}/p/{slug}.
 
-Pick the kit by the user's stated mood first (e.g. 'fresh and calm' → forest), then by business type. If no kit description matches, pick by light/dark and warm/cool. Use built-in icon names or any emoji. YouTube/Vimeo/mp4 → video; social posts (TikTok/Instagram/X) → embed. If the user names several booking channels, use the first one they listed as the hero CTA; list all in contact.socials. If the user gave no street address, omit the address field and any location section; mention the city in copy only if the user gave it. Menus/service price lists: put the price in price on features.items. Contact supports hours ([{days:["mon"],open:"09:00",close:"17:00"}]), optional note, and map:true for Google/Apple Maps links without keys. Optional video/embed goes after about sections and before contact. Instagram posts/reels use official sandboxed iframes. Logo converters: rsvg-convert, macOS qlmanage -t -s 512 -o . logo.svg / sips, or ImageMagick.
+Pick the kit by the user's stated mood first (e.g. 'fresh and calm' → forest), then by business type. If no kit description matches, pick by light/dark and warm/cool.
+
+| Kit | Mode | Mood words | Typical businesses |
+|---|---|---|---|
+| indigo | light | crisp, modern, confident | SaaS, software, technology, professional services |
+| forest | light | natural, wellbeing, fresh and calm | nature, wellness, health, sustainable businesses |
+| editorial | light | literary, refined, thoughtful | publishing, portfolios, culture, consulting |
+| ocean | light | clear, cool, trustworthy | travel, education, healthcare, services |
+| midnight | dark | sleek, technical, bold | developer tools, gaming, technology |
+| hearth | light | warm, handmade, welcoming | bakeries, cafés, crafts, classes |
+| ember | dark | warm, intimate, atmospheric | restaurants, bars, hospitality, creative studios |
+
+Use built-in icon names or any emoji. YouTube/Vimeo/mp4 → video; social posts (TikTok/Instagram/X) → embed. If the user names several booking channels, use the first one they listed as the hero CTA; list all in contact.socials. If the user gave no street address, omit the address field and any location section; mention the city in copy only if the user gave it. Menus/service price lists: put the price in price on features.items. Contact supports hours ([{days:["mon"],open:"09:00",close:"17:00"}]), optional note, and map:true for Google/Apple Maps links without keys. Optional video/embed goes after about sections and before contact. Instagram posts/reels use official sandboxed iframes. Logo converters: rsvg-convert, macOS qlmanage -t -s 512 -o . logo.svg / sips, or ImageMagick.
 
 Use only supplied contact details; follow ${baseUrl}/spec/pages#contact for phone/LINE links and compliance text.
 

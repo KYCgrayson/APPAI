@@ -5,6 +5,18 @@ import { SOCIAL_PLATFORMS, sanitizeSocialUrl, sanitizeUrl } from "@/lib/sanitize
 export const SOCIAL_NAMES = { instagram: "Instagram", line: "LINE", facebook: "Facebook", threads: "Threads", whatsapp: "WhatsApp", x: "X", youtube: "YouTube", tiktok: "TikTok", website: "Website" };
 export const SOCIAL_ICONS = { instagram: "logo-instagram", line: "logo-line", facebook: "logo-facebook", threads: "logo-threads", whatsapp: "logo-whatsapp", x: "logo-twitter", youtube: "logo-youtube", tiktok: "logo-tiktok", website: "globe-outline" } satisfies Record<typeof SOCIAL_PLATFORMS[number], string>;
 
+// Follow the locale-keyed copy pattern used by hosted page labels; unknown locales use English.
+const MAP_LABELS: Record<string, string> = {
+  en: "Open in {map}", "zh-TW": "在 {map} 中開啟", "zh-CN": "在 {map} 中打开",
+  ja: "{map}で開く", ko: "{map}에서 열기", es: "Abrir en {map}", fr: "Ouvrir dans {map}",
+  de: "In {map} öffnen", pt: "Abrir no {map}", it: "Apri in {map}", nl: "Openen in {map}",
+  ru: "Открыть в {map}", ar: "فتح في {map}", hi: "{map} में खोलें", th: "เปิดใน {map}",
+  vi: "Mở trong {map}", id: "Buka di {map}", ms: "Buka dalam {map}", tr: "{map} ile aç",
+  pl: "Otwórz w {map}", uk: "Відкрити в {map}", sv: "Öppna i {map}", da: "Åbn i {map}",
+  fi: "Avaa sovelluksessa {map}", nb: "Åpne i {map}", cs: "Otevřít v {map}",
+  el: "Άνοιγμα στο {map}", he: "פתיחה ב-{map}", ro: "Deschide în {map}",
+};
+
 interface Props {
   data: {
     heading?: string;
@@ -23,6 +35,7 @@ interface Props {
 }
 
 export function ContactSection({ data, themeColor, locale = "en", typographyActive = false }: Props & { typographyActive?: boolean }) {
+  const mapLabel = (name: string) => (MAP_LABELS[locale] || MAP_LABELS[locale.split("-")[0]] || MAP_LABELS.en).replace("{map}", name);
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6 bg-gray-50">
       <div className="max-w-3xl mx-auto">
@@ -70,9 +83,9 @@ export function ContactSection({ data, themeColor, locale = "en", typographyActi
               </div>
             </div>
           )}
-          {data.map && data.address && <div className="flex gap-4 flex-wrap">
-            <a href={mapLinks(data.address).google} target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
-            <a href={mapLinks(data.address).apple} target="_blank" rel="noopener noreferrer">Open in Apple Maps</a>
+          {data.map === true && data.address && <div className="flex gap-4 flex-wrap">
+            <a href={mapLinks(data.address).google} target="_blank" rel="noopener noreferrer">{mapLabel("Google Maps")}</a>
+            <a href={mapLinks(data.address).apple} target="_blank" rel="noopener noreferrer">{mapLabel("Apple Maps")}</a>
           </div>}
           {data.hours?.length ? <ul className="space-y-2">{data.hours.filter(isBusinessHours).map((hours, i) => <li key={i}>{formatBusinessHours(hours, locale)}{hours.note && <p>{hours.note}</p>}</li>)}</ul> : null}
           {data.note && <p>{data.note}</p>}

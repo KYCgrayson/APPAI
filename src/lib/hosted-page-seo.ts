@@ -74,14 +74,15 @@ export function buildJsonLd(
   }
 
   const graph: any[] = [primary];
-  const contact = content.sections.find((s: any) => s.type === "contact" && (s.data?.address || s.data?.hours?.length))?.data;
-  if (contact) graph.push({
+  // Inspect original values before display normalization can coerce numeric text.
+  const contact = (Array.isArray(page.content?.sections) ? page.content.sections : []).find((s: any) => s?.type === "contact")?.data;
+  if (contact && (page.template === "COMPANY_PROFILE" || page.preset === "company-service" || contact.hours !== undefined)) graph.push({
     "@type": "LocalBusiness", name: page.title, url,
-    address: contact.address || undefined, telephone: contact.phone || undefined,
+    address: clean(contact.address) || undefined, telephone: clean(contact.phone) || undefined,
     image: safeHttpUrl(content.logo),
     sameAs: (Array.isArray(contact.socials) ? contact.socials : []).map((s: any) => safeHttpUrl(s?.url)).filter((url: string | undefined) => url?.startsWith("https:")),
     openingHoursSpecification: (Array.isArray(contact.hours) ? contact.hours : []).filter(isBusinessHours).map((h: BusinessHours) => ({
-      "@type": "OpeningHoursSpecification", dayOfWeek: h.days.map(day => `https://schema.org/${["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][DAYS.indexOf(day)]}`), opens: h.open, closes: h.close,
+      "@type": "OpeningHoursSpecification", dayOfWeek: [...new Set(h.days)].map(day => `https://schema.org/${["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][DAYS.indexOf(day)]}`), opens: h.open, closes: h.close,
     })),
   });
   if (breadcrumb) graph.push(breadcrumb);

@@ -46,7 +46,11 @@ function detectLegacyProvider(rawUrl: string): Provider {
   }
 
   if (/instagram\.com\/(?:p|reel)\/[a-zA-Z0-9_-]+/.test(url)) {
-    return { kind: "instagram", url };
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol === "https:" && ["instagram.com", "www.instagram.com"].includes(parsed.hostname))
+        return { kind: "instagram", url };
+    } catch { /* Invalid absolute URL. */ }
   }
 
   const sp = url.match(/open\.spotify\.com\/(track|album|playlist|episode|show)\/([a-zA-Z0-9]+)/);

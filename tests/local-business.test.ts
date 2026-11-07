@@ -17,10 +17,11 @@ const hours = { days: ["mon", "fri"] as ("mon" | "fri")[], open: "09:00", close:
 const page = { slug: "cafe-demo", title: "Demo </script>\u2028\u2029", content: { logo: "https://example.com/logo.png", sections: [{ type: "contact", data: { address: "Example & Place", phone: "demo", hours: [hours], socials: [{ platform: "instagram", url: "https://example.com/profile" }, { platform: "website", url: "javascript:alert(1)" }] } }] } };
 test("hours reject malformed days/times in publication and sanitizer", () => {
   assert.ok(isBusinessHours(hours));
-  for (const bad of [{ ...hours, days: [] }, { ...hours, days: ["Monday"] }, { ...hours, open: "24:00" }, { ...hours, close: "12:60" }, { ...hours, open: "9:00" }, { ...hours, note: 3 }, null]) {
+  assert.ok(isBusinessHours({ ...hours, note: "x".repeat(200) }));
+  for (const bad of [{ ...hours, days: [] }, { ...hours, days: ["Monday"] }, { ...hours, open: "24:00" }, { ...hours, close: "12:60" }, { ...hours, open: "9:00" }, { ...hours, note: 3 }, { ...hours, note: "x".repeat(201) }, { ...hours, close: hours.open }, null]) {
     assert.equal(isBusinessHours(bad), false);
     assert.equal(createPageSchema.safeParse({ ...page, content: { sections: [{ type: "contact", data: { hours: [bad] } }] } }).success, false);
-    assert.deepEqual(sanitizeContent({ hours: [bad] }), { hours: [] });
+    assert.deepEqual(sanitizeContent({ type: "contact", data: { hours: [bad] } }), { type: "contact", data: { hours: [] } });
   }
   assert.equal(createPageSchema.safeParse(page).success, true);
   assert.deepEqual(sanitizeContent({ socials: [{ url: "javascript:alert(1)" }] }), { socials: [{ url: "#" }] });
@@ -72,5 +73,48 @@ test("company-service preset alternates forest backgrounds starting with white",
   (preset.example.content as { sections: { type: string; data: { backgroundColor?: string } }[] }).sections.forEach((section, index) => {
     if (section.type !== "cta") assert.equal(section.data.backgroundColor, ["#FFFFFF", "#ECFDF5"][index % 2]);
   });
+});
+test("sanitization scopes hours and price to their section fields", () => {
+  const about = { type: "about", data: { hours: "Mon-Fri 9-5", price: "x".repeat(41) } };
+  assert.deepEqual(sanitizeContent(about), about);
+  assert.deepEqual(sanitizeContent({ type: "contact", data: { hours: [{ ...hours, days: ["mon", "mon"] }] } }),
+    { type: "contact", data: { hours: [{ ...hours, days: ["mon"] }] } });
+  assert.equal(createPageSchema.safeParse({ ...page, content: { sections: [{ type: "features", data: { items: [{ price: "x".repeat(40) }] } }] } }).success, true);
+  for (const price of ["x".repeat(41), 123]) {
+    const content = { sections: [{ type: "features", data: { items: [{ title: "Tea", price }] } }] };
+    assert.equal(createPageSchema.safeParse({ ...page, content }).success, false);
+    const sanitized = sanitizeContent(content) as typeof content;
+    assert.equal(sanitized.sections[0].data.items[0].price, typeof price === "string" ? price.slice(0, 40) : undefined);
+  }
+});
+test("LocalBusiness requires a business template/preset or hours and cleans contact text", () => {
+  const graph = (template: string, data: unknown, preset?: string) => buildJsonLd({ ...page, template, preset, content: { sections: [{ type: "contact", data }] } }, "https://example.com", "https://example.com", null)["@graph"];
+  for (const template of ["PERSON", "APP_LANDING", "PORTFOLIO"]) assert.equal(graph(template, { address: "Demo" }).length, 1);
+  assert.equal(graph("COMPANY_PROFILE", { address: "<b>Demo</b>", phone: "**123**" })[1].address, "Demo");
+  assert.equal(graph("COMPANY_PROFILE", { address: {}, phone: 123 })[1].telephone, undefined);
+  assert.equal(graph("COMPANY_PROFILE", { address: {}, phone: 123 })[1].address, undefined);
+  assert.equal(graph("PERSON", { hours: [] }).length, 2);
+  assert.equal(graph("APP_LANDING", {}, "company-service").length, 2);
+});
+test("map links use localized labels, English fallback and strictly true opt-in", () => {
+  const render = (locale: string, map: unknown) => renderToStaticMarkup(createElement(ContactSection, { themeColor: "#123456", locale, data: { address: "Demo", map: map as boolean } }));
+  assert.match(render("fr", true), /Ouvrir dans Google Maps/);
+  assert.match(render("zh-TW", true), /在 Apple Maps 中開啟/);
+  assert.match(render("xx", true), /Open in Google Maps/);
+  for (const value of ["true", 1, false, undefined]) assert.doesNotMatch(render("en", value), /maps\.apple|google\.com\/maps/);
+});
+test("legacy Instagram matching requires the actual Instagram host", () => {
+  for (const host of ["instagram.com", "www.instagram.com"]) {
+    for (const scheme of ["http", "https"]) {
+      for (const path of ["p/X", "reel/Ab_C-123/trailing?igsh=demo", "p/X/extra"]) {
+        const url = `${scheme}://${host}/${path}`;
+        assert.deepEqual(detectProvider(url), { kind: "instagram", url: url.replace(/^http:/, "https:") });
+      }
+    }
+  }
+  for (const url of ["https://other.example/instagram.com/p/X", "https://instagram.com.evil.example/p/X", "https://fakeinstagram.com/p/X", "https://other.example/?url=https://instagram.com/reel/X"]) {
+    assert.equal(detectProvider(url), null, url);
+    assert.doesNotMatch(renderToStaticMarkup(createElement(EmbedSection, { themeColor: "#123456", data: { url } })), /<iframe/);
+  }
 });
 test.after(() => hooks.deregister());

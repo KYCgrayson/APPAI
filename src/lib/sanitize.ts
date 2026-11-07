@@ -130,9 +130,28 @@ export function sanitizeContent(
   if (typeof obj === "object") {
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
-      if (key === "hours") {
-        result[key] = Array.isArray(value) ? value.filter(isBusinessHours).map(item => sanitizeContent(item, key, warnings, path ? `${path}.${key}` : key)) : [];
-      } else result[key] = sanitizeContent(value, key, warnings, path ? `${path}.${key}` : key);
+      const fieldPath = path ? `${path}.${key}` : key;
+      if (key === "data" && value && typeof value === "object" && !Array.isArray(value)) {
+        const data = sanitizeContent(value, key, warnings, fieldPath) as Record<string, unknown>;
+        const section = obj as Record<string, unknown>;
+        if (section.type === "contact" && "hours" in value) {
+          const hours = (value as Record<string, unknown>).hours;
+          data.hours = Array.isArray(hours) ? hours.filter(isBusinessHours).map(item => ({
+            ...sanitizeContent(item, "hours", warnings, `${fieldPath}.hours`) as Record<string, unknown>,
+            days: [...new Set(item.days)],
+          })) : [];
+        }
+        if (section.type === "features" && Array.isArray(data.items)) {
+          data.items = data.items.map(item => {
+            if (!item || typeof item !== "object" || !("price" in item)) return item;
+            const feature = { ...item };
+            if (typeof feature.price === "string") feature.price = feature.price.slice(0, 40);
+            else delete feature.price;
+            return feature;
+          });
+        }
+        result[key] = data;
+      } else result[key] = sanitizeContent(value, key, warnings, fieldPath);
     }
     return result;
   }

@@ -241,7 +241,19 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 | hearth | #92400E | #9A3412 | DM Sans | false | #FFFBEB, #FFF7ED |
 | ember | #FDBA74 | #FCA5A5 | DM Sans | true | #1C1917, #292524 |
 
-Pick the kit by the user's stated mood first (e.g. 'fresh and calm' → forest), then by business type. If no kit description matches, pick by light/dark and warm/cool. Copy kit fields together into the page request.
+Pick the kit by the user's stated mood first (e.g. 'fresh and calm' → forest), then by business type. If no kit description matches, pick by light/dark and warm/cool.
+
+| Kit | Mode | Mood words | Typical businesses |
+|---|---|---|---|
+| indigo | light | crisp, modern, confident | SaaS, software, technology, professional services |
+| forest | light | natural, wellbeing, fresh and calm | nature, wellness, health, sustainable businesses |
+| editorial | light | literary, refined, thoughtful | publishing, portfolios, culture, consulting |
+| ocean | light | clear, cool, trustworthy | travel, education, healthcare, services |
+| midnight | dark | sleek, technical, bold | developer tools, gaming, technology |
+| hearth | light | warm, handmade, welcoming | bakeries, cafés, crafts, classes |
+| ember | dark | warm, intimate, atmospheric | restaurants, bars, hospitality, creative studios |
+
+Copy kit fields together into the page request.
 
 Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a style kit; use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. When a kit has two `backgroundColors`, alternate them section by section, starting with the first. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants.
 

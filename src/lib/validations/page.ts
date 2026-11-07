@@ -26,9 +26,15 @@ const typographyFields = {
 const contentSchema = z.object(typographyFields).catchall(z.any()).superRefine((content, ctx) => {
   if (!Array.isArray(content.sections)) return;
   content.sections.forEach((section, index) => {
+    if (section?.type === "features" && Array.isArray(section.data?.items)) {
+      section.data.items.forEach((item: { price?: unknown }, itemIndex: number) => {
+        if (item?.price !== undefined && (typeof item.price !== "string" || item.price.length > 40))
+          ctx.addIssue({ code: "custom", path: ["sections", index, "data", "items", itemIndex, "price"], message: "price must be a string of at most 40 characters" });
+      });
+    }
     if (section?.type !== "contact" || section.data?.hours === undefined) return;
     if (!Array.isArray(section.data.hours) || !section.data.hours.every(isBusinessHours))
-      ctx.addIssue({ code: "custom", path: ["sections", index, "data", "hours"], message: "hours must be an array of {days: nonempty mon–sun array, open: HH:MM, close: HH:MM, note?: string}" });
+      ctx.addIssue({ code: "custom", path: ["sections", index, "data", "hours"], message: "hours must be an array of {days: nonempty mon–sun array, open: HH:MM, close: HH:MM, note?: string (max 200 characters); open and close must differ}" });
   });
 });
 
