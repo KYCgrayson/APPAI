@@ -1,5 +1,6 @@
 {
   "slug": "jordan-example",
+  "logo": "./placeholder-logo.png",
   "locales": {
     "en": {
       "title": "Jordan Example",

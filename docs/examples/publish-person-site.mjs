@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /* Node 18+. Usage: node publish-person-site.mjs data.json [--dry-run]; page allows themeColor/themeColorSecondary/fontFamily/darkMode; publish en first, then zh-TW, zh-CN and es; locale fontFamily overrides the kit (Chinese defaults: Noto Sans TC/SC); locales require sections and project-cards require items.
- * Only avatar/icon/screenshot.url and images items upload relative PNG/JPEG/GIF/WebP/SVG files contained in the real data directory; absolute, .env* segments and symlink escapes are refused; links pass through. */
+ * --dry-run replaces relative images with HTTPS placeholders and only calls preview; it never uploads or saves.
+ * Root logo and avatar/icon/screenshot.url and images items upload relative PNG/JPEG/GIF/WebP/SVG files contained in the real data directory; absolute, .env* segments and symlink escapes are refused; links pass through. */
 import { readFile, realpath } from 'node:fs/promises';
 import { resolve, dirname, extname, basename, isAbsolute, relative, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -98,10 +99,12 @@ async function main() {
   if (/^\.env/i.test(basename(path))) throw new Error('Provide a JSON data file.');
   const data = JSON.parse(await readFile(path, 'utf8'));
   validateData(data);
-  for (const [payload, url] of await buildPayloads(data, dirname(path))) await publish(payload, url);
+  for (const [payload, url] of await buildPayloads(data, dirname(path), uploadUrl, { dryRun })) await publish(payload, url);
 }
-export async function buildPayloads(data, directory, upload = uploadUrl) {
+export async function buildPayloads(data, directory, upload = uploadUrl, { dryRun = false } = {}) {
   validateData(data);
+  const imageUpload = dryRun ? async () => 'https://appai.info/spec/examples/placeholder.svg' : upload;
+  const logo = data.logo === undefined ? undefined : await uploadTree(data.logo, directory, imageUpload, true);
   const locales = Object.entries(data.locales || {});
   if (!locales.length) throw new Error('Provide at least one locale.');
   const roots = [];
@@ -114,7 +117,7 @@ export async function buildPayloads(data, directory, upload = uploadUrl) {
     const fontFamily = person.fontFamily ?? (locale === 'zh-TW' ? 'Noto Sans TC' : locale === 'zh-CN' ? 'Noto Sans SC' : data.page?.fontFamily);
     const common = { ...data.page, fontFamily, locale, isPublished: true };
     for (const raw of person.sections) {
-      const section = { ...raw, data: await uploadTree(raw.data, directory, upload) };
+      const section = { ...raw, data: await uploadTree(raw.data, directory, imageUpload) };
       if (section.type === 'project-cards') {
         const cards = [];
         for (const item of section.data.items) {
@@ -137,7 +140,7 @@ export async function buildPayloads(data, directory, upload = uploadUrl) {
       sections.push(section);
     }
     const header = sections.find(section => section.type === 'profile-header');
-    roots.push([{ ...common, template: 'PERSON', slug: data.slug, title: person.title || header?.data.name, ...(person.metaDescription !== undefined ? { metaDescription: person.metaDescription } : {}), content: { sections: orderedSections(sections) } }, `${base}${rootPath}`]);
+    roots.push([{ ...common, template: 'PERSON', slug: data.slug, title: person.title || header?.data.name, ...(person.metaDescription !== undefined ? { metaDescription: person.metaDescription } : {}), content: { ...(logo !== undefined ? { logo } : {}), sections: orderedSections(sections) } }, `${base}${rootPath}`]);
   }
   return [...roots, ...children, ...projects];
 }

@@ -212,3 +212,18 @@ test('production preview context scopes style warnings to newly created pages', 
   const publish = readFileSync(new URL('../src/app/api/v1/pages/route.ts', import.meta.url), 'utf8');
   assert.match(publish, /if \(dryRun\) return previewPage\(request\)/);
 });
+
+
+test('preset recipes reserve cta for landing pages', () => {
+  const nonLanding = ['profile', 'link-in-bio', 'portfolio', 'iframe-tool'];
+  const landing = ['app-landing', 'saas-landing', 'event', 'company-service', 'product', 'hiring'];
+  for (const id of [...nonLanding, ...landing]) {
+    const preset = PRESET_DEFS.find(preset => preset.id === id)!;
+    assert.ok(preset, id);
+    const expectsCta = landing.includes(id);
+    assert.equal(preset.sections.includes('cta'), expectsCta, id);
+    const example = createPageSchema.parse(preset.example);
+    assert.equal(example.content.sections.some((section: { type: string }) => section.type === 'cta'), expectsCta, id);
+    if (!expectsCta) assert.doesNotMatch(preset.description, /call-to-action|\bCTA\b/i, id);
+  }
+});

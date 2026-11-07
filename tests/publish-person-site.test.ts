@@ -50,6 +50,7 @@ test('person example builds valid root, child and root-project payloads for all 
   const kit = PAGE_STYLES.find(kit => kit.themeColor === data.page.themeColor)!;
   const payloads = await buildPayloads(data, '.', async () => 'https://example.com/uploaded.svg');
   assert.equal(payloads.length, 12);
+  assert.ok(payloads.slice(0, 4).every(([payload]) => payload.content.logo === 'https://example.com/uploaded.svg'));
   assert.deepEqual(payloads.slice(0, 4).map(([payload]) => payload.locale), ['en', 'zh-TW', 'zh-CN', 'es']);
   for (const [payload, url] of payloads) {
     assert.equal(createPageSchema.safeParse(payload).success, true, JSON.stringify(payload));
@@ -64,4 +65,26 @@ test('person example builds valid root, child and root-project payloads for all 
   data.locales['zh-TW'].fontFamily = 'Lato';
   const overridden = await buildPayloads(data, '.', async () => 'https://example.com/uploaded.svg');
   assert.ok(overridden.filter(([payload]) => payload.locale === 'zh-TW').every(([payload]) => payload.fontFamily === 'Lato'));
+});
+
+
+test('dry-run builds valid payloads without invoking upload, including root logos', async () => {
+  const data = JSON.parse(await readFile(new URL('../docs/examples/person-site.example.json', import.meta.url), 'utf8'));
+  const placeholder = 'https://appai.info/spec/examples/placeholder.svg';
+  const upload = async () => { assert.fail('dry-run must never upload'); };
+  const payloads = await buildPayloads(data, '/nonexistent-data-directory', upload, { dryRun: true });
+  assert.equal(payloads.length, 12);
+  for (const [payload] of payloads) {
+    assert.equal(checkPagePreview(payload).valid, true);
+    assert.ok(!JSON.stringify(payload).includes('./placeholder'));
+  }
+  for (const [payload] of payloads.slice(0, 4)) {
+    assert.equal(payload.content.logo, placeholder);
+    assert.equal(payload.content.sections[0].data.avatar.url, placeholder);
+  }
+  data.logo = 'https://example.com/real-logo.svg';
+  for (const dryRun of [false, true]) {
+    const roots = (await buildPayloads(data, '.', async () => placeholder, { dryRun })).slice(0, 4);
+    assert.ok(roots.every(([payload]) => payload.content.logo === data.logo));
+  }
 });
