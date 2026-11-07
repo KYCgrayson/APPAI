@@ -793,7 +793,7 @@ Optional `heading` and `subheading` appear above the link buttons.
     "aspectRatio": "9:16"
 }}
 ```
-Auto-detects provider from URL. Supported: YouTube (including Shorts), Vimeo, Facebook posts/videos, Threads posts, TikTok, Loom, Spotify, CodePen, Figma. Facebook uses official plugin iframes; Threads uses the official blockquote + embed.js pattern, loaded near the viewport. X (Twitter) and Instagram render as linked preview cards. HTTPS URLs on supported provider hosts only. `aspectRatio` optional — sensible default per provider (TikTok → 9:16, YouTube → 16:9). Iframe is sandboxed.
+Auto-detects provider from URL. Supported: YouTube (including Shorts), Vimeo, Facebook posts/videos, Threads posts, TikTok, Loom, Spotify, CodePen, Figma. Facebook uses official plugin iframes; Threads uses a lazy-loaded sandboxed iframe at `https://www.threads.com/@{user}/post/{id}/embed`. X (Twitter) and Instagram render as linked preview cards. HTTP URLs are upgraded to HTTPS. Existing provider URL patterns remain supported, including mobile/music YouTube watch URLs and YouTube privacy embed URLs. `aspectRatio` optional — sensible default per provider (TikTok → 9:16, YouTube → 16:9). Iframe is sandboxed.
 
 ### Link rel (SEO)
 Links in `links` and `cta` sections accept an optional `rel` string. Use `"nofollow"` for sponsored/affiliate/user-supplied links, `"sponsored"` for paid placements, `"nofollow sponsored"` for both. Leaving it unset produces `rel="noopener noreferrer"` for external links (standard dofollow). Example:
