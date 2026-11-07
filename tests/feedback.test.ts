@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { submitFeedback, selectFeedbackContact, feedbackSchema, verifyTurnstile, notifyFeedback, feedbackIpHash, type FeedbackDeps, type FeedbackData } from "../src/lib/feedback.ts";
+import { saveWebFeedback, webFeedbackAvailable, loadAdminFeedback, submitFeedback, selectFeedbackContact, feedbackSchema, verifyTurnstile, notifyFeedback, feedbackIpHash, type FeedbackDeps, type FeedbackData } from "../src/lib/feedback.ts";
 
 const valid = { kind: "missing_feature", message: "Please add a useful capability" };
 const identity = { apiKeyId: "key", organizationId: "org", userId: "user", contactEmail: "owner@example.test" };
@@ -185,4 +185,75 @@ test("feedback deployment adds only its own table and page rendering has no data
   assert.doesNotMatch(migration, /\b(ALTER|UPDATE|INSERT|DELETE|DROP)\b/i);
   const page = read("../src/app/[locale]/feedback/page.tsx");
   assert.doesNotMatch(page, /feedback-server|@\/lib\/db|db\./);
+});
+
+test("production web form fails closed for either missing Turnstile key; agent API remains available", async () => {
+  for (const keys of [{}, { TURNSTILE_SITE_KEY: "site" }, { TURNSTILE_SECRET_KEY: "secret" }]) {
+    const f = fake(); f.deps.env = { NODE_ENV: "production", ...keys };
+    assert.equal(webFeedbackAvailable(f.deps.env), false);
+    assert.equal((await submitFeedback(request({ ...valid, website: "spam" }), "web", f.deps)).status, 503);
+    assert.equal(f.saved.length, 0);
+    assert.equal((await submitFeedback(request(valid), "agent", f.deps)).status, 201);
+    assert.equal(await verifyTurnstile(undefined, f.deps.env), false);
+  }
+  const f = fake(); f.deps.env = { NODE_ENV: "production", TURNSTILE_SITE_KEY: "site", TURNSTILE_SECRET_KEY: "secret" };
+  f.deps.fetch = async () => Response.json({ success: true });
+  assert.equal(webFeedbackAvailable(f.deps.env), true);
+  assert.equal((await submitFeedback(request({ ...valid, contactEmail: "human@example.test", turnstileToken: "token" }), "web", f.deps)).status, 201);
+});
+
+test("both endpoints enforce declared and streamed byte limits before JSON parsing", async () => {
+  for (const source of ["agent", "web"] as const) {
+    for (const declared of [undefined, "1", "16385"]) {
+      const f = fake(); let cancelled = false;
+      const body = new ReadableStream<Uint8Array>({
+        pull(controller) { controller.enqueue(new Uint8Array(8193).fill(32)); },
+        cancel() { cancelled = true; },
+      });
+      const req = new Request("https://example.test", { method: "POST", headers: { authorization: "Bearer test", ...(declared ? { "content-length": declared } : {}) }, body, duplex: "half" } as RequestInit);
+      assert.equal((await submitFeedback(req, source, f.deps)).status, 413);
+      if (declared !== "16385") assert.equal(cancelled, true);
+      assert.equal(f.saved.length, 0); assert.equal(f.notifications(), 0);
+    }
+    const f = fake();
+    const json = JSON.stringify({ ...valid, contactEmail: "human@example.test" });
+    const req = new Request("https://example.test", { method: "POST", headers: { authorization: "Bearer test" }, body: json.padEnd(16384, " ") });
+    assert.equal((await submitFeedback(req, source, f.deps)).status, 201);
+    assert.equal((await submitFeedback(request({ ...valid, padding: "界".repeat(6000) }), source, f.deps)).status, 413);
+  }
+});
+
+test("admin missing-table loader returns notice state and propagates other failures", async () => {
+  assert.equal(await loadAdminFeedback(async () => { throw { code: "P2021" }; }), null);
+  assert.deepEqual(await loadAdminFeedback(async () => []), []);
+  const error = Object.assign(new Error("failure"), { code: "P1001" });
+  await assert.rejects(loadAdminFeedback(async () => { throw error; }), error);
+  const page = readFileSync(new URL("../src/app/admin/feedback/page.tsx", import.meta.url), "utf8");
+  assert.match(page, /loadAdminFeedback\(/);
+  assert.match(page, /Feedback table not created yet/);
+});
+
+test("web global quota counts only web rows in rolling day under database transaction lock", async () => {
+  const server = readFileSync(new URL("../src/lib/feedback-server.ts", import.meta.url), "utf8");
+  assert.match(server, /source === "web"\) return db\.\$transaction/);
+  assert.match(server, /pg_advisory_xact_lock/);
+  assert.match(server, /source: "web", createdAt: \{ gte: since/);
+  for (const count of [199, 200, 201]) {
+    const events: string[] = [];
+    const before = Date.now();
+    const result = await saveWebFeedback({
+      lock: async () => { events.push("lock"); },
+      count: async since => {
+        events.push("count");
+        assert.ok(since.getTime() >= before - 86400000 && since.getTime() <= Date.now() - 86400000);
+        return count;
+      },
+      create: async () => { events.push("create"); return { id: "saved" }; },
+    });
+    assert.deepEqual(result, count < 200 ? { id: "saved" } : null);
+    assert.deepEqual(events, count < 200 ? ["lock", "count", "create"] : ["lock", "count"]);
+  }
+  const f = fake(); f.deps.save = async () => null;
+  assert.equal((await submitFeedback(request({ ...valid, contactEmail: "human@example.test" }), "web", f.deps)).status, 429);
+  assert.equal(f.notifications(), 0);
 });

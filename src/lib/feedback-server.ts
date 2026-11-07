@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { hashApiKey, validateApiKey } from "@/lib/api-auth";
-import { notifyFeedback, selectFeedbackContact, type FeedbackDeps } from "@/lib/feedback";
+import { notifyFeedback, selectFeedbackContact, saveWebFeedback, type FeedbackDeps } from "@/lib/feedback";
 
 export const feedbackDeps: FeedbackDeps = {
   env: process.env,
@@ -19,7 +19,12 @@ export const feedbackDeps: FeedbackDeps = {
     return { apiKeyId: apiKey.id, organizationId: key.organizationId, userId: contact.id, contactEmail: contact.email };
   },
   async save(data) {
-    if (!data.apiKeyId) return db.feedback.create({ data, select: { id: true } });
+    if (data.source === "web") return db.$transaction(tx => saveWebFeedback({
+      // One shared transaction lock serializes web quotas across serverless instances.
+      lock: () => tx.$queryRaw`SELECT pg_advisory_xact_lock(748392001)::text`,
+      count: since => tx.feedback.count({ where: { source: "web", createdAt: { gte: since } } }),
+      create: () => tx.feedback.create({ data, select: { id: true } }),
+    }));
     return db.$transaction(async tx => {
       // Lock the key row so concurrent submissions cannot pass the quota together.
       await tx.$queryRaw`SELECT id FROM "ApiKey" WHERE id = ${data.apiKeyId} FOR UPDATE`;

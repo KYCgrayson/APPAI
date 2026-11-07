@@ -22,11 +22,43 @@ type Env = Record<string, string | undefined>;
 export function turnstileEnabled(env: Env) {
   return Boolean(env.TURNSTILE_SITE_KEY && env.TURNSTILE_SECRET_KEY);
 }
+export function webFeedbackAvailable(env: Env) {
+  return env.NODE_ENV !== "production" || turnstileEnabled(env);
+}
+export async function loadAdminFeedback<T>(load: () => Promise<T>): Promise<T | null> {
+  try { return await load(); } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "P2021") return null;
+    throw error;
+  }
+}
+const MAX_BODY_BYTES = 16 * 1024;
+class FeedbackBodyTooLarge extends Error {}
+async function readFeedbackBody(request: Request) {
+  const length = request.headers.get("content-length");
+  if (length !== null && Number(length) > MAX_BODY_BYTES) throw new FeedbackBodyTooLarge();
+  const reader = request.body?.getReader();
+  if (!reader) return JSON.parse("");
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > MAX_BODY_BYTES) {
+        await reader.cancel();
+        throw new FeedbackBodyTooLarge();
+      }
+      chunks.push(value);
+    }
+  } finally { reader.releaseLock(); }
+  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+}
 export function feedbackIpHash(ip: string, env: Env) {
   return env.FEEDBACK_IP_SALT ? createHash("sha256").update(`${env.FEEDBACK_IP_SALT}\0${ip}`).digest("hex") : undefined;
 }
 export async function verifyTurnstile(token: string | undefined, env: Env, send: typeof fetch = fetch) {
-  if (!turnstileEnabled(env)) return true;
+  if (!turnstileEnabled(env)) return webFeedbackAvailable(env);
   if (!token) return false;
   try {
     const response = await send("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
@@ -55,20 +87,34 @@ export function selectFeedbackContact(users: OrganizationContact[]) {
   const ordered = [...users].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id));
   return ordered.find(user => user.role === "ADMIN") ?? ordered[0];
 }
+export async function saveWebFeedback<T>(store: {
+  lock(): Promise<unknown>;
+  count(since: Date): Promise<number>;
+  create(): Promise<T>;
+}): Promise<T | null> {
+  await store.lock();
+  if (await store.count(new Date(Date.now() - 86400000)) >= 200) return null;
+  return store.create();
+}
 export type FeedbackIdentity = { apiKeyId: string; organizationId: string; userId: string; contactEmail: string };
 export interface FeedbackDeps {
   authenticate(header: string | null): Promise<FeedbackIdentity | null>;
-  // Implementations serialize the count and insert per key. null means quota exceeded.
+  // Implementations serialize count and insert per key or globally for web. null means quota exceeded.
   save(data: FeedbackData): Promise<{ id: string } | null>;
   notify(data: FeedbackData): Promise<void>;
   env: Env;
   fetch?: typeof fetch;
 }
 export async function submitFeedback(request: Request, source: "agent" | "web", deps: FeedbackDeps) {
+  if (source === "web" && !webFeedbackAvailable(deps.env)) {
+    return Response.json({ error: "Feedback temporarily unavailable — agents can use the API" }, { status: 503 });
+  }
   const identity = source === "agent" ? await deps.authenticate(request.headers.get("authorization")) : null;
   if (source === "agent" && !identity) return Response.json({ error: "Unauthorized" }, { status: 401 });
   let body;
-  try { body = await request.json(); } catch { return Response.json({ error: "Invalid feedback" }, { status: 400 }); }
+  try { body = await readFeedbackBody(request); } catch (error) {
+    return Response.json({ error: error instanceof FeedbackBodyTooLarge ? "Feedback body too large" : "Invalid feedback" }, { status: error instanceof FeedbackBodyTooLarge ? 413 : 400 });
+  }
   if (source === "web" && typeof body?.website === "string" && body.website.length > 0) return Response.json({ ok: true }, { status: 201 });
   const parsed = (source === "agent" ? feedbackSchema : webSchema).safeParse(body);
   if (!parsed.success) return Response.json({ error: "Invalid feedback" }, { status: 400 });

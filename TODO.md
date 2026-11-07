@@ -2,6 +2,8 @@
 
 ## Feedback channel
 
+- [x] Security review: production Turnstile requirement, serialized database web quota, 16 KB body limits, and missing-table admin notice.
+
 - [x] Agent API, localized public form, optional Turnstile/Resend, admin list, and publishing guidance. SQL migration prepared for manual application; not run.
 
 ## Product decisions (settled — do not re-litigate)
