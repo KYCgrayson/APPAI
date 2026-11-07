@@ -5,7 +5,24 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 ## Contact
 
-Use only supplied contact details in sections, `privacyPolicy` and `termsOfService`; never invent an email. With only phone/LINE, write “Contact us by phone: {phone}” or “Contact us via LINE: {id/link}”. `contact.phone` renders a tappable phone link; `contact` has no LINE field. For buttons, use hero `ctaUrl`, cta `buttonUrl` or `links.items[].url`: `tel:+{E.164 digits}` is allowed and renders as a tappable link. LINE Official Accounts use `https://line.me/R/ti/p/@{id}` (id without a leading @); personal IDs use `https://line.me/ti/p/~{id}`. Use `simple-order` only for an order + payment flow with a supplied `notificationEmail`; for orders taken by message, use a plain LINE/message link.
+Use only supplied contact details in sections, `privacyPolicy` and `termsOfService`; never invent an email. No street address: omit location/address; mention the city in copy only if the user gave it. `contact.phone` renders a tappable phone link; buttons also accept `tel:+{E.164 digits}`.
+
+`contact.socials` is optional: `[{"platform":"instagram","url":"https://www.instagram.com/example/","label":"Message us"}]`. Platforms: `instagram`, `line`, `facebook`, `threads`, `whatsapp`, `x`, `youtube`, `tiktok`, `website`; `label` is optional (defaults to platform name). URLs must be HTTPS; no new URL schemes.
+
+| Channel | Canonical URL |
+|---|---|
+| Instagram profile / DM | `https://www.instagram.com/{handle}/` / `https://ig.me/m/{handle}` |
+| LINE official | `https://line.me/R/ti/p/@{id}` (id without leading @) |
+| LINE personal | `https://line.me/ti/p/~{id}` |
+| WhatsApp | `https://wa.me/{E.164 digits}` (digits only, no +) |
+| Facebook | `https://www.facebook.com/{handle}` |
+| Threads | `https://www.threads.com/@{handle}` |
+| X | `https://x.com/{handle}` |
+| TikTok | `https://www.tiktok.com/@{handle}` |
+| YouTube | `https://www.youtube.com/@{handle}` |
+| Website | Supplied HTTPS website URL |
+
+Booking by message → hero CTA to the main channel + `contact.socials` for all channels. Use the supplied channel in compliance copy too. Use `simple-order` only for order + payment flows with a supplied `notificationEmail`.
 
 ## What You Can Build (read this first)
 

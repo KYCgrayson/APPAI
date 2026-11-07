@@ -1,3 +1,4 @@
+import { SOCIAL_PLATFORMS } from "./sanitize.ts";
 import example0 from "../../docs/examples/app-landing.example.json" with { type: "json" };
 import example1 from "../../docs/examples/saas-landing.example.json" with { type: "json" };
 import example2 from "../../docs/examples/profile.example.json" with { type: "json" };
@@ -21,6 +22,8 @@ export interface SectionFieldDef {
   type: "string" | "url" | "markdown" | "boolean" | "number" | "array" | "object";
   required: boolean;
   description: string;
+  enum?: readonly string[];
+  pattern?: string;
   allowStringItems?: boolean; // backward-compatible URL string arrays
   items?: SectionFieldDef[];  // for array types
   fields?: SectionFieldDef[]; // for object types
@@ -372,6 +375,11 @@ export const SECTION_DEFS: SectionDef[] = [
       { name: "phone", type: "string", required: false, description: "Phone number" },
       { name: "address", type: "string", required: false, description: "Physical address" },
       { name: "formUrl", type: "url", required: false, description: "External form URL (e.g. Google Forms, Typeform)" },
+      { name: "socials", type: "array", required: false, description: "Social / messaging contacts (HTTPS only)", items: [
+        { name: "platform", type: "string", required: true, enum: SOCIAL_PLATFORMS, description: "Social platform" },
+        { name: "url", type: "url", required: true, pattern: "^[Hh][Tt][Tt][Pp][Ss]://", description: "Absolute HTTPS profile or messaging URL" },
+        { name: "label", type: "string", required: false, description: "Accessible link text; defaults to platform name" },
+      ] },
     ],
   },
   {
@@ -391,6 +399,8 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Links",
     description: "List of link buttons (Linktree-style). Best for link-in-bio pages.",
     fields: [
+      { name: "heading", type: "string", required: false, description: "Section title" },
+      { name: "subheading", type: "string", required: false, description: "Supporting text below the title" },
       {
         name: "items", type: "array", required: true, description: "List of links",
         items: [
@@ -623,7 +633,7 @@ export const PRESET_DEFS: PresetDef[] = [
     description: "For conferences, meetups, and launches. Includes hero, about, video, schedule, team (speakers), pricing (tickets), sponsors, FAQ, and call-to-action.",
     sections: ["hero", "about", "video", "schedule", "team", "pricing", "sponsors", "faq", "cta"],
   },
-  { id: "company-service", template: "COMPANY_PROFILE", name: "Company / Service", description: "For businesses and service providers: services, opening hours, and contact information.", sections: ["hero", "about", "features", "contact", "cta"], example: example6, exampleFile: "company-service.example.json" },
+  { id: "company-service", template: "COMPANY_PROFILE", name: "Company / Service", description: "For businesses and service providers: services, opening hours, and contact information.", sections: ["hero", "features", "about", "about", "contact", "cta"], example: example6, exampleFile: "company-service.example.json" },
   { id: "product", template: "PRODUCT_SHOWCASE", name: "Product Showcase", description: "For physical or digital products: features, pricing, and purchase links.", sections: ["hero", "features", "pricing", "cta"], example: example7, exampleFile: "product.example.json" },
   { id: "hiring", template: "COMPANY_PROFILE", name: "Hiring / Job Opening", description: "For recruiting: openings, benefits, and an application link.", sections: ["hero", "features", "features", "cta"], example: example8, exampleFile: "hiring.example.json" },
   { id: "iframe-tool", template: "APP_LANDING", name: "Wrapped Tool", description: "For tools deployed elsewhere: an iframe with a hosted introduction and usage guidance.", sections: ["hero", "iframe-tool", "about"], example: example9, exampleFile: "iframe-tool.example.json" },

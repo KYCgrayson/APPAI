@@ -1,4 +1,5 @@
-import { sanitizeUrl } from "@/lib/sanitize";
+import { SmartIcon } from "@/templates/shared/SmartIcon";
+import { SOCIAL_PLATFORMS, sanitizeSocialUrl, sanitizeUrl } from "@/lib/sanitize";
 
 interface Props {
   data: {
@@ -8,6 +9,7 @@ interface Props {
     phone?: string;
     address?: string;
     formUrl?: string;
+    socials?: Array<{ platform: typeof SOCIAL_PLATFORMS[number]; url: string; label?: string }>;
   };
   themeColor: string;
 }
@@ -60,6 +62,18 @@ export function ContactSection({ data, themeColor, typographyActive = false }: P
               </div>
             </div>
           )}
+          {data.socials?.map((social, i) => {
+            const url = sanitizeSocialUrl(social.url);
+            if (url === "#" || !SOCIAL_PLATFORMS.includes(social.platform)) return null;
+            const names: Record<string, string> = { instagram: "Instagram", line: "LINE", facebook: "Facebook", threads: "Threads", whatsapp: "WhatsApp", x: "X", youtube: "YouTube", tiktok: "TikTok", website: "Website" };
+            const icons: Record<string, string> = { instagram: "logo-instagram", facebook: "logo-facebook", youtube: "logo-youtube", tiktok: "logo-tiktok", website: "globe-outline" };
+            return <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+              data-typography-role={typographyActive ? "card" : undefined}
+              className="flex items-center gap-4 font-semibold hover:underline" style={{ color: themeColor }}>
+              <span aria-hidden="true"><SmartIcon value={icons[social.platform] || "chatbubble-outline"} /></span>
+              {social.label || names[social.platform]}
+            </a>;
+          })}
           {data.formUrl && (
             <div className="pt-4">
               <a data-typography-role={typographyActive ? "card" : undefined}

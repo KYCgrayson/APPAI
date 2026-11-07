@@ -3,6 +3,8 @@ import { SmartIcon } from "@/templates/shared/SmartIcon";
 
 interface Props {
   data: {
+    heading?: string;
+    subheading?: string;
     items: Array<{
       title: string;
       url: string;
@@ -21,6 +23,8 @@ export function LinksSection({ data, themeColor, typographyActive = false }: Pro
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6">
       <div className="max-w-md mx-auto space-y-4">
+        {data.heading && <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-3xl font-bold text-center" style={{ color: themeColor }}>{data.heading}</h2>}
+        {data.subheading && <p data-typography-role={typographyActive ? "body" : undefined} className="text-center text-gray-600">{data.subheading}</p>}
         {items.map((item, i) => {
           const safeUrl = sanitizeUrl(item.url);
           const isExternal = /^https?:\/\//i.test(safeUrl);
