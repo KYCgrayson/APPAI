@@ -95,7 +95,7 @@ Copy this complete request body into both the dry-run and publish POSTs. Change 
 | **Multi-language setup** | [Multi-Language Details](https://appai.info/spec/i18n#multi-language-details) | |
 | **Multi-page site setup** | [Multi-Page Site Details](https://appai.info/spec/i18n#multi-page-site-details) | |
 | **CRUD operations** | [Managing Pages](https://appai.info/spec/pages#managing-pages-crud) | |
-| **Privacy/Terms generation** | [Compliance Pages](https://appai.info/spec/pages#compliance-pages) | |
+| **Privacy policy and terms** | [Compliance Pages](https://appai.info/spec/pages#compliance-pages) | |
 | **Icons reference** | [Icons](https://appai.info/spec/sections#icons) | |
 | **Design inspiration** | Browse https://appai.info/apps to see live pages | |
 
