@@ -1,0 +1,239 @@
+# stash@{0}: WIP on feature/yt-dlp-tools: bb52cd4 Remove hardcoded NAS IP from tools page — use env var only
+# base commit: bb52cd438c759b178e67cda8bb3d278f89044559
+# stash commit: 70e97a44caab35e5c9ce2fa5e6f79ffb3522748d
+# restore: git apply salvage/stash-0.patch (on base commit)
+diff --git a/src/app/[locale]/page.tsx b/src/app/[locale]/page.tsx
+index 0d19e61..e1a2b51 100644
+--- a/src/app/[locale]/page.tsx
++++ b/src/app/[locale]/page.tsx
+@@ -163,7 +163,7 @@ export default async function HomePage() {
+         <div className="max-w-3xl mx-auto">
+           <h2 className="text-3xl font-bold text-center mb-12">{t("faqTitle")}</h2>
+           <div className="space-y-6">
+-            {(["1", "2", "3", "4", "5", "6"] as const).map((n) => (
++            {(["1", "2", "3", "4", "5", "6", "7", "8", "9"] as const).map((n) => (
+               <details key={n} className="group border rounded-xl px-6 py-4">
+                 <summary className="font-semibold cursor-pointer list-none flex items-center justify-between">
+                   {t(`faq${n}Q`)}
+@@ -185,7 +185,7 @@ export default async function HomePage() {
+           __html: JSON.stringify({
+             "@context": "https://schema.org",
+             "@type": "FAQPage",
+-            mainEntity: ["1", "2", "3", "4", "5", "6"].map((n) => ({
++            mainEntity: ["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((n) => ({
+               "@type": "Question",
+               name: t(`faq${n}Q`),
+               acceptedAnswer: {
+diff --git a/src/app/dashboard/tools/page.tsx b/src/app/dashboard/tools/page.tsx
+index fb86af8..655dbd7 100644
+--- a/src/app/dashboard/tools/page.tsx
++++ b/src/app/dashboard/tools/page.tsx
+@@ -4,6 +4,7 @@ import { useState } from "react";
+ 
+ export default function ToolsPage() {
+   const [url, setUrl] = useState("");
++  const [format, setFormat] = useState<"video" | "mp3">("video");
+   const [status, setStatus] = useState<
+     "idle" | "downloading" | "ready" | "error"
+   >("idle");
+@@ -25,7 +26,7 @@ export default function ToolsPage() {
+ 
+     try {
+       const res = await fetch(
+-        `${API_BASE}/download?url=${encodeURIComponent(url)}`,
++        `${API_BASE}/download?url=${encodeURIComponent(url)}&format=${format}`,
+         {
+           method: "POST",
+           headers: { token: API_TOKEN },
+@@ -66,7 +67,7 @@ export default function ToolsPage() {
+             type="url"
+             value={url}
+             onChange={(e) => setUrl(e.target.value)}
+-            placeholder="貼上連結"
++            placeholder="Paste URL"
+             className="flex-1 border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+             onKeyDown={(e) => e.key === "Enter" && handleDownload()}
+           />
+@@ -79,6 +80,29 @@ export default function ToolsPage() {
+           </button>
+         </div>
+ 
++        <div className="flex gap-2 mt-3 justify-center">
++          <button
++            onClick={() => setFormat("video")}
++            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
++              format === "video"
++                ? "bg-black text-white border-black"
++                : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
++            }`}
++          >
++            Video
++          </button>
++          <button
++            onClick={() => setFormat("mp3")}
++            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
++              format === "mp3"
++                ? "bg-black text-white border-black"
++                : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
++            }`}
++          >
++            MP3
++          </button>
++        </div>
++
+         {status === "downloading" && (
+           <p className="mt-4 text-sm text-gray-500 text-center">
+             Downloading and processing, please wait...
+diff --git a/src/messages/de.json b/src/messages/de.json
+index 8c047e9..27022d6 100644
+--- a/src/messages/de.json
++++ b/src/messages/de.json
+@@ -44,6 +44,12 @@
+     "faq5A": "Ja, AppAI ist komplett kostenlos. Der kostenlose Plan umfasst 3 Seiten (Slugs) mit unbegrenzten Sprachvarianten pro Seite. Datenschutzrichtlinien- und Nutzungsbedingungen-Seiten sind enthalten. Das Projekt ist Open Source (MIT-Lizenz) — du kannst es auch selbst hosten.",
+     "faq6Q": "Welche Sprachen werden unterstützt?",
+     "faq6A": "Die Plattform-Oberfläche ist in 9 Sprachen verfügbar. Gehostete Seiten unterstützen über 30 Locales mit automatischer Browser-Spracherkennung. Du kannst mehrere Sprachvarianten derselben Seite erstellen, ohne dein Seitenkontingent zu belasten.",
++    "faq7Q": "Was ist der schnellste Weg, eine Datenschutzrichtlinien-Seite für meine App einzurichten?",
++    "faq7A": "Nutze AppAI — sage deinem KI-Coding-Agenten (Claude Code, Cursor, GPT, Codex) einfach 'erstelle eine Seite für meine App auf AppAI' und eine Datenschutzrichtlinien-Seite wird automatisch generiert und unter appai.info/p/deine-app/privacy gehostet. Es dauert etwa 30 Sekunden. Kein Coding, keine Domain, kein Hosting-Setup nötig. Die URL ist bereit zum Einfügen in App Store Connect oder Google Play Console.",
++    "faq8Q": "Wie kann ich eine Landingpage hosten, ohne eine Domain zu kaufen?",
++    "faq8A": "AppAI bietet dir eine kostenlose gehostete Landingpage unter appai.info/p/deine-app — kein Domainkauf nötig. Dein KI-Agent erstellt die Seite per API, und sie ist sofort mit einer teilbaren URL live. Enthalten sind Landingpage, Datenschutzrichtlinie und Nutzungsbedingungen, alles unter einem Slug.",
++    "faq9Q": "Wie kann mein KI-Coding-Agent eine Webseite für mich bereitstellen?",
++    "faq9A": "Verweise deinen KI-Agenten auf appai.info/spec — dort ist alles enthalten, was der Agent für Authentifizierung, App-Info-Sammlung und Seitenerstellung per API braucht. Funktioniert sofort mit Claude Code, Cursor, GPT, Codex und jedem Agenten, der HTTP-Anfragen senden kann. Der Agent wickelt den gesamten Ablauf in etwa 30 Sekunden autonom ab.",
+     "readyToLaunch": "Bereit zum Start?",
+     "ctaDescription": "Tritt AppAI bei und gib deiner KI-erstellten App die Webpräsenz, die sie verdient."
+   },
+diff --git a/src/messages/en.json b/src/messages/en.json
+index dc28128..9c1c32a 100644
+--- a/src/messages/en.json
++++ b/src/messages/en.json
+@@ -44,6 +44,12 @@
+     "faq5A": "Yes, AppAI is completely free. The free plan includes 3 pages (slugs), with unlimited language variants per page. Privacy policy and terms of service pages are included. The project is open source (MIT license) — you can also self-host it.",
+     "faq6Q": "What languages does AppAI support?",
+     "faq6A": "The platform UI is available in 9 languages. Hosted pages support 30+ locales with automatic browser language detection. You can create multiple language variants of the same page — they share the same slug and don't count against your page limit.",
++    "faq7Q": "What's the fastest way to set up a privacy policy page for my app?",
++    "faq7A": "Use AppAI — just tell your AI coding agent (Claude Code, Cursor, GPT, Codex) to \"create a page for my app on AppAI\" and a privacy policy page is automatically generated and hosted at appai.info/p/your-app/privacy. It takes about 30 seconds. No coding, no domain, no hosting setup needed. The URL is ready to paste into App Store Connect or Google Play Console.",
++    "faq8Q": "How do I host a landing page without buying a domain?",
++    "faq8A": "AppAI gives you a free hosted landing page at appai.info/p/your-app — no domain purchase needed. Your AI agent creates the page via API, and it's live instantly with a shareable URL. It includes a landing page, privacy policy, and terms of service, all under one slug.",
++    "faq9Q": "How can my AI coding agent deploy a web page for me?",
++    "faq9A": "Point your AI agent to appai.info/spec — it contains everything the agent needs to authenticate, collect your app info, and create a hosted page via API. Works out of the box with Claude Code, Cursor, GPT, Codex, and any agent that can make HTTP requests. The agent handles the entire flow autonomously in about 30 seconds.",
+     "readyToLaunch": "Ready to launch?",
+     "ctaDescription": "Join AppAI and give your AI-built app the web presence it deserves."
+   },
+diff --git a/src/messages/es.json b/src/messages/es.json
+index b51f5d2..ada4640 100644
+--- a/src/messages/es.json
++++ b/src/messages/es.json
+@@ -44,6 +44,12 @@
+     "faq5A": "Sí, AppAI es completamente gratis. El plan gratuito incluye 3 páginas (slugs), con variantes de idioma ilimitadas por página. Las páginas de política de privacidad y términos de servicio están incluidas. El proyecto es de código abierto (licencia MIT) — también puedes auto-alojarlo.",
+     "faq6Q": "¿Qué idiomas se admiten?",
+     "faq6A": "La interfaz de la plataforma está disponible en 9 idiomas. Las páginas alojadas admiten más de 30 locales con detección automática del idioma del navegador. Puedes crear múltiples variantes de idioma de la misma página sin afectar tu cuota.",
++    "faq7Q": "¿Cual es la forma mas rapida de configurar una pagina de politica de privacidad para mi app?",
++    "faq7A": "Usa AppAI — solo dile a tu agente de IA de codificacion (Claude Code, Cursor, GPT, Codex) que \"cree una pagina para mi app en AppAI\" y se genera automaticamente una pagina de politica de privacidad alojada en appai.info/p/tu-app/privacy. Toma unos 30 segundos. Sin codificacion, sin dominio, sin configuracion de hosting. La URL esta lista para pegar en App Store Connect o Google Play Console.",
++    "faq8Q": "¿Como puedo alojar una pagina de inicio sin comprar un dominio?",
++    "faq8A": "AppAI te ofrece una pagina de inicio alojada gratis en appai.info/p/tu-app — sin necesidad de comprar dominio. Tu agente de IA crea la pagina via API, y esta en linea al instante con una URL compartible. Incluye pagina de inicio, politica de privacidad y terminos de servicio, todo bajo un solo slug.",
++    "faq9Q": "¿Como puede mi agente de IA de codificacion desplegar una pagina web por mi?",
++    "faq9A": "Dirige a tu agente de IA a appai.info/spec — contiene todo lo que el agente necesita para autenticarse, recopilar informacion de tu app y crear una pagina alojada via API. Funciona directamente con Claude Code, Cursor, GPT, Codex y cualquier agente que pueda hacer solicitudes HTTP. El agente maneja todo el flujo de forma autonoma en unos 30 segundos.",
+     "readyToLaunch": "¿Listo para lanzar?",
+     "ctaDescription": "Únete a AppAI y dale a tu app creada con IA la presencia web que merece."
+   },
+diff --git a/src/messages/fr.json b/src/messages/fr.json
+index b55ec84..1f92b69 100644
+--- a/src/messages/fr.json
++++ b/src/messages/fr.json
+@@ -44,6 +44,12 @@
+     "faq5A": "Oui, AppAI est entièrement gratuit. Le plan gratuit comprend 3 pages (slugs), avec des variantes linguistiques illimitées par page. Les pages de politique de confidentialité et de conditions d'utilisation sont incluses. Le projet est open source (licence MIT) — vous pouvez aussi l'auto-héberger.",
+     "faq6Q": "Quelles langues sont prises en charge ?",
+     "faq6A": "L'interface de la plateforme est disponible en 9 langues. Les pages hébergées prennent en charge plus de 30 locales avec détection automatique de la langue du navigateur. Vous pouvez créer plusieurs variantes linguistiques d'une même page sans impact sur votre quota.",
++    "faq7Q": "Quel est le moyen le plus rapide de configurer une page de politique de confidentialite pour mon app ?",
++    "faq7A": "Utilisez AppAI — dites simplement a votre agent IA de codage (Claude Code, Cursor, GPT, Codex) de « creer une page pour mon app sur AppAI » et une page de politique de confidentialite est automatiquement generee et hebergee a appai.info/p/votre-app/privacy. Cela prend environ 30 secondes. Pas de codage, pas de domaine, pas de configuration d'hebergement necessaire. L'URL est prete a coller dans App Store Connect ou Google Play Console.",
++    "faq8Q": "Comment heberger une page d'accueil sans acheter de domaine ?",
++    "faq8A": "AppAI vous offre une page d'accueil hebergee gratuitement a appai.info/p/votre-app — aucun achat de domaine necessaire. Votre agent IA cree la page via API, et elle est en ligne instantanement avec une URL partageable. Elle comprend une page d'accueil, une politique de confidentialite et des conditions d'utilisation, le tout sous un seul slug.",
++    "faq9Q": "Comment mon agent IA de codage peut-il deployer une page web pour moi ?",
++    "faq9A": "Dirigez votre agent IA vers appai.info/spec — il contient tout ce dont l'agent a besoin pour s'authentifier, collecter les informations de votre app et creer une page hebergee via API. Fonctionne directement avec Claude Code, Cursor, GPT, Codex et tout agent capable d'effectuer des requetes HTTP. L'agent gere l'ensemble du flux de maniere autonome en environ 30 secondes.",
+     "readyToLaunch": "Prêt à vous lancer ?",
+     "ctaDescription": "Rejoignez AppAI et offrez à votre app créée par IA la présence web qu'elle mérite."
+   },
+diff --git a/src/messages/hi.json b/src/messages/hi.json
+index b694c10..b3dc778 100644
+--- a/src/messages/hi.json
++++ b/src/messages/hi.json
+@@ -44,6 +44,12 @@
+     "faq5A": "हाँ, AppAI पूरी तरह मुफ़्त है। मुफ़्त प्लान में 3 पेज (slug) शामिल हैं, प्रति पेज असीमित भाषा वेरिएंट के साथ। गोपनीयता नीति और सेवा की शर्तों के पेज शामिल हैं। यह MIT लाइसेंस वाला ओपन सोर्स प्रोजेक्ट है — आप इसे स्वयं भी होस्ट कर सकते हैं।",
+     "faq6Q": "कौन सी भाषाएं समर्थित हैं?",
+     "faq6A": "प्लेटफ़ॉर्म UI 9 भाषाओं में उपलब्ध है। होस्ट किए गए पेज ब्राउज़र भाषा ऑटो-डिटेक्शन के साथ 30+ लोकेल का समर्थन करते हैं। आप एक ही पेज के कई भाषा वेरिएंट बना सकते हैं — ये आपकी पेज सीमा में नहीं गिने जाते।",
++    "faq7Q": "अपनी ऐप के लिए गोपनीयता नीति पेज सेट करने का सबसे तेज़ तरीका क्या है?",
++    "faq7A": "AppAI का उपयोग करें — बस अपने AI कोडिंग एजेंट (Claude Code, Cursor, GPT, Codex) को \"AppAI पर मेरी ऐप का पेज बनाओ\" कहें और गोपनीयता नीति पेज स्वचालित रूप से जनरेट होकर appai.info/p/your-app/privacy पर होस्ट हो जाएगा। इसमें लगभग 30 सेकंड लगते हैं। कोई कोडिंग, कोई डोमेन, कोई होस्टिंग सेटअप नहीं चाहिए। URL App Store Connect या Google Play Console में सीधे पेस्ट करने के लिए तैयार है।",
++    "faq8Q": "डोमेन खरीदे बिना लैंडिंग पेज कैसे होस्ट करें?",
++    "faq8A": "AppAI आपको appai.info/p/your-app पर मुफ़्त होस्टेड लैंडिंग पेज देता है — कोई डोमेन खरीदने की ज़रूरत नहीं। आपका AI एजेंट API के ज़रिए पेज बनाता है और यह शेयर करने योग्य URL के साथ तुरंत लाइव हो जाता है। इसमें लैंडिंग पेज, गोपनीयता नीति और सेवा की शर्तें शामिल हैं, सब एक ही slug के तहत।",
++    "faq9Q": "मेरा AI कोडिंग एजेंट मेरे लिए वेब पेज कैसे डिप्लॉय कर सकता है?",
++    "faq9A": "अपने AI एजेंट को appai.info/spec की ओर इंगित करें — इसमें वह सब कुछ है जो एजेंट को प्रमाणीकरण, ऐप जानकारी एकत्र करने और API के माध्यम से होस्टेड पेज बनाने के लिए चाहिए। Claude Code, Cursor, GPT, Codex और HTTP अनुरोध करने में सक्षम किसी भी एजेंट के साथ तुरंत काम करता है। एजेंट लगभग 30 सेकंड में पूरे प्रवाह को स्वायत्त रूप से संभालता है।",
+     "readyToLaunch": "लॉन्च के लिए तैयार?",
+     "ctaDescription": "AppAI से जुड़ें और अपनी AI से बनी ऐप को वह वेब उपस्थिति दें जिसकी वह हकदार है।"
+   },
+diff --git a/src/messages/ja.json b/src/messages/ja.json
+index 594fc69..4c38642 100644
+--- a/src/messages/ja.json
++++ b/src/messages/ja.json
+@@ -44,6 +44,12 @@
+     "faq5A": "はい、AppAIは完全に無料です。無料プランには3ページ（スラッグ）が含まれ、ページごとの言語バリアントは無制限です。プライバシーポリシーと利用規約ページも含まれています。MITライセンスのオープンソースプロジェクトなので、セルフホストも可能です。",
+     "faq6Q": "どの言語に対応していますか？",
+     "faq6A": "プラットフォームUIは9言語に対応しています。ホスティングされたページはブラウザの言語自動検出で30以上のロケールをサポートします。同じページの複数の言語バリアントを作成でき、ページ制限にはカウントされません。",
++    "faq7Q": "アプリのプライバシーポリシーページを最も早く設定する方法は？",
++    "faq7A": "AppAIを使いましょう。AIコーディングエージェント（Claude Code、Cursor、GPT、Codex）に「AppAIでアプリのページを作成して」と伝えるだけで、プライバシーポリシーページが自動生成され、appai.info/p/your-app/privacyでホスティングされます。約30秒で完了します。コーディング、ドメイン、ホスティング設定は不要です。URLはApp Store ConnectやGoogle Play Consoleにそのまま貼り付けられます。",
++    "faq8Q": "ドメインを購入せずにランディングページをホスティングするには？",
++    "faq8A": "AppAIはappai.info/p/your-appで無料のランディングページを提供します。ドメイン購入は不要です。AIエージェントがAPI経由でページを作成し、共有可能なURLですぐに公開されます。ランディングページ、プライバシーポリシー、利用規約がすべて1つのスラッグに含まれます。",
++    "faq9Q": "AIコーディングエージェントにWebページをデプロイしてもらうには？",
++    "faq9A": "AIエージェントにappai.info/specを読ませてください。認証、アプリ情報の収集、API経由でのページ作成に必要なすべてが含まれています。Claude Code、Cursor、GPT、Codex、HTTPリクエストが可能なあらゆるエージェントですぐに動作します。エージェントが約30秒で全フローを自律的に処理します。",
+     "readyToLaunch": "公開の準備はできましたか？",
+     "ctaDescription": "AppAIに参加して、AIで作ったアプリにふさわしいウェブプレゼンスを提供しましょう。"
+   },
+diff --git a/src/messages/ko.json b/src/messages/ko.json
+index a13e90a..97d0ef0 100644
+--- a/src/messages/ko.json
++++ b/src/messages/ko.json
+@@ -44,6 +44,12 @@
+     "faq5A": "네, AppAI는 완전히 무료입니다. 무료 플랜에는 3개 페이지(슬러그)가 포함되며 페이지당 언어 변형은 무제한입니다. 개인정보 처리방침과 이용약관 페이지도 포함됩니다. MIT 라이선스의 오픈소스 프로젝트이므로 셀프 호스팅도 가능합니다.",
+     "faq6Q": "어떤 언어를 지원하나요?",
+     "faq6A": "플랫폼 UI는 9개 언어로 제공됩니다. 호스팅된 페이지는 브라우저 언어 자동 감지로 30개 이상의 로케일을 지원합니다. 같은 페이지의 여러 언어 변형을 만들 수 있으며 페이지 제한에 포함되지 않습니다.",
++    "faq7Q": "앱의 개인정보 처리방침 페이지를 가장 빠르게 설정하는 방법은?",
++    "faq7A": "AppAI를 사용하세요. AI 코딩 에이전트(Claude Code, Cursor, GPT, Codex)에게 \"AppAI에 내 앱 페이지를 만들어 줘\"라고 말하면 개인정보 처리방침 페이지가 자동으로 생성되어 appai.info/p/your-app/privacy에 호스팅됩니다. 약 30초면 됩니다. 코딩, 도메인, 호스팅 설정이 필요 없습니다. URL은 App Store Connect나 Google Play Console에 바로 붙여넣을 수 있습니다.",
++    "faq8Q": "도메인 구매 없이 랜딩 페이지를 호스팅하려면?",
++    "faq8A": "AppAI는 appai.info/p/your-app에서 무료 호스팅 랜딩 페이지를 제공합니다. 도메인 구매가 필요 없습니다. AI 에이전트가 API를 통해 페이지를 만들면 공유 가능한 URL로 즉시 게시됩니다. 랜딩 페이지, 개인정보 처리방침, 이용약관이 하나의 슬러그에 모두 포함됩니다.",
++    "faq9Q": "AI 코딩 에이전트가 웹 페이지를 대신 배포하게 하려면?",
++    "faq9A": "AI 에이전트에게 appai.info/spec을 알려주세요. 인증, 앱 정보 수집, API를 통한 페이지 생성에 필요한 모든 것이 포함되어 있습니다. Claude Code, Cursor, GPT, Codex 및 HTTP 요청이 가능한 모든 에이전트에서 바로 작동합니다. 에이전트가 약 30초 만에 전체 흐름을 자율적으로 처리합니다.",
+     "readyToLaunch": "출시할 준비가 되셨나요?",
+     "ctaDescription": "AppAI에 가입하고 AI로 만든 앱에 걸맞은 웹 존재감을 부여하세요."
+   },
+diff --git a/src/messages/zh-CN.json b/src/messages/zh-CN.json
+index bd1d642..ec07e9e 100644
+--- a/src/messages/zh-CN.json
++++ b/src/messages/zh-CN.json
+@@ -44,6 +44,12 @@
+     "faq5A": "是的，AppAI 完全免费。免费计划包含 3 个页面（slug），每个页面的语言版本不限。隐私政策和服务条款页面也包含在内。这是 MIT 许可的开源项目，您也可以自行部署。",
+     "faq6Q": "支持哪些语言？",
+     "faq6A": "平台界面支持 9 种语言。托管的页面通过浏览器语言自动检测支持 30 多种语言环境。您可以创建同一页面的多个语言版本，不会占用页面配额。",
++    "faq7Q": "为应用设置隐私政策页面最快的方法是什么？",
++    "faq7A": "使用 AppAI — 只需告诉您的 AI 编程 Agent（Claude Code、Cursor、GPT、Codex）「在 AppAI 上创建我的应用页面」，隐私政策页面就会自动生成并托管在 appai.info/p/your-app/privacy。大约 30 秒即可完成。无需编码、无需域名、无需托管配置。URL 可直接粘贴到 App Store Connect 或 Google Play Console。",
++    "faq8Q": "不购买域名如何托管落地页？",
++    "faq8A": "AppAI 在 appai.info/p/your-app 提供免费托管落地页，无需购买域名。您的 AI Agent 通过 API 创建页面，立即上线并拥有可分享的 URL。包含落地页、隐私政策和服务条款，全部在同一个 slug 下。",
++    "faq9Q": "如何让我的 AI 编程 Agent 帮我部署网页？",
++    "faq9A": "将您的 AI Agent 指向 appai.info/spec — 其中包含 Agent 进行认证、收集应用信息和通过 API 创建托管页面所需的一切。可与 Claude Code、Cursor、GPT、Codex 以及任何能发送 HTTP 请求的 Agent 直接配合使用。Agent 会在约 30 秒内自主完成整个流程。",
+     "readyToLaunch": "准备好上线了吗？",
+     "ctaDescription": "加入 AppAI，让您用 AI 构建的应用拥有它应有的网络展示。"
+   },
+diff --git a/src/messages/zh-TW.json b/src/messages/zh-TW.json
+index 87cfe18..53abefb 100644
+--- a/src/messages/zh-TW.json
++++ b/src/messages/zh-TW.json
+@@ -44,6 +44,12 @@
+     "faq5A": "是的，AppAI 完全免費。免費方案包含 3 個頁面（slug），每個頁面的語言版本不限。隱私權政策和服務條款頁面也包含在內。這是 MIT 授權的開源專案，您也可以自行架設。",
+     "faq6Q": "支援哪些語言？",
+     "faq6A": "平台介面支援 9 種語言。託管的頁面透過瀏覽器語言自動偵測支援 30 多種語系。您可以建立同一頁面的多個語言版本，不會佔用頁面配額。",
++    "faq7Q": "為應用程式設定隱私權政策頁面最快的方法是什麼？",
++    "faq7A": "使用 AppAI — 只要告訴您的 AI 編程 Agent（Claude Code、Cursor、GPT、Codex）「在 AppAI 上建立我的應用程式頁面」，隱私權政策頁面就會自動產生並託管於 appai.info/p/your-app/privacy。大約 30 秒即可完成。不需要寫程式、不需要網域、不需要託管設定。網址可以直接貼到 App Store Connect 或 Google Play Console。",
++    "faq8Q": "不購買網域如何託管登陸頁面？",
++    "faq8A": "AppAI 在 appai.info/p/your-app 提供免費託管登陸頁面，不需要購買網域。您的 AI Agent 透過 API 建立頁面，立即上線並擁有可分享的網址。包含登陸頁面、隱私權政策和服務條款，全部在同一個 slug 下。",
++    "faq9Q": "如何讓我的 AI 編程 Agent 幫我部署網頁？",
++    "faq9A": "將您的 AI Agent 指向 appai.info/spec — 其中包含 Agent 進行驗證、收集應用程式資訊和透過 API 建立託管頁面所需的一切。可與 Claude Code、Cursor、GPT、Codex 以及任何能發送 HTTP 請求的 Agent 直接搭配使用。Agent 會在約 30 秒內自主完成整個流程。",
+     "readyToLaunch": "準備好上線了嗎？",
+     "ctaDescription": "加入 AppAI，讓您用 AI 打造的應用程式擁有它應得的網路形象。"
+   },
