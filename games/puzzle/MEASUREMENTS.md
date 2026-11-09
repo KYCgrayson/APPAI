@@ -4,7 +4,7 @@ Environment: Node v24.22.2, Three.js 0.187.0, Vite 8.3.6. All work stayed in `ga
 
 ## Build and solver
 
-`npm run build` passes strict TypeScript checking and production bundling. `npm test` passes all 60 tests, including full optimal solutions replayed through the public toggle/cross functions.
+`npm run build` passes strict TypeScript checking and production bundling. `npm test` passes all 65 tests, including full optimal solutions replayed through the public toggle/cross functions.
 
 | Level | BFS minimum | Includes boat restriction |
 | --- | ---: | --- |
@@ -18,12 +18,12 @@ Production file sizes measured with Node `fs.readFileSync` and `zlib.gzipSync` (
 
 | Output | Raw | Gzip |
 | --- | ---: | ---: |
-| HTML | 1,115 B | 645 B |
-| CSS | 9,243 B | 2,774 B |
-| JavaScript | 617,219 B | 158,819 B |
-| Total | 627,577 B | 162,238 B |
+| HTML | 1,115 B | 646 B |
+| CSS | 10,396 B | 2,973 B |
+| JavaScript | 625,346 B | 161,885 B |
+| Total | 636,857 B | 165,504 B |
 
-Round 8 Vite reports its compressed JS estimate as 159.90 kB, below the requested 200 KB JavaScript gzip limit. It emits an advisory about the JavaScript chunk exceeding 500 kB raw. No runtime dependencies were added.
+Round 10 Vite reports its compressed JS estimate as 162.91 kB, below the requested 200 KB JavaScript gzip limit. It emits an advisory about the JavaScript chunk exceeding 500 kB raw. No runtime dependencies were added.
 
 
 ## Presentation choices
@@ -84,3 +84,16 @@ The canvas covers the full window, with a view offset fitting the board between 
 The shadow FPS window begins after the first completed render and restarts on returning to a visible tab; fallback also disables the directional light’s shadow casting. Firefly/blob matrices and scale vectors are reused, actor phases and victory status are cached during sync. Audio unlock retries on pointerdown/up, touchend and click while the context is not running; noise buffers are cached by duration. Music, SFX and reset share one top-right cluster; responsive rules reserve separate space above the phone/tablet topbar.
 
 **Runtime verification limitation:** the existing local Playwright installation was used to attempt a Chrome launch; Chrome aborted with SIGABRT/EPERM under the sandbox. No dependencies were installed and no network was used. Consequently screenshots and overlap checks at 375×812, 390×844, 768×1024 and 1440×900, arbitrary-angle picking/zoom/reset gestures, iOS audio listening and current phone FPS are **not browser-verified** in this round. The CSS reserves space for the cluster at those breakpoints, but the 60 FPS phone target remains unmeasured. Earlier runtime figures above are historical.
+
+
+## Round 10 verification — 2026-11-09
+
+`npm test`: **65 passed, 0 failed**. `npm run build`: **passed**, including strict TypeScript. `git diff --check`: passed. The top build-size table now measures this final Round 10 build with Node `gzipSync` defaults. JavaScript is **161,885 B gzip**, leaving **38,115 B** under the decimal 200,000 B budget. Vite's independent estimate is 162.91 kB; its existing raw-chunk advisory remains. No npm dependencies or downloaded assets were added, no runtime network requests were introduced, and no commits were made.
+
+Home is an inline SVG house plus **首頁 / Home**, 60 px wide on phones and 64 px on larger screens, with a minimum height of 44 px. It is the leading control in the level header, followed by the title. It uses the existing `menu` action and sailing lock. The toolbar's duplicate menu action is removed; result sheets use **回首頁 / Home**. The menu's localized About link has a plain URL and `target="_top"`, and is omitted when iframe detection reports framing or throws. Existing test/metrics/share hooks, camera controls, independent music/SFX toggles and the share-card flow are retained. Snapshots temporarily hide the atmosphere as one group and restore it in `finally`, keeping the card's existing gradient.
+
+The full-screen Three.js sky is one draw, with `depthWrite:false`, a gradient, sun/moon and halo, three-octave drifting cloud noise, and night-only hashed stars. The FPS fallback drops to two octaves and skips star twinkle. Reduced motion freezes cloud time and twinkle and hides the passing flock, including preference changes while playing. Three continuous hill rings and the merged conifer line/lookout mill cost **four draws**. Twelve separately merged puffs and a five-instance bird flock bring the atmosphere to a conservative **18-draw maximum** if every mesh were visible. Atmospheric objects cast no shadows. This is a geometry/material census, **not a measured whole-game hard-level draw-call count**; screen/frustum culling usually hides most puffs.
+
+Five new regression tests cover depth clipping, the screen clearance margin, actual puff vertices across **5,760 camera configurations** (four viewport sizes × 48 azimuths × five elevations × three zoom factors × two themes), reduced-motion/fallback behavior, and ray-tested celestial-disc clearance around the hill ring. Every visible puff clears the projected board/toy envelope, including during unrestricted orbit and zoom. Representative unobstructed gameplay regions at 375×812, 390×844, 768×1024 and 1440×900 are used for these projection tests. These tests do not render pixels or measure CSS layout. Default fitted views retain visible puffs at each size. Phone/tablet CSS places the level header below the view-tools cluster; desktop reserves its right-hand space. Safe-area offsets are included, and menu panels scroll above the bottom safe area.
+
+**Browser QA remains unverified:** Vite could not bind a local port (`EPERM`); a local static-server attempt also returned `EPERM`. The connected browser's automatic approval review rejected opening the self-contained local-file preview because its URL policy allows only HTTP/HTTPS. No alternate browser surface or policy workaround was attempted. Consequently current pixel/layout checks at the four requested sizes, iframe navigation, rendered GLSL/day/night appearance, share-card smoke checks, hard-level draw calls (target ≤160), and actual-phone FPS (target 60) could not be measured. Earlier runtime tables remain historical and must not be treated as Round 10 results.

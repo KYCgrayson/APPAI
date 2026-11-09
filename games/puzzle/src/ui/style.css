@@ -2,9 +2,9 @@
 
 @media(min-width:651px){.topbar{left:max(24px,env(safe-area-inset-left));right:max(24px,env(safe-area-inset-right))}.menu{left:max(5%,env(safe-area-inset-left));right:max(5%,env(safe-area-inset-right))}}
 
-/* The sky stays visible through the transparent WebGL canvas. */
-body{background:linear-gradient(180deg,#a8d0df 0%,#dce8df 55%,#eee3cc 100%)}
-body.dark{background:linear-gradient(180deg,#172a46 0%,#685f7d 55%,#ba8b80 100%)}
+/* Solid horizon fallback until the first WebGL sky frame. */
+body{background:#e7d7bb}
+body.dark{background:#686781}
 canvas{bottom:auto}
 .menu{background:var(--panel);border:1px solid #ffffff50;border-radius:26px;padding:22px;backdrop-filter:blur(8px);box-shadow:0 12px 50px #233e4320;max-width:900px;margin:auto;background:color-mix(in srgb,var(--panel) 76%,transparent)}
 .card{background:color-mix(in srgb,var(--panel) 80%,transparent)}
@@ -19,8 +19,6 @@ canvas{bottom:auto}
 .dark .target-chip{color:inherit}
 .sound { min-width:44px; min-height:44px; }
 .sound.music { right:auto; left:16px; }
-body { background: radial-gradient(ellipse at 50% 40%, #e8eee1 0%, #c2d7d3 65%, #8faeaa 100%); }
-body.dark { background: radial-gradient(ellipse at 50% 40%, #66627d, #292e47); }
 @media(max-width:650px){
  .sound.music{left:auto;right:12px;top:max(62px,calc(env(safe-area-inset-top) + 50px));width:104px}
  .sound:not(.music){width:104px}
@@ -33,12 +31,23 @@ body.dark { background: radial-gradient(ellipse at 50% 40%, #66627d, #292e47); }
 .view-tools .sound{position:static;width:auto;min-width:44px;min-height:44px;padding:8px;font-size:12px}
 .view-tools>button:last-child{font-size:25px;padding:4px 10px}
 .topbar{right:290px}
-.menu{top:86px;max-height:calc(100dvh - 106px)}
-@media(max-width:1000px) and (min-width:651px){.topbar{right:24px;padding-top:62px}.menu{top:86px}}
+.menu{top:max(86px,calc(env(safe-area-inset-top) + 68px));max-height:calc(100dvh - max(86px,calc(env(safe-area-inset-top) + 68px)) - max(20px,env(safe-area-inset-bottom)))}
+@media(max-width:1000px) and (min-width:651px){.topbar{right:24px;top:max(80px,calc(env(safe-area-inset-top) + 62px))}.menu{top:86px}}
 @media(max-width:650px){
- .view-tools{top:max(12px,env(safe-area-inset-top));right:12px;gap:2px;padding:3px}
+ .view-tools{top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));gap:2px;padding:3px}
  .view-tools .sound{position:static;width:auto;font-size:11px;padding:6px}
- .topbar{right:12px;padding-top:60px}
+ .topbar{left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));top:max(72px,calc(env(safe-area-inset-top) + 60px))}
  .topbar .identity{max-width:100%;min-height:0}
- .menu{top:76px;padding-top:16px;max-height:calc(100dvh - 92px)}
+ .menu{top:max(76px,calc(env(safe-area-inset-top) + 64px));padding-top:16px;max-height:calc(100dvh - max(76px,calc(env(safe-area-inset-top) + 64px)) - max(16px,env(safe-area-inset-bottom)))}
 }
+
+/* Home anchors the leading edge of the level header at every breakpoint. */
+.level-heading{display:flex;align-items:stretch;gap:10px;min-width:0}
+.home{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;flex:0 0 64px;padding:8px;font-size:12px;font-weight:700;background:var(--panel);box-shadow:0 5px 25px #31493d10}
+.identity{min-width:0}
+.identity>span{display:block;line-height:1.55}
+.toolbar{flex-shrink:0}
+.about-link{display:flex;align-items:center;width:fit-content;min-height:44px;font-size:12px;color:inherit;text-underline-offset:4px;margin:-8px 0 4px}
+.about-link:focus-visible{outline:3px solid #dc9844;outline-offset:3px;border-radius:6px}
+@media(max-width:650px){.level-heading{width:100%;gap:8px}.home{flex-basis:60px}.identity{flex:1}.identity>span{font-size:12px}}
+@media(prefers-reduced-motion:reduce){button{transition:none}}

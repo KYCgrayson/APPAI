@@ -10,7 +10,7 @@ npm test
 
 Vite serves the game locally (normally http://localhost:5173). `dist/` is a self-contained static build using relative asset paths. Nothing needs to be added to the parent Next.js application.
 
-Tap characters or the accessible traveler buttons to board/unboard. Tap the boat or **Set sail** to cross. Drag to orbit, scroll/pinch to zoom. Space sails, Z undoes, R restarts. Undo reverses one boarding or crossing action; after failure it restores the pre-departure state. Undo is disabled after a win.
+Use the house icon **首頁 / Home** at the far left of the level header to return to level selection. It is disabled during sailing; fail/win sheets also offer **回首頁 / Home**. Tap characters or the accessible traveler buttons to board/unboard. Tap the boat or **Set sail** to cross. Drag to orbit, scroll/pinch to zoom. Space sails, Z undoes, R restarts. Undo reverses one boarding or crossing action; after failure it restores the pre-departure state. Undo is disabled after a win.
 
 URL parameters:
 
@@ -49,3 +49,12 @@ Travelers are original rounded wooden/felt toys with highlighted eyes, cheeks, b
 The tabletop now has bevelled banks with soil strata and sandy shores, shader-driven water waves and sparkle, foam, a sailing wake, docks, reeds, flowers, pebbles, bushes, varied trees, signposts and flying butterflies. Dusk (`?theme=dark`) adds warm lanterns and animated fireflies. ACES lighting uses one tightly framed soft shadow light; a first-two-second FPS check disables shadow mapping and reduces pixel ratio below 45 FPS. Repeated props use instancing or merged geometry; picking still uses the separate traveler hitboxes and boat only.
 
 **Music** and **Sound effects** are independent, at least 44×44 px buttons (繁中：**音樂 開/關**、**音效 開/關**). Both default on and remember changes locally when storage is available. Music begins after a pointer or keyboard gesture, pauses with a hidden tab and resumes on return. Web Audio generates an 84 BPM, 16-bar pentatonic pad/melody/plucked-bass progression with changing phrases, a victory flourish, and layered wooden, splash, landing and chime effects. Gain ramps avoid abrupt toggle clicks. Nothing is downloaded for the art or sound, and no runtime network or AI calls are introduced.
+
+
+## Round 10: Home and the landscape
+
+The Home button pairs an original inline house icon with a localized label, with a minimum 44×44 px target. The level title stays immediately beside it; the toolbar contains Undo, Restart and Rules. Phone and tablet layouts reserve a separate row for the music / SFX / reset-view cluster. The menu includes **← 遊戲介紹 / ← About this game**, opening `https://appai.info/p/river-crossing` with `target="_top"`. The link is hidden inside any iframe, including when frame detection throws. The game uses `locale`, so the About URL stays plain.
+
+A Three.js full-screen sky shader paints a blue-to-warm afternoon gradient, soft sun and halo, and slowly drifting wisps using three noise octaves. Dark mode paints a dusk/night sky with a moon, halo, twinkling stars and softly lit clouds. Three closed, low-poly hill rings surround the tabletop; a merged tree line includes an original four-sailed lookout mill. The distant landscape sits below the tabletop and outside the camera's orbit range, with aerial fog matching the sky's horizon. CSS supplies only a solid fallback before the first frame.
+
+Twelve merged puff clouds of varied sizes and heights drift through the distant landscape during both selection and play. Their projected bounding rectangles must clear the full board/character envelope, with extra padding, before they can appear; clouds also fade before touching screen edges. An instanced five-bird V passes occasionally. `prefers-reduced-motion` stops sky/puff drift and star twinkle and hides the passing flock. The existing FPS fallback also reduces sky noise from three octaves to two and disables star twinkle, alongside its shadow and pixel-ratio reductions. The share snapshot hides the entire atmosphere and retains the card's readable painted gradient.

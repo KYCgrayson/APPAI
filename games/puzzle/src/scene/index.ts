@@ -1,4 +1,5 @@
 import { ACESFilmicToneMapping, PCFSoftShadowMap, BufferGeometry, Float32BufferAttribute, SphereGeometry, PointLight, BoxGeometry, CircleGeometry, ConeGeometry, CylinderGeometry, DirectionalLight, Fog, DoubleSide, DynamicDrawUsage, Group, HemisphereLight, InstancedMesh, MathUtils, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, PlaneGeometry, Raycaster, RingGeometry, SRGBColorSpace, Scene, Spherical, Vector2, Vector3, WebGLRenderer } from 'three';
+import { Atmosphere, horizonColor } from './atmosphere.ts';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { levels, type State } from '../logic/index.ts';
 import { character, part, material, bake } from './models.ts';
@@ -12,7 +13,7 @@ export interface Metrics {
 export class Diorama {
     renderer: WebGLRenderer;
     scene = new Scene();
-    camera = new PerspectiveCamera(38, 1, .1, 80);
+    camera = new PerspectiveCamera(38, 1, .1, 360);
     controls: OrbitControls;
     boat = new Group();
     actors = new Map<string, Group>();
@@ -38,7 +39,7 @@ export class Diorama {
     private activePointer = -1;
     private pointers = new Set<number>();
     private oars: Group[] = [];
-    private clouds: Group[] = [];
+    private atmosphere: Atmosphere;
     private flyers: Group[] = [];
     private fireflies?: InstancedMesh;
     private wake = new Group();
@@ -70,31 +71,16 @@ export class Diorama {
         this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true });
         this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
         this.renderer.setClearColor('#000000', 0);
-        this.scene.fog = new Fog(dark ? '#44465e' : '#cbded9', 32, 65);
-        for (let i = 0; i < 4; i++) {
-            const cloud = new Group();
-            for (let j = 0; j < 3; j++) part(cloud, 'sphere', '#ffffff', [(j - 1) * .65, j === 1 ? .2 : 0, 0], [.85, .4, .5]);
-            cloud.scale.setScalar(.55);
-            cloud.position.set(Math.sin(i * Math.PI / 2) * 22, 12 + i % 2, Math.cos(i * Math.PI / 2) * 22);
-            bake(cloud);
-            cloud.traverse(o => {
-                o.castShadow = false;
-                o.receiveShadow = false;
-                o.raycast = () => {};
-                if (o instanceof Mesh) {
-                    o.material.dispose();
-                    o.material = new MeshBasicMaterial({ color: dark ? '#a5abc5' : '#ffffff', transparent: true, opacity: dark ? .12 : .55, depthWrite: false });
-                }
-            });
-            this.clouds.push(cloud); this.scene.add(cloud);
-        }
+        this.scene.fog = new Fog(horizonColor(dark), 70, 260);
+        this.atmosphere = new Atmosphere(dark);
+        this.scene.add(this.atmosphere);
         this.renderer.outputColorSpace = SRGBColorSpace;
         this.renderer.toneMapping = ACESFilmicToneMapping;
         this.renderer.toneMappingExposure = dark ? .85 : 1.1;
         this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = PCFSoftShadowMap;
         this.renderer.info.autoReset = true;
-        this.scene.add(new HemisphereLight(dark ? '#99b5ed' : '#dbeeff', '#687961', dark ? 1.4 : 2));
-        const sun = this.sun = new DirectionalLight(dark ? '#ffbd89' : '#ffdeb0', dark ? 1.8 : 3);
+        this.scene.add(new HemisphereLight(dark ? '#a5afd7' : '#d9e9f5', dark ? '#716675' : '#a79b7b', dark ? 1.4 : 2));
+        const sun = this.sun = new DirectionalLight(dark ? '#d6b4ce' : '#ffdeb0', dark ? 1.8 : 3);
         sun.castShadow = true; sun.shadow.mapSize.set(512,512);
         Object.assign(sun.shadow.camera, {left:-6,right:6,top:5,bottom:-5,near:1,far:20}); sun.shadow.bias=-.001; sun.shadow.normalBias=.025;
         sun.position.set(-3, 9, 6);
@@ -244,7 +230,7 @@ export class Diorama {
     }
     snapshot(): HTMLCanvasElement {
         // Capture only the diorama, regardless of menu state or orbit angle.
-        const atmosphere = [...this.clouds, ...this.flyers];
+        const atmosphere = [this.atmosphere, ...this.flyers];
         const visibility = atmosphere.map(o => o.visible);
         try {
             atmosphere.forEach(o => { o.visible = false; });
@@ -379,10 +365,6 @@ export class Diorama {
         this.controls.autoRotateSpeed = .35;
         this.controls.minAzimuthAngle = -Infinity;
         this.controls.maxAzimuthAngle = Infinity;
-        for (let i = 0; i < this.clouds.length; i++) {
-            const angle = t * .008 + i * Math.PI / 2;
-            this.clouds[i].position.set(Math.sin(angle) * 22, 12 + i % 2, Math.cos(angle) * 22);
-        }
         this.oars.forEach((oar, i) => { oar.rotation.y = this.sailing ? Math.sin(t * 10) * .45 * (i ? 1 : -1) : 0; oar.rotation.z = this.sailing ? Math.cos(t * 10) * .12 : 0; });
         if (this.sailing) {
             const p = Math.min((now - this.sailStart) / 800, 1), ease = p * p * (3 - 2 * p);
@@ -455,28 +437,15 @@ export class Diorama {
             if (this.camera.position.distanceToSquared(this.defaultPosition) < .00001) { this.camera.position.copy(this.defaultPosition); this.controls.target.copy(this.defaultTarget); this.returning = false; }
         }
         this.controls.update();
-        // Only menu clouds wholly in the sky band may render. Project a generous
-        // board envelope so even a full orbit/zoom cannot put them over the toys.
         this.camera.updateMatrixWorld();
-        let boardTop = .65;
-        for (const x of [-5.5, 5.5]) for (const y of [-.8, 3.5]) for (const z of [-4.5, 4.5]) {
-            this.cloudPoint.set(x, y, z).project(this.camera);
-            boardTop = Math.max(boardTop, this.cloudPoint.y + .08);
-        }
-        for (const cloud of this.clouds) {
-            cloud.visible = this.menu;
-            for (const x of [-.85, .85]) for (const y of [-.25, .4]) for (const z of [-.3, .3]) {
-                this.cloudPoint.set(x, y, z).add(cloud.position).project(this.camera);
-                if (this.cloudPoint.y < boardTop || this.cloudPoint.z < -1 || this.cloudPoint.z > 1) cloud.visible = false;
-            }
-        }
+        this.atmosphere.update(this.camera, dt, innerWidth / innerHeight);
         this.renderer.render(this.scene, this.camera);
         if (!this.metrics.firstFrameMs)
             this.metrics.firstFrameMs = performance.now();
         this.frames++;
         if (!this.qualityStart) { this.qualityStart = performance.now(); this.qualityFrames = 0; }
         else this.qualityFrames++;
-        if(!this.qualityChecked && now-this.qualityStart>=2000){this.qualityChecked=true;if(this.qualityFrames*1000/(now-this.qualityStart)<45){this.sun.castShadow=false;this.renderer.shadowMap.enabled=false;this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.25));this.viewport='';this.resize();}}
+        if(!this.qualityChecked && now-this.qualityStart>=2000){this.qualityChecked=true;if(this.qualityFrames*1000/(now-this.qualityStart)<45){this.atmosphere.lowerQuality();this.sun.castShadow=false;this.renderer.shadowMap.enabled=false;this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.25));this.viewport='';this.resize();}}
 
         if (now - this.epoch >= 1000) {
             this.metrics.fps = Math.round(this.frames * 1000 / (now - this.epoch));
