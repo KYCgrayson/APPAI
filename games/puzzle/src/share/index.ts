@@ -43,7 +43,7 @@ export function decodeChallenge(p: URLSearchParams, definitions: Record<string, 
     if (!level || !Object.prototype.hasOwnProperty.call(def.levels, level) || !c || !t || !/^\d+$/.test(c) || !/^\d+$/.test(t))
         return null;
     const score = Number(c), seconds = Number(t), name = cleanName(p.get('n') || '');
-    if (!Number.isInteger(score) || score < def.levels[level as LevelId].optimal || score > 999 || !Number.isInteger(seconds) || seconds < 1 || seconds > 86399 || Array.from(name).length > 12)
+    if (!Number.isInteger(score) || score < def.levels[level as LevelId].optimal || score > Math.min(999, def.levels[level as LevelId].limit ?? 999) || !Number.isInteger(seconds) || seconds < 1 || seconds > 86399 || Array.from(name).length > 12)
         return null;
     // The legacy river decoder shape remains supported for existing consumers.
     return { level: level as LevelId, ...(game === 'river' ? { crossings: score } : { game: game as GameId, score }), ms: seconds * 1000, ...(name ? { name } : {}) };
@@ -73,7 +73,7 @@ export function migrateRun(value: unknown, game: GameId = 'river'): Run | null {
     if (!Object.prototype.hasOwnProperty.call(registry, id))
         return null;
     const def = registry[id], score = v.score ?? (id === 'river' ? v.crossings : undefined), level = v.level;
-    if (!level || !Object.prototype.hasOwnProperty.call(def.levels, level) || !Number.isInteger(score) || score! < def.levels[level].optimal || score! > 999 || !Number.isFinite(v.ms) || v.ms! < 0 || v.ms! > 86399999 || !Number.isFinite(v.at) || v.at! <= 0 || v.at! > 8.64e15)
+    if (!level || !Object.prototype.hasOwnProperty.call(def.levels, level) || !Number.isInteger(score) || score! < def.levels[level].optimal || score! > Math.min(999, def.levels[level].limit ?? 999) || !Number.isFinite(v.ms) || v.ms! < 0 || v.ms! > 86399999 || !Number.isFinite(v.at) || v.at! <= 0 || v.at! > 8.64e15)
         return null;
     return { game: id, level, score: score!, ms: v.ms!, at: v.at! };
 }

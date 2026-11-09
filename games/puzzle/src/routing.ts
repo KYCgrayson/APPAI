@@ -16,9 +16,9 @@ export function resolveRoute(params: URLSearchParams, registry: Record<string, P
     const def = registry[game], decoded = decodeChallenge(params, registry);
     const challenge = decoded ? { ...decoded, game: game as GameId, score: runScore(decoded) } : null;
     const level = params.get('level');
+    if (level && Object.prototype.hasOwnProperty.call(def.levels, level))
+        return { screen: 'game', game: game as GameId, level: level as LevelId, challenge };
     if (challenge)
         return { screen: 'levels', game: game as GameId, level: challenge.level, challenge };
-    if (level && Object.prototype.hasOwnProperty.call(def.levels, level))
-        return { screen: 'game', game: game as GameId, level: level as LevelId, challenge: null };
     return { screen: 'levels', game: game as GameId, level: 'easy', challenge: null };
 }

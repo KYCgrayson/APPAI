@@ -3,8 +3,8 @@
 @media(min-width:651px){.topbar{left:max(24px,env(safe-area-inset-left));right:max(24px,env(safe-area-inset-right))}.menu{left:max(5%,env(safe-area-inset-left));right:max(5%,env(safe-area-inset-right))}}
 
 /* Solid horizon fallback until the first WebGL sky frame. */
-body{background:#e7d7bb}
-body.dark{background:#686781}
+body,body.dark{background:#e7d7bb}
+body.night{background:#686781}
 canvas{bottom:auto}
 .menu{background:var(--panel);border:1px solid #ffffff50;border-radius:26px;padding:22px;backdrop-filter:blur(8px);box-shadow:0 12px 50px #233e4320;max-width:900px;margin:auto;background:color-mix(in srgb,var(--panel) 76%,transparent)}
 .card{background:color-mix(in srgb,var(--panel) 80%,transparent)}

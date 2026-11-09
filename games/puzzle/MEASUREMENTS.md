@@ -1,3 +1,72 @@
+# Round 12 verification — 2026-11-09
+
+All changes remain in `games/puzzle/`. No dependencies, downloaded assets, network access, commits or hook changes were introduced. Existing test, metrics and sharing globals remain intact.
+
+## Automated checks
+
+- `npm test`: **120 passed, 0 failed**.
+- `npm run build`: **passed**, strict TypeScript and Vite production bundling.
+- `git diff --check`: **passed**.
+
+The suite includes pure arithmetic camera-fit tests at **375×812, 390×844, 768×1024, 800×600 and 1440×900**, plus independent projection of actual visible scene boxes for all nine puzzle/level combinations. A real Stage test replaces only WebGL/controls with stubs, queues rAF without executing it, and verifies that the constructor renders nothing and mount/resize synchronously render the mounted board with the correct night preset. Other regressions cover camera preservation on HUD reflow/reset, quality persistence, default-camera snapshots, separate share-sky/card palettes, loading races, keyboard pouring, Rules guards, scene reuse, deferred popstate, timeout/undo timing, challenge reloads/limits, reachable bridge scoring, vertex-colour preservation/disposal and one-action BFS hints from every reachable easy-water state.
+
+These checks exercise real logic/controller/scene code but **do not render browser pixels or use a GPU**. The controller tests use minimal DOM and scene stubs; Stage tests use renderer/controls stubs. The pure fit test uses no DOM or Three.js camera.
+
+## First-frame root cause and framing
+
+The constructor previously called `loop()` synchronously before any lazy puzzle scene was mounted. This painted an empty day atmosphere; mount changed the scene and camera but did not render. If rAF was throttled by an offscreen iframe, background tab or WebView, that empty day frame remained visible. The constructor now only schedules rAF, and the loop skips rendering until a scene exists. Mount and resize synchronously update controls, atmosphere and the renderer, even if rAF never fires. The body `night` class follows `stage.night`, including Bridge under a light DOM theme.
+
+The pure fit measures camera-up min/max relative to the initial `(0,.4,0)` target, translates the target along camera-up to their midpoint, then fits all corners with perspective depth. Width/height allowances are **.90 / .94 in both orientations**, replacing the landscape .70 height allowance. Scene bounds include character/badge height and the bridge water floor. Water's table is now **8.4×5.9** (previously 10×6.9), with wider jugs, closer badges and a 2.4 top bound (2.5 for Hard). Layout changes update the saved default fit while preserving player-chosen position, target and zoom. Mount/reset explicitly restore the default.
+
+## Review corrections
+
+- Bridge Easy's two-star ceiling is **19**, with reachable winning scores 17/19/20/21/22; the fastest-escort plan now earns two stars. Medium/Hard remain 31/30, and limits remain 22/38/36.
+- Water digits use the same select/pour path as chips and picks. Easy hints select one BFS action from current contents, independent of step count.
+- Home navigation remains available during chunk loading; versioned loads reject stale completions. Back/forward waits for a busy scene's callback. Rules blocks undo/restart. Same-game/level restart re-syncs the existing scene. Failure stops elapsed time; undo resumes it.
+- Challenge decoding and stored-run migration enforce level limits inclusively. Challenge fields stay in the active game URL and reload into that game.
+- Share snapshots use a cloned default camera fitted to the card's 936×590 image region, preserving the player's view and restoring renderer dimensions/visibility. The card's sky uses scene night separately from the DOM palette.
+- Bridge HUD text uses registry strings; exposure belongs to Stage. A fixed pair of Stage-owned point lights avoids changing light counts across scene/theme switches. Low quality persists when atmosphere objects are replaced.
+- About keeps its existing URL and uses “← About” / “← 關於這個遊戲”. The unused `back` string is removed.
+
+## Sky and draw submissions
+
+The Round 11 checkout already removed the windmill/treeline, so there was no nested `bake(mill)` to remove. The baking helper now preserves existing vertex colours when rebaking and releases owned intermediate geometry/materials, with a regression test. No windmill or extra scenery draws were introduced.
+
+Gradient, sun/moon, cloud noise and painted horizon now use world view rays reconstructed from inverse projection and camera world matrices, including view offsets and pitch. A top-down camera samples ground rather than a horizon fixed to screen bottom. Stars use a sin-free Hoskins hash12 with bounded cell coordinates. Birds use `DoubleSide` and `toneMapped:false`. Existing 5,760-configuration cloud-clearance tests and reduced-motion checks still pass.
+
+The conservative material/shadow submission census includes **all 14 possible atmosphere draws**, hidden-group children, one extra submission per shadow caster, and two passes for double-sided transparent materials; it applies no camera culling. River failure markers are merged and do not cast shadows.
+
+| Puzzle | Maximum initial census | Maximum sampled gameplay census |
+| --- | ---: | ---: |
+| River (day and night) | 138 | **158** |
+| Bridge | 53 | **59** |
+| Water | 46 | **53** |
+
+Gameplay samples cover all levels' optimal actions, intermediate animations, selection/hover and victory; River also includes the nine-traveler Hard failure in night mode. Tests enforce ≤160 submissions through optimal replays and night failure states. This is **a conservative geometry census, not a measurement of GPU draw calls for every possible state**. The real-phone 60 FPS target remains unmeasured.
+
+## Production bundles
+
+Measured from the final `dist/assets/*.js` using Node `zlib.gzipSync` defaults, summing **all** JS chunks (decimal bytes):
+
+| Chunk | Raw bytes | Gzip bytes |
+| --- | ---: | ---: |
+| bridge-scene-Cn6D-Dcq.js | 5,965 | 2,537 |
+| helpers-DCDs6RHe.js | 784 | 527 |
+| index-Bb034Mrb.js | 74,978 | 28,997 |
+| river-scene-IILKuYne.js | 11,326 | 4,668 |
+| three-L7Zacm_L.js | 576,451 | 141,016 |
+| water-scene-Bn1xkll5.js | 7,102 | 2,865 |
+| **All JavaScript** | **676,606** | **180,610** |
+
+Budget: **220,000 B** gzip; remaining: **39,390 B**. HTML: 1,198 B raw / 672 B gzip. CSS: 12,514 B raw / 3,458 B gzip. Vite's gzip estimate differs slightly from Node defaults; both stay under budget. Its existing raw Three.js chunk warning remains.
+
+## Browser verification limits
+
+`npm run preview -- --host 127.0.0.1` failed with **listen EPERM at 127.0.0.1:4173** under the process sandbox. No permissions, alternate server, network or browser-policy workaround was requested or attempted. Therefore current browser pixels/GLSL appearance, share/native-share flow, actual GPU draw calls and real-phone FPS are **not verified** in this round. Prior runtime tables below are historical evidence only.
+
+<details>
+<summary>Historical Round 11 and earlier measurements (not current runtime evidence)</summary>
+
 # Round 11 verification — 2026-11-09
 
 The collection, shared Stage, two new puzzles, generalized sharing/storage and low horizon scenery are implemented in games/puzzle/. No dependencies, external assets, deployment or commits were added.
@@ -151,5 +220,7 @@ The full-screen Three.js sky is one draw, with `depthWrite:false`, a gradient, s
 Five new regression tests cover depth clipping, the screen clearance margin, actual puff vertices across **5,760 camera configurations** (four viewport sizes × 48 azimuths × five elevations × three zoom factors × two themes), reduced-motion/fallback behavior, and ray-tested celestial-disc clearance around the hill ring. Every visible puff clears the projected board/toy envelope, including during unrestricted orbit and zoom. Representative unobstructed gameplay regions at 375×812, 390×844, 768×1024 and 1440×900 are used for these projection tests. These tests do not render pixels or measure CSS layout. Default fitted views retain visible puffs at each size. Phone/tablet CSS places the level header below the view-tools cluster; desktop reserves its right-hand space. Safe-area offsets are included, and menu panels scroll above the bottom safe area.
 
 **Browser QA remains unverified:** Vite could not bind a local port (`EPERM`); a local static-server attempt also returned `EPERM`. The connected browser's automatic approval review rejected opening the self-contained local-file preview because its URL policy allows only HTTP/HTTPS. No alternate browser surface or policy workaround was attempted. Consequently current pixel/layout checks at the four requested sizes, iframe navigation, rendered GLSL/day/night appearance, share-card smoke checks, hard-level draw calls (target ≤160), and actual-phone FPS (target 60) could not be measured. Earlier runtime tables remain historical and must not be treated as Round 10 results.
+
+</details>
 
 </details>

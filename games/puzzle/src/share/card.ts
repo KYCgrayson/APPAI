@@ -2,14 +2,14 @@ import { type Run, formatTime, accentTextColor } from './index.ts';
 import { registry } from '../puzzles/registry.ts';
 import { collectionStrings as cstrings } from '../ui/i18n.ts';
 import { strings as t, shareStrings as s,locale } from '../ui/i18n.ts';
-export function drawCard(snapshot: HTMLCanvasElement, run: Run, runs: Run[], place: number | null, starCount: number, dark: boolean, accent: string, name: string, challengeLine: string) {
+export function drawCard(snapshot: HTMLCanvasElement, run: Run, runs: Run[], place: number | null, starCount: number, dark: boolean, night: boolean, accent: string, name: string, challengeLine: string) {
     const def=registry[run.game], labels=def.strings, unit=cstrings[def.metric];
     const canvas = document.createElement('canvas'); canvas.width = 1080; canvas.height = 1350;
     const c = canvas.getContext('2d')!, ink = dark ? '#f5eddb' : '#304b43', muted = dark ? '#a9bab5' : '#73867d';
     const left = 72, right = 1008, width = right - left;
     c.fillStyle = dark ? '#233e43' : '#fffaf0'; c.fillRect(0, 0, 1080, 1350);
     const rounded = (x: number, y: number, w: number, h: number, radius: number) => { c.beginPath(); c.roundRect(x, y, w, h, radius); };
-    const sky = c.createLinearGradient(0, 40, 0, 630); sky.addColorStop(0, dark ? '#172a46' : '#a8d0df'); sky.addColorStop(1, dark ? '#ba8b80' : '#eee3cc');
+    const sky = c.createLinearGradient(0, 40, 0, 630); sky.addColorStop(0, night ? '#172a46' : '#a8d0df'); sky.addColorStop(1, night ? '#ba8b80' : '#eee3cc');
     c.save(); rounded(left, 40, width, 590, 30); c.clip();
     c.fillStyle = sky; c.fillRect(left, 40, width, 590);
     const scale = Math.max(width / snapshot.width, 590 / snapshot.height);

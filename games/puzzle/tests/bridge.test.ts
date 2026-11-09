@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {initial,apply,walk,toggle,isWin,levels,solve,solution,ids,type State} from '../src/puzzles/bridge/logic.ts';
-import {levelIds,type LevelId} from '../src/puzzles/types.ts';
+import {levelIds,starsFor,type LevelId} from '../src/puzzles/types.ts';
 const deepFreeze=(s:State)=>{Object.freeze(s.side);Object.freeze(s.selected);return Object.freeze(s);};
 function trip(s:State,selected:string[]){const r=walk({...s,selected});assert.equal(r.ok,true);if(!r.ok)throw Error(r.reason);return r.state;}
 for(const [i,level]of levelIds.entries()){
@@ -28,4 +28,18 @@ test('bridge exact limit is allowed, timeout freezes all input and keeps undo st
  assert.equal(atLimit.state.minutes,22);assert.equal(atLimit.state.failure,undefined);
  const before={...atLimit.state,selected:['1']};const failed=walk(deepFreeze(before));assert.ok(failed.ok);if(!failed.ok)return;
  assert.deepEqual(failed.state.failure,{reason:'timeout'});assert.equal(isWin(failed.state),false);assert.deepEqual(walk(failed.state),{ok:false,reason:'frozen'});assert.deepEqual(toggle(failed.state,'1'),{ok:false,reason:'frozen'});assert.equal(before.failure,undefined);
+});
+
+test('easy two-star ceiling is a reachable winning score',()=>{
+ const queue=[initial('easy')],seen=new Set<string>(),wins=new Set<number>();
+ for(let q=0;q<queue.length;q++){
+  const s=queue[q],key=JSON.stringify([s.side,s.lantern,s.minutes]);if(seen.has(key))continue;seen.add(key);
+  if(isWin(s)){wins.add(s.minutes);continue;}
+  const here=ids('easy').filter(id=>s.side[id]===s.lantern);
+  for(let i=0;i<here.length;i++)for(let j=i;j<here.length;j++){
+   const r=walk({...s,selected:i===j?[here[i]]:[here[i],here[j]]});if(r.ok&&!r.state.failure)queue.push(r.state);
+  }
+ }
+ assert.deepEqual([...wins].sort((a,b)=>a-b),[17,19,20,21,22]);
+ assert.equal(levels.easy.twoStar,19);assert.equal(starsFor(19,levels.easy),2);assert.equal(starsFor(20,levels.easy),1);
 });

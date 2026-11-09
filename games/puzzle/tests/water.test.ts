@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {initial,apply,isWin,solve,solution,actions,type State} from '../src/puzzles/water/logic.ts';
+import {initial,apply,isWin,solve,solution,solutionFrom,hint,actions,type State} from '../src/puzzles/water/logic.ts';
+import {translations} from '../src/puzzles/water/strings.ts';
 import {levelIds} from '../src/puzzles/types.ts';
 for(const [i,level]of levelIds.entries())test(`water ${level}: BFS optimum and immutable public replay`,()=>{
  assert.equal(solve(level),[6,7,11][i]);let s=initial(level),total=s.jugs.reduce((a,b)=>a+b,0);
@@ -20,4 +21,21 @@ test('every reachable easy goal has 4 L in the 5 L jug; medium requires exactly 
  for(let q=0;q<queue.length;q++){const s=queue[q];if(isWin(s)){goals++;assert.equal(s.jugs[1],4);continue;}for(const a of actions(s)){const r=apply(s,a);if(r.ok){const key=r.state.jugs.join(',');if(!seen.has(key)){seen.add(key);queue.push(r.state);}}}}
  assert.ok(goals>0);assert.equal(isWin({...initial('medium'),jugs:[4,1,3]}),false);
  assert.equal(isWin({...initial('medium'),jugs:[4,4,0]}),true);
+});
+
+test('hints give one valid BFS action from every reachable easy state, independent of step count',()=>{
+ const queue=[initial('easy')],seen=new Set(['0,0']);
+ for(let q=0;q<queue.length;q++){
+  const s=queue[q],copy=structuredClone(s),path=solutionFrom(s),key=hint(s);
+  assert.deepEqual(s,copy);
+  assert.equal(hint({...s,steps:100,selected:0}),key);
+  if(isWin(s)){assert.equal(key,null);continue;}
+  assert.ok(path.length>0);
+  const a=path[0],expected=a.type==='pour'?`hintPour${a.from}${a.to}`:`hint${a.type==='fill'?'Fill':'Empty'}${'jug' in a?a.jug:''}`;
+  assert.equal(key,expected);
+  for(const strings of Object.values(translations)){assert.ok(strings[key as keyof typeof strings]);assert.ok(!strings[key as keyof typeof strings].includes('then'));}
+  let end=s;for(const step of path){const r=apply(end,step);assert.ok(r.ok);if(r.ok)end=r.state;}assert.equal(isWin(end),true);
+  for(const a of actions(s)){const r=apply(s,a);if(r.ok){const k=r.state.jugs.join(',');if(!seen.has(k)){seen.add(k);queue.push(r.state);}}}
+ }
+ assert.ok(seen.size>10);
 });

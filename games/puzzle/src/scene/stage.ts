@@ -1,9 +1,10 @@
-import { ACESFilmicToneMapping, PCFSoftShadowMap, DirectionalLight, Fog, HemisphereLight, MathUtils, Mesh, Object3D, PerspectiveCamera, Raycaster, SRGBColorSpace, Scene, Spherical, Vector2, Vector3 } from 'three';
+import { ACESFilmicToneMapping, PCFSoftShadowMap, DirectionalLight, PointLight, Fog, HemisphereLight, MathUtils, Object3D, PerspectiveCamera, Raycaster, SRGBColorSpace, Scene, Spherical, Vector2, Vector3 } from 'three';
 import { Atmosphere, horizonColor } from './atmosphere.ts';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { WebGLRenderer } from 'three';
 import type { PuzzleScene } from '../puzzles/types.ts';
 import { disposeRoot } from './models.ts';
+import { fitBoard } from './fit.ts';
 export interface Metrics {
     firstFrameMs: number;
     fps: number;
@@ -19,6 +20,10 @@ export class Stage {
     night: boolean;
     readonly themeDark: boolean;
     menu = true;
+    // Keep the light count stable across every scene/theme to reuse shader programs.
+    readonly lamps = [new PointLight('#ffbc64', 0, 8, 1.5), new PointLight('#ffbf71', 0, 2.4)];
+    private userMoved = false;
+    private lowered = false;
     private ray = new Raycaster();
     private pointer = new Vector2();
     private hover = '';
@@ -71,7 +76,7 @@ export class Stage {
         sun.shadow.bias = -.001;
         sun.shadow.normalBias = .025;
         sun.position.set(-3, 9, 6);
-        this.scene.add(sun);
+        this.scene.add(sun, ...this.lamps);
         this.controls = new OrbitControls(this.camera, canvas);
         this.controls.enableDamping = true;
         this.controls.enablePan = false;
@@ -80,7 +85,7 @@ export class Stage {
         this.controls.minAzimuthAngle = -Infinity;
         this.controls.maxAzimuthAngle = Infinity;
         this.controls.enableZoom = true;
-        this.controls.addEventListener('start', () => { this.returning = false; });
+        this.controls.addEventListener('start', () => { this.returning = false; this.userMoved = true; this.idleOrbit = false; this.controls.autoRotate = false; });
         this.controls.minDistance = 10;
         this.controls.maxDistance = 25;
         this.controls.target.set(0, 0, 0);
@@ -116,7 +121,7 @@ export class Stage {
             this.emptyTap.time = 0;
         } this.hover = this.intersect(e); canvas.style.cursor = this.hover ? 'pointer' : 'grab'; });
         window.addEventListener('resize', () => this.resize());
-        window.addEventListener('orientationchange', () => requestAnimationFrame(() => this.resize()));
+        window.addEventListener('orientationchange', () => this.resize());
         document.addEventListener('visibilitychange', () => {
             if (document.hidden)
                 cancelAnimationFrame(this.raf);
@@ -129,8 +134,8 @@ export class Stage {
                 this.loop();
             }
         });
-        this.resize();
-        this.loop();
+        // No WebGL render until a puzzle is mounted, even if rAF never fires.
+        this.raf = requestAnimationFrame(this.loop);
     }
     mount(scene: PuzzleScene<any>, night: boolean) {
         if (this.current) {
@@ -144,6 +149,7 @@ export class Stage {
             this.scene.remove(this.atmosphere);
             disposeRoot(this.atmosphere);
             this.atmosphere = new Atmosphere(night);
+            if (this.lowered) this.atmosphere.lowerQuality();
             this.scene.add(this.atmosphere);
             this.scene.fog = new Fog(horizonColor(night), 70, 260);
             this.hemi.color.set(night ? '#a5afd7' : '#d9e9f5');
@@ -151,13 +157,16 @@ export class Stage {
             this.hemi.intensity = night ? 1.4 : 2;
             this.sun.color.set(night ? '#d6b4ce' : '#ffdeb0');
             this.sun.intensity = night ? 1.8 : 3;
-            this.renderer.toneMappingExposure = night ? .85 : 1.1;
         }
         this.renderer.toneMappingExposure = night ? .85 : 1.1;
+        document.body.classList.toggle('night', this.night);
+        this.lamps.forEach(light => { light.intensity = 0; });
+        this.current.update(performance.now() / 1000, 0, '');
         this.idleOrbit = true;
         this.viewport = '';
         this.resetView();
         this.idleOrbit = true;
+        this.renderFrame();
     }
     private intersect(e: PointerEvent) {
         const rect = this.renderer.domElement.getBoundingClientRect();
@@ -179,12 +188,21 @@ export class Stage {
         return (pieces.length ? pieces : [...candidates]).sort((a, b) => a[1] - b[1])[0]?.[0] ?? '';
     }
     snapshot(): HTMLCanvasElement {
-        // Capture only the diorama, regardless of menu state or orbit angle.
+        // Capture the default view at the card's aspect, independent of orbit or phone HUD.
         const atmosphere = [this.atmosphere, ...(this.current?.root.getObjectsByProperty('name', 'snapshot-hidden') ?? [])];
-        const visibility = atmosphere.map(o => o.visible);
+        const visibility = atmosphere.map(o => o.visible), size = this.renderer.getSize(new Vector2());
+        const camera = this.camera.clone();
+        camera.clearViewOffset(); camera.aspect = 936 / 590; camera.zoom = 1;
+        if (this.current) {
+            const fit = fitBoard(this.current.bounds, camera.aspect, camera.fov);
+            camera.position.set(fit.position.x, fit.position.y, fit.position.z);
+            camera.lookAt(fit.target.x, fit.target.y, fit.target.z);
+        }
+        camera.updateProjectionMatrix(); camera.updateMatrixWorld();
         try {
             atmosphere.forEach(o => { o.visible = false; });
-            this.renderer.render(this.scene, this.camera);
+            this.renderer.setSize(936, 590, false);
+            this.renderer.render(this.scene, camera);
             const copy = document.createElement('canvas');
             copy.width = this.renderer.domElement.width;
             copy.height = this.renderer.domElement.height;
@@ -193,7 +211,8 @@ export class Stage {
         }
         finally {
             atmosphere.forEach((o, i) => { o.visible = visibility[i]; });
-            this.renderer.render(this.scene, this.camera);
+            this.renderer.setSize(size.x, size.y, false);
+            this.renderFrame();
         }
     }
     startIdleOrbit() { this.idleOrbit = true; }
@@ -202,6 +221,7 @@ export class Stage {
         this.controls.autoRotate = false;
         this.idleOrbit = false;
         this.returning = false;
+        this.userMoved = false;
         this.controls.enableDamping = false;
         this.controls.update();
         this.controls.enableDamping = true;
@@ -217,47 +237,52 @@ export class Stage {
             this.controls.target.copy(target);
             this.returning = true;
         }
+        this.renderFrame();
     }
     resize() {
+        if (!this.current) return;
         const top = document.querySelector('.topbar')?.getBoundingClientRect().bottom ?? 0;
         const bottom = document.querySelector('.bottom')?.getBoundingClientRect().top ?? innerHeight;
-        const h = Math.max(180, bottom - top), w = innerWidth;
-        const viewport = `${w}:${h}:${top}`;
-        if (viewport === this.viewport)
-            return;
+        const h = Math.max(1, bottom - top), w = innerWidth;
+        const viewport = `${w}:${innerHeight}:${h}:${top}`;
+        if (viewport === this.viewport) { this.renderFrame(); return; }
         this.viewport = viewport;
-        const canvas = this.renderer.domElement;
-        canvas.style.top = '0px';
+        this.renderer.domElement.style.top = '0px';
         this.renderer.setSize(w, innerHeight);
         this.camera.setViewOffset(w, h, 0, -top, w, innerHeight);
         this.camera.aspect = w / h;
-        const elevation = 43 * Math.PI / 180;
-        const vertical = this.camera.fov * Math.PI / 360;
-        // Fit the board's projected corners, including perspective depth and actor height.
-        const portrait = innerWidth < innerHeight;
-        const widthFraction = portrait ? .92 : .94, heightFraction = portrait ? .94 : .70;
-        let distance = 0;
-        for (const x of [-(this.current?.bounds.x ?? 5), this.current?.bounds.x ?? 5])
-            for (const z of [-(this.current?.bounds.z ?? 4), this.current?.bounds.z ?? 4])
-                for (const y of (this.current?.bounds.y ?? [-.7, 2.3])) {
-                    const depth = y * Math.sin(elevation) + z * Math.cos(elevation);
-                    const up = y * Math.cos(elevation) - z * Math.sin(elevation);
-                    distance = Math.max(distance, depth + Math.abs(x) / (Math.tan(vertical) * this.camera.aspect * widthFraction), depth + Math.abs(up) / (Math.tan(vertical) * heightFraction));
-                }
-        this.controls.target.set(0, .4, 0);
-        this.camera.position.set(0, .4 + distance * Math.sin(elevation), distance * Math.cos(elevation));
-        this.controls.minDistance = distance * .6;
-        this.controls.maxDistance = distance * 1.6;
-        this.defaultPosition.copy(this.camera.position);
-        this.defaultOrbit.setFromVector3(this.camera.position.clone().sub(this.defaultTarget));
-        this.camera.updateProjectionMatrix();
-        this.controls.update();
+        const fit = fitBoard(this.current.bounds, this.camera.aspect, this.camera.fov);
+        this.defaultTarget.set(fit.target.x, fit.target.y, fit.target.z);
+        this.defaultPosition.set(fit.position.x, fit.position.y, fit.position.z);
+        this.defaultOrbit.setFromVector3(this.defaultPosition.clone().sub(this.defaultTarget));
+        const position = this.camera.position.clone(), target = this.controls.target.clone(), zoom = this.camera.zoom;
+        // Save a new reset pose without touching an orbit/zoom the player chose.
+        this.camera.position.copy(this.defaultPosition);
+        this.controls.target.copy(this.defaultTarget);
+        this.camera.zoom = 1;
         this.controls.saveState();
+        if (this.userMoved || this.returning) {
+            this.camera.position.copy(position); this.controls.target.copy(target); this.camera.zoom = zoom;
+        }
+        const currentDistance = this.camera.position.distanceTo(this.controls.target);
+        this.controls.minDistance = Math.min(fit.distance * .6, currentDistance);
+        this.controls.maxDistance = Math.max(fit.distance * 1.6, currentDistance);
+        this.camera.updateProjectionMatrix();
+        this.renderFrame();
+    }
+    private renderFrame(dt = 0) {
+        if (!this.current) return;
+        this.controls.update();
+        this.camera.updateMatrixWorld();
+        this.atmosphere.update(this.camera, dt, innerWidth / innerHeight);
+        this.renderer.render(this.scene, this.camera);
+        if (!this.metrics.firstFrameMs) this.metrics.firstFrameMs = performance.now();
     }
     private loop = () => {
         if (document.hidden)
             return;
         this.raf = requestAnimationFrame(this.loop);
+        if (!this.current) return;
         const now = performance.now(), dt = Math.min((now - this.last) / 1000, .05);
         this.last = now;
         const t = now / 1000;
@@ -281,12 +306,7 @@ export class Stage {
                 this.returning = false;
             }
         }
-        this.controls.update();
-        this.camera.updateMatrixWorld();
-        this.atmosphere.update(this.camera, dt, innerWidth / innerHeight);
-        this.renderer.render(this.scene, this.camera);
-        if (!this.metrics.firstFrameMs && this.current)
-            this.metrics.firstFrameMs = performance.now();
+        this.renderFrame(dt);
         this.frames++;
         if (!this.qualityStart) {
             this.qualityStart = performance.now();
@@ -297,6 +317,7 @@ export class Stage {
         if (!this.qualityChecked && now - this.qualityStart >= 2000) {
             this.qualityChecked = true;
             if (this.qualityFrames * 1000 / (now - this.qualityStart) < 45) {
+                this.lowered = true;
                 this.atmosphere.lowerQuality();
                 this.sun.castShadow = false;
                 this.renderer.shadowMap.enabled = false;

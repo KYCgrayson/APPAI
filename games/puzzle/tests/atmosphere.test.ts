@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Mesh, PerspectiveCamera, Raycaster, ShaderMaterial, Spherical, Vector2, Vector3 } from 'three';
+import { DoubleSide, Mesh, PerspectiveCamera, ShaderMaterial, Spherical, Vector2, Vector3 } from 'three';
 import { Atmosphere, clearsBoard, projectBox, screenRect } from '../src/scene/atmosphere.ts';
 
 const motion = { matches: false };
@@ -57,7 +57,7 @@ for (const dark of [false, true]) test(`${dark ? 'night' : 'day'}: visible puff 
     assert.ok(visible > 100);
     let meshes = 0;
     atmosphere.traverse(o => { assert.equal(o.castShadow, false); if (o instanceof Mesh) meshes++; });
-    assert.ok(meshes <= 18, 'sky, three hills, merged treeline/mill, twelve puffs and one instanced flock');
+    assert.ok(meshes <= 18, 'sky, twelve puffs and one instanced flock');
 });
 
 test('reduced motion freezes drift and twinkle; FPS fallback removes the third octave and twinkle', () => {
@@ -80,25 +80,30 @@ test('reduced motion freezes drift and twinkle; FPS fallback removes the third o
     assert.equal(sky.material.uniforms.quality.value, 0);
 });
 
-test('hill silhouettes leave the celestial disc visible in default fitted views around the ring', () => {
-    const atmosphere = new Atmosphere(false), ray = new Raycaster();
-    const hills = atmosphere.children.filter(o => o instanceof Mesh && !o.name) as Mesh[];
-    // Background meshes opt out of gameplay picking; enable ray intersection only in this test.
-    hills.forEach(o => { o.raycast = Mesh.prototype.raycast; });
-    atmosphere.updateMatrixWorld(true);
-    for (const frame of frames) {
-        const camera = new PerspectiveCamera(38, frame.w / (frame.bottom - frame.top), .1, 360);
-        camera.setViewOffset(frame.w, frame.bottom - frame.top, 0, -frame.top, frame.w, frame.h);
-        for (let a = 0; a < 48; a++) {
-            camera.position.setFromSpherical(new Spherical(frame.distance, 47 * Math.PI / 180, a * Math.PI / 24)).add(new Vector3(0, .4, 0));
-            camera.lookAt(0, .4, 0); camera.updateMatrixWorld();
-            atmosphere.update(camera, 0, frame.w / frame.h);
-            const sky = atmosphere.getObjectByName('sky') as Mesh<import('three').PlaneGeometry, ShaderMaterial>;
-            const light = sky.material.uniforms.lightPosition.value as Vector2;
-            for (const [x, y] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
-                ray.setFromCamera(new Vector2(light.x * 2 - 1 + x * .064 / (frame.w / frame.h), light.y * 2 - 1 + y * .064), camera);
-                assert.equal(ray.intersectObjects(hills).length, 0);
-            }
+test('sky rays track world direction and pitch including view offset; birds bypass tone mapping', () => {
+    const atmosphere = new Atmosphere(false);
+    const sky = atmosphere.getObjectByName('sky') as Mesh<import('three').PlaneGeometry, ShaderMaterial>;
+    const camera = new PerspectiveCamera(38, 1.2, .1, 360);
+    camera.setViewOffset(390, 399, 0, -217, 390, 844);
+    for (const polar of [.15, .8, 1.30]) for (const azimuth of [0, 1, 3, 5]) {
+        camera.position.setFromSpherical(new Spherical(20, polar, azimuth));
+        camera.lookAt(0, .4, 0); camera.updateMatrixWorld();
+        atmosphere.update(camera, 0, 390 / 844);
+        for (const [x, y] of [[0, 0], [-1, -1], [1, 1]]) {
+            const ray = new Vector3(x, y, 1).applyMatrix4(sky.material.uniforms.inverseProjection.value).transformDirection(sky.material.uniforms.cameraWorld.value);
+            const expected = new Vector3(x, y, 1).unproject(camera).sub(camera.position).normalize();
+            assert.ok(ray.distanceTo(expected) < 1e-10);
         }
     }
+    camera.clearViewOffset(); camera.aspect = 1; camera.updateProjectionMatrix();
+    camera.position.set(0, 20, .01); camera.lookAt(0, 0, 0); camera.updateMatrixWorld(); atmosphere.update(camera, 0, 1);
+    for (const x of [-1, 1]) for (const y of [-1, 1]) {
+        const ray = new Vector3(x, y, 1).applyMatrix4(sky.material.uniforms.inverseProjection.value).transformDirection(sky.material.uniforms.cameraWorld.value);
+        assert.ok(ray.y < -.85, 'top-down rays sample ground rather than a screen-bottom horizon');
+    }
+    assert.ok(sky.material.fragmentShader.includes('altitude=direction.y'));
+    const hash = sky.material.fragmentShader.split('float hash(vec2 p)')[1].split('float noise')[0];
+    assert.ok(!hash.includes('sin('));
+    const birds = atmosphere.getObjectByName('sky-birds') as Mesh;
+    assert.equal((birds.material as any).toneMapped, false); assert.equal((birds.material as any).side, DoubleSide);
 });

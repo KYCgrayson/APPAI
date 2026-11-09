@@ -15,7 +15,11 @@ export function bake(g: Group) {
   const geo = child.geometry.clone(); child.updateMatrix(); geo.applyMatrix4(child.matrix);
   const c = (child.material as MeshStandardMaterial).color, colors = new Float32Array(geo.attributes.position.count * 3);
   for (let i=0;i<colors.length;i+=3) { colors[i]=c.r; colors[i+1]=c.g; colors[i+2]=c.b; }
-  geo.setAttribute('color', new Float32BufferAttribute(colors,3)); geometries.push(geo); g.remove(child);
+  if (!(child.material as MeshStandardMaterial).vertexColors || !geo.hasAttribute('color'))
+   geo.setAttribute('color', new Float32BufferAttribute(colors,3));
+  geometries.push(geo); g.remove(child);
+  if (![sphere,box,cone,cylinder].includes(child.geometry as typeof sphere)) child.geometry.dispose();
+  if (![...mats.values()].includes(child.material as MeshStandardMaterial)) (child.material as MeshStandardMaterial).dispose();
  }
  if (geometries.length) { const mesh = new Mesh(mergeGeometries(geometries), new MeshStandardMaterial({vertexColors:true, roughness:.83})); mesh.castShadow=true; mesh.receiveShadow=true; g.add(mesh); geometries.forEach(geo=>geo.dispose()); }
 }

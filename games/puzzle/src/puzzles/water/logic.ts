@@ -53,8 +53,8 @@ export function apply(s: State, a: PuzzleAction): ReturnType<PuzzleLogic<State>[
     return { ok: true, state: { ...s, jugs, selected: null, steps: s.steps + 1 }, sfx: a.type === 'pour' ? 'pour' : a.type === 'fill' ? 'fill' : 'empty' };
 }
 export function actions(s: State): PuzzleAction[] { return s.caps.flatMap((_, jug) => [...(s.taps ? [{ type: 'fill' as const, jug }, { type: 'empty' as const, jug }] : []), ...s.caps.map((_, to) => ({ type: 'pour' as const, from: jug, to }))]); }
-export function solution(level: LevelId): PuzzleAction[] {
-    const start = initial(level), queue = [{ s: start, path: [] as PuzzleAction[] }], seen = new Set([start.jugs.join(',')]);
+export function solutionFrom(start: State): PuzzleAction[] {
+    const queue = [{ s: start, path: [] as PuzzleAction[] }], seen = new Set([start.jugs.join(',')]);
     for (let q = 0; q < queue.length; q++) {
         const { s, path } = queue[q];
         if (isWin(s))
@@ -72,5 +72,11 @@ export function solution(level: LevelId): PuzzleAction[] {
     }
     return [];
 }
+export const solution = (level: LevelId) => solutionFrom(initial(level));
+export function hint(s: State): string | null {
+    if (s.level !== 'easy' || isWin(s)) return null;
+    const next = solutionFrom(s)[0];
+    return next ? next.type === 'pour' ? `hintPour${next.from}${next.to}` : 'jug' in next ? `hint${next.type === 'fill' ? 'Fill' : 'Empty'}${next.jug}` : null : null;
+}
 export const solve = (level: LevelId) => solution(level).length || Infinity;
-export const logic: PuzzleLogic<State> = { initial, apply, isWin, failure: () => undefined, score: s => s.steps, isMove: a => ['fill', 'empty', 'pour'].includes(a.type), solve, solution, hint: s => s.level === 'easy' && s.steps < 3 ? `hint${s.steps}` : null };
+export const logic: PuzzleLogic<State> = { initial, apply, isWin, failure: () => undefined, score: s => s.steps, isMove: a => ['fill', 'empty', 'pour'].includes(a.type), solve, solution, hint };

@@ -1,4 +1,4 @@
-import { BufferGeometry, Color, Float32BufferAttribute, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, ShaderMaterial, Vector2, Vector3 } from 'three';
+import { BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, ShaderMaterial, Vector3 } from 'three';
 import { bake, part } from './models.ts';
 
 export const horizonColor = (dark: boolean) => dark ? '#686781' : '#e7d7bb';
@@ -43,18 +43,29 @@ export class Atmosphere extends Group {
         this.sky = new Mesh(new PlaneGeometry(2, 2), new ShaderMaterial({
             depthTest: false, depthWrite: false, fog: false, toneMapped: false,
             uniforms: {
-                time: { value: 0 }, aspect: { value: 1 }, quality: { value: 1 }, night: { value: dark ? 1 : 0 },
-                lightPosition: { value: new Vector2(.16, .955) },
+                time: { value: 0 }, quality: { value: 1 }, night: { value: dark ? 1 : 0 },
+                inverseProjection: { value: new Matrix4() }, cameraWorld: { value: new Matrix4() },
+                lightDirection: { value: new Vector3(-.5, .55, -.7).normalize() },
                 zenith: { value: new Color(dark ? '#152744' : '#77b8df') }, horizon: { value: new Color(horizonColor(dark)) }
             },
-            vertexShader: `varying vec2 uvSky;
-                void main(){ uvSky=uv; gl_Position=vec4(position.xy,1.0,1.0); }`,
+            vertexShader: `varying vec3 worldRay;
+                uniform mat4 inverseProjection, cameraWorld;
+                void main(){
+                    vec4 ray=inverseProjection*vec4(position.xy,1.0,1.0);
+                    worldRay=mat3(cameraWorld)*ray.xyz;
+                    gl_Position=vec4(position.xy,1.0,1.0);
+                }`,
             fragmentShader: `
-                varying vec2 uvSky;
-                uniform float time, aspect, quality, night;
-                uniform vec2 lightPosition;
+                varying vec3 worldRay;
+                uniform float time, quality, night;
+                uniform vec3 lightDirection;
                 uniform vec3 zenith, horizon;
-                float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+                // Hoskins hash12: no large sin arguments on mobile GPUs.
+                float hash(vec2 p){
+                    vec3 p3=fract(vec3(p.xyx)*.1031);
+                    p3+=dot(p3,p3.yzx+33.33);
+                    return fract((p3.x+p3.y)*p3.z);
+                }
                 float noise(vec2 p){
                     vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
                     return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+1.0),f.x),f.y);
@@ -66,40 +77,41 @@ export class Atmosphere extends Group {
                     return n;
                 }
                 void main(){
-                    vec2 p=vec2(uvSky.x*aspect,uvSky.y);
-                    vec3 color=mix(horizon,zenith,smoothstep(.22,1.0,uvSky.y));
-                    vec2 sun=p-lightPosition*vec2(aspect,1.0);
-                    float r=length(sun), radius=mix(.032,.025,night);
+                    vec3 direction=normalize(worldRay);
+                    float altitude=direction.y, azimuth=atan(direction.x,-direction.z);
+                    vec2 p=vec2(azimuth/6.2831853+.5,asin(clamp(altitude,-1.0,1.0))/3.1415927+.5);
+                    vec3 color=mix(horizon,zenith,smoothstep(-.12,.8,altitude));
+                    float r=length(direction-lightDirection), radius=mix(.032,.025,night);
                     float disc=1.0-smoothstep(radius*.86,radius*1.1,r);
                     float halo=exp(-r*17.0)*.32+exp(-r*65.0)*.25;
                     vec3 glow=mix(vec3(1.0,.68,.31),vec3(.53,.65,1.0),night);
                     color+=glow*halo;
                     color=mix(color,mix(vec3(1.0,.88,.58),vec3(.88,.93,1.0),night),disc*.94);
                     if(night>.5){
-                        vec2 grid=p*115.0, cell=floor(grid);
+                        vec2 grid=p*vec2(288.0,144.0), cell=mod(floor(grid),289.0);
                         vec2 offset=vec2(hash(cell+4.0),hash(cell+23.0))*.6+.2;
                         float star=1.0-smoothstep(.025,.12,length(fract(grid)-offset));
                         float twinkle=.8;
                         if(quality>.5) twinkle=.75+.25*sin(time*(1.0+hash(cell)*2.0)+hash(cell+8.0)*40.0);
-                        color+=vec3(.77,.84,1.0)*star*step(.98,hash(cell))*twinkle*smoothstep(.40,.72,uvSky.y)*(1.0-disc);
+                        color+=vec3(.77,.84,1.0)*star*step(.98,hash(cell))*twinkle*smoothstep(.02,.4,altitude)*(1.0-disc);
                     }
                     vec2 wind=vec2(time*.009,time*.001);
-                    vec2 wisps=p*vec2(3.2,16.0)+wind;
+                    vec2 wisps=direction.xz/max(.12,altitude+.2)*vec2(3.2,8.0)+wind;
                     wisps.x+=noise(wisps*.38)*1.6;
-                    float cloud=smoothstep(.48,.83,fbm(wisps))*smoothstep(.28,.58,uvSky.y);
-                    vec3 duskCloud=mix(vec3(.52,.37,.45),vec3(.27,.31,.45),smoothstep(.35,.88,uvSky.y));
+                    float cloud=smoothstep(.48,.83,fbm(wisps))*smoothstep(-.05,.35,altitude);
+                    vec3 duskCloud=mix(vec3(.52,.37,.45),vec3(.27,.31,.45),smoothstep(.0,.7,altitude));
                     vec3 lit=mix(vec3(1.0,.96,.86),duskCloud,night);
                     color=mix(color,lit,cloud*mix(.47,.28,night));
                     // Three low, irregular blue bands above a flat, fog-soft meadow.
                     for(int i=0;i<3;i++){
                         float f=float(i);
-                        float edge=.245-f*.027 + sin(p.x*(5.0+f*2.0)+f)*.009 + noise(vec2(p.x*13.0+f*8.0,2.0))*.022;
+                        float edge=-.055-f*.035 + sin(azimuth*(5.0+f*2.0)+f)*.009 + noise(direction.xz*13.0+f*8.0)*.022;
                         vec3 band=mix(vec3(.55,.67,.70),vec3(.32,.40,.51),night);
                         band=mix(band,horizon,.62-f*.11);
-                        color=mix(color,band,(1.0-smoothstep(edge-.002,edge+.002,uvSky.y))*.75);
+                        color=mix(color,band,(1.0-smoothstep(edge-.002,edge+.002,altitude))*.75);
                     }
                     vec3 ground=mix(vec3(.72,.77,.66),vec3(.25,.32,.38),night);
-                    color=mix(color,ground,(1.0-smoothstep(.02,.20,uvSky.y))*.72);
+                    color=mix(color,ground,(1.0-smoothstep(-.65,-.20,altitude))*.72);
                     gl_FragColor=vec4(color,1.0);
                     #include <colorspace_fragment>
                 }`
@@ -131,19 +143,17 @@ export class Atmosphere extends Group {
         }
         const wing = new BufferGeometry();
         wing.setAttribute('position', new Float32BufferAttribute([-.7, .12, 0, 0, 0, .18, 0, 0, -.08, 0, 0, -.08, 0, 0, .18, .7, .12, 0], 3));
-        this.birds = new InstancedMesh(wing, new MeshBasicMaterial({ color: dark ? '#c5bdcb' : '#617c80', side: 2 }), 5);
+        this.birds = new InstancedMesh(wing, new MeshBasicMaterial({ color: dark ? '#c5bdcb' : '#617c80', side: DoubleSide, toneMapped: false }), 5);
         this.birds.name = 'sky-birds'; this.birds.frustumCulled = false;
         this.add(this.birds);
         this.traverse(o => { o.castShadow = false; o.receiveShadow = false; o.raycast = () => {}; });
     }
     lowerQuality() { this.lowQuality = true; }
-    update(camera: PerspectiveCamera, dt: number, aspect: number) {
+    update(camera: PerspectiveCamera, dt: number, _aspect: number) {
         if (!this.reduced.matches) this.time += dt;
         this.sky.material.uniforms.time.value = this.time;
-        this.sky.material.uniforms.aspect.value = aspect;
-        // Keep the disc in the open sky above the header, clear of phone view tools.
-
-        this.sky.material.uniforms.lightPosition.value.x = aspect > 1.45 ? .4 : .16;
+        this.sky.material.uniforms.inverseProjection.value.copy(camera.projectionMatrixInverse);
+        this.sky.material.uniforms.cameraWorld.value.copy(camera.matrixWorld);
         // Reduced motion also stops star twinkle, including changes made while playing.
         const shader = this.sky.material;
         shader.uniforms.quality.value = this.reduced.matches || this.lowQuality ? 0 : 1;

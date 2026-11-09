@@ -18,10 +18,10 @@ class WaterScene implements PuzzleScene<State> {
     root = new Group();
     hit: Object3D[] = [];
     secondaryIds = ['pump', 'flowers'];
-    bounds = { x: 5.1, y: [-1, 3] as [
+    bounds = { x: 4.2, y: [-1, 2.5] as [
             number,
             number
-        ], z: 3.7 };
+        ], z: 2.95 };
     busy = false;
     private state: State;
     private jugs: Jug[] = [];
@@ -44,47 +44,48 @@ class WaterScene implements PuzzleScene<State> {
     };
     constructor(_stage: Stage, level: LevelId) {
         this.state = initial(level);
+        this.bounds.y[1] = level === 'hard' ? 2.5 : 2.4;
         const table = new Group();
-        part(table, 'box', '#ae865e', [0, -.20, 0], [10, .4, 6.9]);
-        for (const x of [-4, 4])
-            for (const z of [-2.6, 2.6])
+        part(table, 'box', '#ae865e', [0, -.20, 0], [8.4, .4, 5.9]);
+        for (const x of [-3.5, 3.5])
+            for (const z of [-2.2, 2.2])
                 part(table, 'box', '#8d6d51', [x, -.65, z], [.35, .65, .35]);
-        for (let i = 0; i < 10; i++)
-            part(table, 'box', i % 2 ? '#c5a075' : '#bb9569', [-4.5 + i, 0, 0], [.97, .08, 6.8]);
+        for (let i = 0; i < 9; i++)
+            part(table, 'box', i % 2 ? '#c5a075' : '#bb9569', [-3.73 + i * .93, 0, 0], [.91, .08, 5.8]);
         part(table, 'box', '#e7d7af', [0, .07, 0], [7.5, .04, 2.6]);
         for (const z of [-1.2, 1.2])
             part(table, 'box', '#92a48c', [0, .095, z], [7.5, .015, .08]);
         for (let i = 0; i < 3; i++) {
             const x = -3.4 + i * 1.1;
-            part(table, 'cone', '#a97855', [x, .3, -2.65], [.27, .42, .27]);
+            part(table, 'cone', '#a97855', [x, .3, -2.2], [.27, .42, .27]);
             for (let j = 0; j < 4; j++)
-                part(table, 'sphere', '#6f9262', [x + Math.sin(j * 2.3) * .18, .62 + j * .08, -2.65 + Math.cos(j * 2.3) * .15], [.1, .25, .08]);
+                part(table, 'sphere', '#6f9262', [x + Math.sin(j * 2.3) * .18, .62 + j * .08, -2.2 + Math.cos(j * 2.3) * .15], [.1, .25, .08]);
         }
         if (this.state.taps) {
-            part(table, 'cylinder', '#b5b4a0', [2.45, .23, -2.3], [.73, .3, .58]);
-            part(table, 'cylinder', '#6f8b89', [2.45, .40, -2.3], [.56, .06, .42]);
+            part(table, 'cylinder', '#b5b4a0', [2.45, .23, -2], [.73, .3, .58]);
+            part(table, 'cylinder', '#6f8b89', [2.45, .40, -2], [.56, .06, .42]);
         }
         else {
             for (let i = 0; i < 12; i++) {
                 const a = i * Math.PI / 6;
-                const stone = part(table, 'box', i % 2 ? '#939e94' : '#b8b7a1', [2.45 + Math.sin(a) * .65, .38, -2.4 + Math.cos(a) * .65], [.35, .55, .35]);
+                const stone = part(table, 'box', i % 2 ? '#939e94' : '#b8b7a1', [2.45 + Math.sin(a) * .65, .38, -2.05 + Math.cos(a) * .65], [.35, .55, .35]);
                 stone.rotation.y = a;
             }
-            part(table, 'cylinder', '#648a8b', [2.45, .14, -2.4], [.54, .025, .54]);
+            part(table, 'cylinder', '#648a8b', [2.45, .14, -2.05], [.54, .025, .54]);
             for (const x of [1.6, 3.3])
-                part(table, 'cylinder', '#806e51', [x, 1, -2.4], [.05, 1.4, .05]);
-            rod(table, '#806e51', [1.6, 1.7, -2.4], [3.3, 1.7, -2.4], .06);
+                part(table, 'cylinder', '#806e51', [x, 1, -2.05], [.05, 1.4, .05]);
+            rod(table, '#806e51', [1.6, 1.7, -2.05], [3.3, 1.7, -2.05], .06);
         }
-        part(table, 'box', '#8d7052', [0, .13, 2.75], [7.5, .25, .85]);
-        part(table, 'box', '#605b44', [0, .28, 2.75], [7.25, .12, .65]);
+        part(table, 'box', '#8d7052', [0, .13, 2.35], [7.5, .25, .85]);
+        part(table, 'box', '#605b44', [0, .28, 2.35], [7.25, .12, .65]);
         for (let i = 0; i < 24; i++) {
             const h = .12 + (i % 3) * .09;
-            part(table, 'cylinder', '#7d985e', [-3.35 + i % 12 * .61, .34 + h / 2, 2.6 + Math.floor(i / 12) * .3], [.025, h, .025]);
+            part(table, 'cylinder', '#7d985e', [-3.35 + i % 12 * .61, .34 + h / 2, 2.2 + Math.floor(i / 12) * .3], [.025, h, .025]);
         }
         bake(table);
         this.root.add(table);
         const bed = new Mesh(new BoxGeometryCompat(7.5, .65, .9), new MeshBasicMaterial({ visible: false }));
-        bed.position.set(0, .4, 2.75);
+        bed.position.set(0, .4, 2.35);
         bed.userData.id = 'flowers';
         if (this.state.taps)
             this.hit.push(bed);
@@ -98,19 +99,19 @@ class WaterScene implements PuzzleScene<State> {
             rod(pump, '#ae965b', [0, 1.1, 0], [.5, 1.1, 0], .08);
             rod(pump, '#ae965b', [.5, 1.1, 0], [.5, .86, 0], .08);
             bake(pump);
-            pump.position.set(2, .45, -2.3);
+            pump.position.set(2, .45, -2);
             pump.userData.id = 'pump';
             this.root.add(pump);
             this.hit.push(pump);
             rod(this.pumpHandle, '#7b7551', [0, 0, 0], [-.6, .2, 0], .045);
             bake(this.pumpHandle);
-            this.pumpHandle.position.set(2, 1.6, -2.3);
+            this.pumpHandle.position.set(2, 1.6, -2);
             this.root.add(this.pumpHandle);
         }
         const glass = new MeshStandardMaterial({ color: '#bfe0db', transparent: true, opacity: .23, roughness: .16, metalness: .05, side: DoubleSide, depthWrite: false });
         const waterMat = new MeshStandardMaterial({ color: '#58afc2', transparent: true, opacity: .8, roughness: .23 });
         this.state.caps.forEach((cap, i) => {
-            const root = new Group(), height = .85 + Math.sqrt(cap) * .27, radius = .43 + Math.sqrt(cap) * .035;
+            const root = new Group(), height = .9 + Math.sqrt(cap) * .20, radius = .60 + Math.sqrt(cap) * .045;
             const shell = new Mesh(new CylinderGeometry(radius, radius * .88, height, 20, 1, true), glass);
             shell.position.y = height / 2;
             root.add(shell);
@@ -136,7 +137,7 @@ class WaterScene implements PuzzleScene<State> {
             root.add(ring);
             const label = badge(`${cap} L`);
             label.scale.set(.9, .56, 1);
-            label.position.y = height + .52;
+            label.position.y = height + .26;
             root.add(label);
             const home = new Vector3((i - (this.state.caps.length - 1) / 2) * 2.5, .14, .25);
             root.position.copy(home);
@@ -172,8 +173,8 @@ class WaterScene implements PuzzleScene<State> {
             else if (a.kind === 'pour')
                 g.root.rotation.z = -dir * 55 * Math.PI / 180 * lift;
             this.jugs.forEach((_, i) => this.amount(i, MathUtils.lerp(a.from.jugs[i], a.to.jugs[i], flow)));
-            const source = a.kind === 'fill' ? new Vector3(2.5, 1.4, -2.3) : g.root.localToWorld(a.kind === 'empty' ? new Vector3(0, g.height, g.radius) : new Vector3(dir * g.radius, g.height, 0));
-            const end = a.kind === 'pour' ? this.jugs[a.target].root.localToWorld(new Vector3(0, this.jugs[a.target].height * .7, 0)) : a.kind === 'fill' ? g.root.localToWorld(new Vector3(0, g.height * .6, 0)) : new Vector3(g.root.position.x, .5, 2.65);
+            const source = a.kind === 'fill' ? new Vector3(2.5, 1.4, -2) : g.root.localToWorld(a.kind === 'empty' ? new Vector3(0, g.height, g.radius) : new Vector3(dir * g.radius, g.height, 0));
+            const end = a.kind === 'pour' ? this.jugs[a.target].root.localToWorld(new Vector3(0, this.jugs[a.target].height * .7, 0)) : a.kind === 'fill' ? g.root.localToWorld(new Vector3(0, g.height * .6, 0)) : new Vector3(g.root.position.x, .5, 2.25);
             this.stream.visible = p > .2 && p < .8;
             this.stream.position.copy(source).add(end).multiplyScalar(.5);
             this.stream.scale.set(1, source.distanceTo(end), 1);
@@ -192,16 +193,16 @@ class WaterScene implements PuzzleScene<State> {
         }
         this.jugs.forEach((g, i) => { const selected = this.state.selected === i; g.ring.visible = selected || hover === `jug${i}`; if (!this.busy) {
             g.root.position.y = g.home.y + (selected ? .18 : 0) + (isWin(this.state) && this.state.jugs[i] === (this.state.level === 'hard' ? 6 : 4) ? Math.abs(Math.sin(t * 5 + i)) * .17 : 0);
-        } g.label.position.y = g.height + .52; });
+        } g.label.position.y = g.height + .26; });
         for (let i = 0; i < 24; i++) {
-            this.matrix.position.set(-3.35 + i % 12 * .61, .47 + (i % 3) * .09, 2.6 + Math.floor(i / 12) * .3);
+            this.matrix.position.set(-3.35 + i % 12 * .61, .47 + (i % 3) * .09, 2.2 + Math.floor(i / 12) * .3);
             this.matrix.scale.setScalar(.7 + this.watered * .7);
             this.matrix.rotation.set(0, 0, 0);
             this.matrix.updateMatrix();
             this.flowers.setMatrixAt(i, this.matrix.matrix);
         }
         this.flowers.instanceMatrix.needsUpdate = true;
-        this.butterfly.position.set(Math.sin(t * .4) * 3, 2.1 + Math.sin(t * .8) * .2, -2 + Math.cos(t * .4));
+        this.butterfly.position.set(Math.sin(t * .4) * 3, 2.1 + Math.sin(t * .8) * .2, -1.8 + Math.cos(t * .4) * .8);
         this.butterfly.rotation.z = Math.sin(t * 9) * .3;
         this.sparkles.visible = isWin(this.state);
         if (this.sparkles.visible) {

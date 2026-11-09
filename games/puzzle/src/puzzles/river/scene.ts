@@ -1,4 +1,4 @@
-import { BufferGeometry, Float32BufferAttribute, SphereGeometry, PointLight, BoxGeometry, CircleGeometry, ConeGeometry, CylinderGeometry, DoubleSide, DynamicDrawUsage, Group, InstancedMesh, MathUtils, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PlaneGeometry, RingGeometry, Vector3 } from 'three';
+import { BufferGeometry, Float32BufferAttribute, SphereGeometry, BoxGeometry, CircleGeometry, ConeGeometry, CylinderGeometry, DoubleSide, DynamicDrawUsage, Group, InstancedMesh, MathUtils, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PlaneGeometry, RingGeometry, Vector3 } from 'three';
 import { levels, type State } from './logic.ts';
 import { character, part, material, bake } from '../../scene/models.ts';
 import { ACTOR_SCALE, HIT_WIDTH, bankSlot, boatSeats, TREE_Z, BUSH_X, BUSH_Z, SIGN_X, ROCK_Z } from './layout.ts';
@@ -6,7 +6,7 @@ import type { Stage } from '../../scene/stage.ts';
 import { disposeRoot } from '../../scene/models.ts';
 export class RiverScene {
     root = new Group();
-    bounds = {x:5,y:[-.7,2.3] as [number,number],z:4};
+    bounds = {x:5,y:[-.72,2.65] as [number,number],z:4};
     secondaryIds = ['boat'];
     boat = new Group();
     actors = new Map<string, Group>();
@@ -34,7 +34,9 @@ export class RiverScene {
     private won = false;
     private markers = new Map<string, Group>();
     get busy(){ return this.sailing; }
-    constructor(_stage: Stage, level: import('./logic.ts').LevelId, dark: boolean) {
+    private stage: Stage;
+    constructor(stage: Stage, level: import('./logic.ts').LevelId, dark: boolean) {
+        this.stage = stage;
         const board = new Group();
         this.root.add(board);
         part(board, 'box', '#bca383', [0, -.47, 0], [10, .5, 8]);
@@ -91,7 +93,7 @@ export class RiverScene {
             part(details,'cylinder','#826344',[side*SIGN_X,.65,2.75],[.055,1.3,.055]);
             part(details,'box','#caaa74',[side*SIGN_X,1.17,2.75],[.46,.27,.09]);
             part(details,'sphere',dark?'#ffc878':'#e5c89b',[side*SIGN_X,.94,2.85],[.10,.13,.10]);
-            if(dark){const light=new PointLight('#ffbf71',1.4,2.4);light.position.set(side*SIGN_X,1,2.8);this.root.add(light);}
+
         }
         bake(details);this.root.add(details);
         for(const side of [-1,1])scatter(new SphereGeometry(1,6,4),'#c8e6d8',40,(i,o)=>{o.position.set(side*1.66,.005,-3.8+i*.195);o.scale.set(.055,.012,.11);});
@@ -147,6 +149,8 @@ export class RiverScene {
                 const marker = new Group();
                 part(marker, 'box', '#ff493e', [0, .15, 0], [.12, .4, .12]);
                 part(marker, 'sphere', '#ff493e', [0, -.18, 0], [.08, .08, .08]);
+                bake(marker);
+                marker.traverse(o => { o.castShadow = false; o.receiveShadow = false; });
                 this.markers.set(p.id, marker); this.root.add(marker);
                 g.userData.id = p.id;
                 g.userData.phase = Array.from(p.id).reduce((n, c) => n + c.charCodeAt(0), 0) * .73;
@@ -193,6 +197,7 @@ export class RiverScene {
 
     animate(_from: State,to: State,done:()=>void){this.sail(to,done);}
     update(t:number,dt:number,hover:string){
+        if(this.stage.night) this.stage.lamps.forEach((light,i)=>{ light.color.set('#ffbf71'); light.intensity=1.4; light.distance=2.4; light.decay=2; light.position.set((i?1:-1)*SIGN_X,1,2.8); });
         const now=t*1000;
         this.oars.forEach((oar, i) => { oar.rotation.y = this.sailing ? Math.sin(t * 10) * .45 * (i ? 1 : -1) : 0; oar.rotation.z = this.sailing ? Math.cos(t * 10) * .12 : 0; });
         if (this.sailing) {

@@ -43,6 +43,7 @@ catch {
 const app = document.querySelector<HTMLDivElement>('#app')!, audio = new Audio();
 let game: GameId = route.game ?? 'river', def = registry[game], state: any = def.logic.initial(route.level), screen = route.screen;
 let history: any[] = [], rulesOpen = false, hints = 0, showHints = false, toast = '', toastTimer = 0, loading = false, loadVersion = 0, stuckShown = false;
+let mountedGame: GameId | undefined, mountedLevel: LevelId | undefined, pendingRoute = false;
 let started = 0, stopped: number | null = null, currentRun: Run | null = null, currentPlace: number | null = null;
 let runs: Run[] = [], nickname = '', previewUrl = '', sharing = false, challenge: Challenge | null = route.challenge;
 const earned: Record<GameId, Partial<Record<LevelId, number>>> = { river: {}, bridge: {}, water: {} };
@@ -111,21 +112,30 @@ function mirror() {
         url.searchParams.set('game', game);
     if (screen === 'game')
         url.searchParams.set('level', state.level);
-    if (challenge && screen === 'levels')
+    if (challenge && screen !== 'home')
         new URLSearchParams(encodeChallenge(challenge)).forEach((v, k) => url.searchParams.set(k, v));
     window.history.replaceState(null, '', url);
 }
 async function mount() {
     const version = ++loadVersion;
+    if (stage.current && mountedGame === game && mountedLevel === state.level) {
+        loading = false;
+        stage.current.sync(state);
+        stage.resetView();
+        render();
+        return;
+    }
+    const definition = def, targetGame = game, targetLevel = state.level;
     loading = true;
     render();
     try {
-        const module = await def.loadScene();
+        const module = await definition.loadScene();
         if (version !== loadVersion)
             return;
-        const puzzle = module.create(stage, state.level);
+        const puzzle = module.create(stage, targetLevel);
         puzzle.sync(state);
-        stage.mount(puzzle, game === 'bridge' || game === 'river' && dark);
+        stage.mount(puzzle, targetGame === 'bridge' || targetGame === 'river' && dark);
+        mountedGame = targetGame; mountedLevel = targetLevel;
     }
     catch (error) {
         console.error(error);
@@ -165,8 +175,10 @@ function begin(level: LevelId) {
     void mount();
 }
 function finish() {
-    if (def.logic.failure(state))
+    if (def.logic.failure(state)) {
+        stopped = performance.now() - started;
         audio.play('fail');
+    }
     else if (def.logic.isWin(state)) {
         stopped = performance.now() - started;
         currentRun = { game, level: state.level, score: def.logic.score(state), ms: stopped, at: Date.now() };
@@ -182,13 +194,14 @@ function finish() {
         audio.play('win');
     }
     render();
+    if (pendingRoute) { pendingRoute = false; restoreRoute(); }
 }
 function act(a: Action) {
     if (a.type === 'share') {
         void shareResult();
         return;
     }
-    if (loading || stage.current?.busy)
+    if (stage.current?.busy)
         return;
     if (a.type === 'home') {
         screen = 'home';
@@ -235,7 +248,7 @@ function act(a: Action) {
         stage.resetView();
         return;
     }
-    if (screen !== 'game')
+    if (screen !== 'game' || rulesOpen || loading)
         return;
     if (a.type === 'restart') {
         begin(state.level);
@@ -247,14 +260,13 @@ function act(a: Action) {
         const prev = history.pop();
         if (prev) {
             state = prev;
+            stopped = null;
             stage.current?.sync(state);
             toast = '';
             render();
         }
         return;
     }
-    if (rulesOpen)
-        return;
     const action = a as PuzzleAction, r = def.logic.apply(state, action);
     if (!r.ok) {
         const riverErrors: Record<string, string> = { capacity: 'capacityError', remote: 'remoteError', empty: 'emptyError', farmer: 'farmerError', boatRule: 'boatRuleError', rower: 'rowerError' };
@@ -317,7 +329,7 @@ async function shareResult() {
         return;
     sharing = true;
     try {
-        const canvas = drawCard(stage.snapshot(), currentRun, runs.filter(r => r.game === game && r.level === state.level), currentPlace, starCount(), dark, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), nickname, challengeResult());
+        const canvas = drawCard(stage.snapshot(), currentRun, runs.filter(r => r.game === game && r.level === state.level), currentPlace, starCount(), dark, stage.night, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), nickname, challengeResult());
         const url = new URL(location.href);
         url.search = '';
         url.hash = '';
@@ -533,7 +545,7 @@ document.addEventListener('keydown', e => {
                 act({ type: 'toggle', id });
         }
         else if (n < state.caps.length)
-            act({ type: 'select', jug: n });
+            tapJug(n);
     }
     else if (game === 'water' && ['KeyF', 'KeyE'].includes(e.code)) {
         e.preventDefault();
@@ -558,7 +570,13 @@ else {
     mirror();
     void mount();
 }
-window.addEventListener('popstate', () => { const next = resolveRoute(new URLSearchParams(location.search), registry); challenge = next.challenge; game = next.game ?? game; def = registry[game]; state = def.logic.initial(next.level); screen = next.screen; if (screen === 'game')
-    begin(next.level);
-else
-    void mount(); });
+function restoreRoute() {
+    if (stage.current?.busy) { pendingRoute = true; return; }
+    const next = resolveRoute(new URLSearchParams(location.search), registry);
+    challenge = next.challenge; game = next.game ?? game; def = registry[game];
+    state = def.logic.initial(next.level); screen = next.screen;
+    history = []; rulesOpen = false; toast = ''; stopped = null; started = 0;
+    if (screen === 'game') begin(next.level);
+    else void mount();
+}
+window.addEventListener('popstate', restoreRoute);

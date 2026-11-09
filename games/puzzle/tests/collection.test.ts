@@ -30,3 +30,20 @@ test('canonical runs and legacy crossings migration, rank filters by game and le
  const fresh:Run={game:'bridge',level:'easy',score:17,ms:42000,at:20},same={...fresh,ms:50000};
  const list:Run[]=[migrated!,same,{...fresh,level:'medium',score:29},{...fresh,game:'water',score:6}];const ranked=rank(list,fresh);assert.deepEqual(ranked.runs,[fresh,same]);assert.equal(ranked.place,1);assert.equal(list.length,4);assert.deepEqual(migrateRun(fresh),fresh);
 });
+
+test('bridge challenges and stored runs enforce each lantern limit, inclusively',()=>{
+ for(const level of levelIds){
+  const limit=registry.bridge.levels[level].limit!;
+  const params=new URLSearchParams(encodeChallenge({game:'bridge',level,score:limit,ms:1000}));
+  const run={game:'bridge' as const,level,score:limit,ms:1000,at:1};
+  assert.ok(decodeChallenge(params));assert.ok(migrateRun(run));
+  params.set('c',String(limit+1));assert.equal(decodeChallenge(params),null);assert.equal(migrateRun({...run,score:limit+1}),null);
+ }
+ assert.ok(decodeChallenge(new URLSearchParams('game=water&challenge=easy&c=999&t=1')));
+});
+
+test('challenge params coexist with the active level so reload resumes the challenge game',()=>{
+ const r=route('game=bridge&level=easy&challenge=easy&c=19&t=90&n=Amy');
+ assert.equal(r.screen,'game');assert.equal(r.level,'easy');assert.equal(r.challenge?.score,19);
+ assert.equal(route('game=bridge&challenge=easy&c=19&t=90').screen,'levels');
+});

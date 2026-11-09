@@ -4,15 +4,16 @@ import type { LevelId, PuzzleScene } from '../types.ts';
 import { initial, ids, isWin, levels, type State } from './logic.ts';
 import { part, bake, person, disposeRoot } from '../../scene/models.ts';
 import { badge, rod } from '../../scene/helpers.ts';
+import { registry } from '../registry.ts';
 const sag = (x: number) => -.34 * (1 - (x / 2.25) ** 2);
 class BridgeScene implements PuzzleScene<State> {
     root = new Group();
     hit: Object3D[] = [];
     secondaryIds = ['bridge', 'lantern'];
-    bounds = { x: 5.2, y: [-1.5, 2.3] as [
+    bounds = { x: 5.23, y: [-1.63, 2.9] as [
             number,
             number
-        ], z: 3.5 };
+        ], z: 3.2 };
     busy = false;
     private state: State;
     private actors = new Map<string, Group>();
@@ -32,9 +33,7 @@ class BridgeScene implements PuzzleScene<State> {
         done: () => void;
         origins: Map<string, Vector3>;
     };
-    private stage: Stage;
     constructor(stage: Stage, level: LevelId) {
-        this.stage = stage;
         this.state = initial(level);
         const land = new Group();
         for (const side of [-1, 1]) {
@@ -88,9 +87,8 @@ class BridgeScene implements PuzzleScene<State> {
         this.flame.position.y = .24;
         this.flame.scale.y = 1.4;
         this.lantern.add(this.flame);
-        this.lamp = new PointLight('#ffbc64', 7, 8, 1.5);
-        this.lamp.position.y = .3;
-        this.lantern.add(this.lamp);
+        this.lamp = stage.lamps[0];
+        this.lamp.color.set('#ffbc64'); this.lamp.distance = 8; this.lamp.decay = 1.5;
         this.lantern.userData.id = 'lantern';
         this.root.add(this.lantern);
         this.hit.push(this.lantern);
@@ -125,7 +123,7 @@ class BridgeScene implements PuzzleScene<State> {
         const pos = this.slot(id, s.side[id]);
         g.position.copy(pos);
         this.homes.set(id, pos);
-    } this.lantern.position.set(s.lantern ? 2.25 : -2.25, 1.15, .64); this.lantern.rotation.z = 0; this.stage.renderer.toneMappingExposure = s.failure ? .35 : .85; }
+    } this.lantern.position.set(s.lantern ? 2.25 : -2.25, 1.15, .64); this.lantern.rotation.z = 0; this.lamp.position.copy(this.lantern.position).y += .3; }
     animate(from: State, to: State, done: () => void) { this.busy = true; this.animation = { from, to, start: performance.now(), duration: Math.min(1800, 1100 + 60 * (to.minutes - from.minutes)), done, origins: new Map([...this.actors].map(([id, g]) => [id, g.position.clone()])) }; }
     update(t: number, _dt: number, hover: string) {
         const a = this.animation;
@@ -155,7 +153,7 @@ class BridgeScene implements PuzzleScene<State> {
             if (node)
                 node.textContent = String(minutes);
             if (remaining)
-                remaining.textContent = this.stage.renderer.domElement.ownerDocument.documentElement.lang === 'zh-TW' ? `燈還剩 ${Math.max(0, levels[a.to.level].limit - minutes)} 分` : `Lantern: ${Math.max(0, levels[a.to.level].limit - minutes)} min left`;
+                remaining.textContent = registry.bridge.strings.remaining.replace('{n}', String(Math.max(0, levels[a.to.level].limit - minutes)));
             if (gauge)
                 gauge.style.width = `${Math.max(0, 1 - minutes / levels[a.to.level].limit) * 100}%`;
             if (progress === 1) {
@@ -180,6 +178,7 @@ class BridgeScene implements PuzzleScene<State> {
         }
         const fuel = Math.max(.05, 1 - this.state.minutes / levels[this.state.level].limit), flare = isWin(this.state) ? 1.6 : 1;
         this.flame.scale.setScalar((this.state.failure ? .12 : .55 + fuel * .55) * (1 + Math.sin(t * 13) * .07) * flare);
+        this.lamp.position.copy(this.lantern.position).y += .3;
         this.lamp.intensity = (this.state.failure ? .15 : 3 + fuel * 4) * flare;
         for (let i = 0; i < 16; i++) {
             this.matrix.position.set(Math.sin(t * .3 + i * 2.4) * 4.8, .6 + (i % 4) * .3 + Math.sin(t + i) * .15, Math.cos(t * .2 + i) * 2.8);

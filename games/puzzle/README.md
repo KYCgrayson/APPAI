@@ -16,19 +16,21 @@ The collection home opens a puzzle's level menu; the house button during play re
 
 - **River:** tap a toy or chip to board/leave; tap the boat or Set sail. Space sails, Z undoes and R restarts. Passengers remain aboard on landing. All previous farmer, predator, captain, capacity and boat-balance rules are unchanged. Undo includes successful toggles and crossings and restores the loaded boat after failure.
 - **Bridge:** select one or two friends on the lantern's side, then Walk, or tap the lantern/bridge. Space walks; 1–6 toggle friends; Z/R undo/restart. Travel takes the slower person's minutes. A timeout permits undo. The scene is always night, independently of the DOM theme.
-- **Water:** tap one jug, then another to pour; tap the selected jug again to deselect. Easy includes a pump to fill and a flower bed to empty into, plus buttons. 1–3 select, F fills, E empties, Z/R undo/restart. Selecting never adds a step or history entry. Medium/Hard conserve the starting water and have no fill/empty controls.
+- **Water:** tap one jug, then another to pour; tap the selected jug again to deselect. Easy includes a pump to fill and a flower bed to empty into, plus buttons. 1–3 select/pour, F fills, E empties, Z/R undo/restart. Selecting never adds a step or history entry. Medium/Hard conserve the starting water and have no fill/empty controls.
 
-Every game keeps the free horizontal orbit, polar range 0.15–1.30 radians, pinch/wheel zoom, reset view and empty-space double-tap reset. Music and SFX remain independent, remembered controls. Undo does not rewind the elapsed timer and is disabled after victory; restart begins a fresh timer. Inputs are locked during scene moves.
+Stage renders no empty pre-mount frame. Mount and resize synchronously update controls, atmosphere and the renderer even when rAF is throttled. The body horizon fallback follows the scene night preset. A pure perspective fit centres the camera-up bounds relative to the target and uses the same height allowance in portrait and landscape. HUD reflows update the default fit without resetting a player-chosen orbit or zoom; reset/mount restore that fit. Water uses a tighter table and wider jugs.
+
+Every game keeps the free horizontal orbit, polar range 0.15–1.30 radians, pinch/wheel zoom, reset view and empty-space double-tap reset. Music and SFX remain independent, remembered controls. Undo does not rewind the elapsed timer and is disabled after victory; restart begins a fresh timer. Inputs are locked during scene moves; browser back/forward waits for the move to finish. Rules blocks undo/restart, including keyboard shortcuts. A bridge timeout freezes the timer until undo; restart of the same game/level re-syncs the scene.
 
 ## Levels and stars
 
 | Puzzle | Optimum, easy / medium / hard | Two-star ceiling | Failure limit |
 | --- | --- | --- | --- |
 | River | 7 / 11 / 13 crossings | 10 / 15 / 17 | Existing bank/boat rules |
-| Bridge | 17 / 29 / 28 minutes | 18 / 31 / 30 | Lantern: 22 / 38 / 36 minutes |
+| Bridge | 17 / 29 / 28 minutes | 19 / 31 / 30 | Lantern: 22 / 38 / 36 minutes |
 | Water | 6 / 7 / 11 steps | 8 / 10 / 15 | None |
 
-Three stars at or below optimum; two at or below the two-star ceiling; otherwise one on completion. The lantern lasts `ceil(optimal * 1.3)` so a child can win without finding the perfect answer. Its two-star threshold is `floor(optimal * 1.1)`; the fastest-escort plans (19 / 32 / 34 minutes) earn one star but still win. Exceeding the limit, rather than reaching it, extinguishes the lantern. Water gives a one-time undo/restart suggestion at twice optimum.
+Three stars at or below optimum; two at or below the two-star ceiling; otherwise one on completion. The lantern lasts `ceil(optimal * 1.3)` so a child can win without finding the perfect answer. Its two-star ceilings are 19 / 31 / 30 minutes; Easy uses 19 because 18 is unreachable. The fastest-escort plans (19 / 32 / 34 minutes) earn two / one / one stars and still win. Exceeding the limit, rather than reaching it, extinguishes the lantern. Water gives a one-time undo/restart suggestion at twice optimum. Easy hints give one BFS action from the current jug contents, including after deviations.
 
 Each puzzle card shows stars out of 9. The collection total counts all nine levels, out of 27. Reference solvers are in `../../docs/games/solvers.py`; the local test suite independently solves/replays all nine levels through public actions.
 
@@ -47,7 +49,7 @@ Old `src/logic/index.ts` and `src/scene/layout.ts` paths re-export the moved riv
 
 Vite 8's function-form `manualChunks` groups `three` (including its installed addons) into a shared chunk, equivalent to the requested `three: ['three']` grouping; its typings reject the older object form. Each puzzle scene is a named lazy chunk. See `MEASUREMENTS.md` for every chunk's gzip size and validation limits.
 
-The scenery uses three low, irregular, bluish-faded bands painted into the sky shader, above a calm ground fade. There are no hill walls, mound or windmill. The sun/moon sits away from the header; cloud clearance, reduced motion and the quality fallback remain. Scene switches dispose owned geometry/materials, badge textures and instance buffers while retaining shared primitive/palette resources.
+The scenery uses three low, irregular, bluish-faded bands painted into the sky shader, above a calm ground fade. There are no hill walls, mound or windmill. The gradient, sun/moon, clouds and horizon follow the world view direction, including camera pitch and the HUD view offset. Stars use a sin-free hash. Cloud clearance and reduced motion remain, and the quality fallback persists across day/night switches. Scene switches dispose owned geometry/materials, badge textures and instance buffers while retaining shared primitive/palette resources. Stage owns a fixed pair of point lights, disabled when unused, to avoid light-count shader variants.
 
 ## URL scheme
 
@@ -60,15 +62,15 @@ The scenery uses three low, irregular, bluish-faded bands painted into the sky s
 | `game=bridge&challenge=medium&c=29&t=90&n=Amy` | Bridge levels + challenge |
 | Unknown `game` | Collection home |
 
-Navigation uses `history.replaceState`, preserving locale/theme/color/debug and other unrelated parameters. `locale=zh-TW` (any `zh*`) selects Traditional Chinese, otherwise English; the fallback is `navigator.language`. `theme=dark` styles the DOM and river; Bridge remains night and Water remains day. `color=426b58` accepts six hex digits with an optional URL-encoded `#`. `debug=1` shows metrics.
+Navigation uses `history.replaceState`, preserving locale/theme/color/debug and other unrelated parameters. Challenge fields remain alongside the active `level`, so reloading resumes the game with its challenge. `locale=zh-TW` (any `zh*`) selects Traditional Chinese, otherwise English; the fallback is `navigator.language`. `theme=dark` styles the DOM and river; Bridge remains night and Water remains day. `color=426b58` accepts six hex digits with an optional URL-encoded `#`. `debug=1` shows metrics.
 
-Challenge links always include `game`, `challenge`, `c` (score from that puzzle/level's optimum through 999), `t` (whole seconds 1–86399), and optional `n` (up to 12 sanitized Unicode characters). Duplicate/malformed fields invalidate the challenge. These are user-supplied challenges, not verified records. Lower score wins, then whole seconds.
+Challenge links always include `game`, `challenge`, `c` (score from that puzzle/level's optimum through its defined limit, or 999 without a limit), `t` (whole seconds 1–86399), and optional `n` (up to 12 sanitized Unicode characters). Duplicate/malformed fields invalidate the challenge. These are user-supplied challenges, not verified records. Lower score wins, then whole seconds.
 
 ## Storage and sharing
 
-Runs use `{game, level, score, ms, at}` and retain the best five **per game and level**, ordered by score, milliseconds, then date. Storage keys are `river-runs/-stars/-hints`, `bridge-runs/-stars/-hints`, and `water-runs/-stars/-hints`. Old river `{crossings}` runs migrate to `score`. Nicknames read `puzzle-name`, fall back to `river-name`, and write `puzzle-name`. `river-music` and `river-sfx` remain shared and unchanged. `puzzle-last` remembers the last started puzzle. Unavailable storage is tolerated. Leaderboards are personal and per-device.
+Runs use `{game, level, score, ms, at}` and retain the best five **per game and level**, ordered by score, milliseconds, then date. Storage keys are `river-runs/-stars/-hints`, `bridge-runs/-stars/-hints`, and `water-runs/-stars/-hints`. Old river `{crossings}` runs migrate to `score`; both stored runs and challenges reject scores above a defined level limit. Nicknames read `puzzle-name`, fall back to `river-name`, and write `puzzle-name`. `river-music` and `river-sfx` remain shared and unchanged. `puzzle-last` remembers the last started puzzle. Unavailable storage is tolerated. Leaderboards are personal and per-device.
 
-Victory sharing preserves the 1080×1350 Canvas card, native file sharing, silent cancellation and preview/download/copy fallback. Titles, units, optimum, rankings, CTA and filenames match the puzzle: `river-crossing.png`, `night-bridge.png`, `water-pouring.png`. Snapshots hide the atmosphere and river's decorative flyers. The nickname appears only in the card/challenge. Preview object URLs are revoked on close.
+Victory sharing preserves the 1080×1350 Canvas card, native file sharing, silent cancellation and preview/download/copy fallback. Titles, units, optimum, rankings, CTA and filenames match the puzzle: `river-crossing.png`, `night-bridge.png`, `water-pouring.png`. Snapshots use a cloned, fitted default camera at the card image aspect, hide the atmosphere and river's decorative flyers, and preserve the player's orbit. The sky gradient follows the scene's day/night preset independently of the card palette. The nickname appears only in the card/challenge. Preview object URLs are revoked on close.
 
 ## Automation hooks
 
