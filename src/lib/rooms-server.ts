@@ -48,9 +48,13 @@ export const roomDeps: RoomDeps = {
       });
       return result.count === 1;
     },
-    async touchSeat(code, seat, now) {
-      // Postgres arrays are 1-based. Presence does not bump the version.
-      await db.$executeRaw`UPDATE "GameRoom" SET "seatSeenAt"[${seat + 1}::int] = ${now} WHERE "code" = ${code}`;
+    async touchSeat(code, seat, now, expiresAt) {
+      // Postgres arrays are 1-based. Presence writes one element and never bumps the version.
+      if (expiresAt) {
+        await db.$executeRaw`UPDATE "GameRoom" SET "seatSeenAt"[${seat + 1}::int] = ${now}, "expiresAt" = ${expiresAt} WHERE "code" = ${code} AND "expiresAt" > ${now}`;
+      } else {
+        await db.$executeRaw`UPDATE "GameRoom" SET "seatSeenAt"[${seat + 1}::int] = ${now} WHERE "code" = ${code} AND "expiresAt" > ${now}`;
+      }
     },
     async cleanup(now) {
       const staleRates = new Date(now.getTime() - longestWindowMs);

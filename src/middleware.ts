@@ -111,6 +111,9 @@ function handleRateLimit(request: NextRequest): NextResponse | null {
   const { pathname } = request.nextUrl;
   const method = request.method;
 
+  // Room preflights do no database work, and a 429 on a preflight would surface as an opaque CORS error.
+  if (method === "OPTIONS" && pathname.startsWith("/api/rooms")) return null;
+
   const rule = resolveRule(pathname, method);
   if (!rule) return null;
 

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   createRoom, joinRoom, pollRoom, sendMove, roomsPreflight, normalizeRoomCode, generateRoomCode, roomOriginAllowed, clientNetwork, roomIpKey,
-  RATE_LIMITS, MAX_STATE_BYTES, MAX_ACTIVE_ROOMS, ROOM_TTL_MS, WAITING_TTL_MS, SKIP_AFTER_MS, RECENT_MOVES, type RoomDeps, type RoomRecord, type RoomStore,
+  RATE_LIMITS, MAX_STATE_BYTES, MAX_ACTIVE_ROOMS, ROOM_TTL_MS, WAITING_TTL_MS, SKIP_AFTER_MS, IDLE_TTL_MS, RECENT_MOVES, type RoomDeps, type RoomRecord, type RoomStore,
 } from "../src/lib/rooms.ts";
 import { roomRateBucket } from "../src/lib/rooms-cors.ts";
 
@@ -27,7 +27,12 @@ function memoryStore() {
       Object.assign(r, structuredClone(update));
       return true;
     },
-    async touchSeat(code, seat, now) { const r = rooms.get(code); if (r) r.seatSeenAt[seat] = now; },
+    async touchSeat(code, seat, now, expiresAt) {
+      const r = rooms.get(code);
+      if (!r || r.expiresAt <= now) return;
+      r.seatSeenAt[seat] = now;
+      if (expiresAt) r.expiresAt = expiresAt;
+    },
     async cleanup(now) { for (const [code, r] of rooms) if (r.expiresAt <= now) rooms.delete(code); },
   };
   return { store, rooms, setActive: (n: number | null) => { activeOverride = n; } };
@@ -217,12 +222,20 @@ test("unfilled rooms expire after 30 minutes; full rooms 24 hours after creation
   assert.equal((await poll(t, c.code, c.token)).status, 404);
   assert.equal((await joinRoom(req("/x", { body: {} }), c.code, t.deps)).status, 404);
 
+  // A full room stays open while someone polls, up to 24 hours from creation.
   const { t: t2, created, code, joined } = await startGame();
-  assert.equal(new Date(joined.room.expiresAt).getTime() - new Date("2026-11-09T00:00:00Z").getTime(), ROOM_TTL_MS);
-  t2.advance(ROOM_TTL_MS - 1000);
-  assert.equal((await poll(t2, code, created.token)).status, 200);
-  t2.advance(1001);
+  assert.equal(new Date(joined.room.expiresAt).getTime() - new Date("2026-11-09T00:00:00Z").getTime(), IDLE_TTL_MS);
+  for (let elapsed = 0; elapsed < ROOM_TTL_MS - 10 * 60_000; elapsed += 10 * 60_000) {
+    t2.advance(10 * 60_000);
+    assert.equal((await poll(t2, code, created.token)).status, 200, `at ${elapsed}`);
+  }
+  t2.advance(10 * 60_000);
   assert.equal((await poll(t2, code, created.token)).status, 404);
+
+  // A full room nobody polls closes after 15 minutes.
+  const { t: t3, created: c3, code: code3 } = await startGame();
+  t3.advance(IDLE_TTL_MS + 1);
+  assert.equal((await poll(t3, code3, c3.token)).status, 404);
 });
 
 test("four-player room: seats fill in order, turn passes around, everyone sees it", async () => {
@@ -268,7 +281,7 @@ test("presence: polls mark a seat online, throttled; quiet seats go offline", as
   void joined;
 });
 
-test("a quiet player's turn can be skipped by another seat after 60 s", async () => {
+test("a quiet player's turn can be skipped by another seat, only to the next seat", async () => {
   const t = setup();
   const c = await (await createRoom(req("/x", { body: { game: "x", seats: 3 } }), t.deps)).json();
   const b = await (await joinRoom(req("/x", { body: {} }), c.code, t.deps)).json();
@@ -282,6 +295,9 @@ test("a quiet player's turn can be skipped by another seat after 60 s", async ()
   await poll(t, c.code, b.token);
   await poll(t, c.code, d.token);
   t.advance(2000);
+  for (const extra of [{ nextTurn: 2 }, { state: { score: 0 } }, { end: true }]) {
+    assert.equal((await skip(d.token, 3, extra)).status, 400, JSON.stringify(extra));
+  }
   const ok = await skip(d.token, 3, { move: { note: "timeout" } });
   assert.equal(ok.status, 200);
   const room = (await ok.json()).room;
@@ -388,4 +404,26 @@ test("missing table maps to 503 unavailable, including raw-query errors", async 
     assert.equal(res.status, 503);
     assert.equal((await res.json()).error, "unavailable");
   }
+});
+
+test("deeply nested JSON is a 400, not a 500", async () => {
+  const t = setup();
+  const deep = "[".repeat(5000) + "]".repeat(5000);
+  const res = await createRoom(req("/x", { raw: `{"game":"x","state":${deep}}` }), t.deps);
+  assert.equal(res.status, 400);
+  let ok: unknown = {};
+  for (let i = 0; i < 60; i++) ok = { a: ok };
+  assert.equal((await createRoom(req("/x", { body: { game: "x", state: ok } }), t.deps)).status, 201);
+});
+
+test("daily create limit bounds rooms per network", async () => {
+  const t = setup();
+  let created = 0;
+  for (let hour = 0; hour < 3; hour++) {
+    for (let i = 0; i < RATE_LIMITS.create.limit; i++) {
+      if ((await createRoom(req("/x", { body: { game: "x" } }), t.deps)).status === 201) created++;
+    }
+    t.advance(RATE_LIMITS.create.windowMs + 1);
+  }
+  assert.equal(created, RATE_LIMITS.createDaily.limit);
 });

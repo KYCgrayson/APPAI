@@ -1204,12 +1204,12 @@ Turn-based games for 2–4 players, each on their own device. One device creates
 | Code | 6 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789`; input is case-insensitive, and spaces and `-` are ignored |
 | `game` | 1–40 characters of `a-z`, `0-9`, `-` |
 | Players | `seats` 2–4 (default 2). Seats fill in join order (0, 1, 2, 3). `turn` is a seat index, or `null` for no turn order (default 0) |
-| Size | `state` ≤ 8 KB of JSON (object or array), `move` ≤ 1 KB, no NUL characters |
+| Size | `state` ≤ 8 KB of JSON (object or array), `move` ≤ 1 KB, nesting ≤ 64 levels, no NUL characters |
 | Moves | Compare-and-swap: `version` must equal the room's current version, and success increments it. Only the seat whose `turn` it is may move. Omit `nextTurn` to keep the turn; `end: true` finishes the room. Moves start once every seat has joined. `moves` holds the last 20, so read every entry with `version > since`, not just `lastMove` |
 | Presence | Each poll marks your seat as seen. `online` means seen in the last 30 s; `idleSeconds` is the time since that seat was last seen |
-| Timeout | When the seat whose turn it is has been idle for ≥ 60 s, any other seat may send `{ "version": v, "skip": true, "nextTurn": n }` (`nextTurn` defaults to the next seat). The entry records `skipped`. A player who returns keeps their seat |
-| Lifetime | A room that is not full expires 30 minutes after creation. A full room lasts 24 hours from creation, with no extension. Afterwards it is `404 room_not_found` |
-| Polling | Every 1–1.5 s while the page is visible; stop when the tab is hidden. On `429`, wait for `Retry-After` |
+| Timeout | When the seat whose turn it is has been idle for ≥ 120 s, any other seat may send `{ "version": v, "skip": true }` (optionally with a `move` note). The turn passes to the next seat, and the entry records `skipped`. A skip cannot carry `state`, `nextTurn` or `end`. A player who returns keeps their seat |
+| Lifetime | A room that is not full expires 30 minutes after creation. A full room closes after 15 minutes with no polls or moves, and in any case 24 hours after creation. Afterwards it is `404 room_not_found` |
+| Polling | Every 1–1.5 s while the page is visible; every 15 s while it is hidden, so the player is not marked idle. A closed app counts as idle. On `429`, wait for `Retry-After` |
 | Token | Store it per room (e.g. `localStorage["room:{code}"]`) so a reload keeps the seat. Never put it in a URL. A wrong token gets the same `404` as a missing room |
 | Origins | Browser calls are accepted from `https://appai.info`, `https://www.appai.info` and `https://kycgrayson.github.io`; other origins get `403 origin_not_allowed`. Ask the owner to add a game's origin |
 
