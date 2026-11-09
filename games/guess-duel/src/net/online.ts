@@ -30,6 +30,18 @@ export function processMoves(
   }
   return { state: s, since: v };
 }
+/** Real moves write state; skips only update the room turn and move log. */
+export function restoreRoomState(room: Room): Game {
+  const state = validateGame(room.state);
+  const lastWrite = Math.max(0, ...room.moves.filter((m) => !m.skipped).map((m) => m.version));
+  const restored = processMoves(state, room.moves, lastWrite).state;
+  // The API retains only 20 moves. Even a longer run of skips must use its turn.
+  if (restored.status === 'playing' && room.moves.some((m) => m.skipped && m.version > lastWrite)) {
+    if (room.turn !== 0 && room.turn !== 1) throw Error('Invalid room turn');
+    return { ...restored, turn: room.turn };
+  }
+  return restored;
+}
 export class OnlineSession {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private stopped = false;
@@ -54,7 +66,7 @@ export class OnlineSession {
     this.code = code;
     this.token = token;
     this.seat = seat;
-    this.room = { ...room, state: validateGame(room.state) };
+    this.room = { ...room, state: restoreRoomState(room) };
     this.changed = changed;
     this.failed = failed;
   }

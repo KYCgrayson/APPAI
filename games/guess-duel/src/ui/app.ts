@@ -1,4 +1,4 @@
-import { keyboardAction, rematchNames } from './input.ts';
+import { keyboardAction, rematchNames, roomURL } from './input.ts';
 import { header, content, secretSlots, shareURL } from './views.ts';
 import './style.css';
 import { esc, button } from './html.ts';
@@ -17,11 +17,18 @@ import {
 } from '../logic/game.ts';
 import { commit, randomSalt, verifyGame } from '../logic/commit.ts';
 import { encode, decode } from '../relay/codec.ts';
-import { RoomsClient, RoomError, apiBase, type Room } from '../net/rooms.ts';
+import { RoomsClient, RoomError, apiBase, normalizeCode, type Room } from '../net/rooms.ts';
 import { OnlineSession, onlineScreen, canResumeSeat } from '../net/online.ts';
-import { strings, locale, type Locale } from './i18n.ts';
+import { strings, locale, roomErrorText, type Locale } from './i18n.ts';
 import { Audio } from './audio.ts';
-import { safeGet, safeSet, recordScore, resilientStorage, cleanupSessions } from './storage.ts';
+import {
+  safeGet,
+  safeSet,
+  recordScore,
+  scoreIdentity,
+  resilientStorage,
+  cleanupSessions,
+} from './storage.ts';
 const storage = resilientStorage(() => window.localStorage);
 cleanupSessions(() => window.localStorage);
 type Mode = 'same' | 'ai' | 'relay' | 'online';
@@ -70,10 +77,10 @@ function saveSettings() {
   safeSet(storage, 'guess-duel:settings', { n, names, sound: audio.enabled });
 }
 function scoreKey() {
-  return JSON.stringify([
-    mode === 'ai' ? 'ai' : 'duel',
-    ...(game?.names ?? (mode === 'ai' ? [names[0], lang === 'en' ? 'Computer' : '電腦'] : names)),
-  ]);
+  return scoreIdentity(
+    game?.names ?? (mode === 'ai' ? [names[0], lang === 'en' ? 'Computer' : '電腦'] : names),
+    mode === 'ai',
+  ).key;
 }
 function render() {
   document.documentElement.lang = lang;
@@ -319,11 +326,6 @@ async function action(a: string) {
     }
     return;
   }
-  if (a === 'continueOnline') {
-    screen = 'play';
-    await advance();
-    return;
-  }
   if (a === 'skip') {
     try {
       await session?.skip();
@@ -518,7 +520,11 @@ async function finish() {
   persist();
   if (game.reveals.every(Boolean)) verified = await verifyGame(game);
   if (!recorded && verified !== null) {
-    recordScore(storage, scoreKey(), game.result!, game.id);
+    const result =
+      game.result === 'draw'
+        ? 'draw'
+        : scoreIdentity(game.names, mode === 'ai').seats[game.result!];
+    recordScore(storage, scoreKey(), result, game.id);
     recorded = true;
     audio.play('win');
   }
@@ -590,15 +596,17 @@ function getClient() {
 let advancing = false;
 async function connectRoom(code?: string) {
   if (busy) return;
+  message = '';
   busy = true;
+  render();
   try {
     const client = getClient();
-    const clean = code?.replace(/[\s-]/g, '').toUpperCase();
+    const clean = code === undefined ? undefined : normalizeCode(code);
     const saved = clean ? (safeGet(storage, client.tokenKey(clean)) as any) : null;
     const d = saved
       ? { ...saved, code: clean, room: (await client.poll(clean!, saved.token, -1)).room }
-      : code
-        ? { ...(await client.join(code)), code: clean }
+      : clean !== undefined
+        ? { ...(await client.join(clean)), code: clean }
         : await client.create(game ?? createGame({ n, names }));
     if (!saved && code && d.room.state.commits[d.seat]) throw new RoomError(400, 'invalid_state');
     seat = d.seat;
@@ -628,6 +636,8 @@ async function connectRoom(code?: string) {
       },
       showError,
     );
+    game = session.room.state;
+    history.replaceState(null, '', roomURL(location.href, d.code));
     screen = code ? 'secret' : 'waiting';
     await advance();
     session.start();
@@ -660,7 +670,7 @@ function showError(e: unknown) {
   else if (e instanceof RoomError && e.error === 'room_not_ready') message = t.wait;
   else if (e instanceof RoomError && e.error === 'not_host')
     message = lang === 'en' ? 'Only the host can start the room.' : '只有房主能開始。';
-  else message = t.invalid;
+  else message = e instanceof RoomError ? roomErrorText(e.error, lang) : t.invalid;
   render();
 }
 // Persist online secrets only on their own device; local pass-and-play secrets never leave memory.

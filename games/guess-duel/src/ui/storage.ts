@@ -1,3 +1,5 @@
+import type { Seat } from '../logic/game.ts';
+
 export interface StorageLike {
   getItem(k: string): string | null;
   setItem(k: string, v: string): void;
@@ -24,6 +26,13 @@ export type Scores = Record<
     draws: number;
   }
 >;
+export function scoreIdentity(names: [string, string], computer = false) {
+  const seats: [Seat, Seat] = !computer && names[0] > names[1] ? [1, 0] : [0, 1];
+  return {
+    key: JSON.stringify([computer ? 'ai' : 'duel', ...seats.map((s) => names[s])]),
+    seats,
+  };
+}
 export function readScores(s: StorageLike): Scores {
   const v = safeGet(s, 'guess-duel-scores');
   if (!v || typeof v !== 'object' || Array.isArray(v)) return {};
@@ -34,8 +43,34 @@ export function readScores(s: StorageLike): Scores {
       Array.isArray(r.wins) &&
       r.wins.length === 2 &&
       [...r.wins, r.draws].every((x) => Number.isSafeInteger(x) && x >= 0)
-    )
-      out[k] = r;
+    ) {
+      let key = k;
+      let wins: [number, number] = [r.wins[0], r.wins[1]];
+      // Preserve scores written before human pairs had a seat-independent key.
+      try {
+        const pair = JSON.parse(k);
+        if (
+          Array.isArray(pair) &&
+          pair.length === 3 &&
+          pair[0] === 'duel' &&
+          pair.slice(1).every((name) => typeof name === 'string')
+        ) {
+          const identity = scoreIdentity([pair[1], pair[2]]);
+          key = identity.key;
+          wins = [wins[identity.seats[0]], wins[identity.seats[1]]];
+        }
+      } catch {}
+      const previous = Object.hasOwn(out, key) ? out[key] : { wins: [0, 0], draws: 0 };
+      Object.defineProperty(out, key, {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: {
+          wins: [previous.wins[0] + wins[0], previous.wins[1] + wins[1]],
+          draws: previous.draws + r.draws,
+        },
+      });
+    }
   }
   return out;
 }

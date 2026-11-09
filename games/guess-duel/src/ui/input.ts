@@ -12,3 +12,8 @@ export function rematchNames(
 ): [string, string] {
   return relay && seat === 1 ? [names[1], names[0]] : [...names];
 }
+export function roomURL(href: string, code: string) {
+  const url = new URL(href);
+  url.searchParams.set('room', code);
+  return url.href;
+}

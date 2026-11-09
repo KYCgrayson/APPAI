@@ -135,7 +135,10 @@ export class RoomsClient {
   }
   private save(d: any) {
     try {
-      this.storage?.setItem(this.tokenKey(d.code), JSON.stringify({ token: d.token, seat: d.seat }));
+      this.storage?.setItem(
+        this.tokenKey(d.code),
+        JSON.stringify({ token: d.token, seat: d.seat }),
+      );
     } catch {}
   }
   poll(code: string, token: string, since: number) {
@@ -179,7 +182,7 @@ export class RoomsClient {
 }
 export function normalizeCode(s: string) {
   const c = s.replace(/[\s-]/g, '').toUpperCase();
-  if (!/^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/.test(c)) throw Error('Invalid room code');
+  if (!/^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/.test(c)) throw new RoomError(400, 'invalid_code');
   return c;
 }
 export function apiBase(

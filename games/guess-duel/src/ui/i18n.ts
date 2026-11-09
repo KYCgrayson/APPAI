@@ -24,6 +24,7 @@ export const strings = {
     old: 'This link is out of date',
     spectator: 'Spectator view',
     wait: 'Waiting for the other player',
+    waitingSecret: 'Waiting for {name} to set a secret…',
     rematch: 'Rematch',
     draw: 'It’s a draw!',
     wins: 'wins!',
@@ -45,6 +46,9 @@ export const strings = {
     offline: 'is offline',
     copy: 'Link copied',
     invalid: 'Check the code and try again',
+    roomFull: 'The room is full',
+    roomCode: 'Room codes have 6 letters or numbers',
+    invalidRoom: 'There is a problem with this room’s data',
     instructions: [
       'Choose a secret with 3 or 4 different digits. Zero can come first.',
       'Take turns guessing the other player’s secret.',
@@ -78,6 +82,7 @@ export const strings = {
     old: '這是舊的連結',
     spectator: '觀戰中',
     wait: '等待對方',
+    waitingSecret: '等 {name} 設定秘密數字…',
     rematch: '再來一局',
     draw: '平手！',
     wins: '獲勝！',
@@ -99,6 +104,9 @@ export const strings = {
     offline: '斷線中',
     copy: '連結已複製',
     invalid: '請檢查數字後再試一次',
+    roomFull: '房間已經滿了',
+    roomCode: '房號是 6 個字母或數字',
+    invalidRoom: '這個房間的資料有問題',
     instructions: [
       '選擇 3 或 4 個不同數字作為秘密，第一位可以是 0。',
       '輪流猜對方的秘密數字。',
@@ -111,4 +119,11 @@ export const strings = {
 export type Locale = keyof typeof strings;
 export function locale(value: string): Locale {
   return value.toLowerCase().startsWith('zh') ? 'zh-TW' : 'en';
+}
+export function roomErrorText(error: string, lang: Locale) {
+  const t = strings[lang];
+  if (error === 'room_full') return t.roomFull;
+  if (error === 'invalid_code') return t.roomCode;
+  if (error === 'invalid_state') return t.invalidRoom;
+  return t.invalid;
 }

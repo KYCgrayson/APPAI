@@ -1,9 +1,9 @@
 import qr from 'qrcode-generator';
 import { candidates, other, type Seat } from '../logic/game.ts';
 import { encode } from '../relay/codec.ts';
-import { readScores } from './storage.ts';
+import { readScores, scoreIdentity } from './storage.ts';
 import { button, esc } from './html.ts';
-import { rulesScreen, handoverScreen } from './screens.ts';
+import { rulesScreen, handoverScreen, waitingSecretScreen } from './screens.ts';
 import {
   lang,
   t,
@@ -33,21 +33,24 @@ function scoreboard() {
   const rows = readScores(storage);
   const pairs: {
     key: string;
-    names: string[];
+    names: [string, string];
+    computer?: boolean;
   }[] = game
-    ? [{ key: scoreKey(), names: game.names }]
+    ? [{ key: scoreKey(), names: game.names, computer: mode === 'ai' }]
     : [
-        { key: JSON.stringify(['duel', ...names]), names },
+        { key: scoreIdentity(names).key, names },
         {
           key: JSON.stringify(['ai', names[0], lang === 'en' ? 'Computer' : '電腦']),
           names: [names[0], lang === 'en' ? 'Computer' : '電腦'],
+          computer: true,
         },
       ];
   return `<section class="scoreboard">
   <h3>${t.scores}</h3>${pairs
     .map((p) => {
       const r = rows[p.key] ?? { wins: [0, 0], draws: 0 };
-      return `<p>◆ ${esc(p.names[0])} <strong>${r.wins[0]}</strong> <span>· ${lang === 'en' ? 'Draws' : '平手'} ${r.draws} ·</span> ● ${esc(p.names[1])} <strong>${r.wins[1]}</strong>
+      const seats = scoreIdentity(p.names, p.computer).seats;
+      return `<p>◆ ${esc(p.names[0])} <strong>${r.wins[seats[0]]}</strong> <span>· ${lang === 'en' ? 'Draws' : '平手'} ${r.draws} ·</span> ● ${esc(p.names[1])} <strong>${r.wins[seats[1]]}</strong>
   </p>`;
     })
     .join('')}${button(t.reset, 'reset', 'quiet')}</section>`;
@@ -167,7 +170,8 @@ function histories() {
   <h2>${s === 0 ? '◆' : '●'} ${esc(labelName(s as Seat))} <small>${game!.history[s].length}</small>
   </h2>
   <ol>${
-    game!.history[s]
+    [...game!.history[s]]
+      .reverse()
       .map(
         (e) => `<li>
   <span class="guess-chips">${[...e.g].map((d) => `<span class="mini-chip">${esc(d)}</span>`).join('')}</span>
@@ -196,6 +200,10 @@ function notes() {
 }
 function shareView() {
   if (!game) return '';
+  if (session) {
+    const waiting = waitingSecretScreen(session.room, seat, t.waitingSecret);
+    if (waiting) return waiting;
+  }
   const url = shareURL(),
     q = qr(0, 'L');
   q.addData(url);
@@ -203,7 +211,7 @@ function shareView() {
   return `<section class="panel share-card">
   <h1>${esc(session ? session.code : t.share)}</h1>
   <div class="qr">${q.createSvgTag({ cellSize: 4, margin: 16, scalable: true })}</div>
-  <p>${t.scan}</p>${session && session.room.status === 'waiting' ? `<p data-countdown>${countdown()}</p>` : ''}${button(t.share, 'share', 'primary')}<input class="share-url" readonly aria-label="${t.share}" value="${esc(url)}">${session && session.room.status === 'playing' ? button(t.start, 'continueOnline') : ''}</section>`;
+  <p>${t.scan}</p>${session && session.room.status === 'waiting' ? `<p data-countdown>${countdown()}</p>` : ''}${button(t.share, 'share', 'primary')}<input class="share-url" readonly aria-label="${t.share}" value="${esc(url)}"></section>`;
 }
 export function shareURL() {
   const u = new URL(location.href);
