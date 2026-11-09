@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DoubleSide, Mesh, PerspectiveCamera, ShaderMaterial, Spherical, Vector3 } from 'three';
+import { DoubleSide, Mesh, MeshBasicMaterial, PerspectiveCamera, ShaderMaterial, Spherical, Vector3 } from 'three';
 import { Atmosphere, clearsBoard, projectBox, screenRect } from '../src/scene/atmosphere.ts';
 
 const motion = { matches: false };
@@ -31,7 +31,7 @@ for (const dark of [false, true]) test(`${dark ? 'night' : 'day'}: visible puff 
     for (const frame of frames) {
         const camera = new PerspectiveCamera(38, frame.w / (frame.bottom - frame.top), .1, 360);
         camera.setViewOffset(frame.w, frame.bottom - frame.top, 0, -frame.top, frame.w, frame.h);
-        for (const zoom of [.6, 1, 1.6]) for (const polar of [.15, .45, 47 * Math.PI / 180, 1.05, 1.30]) for (let a = 0; a < 48; a++) {
+        for (const zoom of [.6, 1, 1.6]) for (const polar of [.15, .45, 47 * Math.PI / 180, 1.05, 1.15, 1.30]) for (let a = 0; a < 48; a++) {
             camera.position.setFromSpherical(new Spherical(frame.distance * zoom, polar, a * Math.PI / 24)).add(new Vector3(0, .4, 0));
             camera.lookAt(0, .4, 0); camera.updateMatrixWorld();
             atmosphere.update(camera, 0, frame.w / frame.h);
@@ -58,6 +58,24 @@ for (const dark of [false, true]) test(`${dark ? 'night' : 'day'}: visible puff 
     let meshes = 0;
     atmosphere.traverse(o => { assert.equal(o.castShadow, false); if (o instanceof Mesh) meshes++; });
     assert.ok(meshes <= 18, 'sky, twelve puffs and one instanced flock');
+});
+
+test('puffs and birds fade with pitch and disappear before the low-orbit hills are revealed', () => {
+    const atmosphere = new Atmosphere(false), camera = new PerspectiveCamera(38, 1, .1, 360);
+    const clouds = atmosphere.getObjectsByProperty('name', 'puff-cloud') as Mesh<import('three').BufferGeometry, MeshBasicMaterial>[];
+    const birds = atmosphere.getObjectByName('sky-birds') as Mesh<import('three').BufferGeometry, MeshBasicMaterial>;
+    for (const [pitch, opacity] of [[.65, 1], [.525, .5], [.45, 0], [.27, 0]]) {
+        camera.position.setFromSpherical(new Spherical(20, Math.PI / 2 - pitch, 0));
+        camera.lookAt(0, 0, 0); camera.updateMatrixWorld(); atmosphere.update(camera, 0, 1);
+        assert.ok(Math.abs(birds.material.opacity - opacity) < 1e-12);
+        for (const cloud of clouds) {
+            assert.ok(cloud.material.opacity <= cloud.userData.opacity * opacity + 1e-12);
+            if (opacity === 0) { assert.equal(cloud.visible, false); assert.equal(cloud.material.opacity, 0); }
+        }
+        if (opacity === 0) assert.equal(birds.visible, false);
+    }
+    assert.equal(birds.material.transparent, true);
+    assert.equal(birds.material.forceSinglePass, true, 'fading the flat flock adds no extra draw pass');
 });
 
 test('reduced motion freezes drift and twinkle; FPS fallback removes the third octave and twinkle', () => {

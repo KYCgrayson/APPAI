@@ -98,8 +98,11 @@ test('controller regressions: loading, keyboard, modal guards, restart, timeout,
         const cross = () => { act({ type: 'toggle', id: '10' }); act({ type: 'walk' }); now += 1000; stage.current!.complete(); };
         cross(); cross(); cross();
         assert.equal(state().failure.reason, 'timeout'); const elapsed = state().elapsedMs;
+        assert.ok(app.html.includes('<h2>The lantern only lasts 22 minutes; that trip ended at 30.</h2>'));
+        assert.ok(app.html.includes('data-action="undo" class="primary"'), 'timeout keeps the Undo action');
         now += 9000; assert.equal(state().elapsedMs, elapsed);
-        act({ type: 'undo' }); assert.equal(state().failure, undefined); now += 1000; assert.ok(state().elapsedMs > elapsed);
+        act({ type: 'undo' }); assert.equal(state().failure, undefined); assert.equal(state().elapsedMs, elapsed);
+        now += 1000; assert.equal(state().elapsedMs, elapsed + 1000);
     });
     await t.test('popstate waits for animation completion rather than dropping its callback', async () => {
         act({ type: 'restart' }); act({ type: 'toggle', id: '1' }); act({ type: 'walk' });

@@ -64,7 +64,7 @@ test('actual visible scene boxes fit the free band at every requested size',asyn
  }
 });
 
-test('every default puzzle and home sky has a top-half horizon, rich upper sky and a clear sun/moon',async()=>{
+test('every puzzle and home sky composes the horizon and hides puffs/birds at low orbits',async()=>{
  for(const def of Object.values(registry))for(const level of levelIds){
   const scene=(await def.loadScene()).create({night:def.id==='bridge',themeDark:false,lamps:[new PointLight(),new PointLight()]} as any,level);
   const atmosphere=new Atmosphere(def.id==='bridge');
@@ -85,8 +85,8 @@ test('every default puzzle and home sky has a top-half horizon, rich upper sky a
     const screen=(1-fromTop-u.skyHorizon.value)*.8/(1-u.skyHorizon.value);
     return ray.y*(1-u.skyBlend.value)+screen*u.skyBlend.value;
    };
-   // Home rotates freely; also check player zoom and near top-down orbits.
-   for(const polar of [47*Math.PI/180,.15])for(const azimuth of [0,Math.PI/2,Math.PI,3*Math.PI/2])for(const zoom of [.6,1,1.6]){
+   // Home rotates freely; also check player zoom, near top-down and low orbits.
+   for(const polar of [47*Math.PI/180,.15,1.15,1.30])for(const azimuth of [0,Math.PI/2,Math.PI,3*Math.PI/2])for(const zoom of [.6,1,1.6]){
     camera.position.setFromSpherical(new Spherical(fit.distance*zoom,polar,azimuth)).add(new Vector3(fit.target.x,fit.target.y,fit.target.z));
     camera.lookAt(fit.target.x,fit.target.y,fit.target.z);camera.updateMatrixWorld();atmosphere.update(camera,0,w/h);
     assert.equal(sky.material.uniforms.night.value,def.id==='bridge'?1:0);
@@ -94,9 +94,16 @@ test('every default puzzle and home sky has a top-half horizon, rich upper sky a
      let lo=0,hi=1;
      for(let i=0;i<32;i++){const mid=(lo+hi)/2;if(altitude(x,mid)>0)lo=mid;else hi=mid;}
      const horizon=(lo+hi)/2;
-     assert.ok(horizon>0&&horizon<=.5,`${label}: horizon ${horizon} is visible in the top half`);
+     assert.ok(horizon>0&&horizon<1,`${label}: horizon ${horizon} is onscreen`);
+     if(polar<=47*Math.PI/180){
+      assert.ok(horizon<=.5,`${label}: horizon ${horizon} is visible in the top half`);
+      assert.ok(altitude(x,0)>=.79&&altitude(x,horizon+.1)<-.1,`${label}: distinct blue/star and hill/ground bands`);
+     }
      if(polar===47*Math.PI/180)assert.ok(horizon>=.35&&horizon<=.45,`${label}: default sky fills 35–45%`);
-     assert.ok(altitude(x,0)>=.79&&altitude(x,horizon+.1)<-.1,`${label}: distinct blue/star and hill/ground bands`);
+    }
+    if(polar>=1.15){
+     assert.ok(atmosphere.getObjectsByProperty('name','puff-cloud').every(cloud=>!cloud.visible),`${label}: low-orbit puffs are hidden`);
+     assert.equal(atmosphere.getObjectByName('sky-birds')!.visible,false,`${label}: low-orbit birds are hidden`);
     }
     if(polar===47*Math.PI/180){
      const u=sky.material.uniforms,light=u.lightPosition.value,cy=(1-light.y)*h;

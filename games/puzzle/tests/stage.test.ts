@@ -19,9 +19,9 @@ class Renderer {
     }
 }
 class Controls extends EventDispatcher {
-    camera: PerspectiveCamera; target = new Vector3(); position0 = new Vector3(); target0 = new Vector3();
+    camera: PerspectiveCamera; target = new Vector3(); position0 = new Vector3(); target0 = new Vector3(); updates = 0;
     constructor(camera: PerspectiveCamera) { super(); this.camera = camera; }
-    update() { this.camera.lookAt(this.target); }
+    update() { this.updates++; this.camera.lookAt(this.target); }
     saveState() { this.position0.copy(this.camera.position); this.target0.copy(this.target); }
     reset() { this.camera.position.copy(this.position0); this.target.copy(this.target0); }
 }
@@ -58,21 +58,35 @@ const makePuzzle = () => {
     return { root, hit: [], bounds: { x: 5.23, y: [-1.63, 2.9] as [number, number], z: 3.2 }, busy: false, update() {}, sync() {}, animate() {}, dispose() { root.clear(); } };
 };
 
-test('no empty first render; mount/resize render the board and night without any rAF', () => {
+test('no empty first render; mount renders the board and night exactly once without any rAF', () => {
     const stage = new Stage(canvas as any, false, () => {}), renderer = stage.renderer as unknown as Renderer;
     assert.equal(renderer.renders.length, 0);
     stage.resize(); assert.equal(renderer.renders.length, 0);
     assert.equal(frames.length, 1);
     stage.mount(makePuzzle(), true);
-    assert.ok(renderer.renders.length > 0);
+    assert.equal(renderer.renders.length, 1);
     assert.ok(renderer.renders.every(r => r.board && r.night));
     assert.ok(stage.metrics.firstFrameMs > 0); assert.ok(classes.has('night'));
     const count = renderer.renders.length;
-    stage.resize(); assert.ok(renderer.renders.length > count, 'unchanged band still redraws synchronously');
+    const controls = stage.controls as unknown as Controls, updates = controls.updates;
+    stage.resize(); assert.equal(renderer.renders.length, count, 'queued rAF handles an unchanged band');
+    assert.equal(controls.updates, updates, 'UI updates do not advance control damping');
     const lights = stage.scene.children.filter(o => o instanceof PointLight);
     stage.mount(makePuzzle(), false);
+    assert.equal(renderer.renders.length, count + 1, 'a replacement scene renders once');
     assert.ok(!classes.has('night'));
     assert.deepEqual(stage.scene.children.filter(o => o instanceof PointLight), lights);
+});
+
+test('unchanged viewport renders synchronously when the frame loop is paused', () => {
+    const stage = new Stage(canvas as any, false, () => {}), renderer = stage.renderer as unknown as Renderer;
+    stage.mount(makePuzzle(), false);
+    (document as any).hidden = true; document.dispatchEvent(new Event('visibilitychange'));
+    const count = renderer.renders.length;
+    stage.resize(); assert.equal(renderer.renders.length, count + 1);
+    (document as any).hidden = false; document.dispatchEvent(new Event('visibilitychange'));
+    const resumed = renderer.renders.length;
+    stage.resize(); assert.equal(renderer.renders.length, resumed);
 });
 
 test('HUD reflow preserves a user orbit/zoom, updates defaults, and reset uses the new fit', () => {

@@ -123,8 +123,10 @@ export class Stage {
         window.addEventListener('resize', () => this.resize());
         window.addEventListener('orientationchange', () => this.resize());
         document.addEventListener('visibilitychange', () => {
-            if (document.hidden)
+            if (document.hidden) {
                 cancelAnimationFrame(this.raf);
+                this.raf = 0;
+            }
             else {
                 this.last = performance.now();
                 this.epoch = this.last;
@@ -162,9 +164,7 @@ export class Stage {
         document.body.classList.toggle('night', this.night);
         this.lamps.forEach(light => { light.intensity = 0; });
         this.current.update(performance.now() / 1000, 0, '');
-        this.idleOrbit = true;
-        this.viewport = '';
-        this.resetView();
+        this.resetView(false, false);
         this.idleOrbit = true;
         this.renderFrame();
     }
@@ -216,7 +216,7 @@ export class Stage {
         }
     }
     startIdleOrbit() { this.idleOrbit = true; }
-    resetView(animate = false) {
+    resetView(animate = false, render = true) {
         const position = this.camera.position.clone(), target = this.controls.target.clone();
         this.controls.autoRotate = false;
         this.idleOrbit = false;
@@ -226,7 +226,7 @@ export class Stage {
         this.controls.update();
         this.controls.enableDamping = true;
         this.viewport = '';
-        this.resize();
+        this.resize(false);
         this.controls.reset(); // Clear residual damping and zoom momentum.
         this.camera.zoom = 1;
         this.camera.position.copy(this.defaultPosition);
@@ -237,15 +237,18 @@ export class Stage {
             this.controls.target.copy(target);
             this.returning = true;
         }
-        this.renderFrame();
+        if (render) this.renderFrame();
     }
-    resize() {
+    resize(render = true) {
         if (!this.current) return;
         const top = document.querySelector('.topbar')?.getBoundingClientRect().bottom ?? 0;
         const bottom = document.querySelector('.bottom')?.getBoundingClientRect().top ?? innerHeight;
         const h = Math.max(1, bottom - top), w = innerWidth;
         const viewport = `${w}:${innerHeight}:${h}:${top}`;
-        if (viewport === this.viewport) { this.renderFrame(); return; }
+        if (viewport === this.viewport) {
+            if (render && !this.raf) this.renderFrame();
+            return;
+        }
         this.viewport = viewport;
         this.renderer.domElement.style.top = '0px';
         this.renderer.setSize(w, innerHeight);
@@ -268,7 +271,7 @@ export class Stage {
         this.controls.minDistance = Math.min(fit.distance * .6, currentDistance);
         this.controls.maxDistance = Math.max(fit.distance * 1.6, currentDistance);
         this.camera.updateProjectionMatrix();
-        this.renderFrame();
+        if (render) this.renderFrame();
     }
     private renderFrame(dt = 0) {
         if (!this.current) return;
@@ -279,8 +282,10 @@ export class Stage {
         if (!this.metrics.firstFrameMs) this.metrics.firstFrameMs = performance.now();
     }
     private loop = () => {
-        if (document.hidden)
+        if (document.hidden) {
+            this.raf = 0;
             return;
+        }
         this.raf = requestAnimationFrame(this.loop);
         if (!this.current) return;
         const now = performance.now(), dt = Math.min((now - this.last) / 1000, .05);

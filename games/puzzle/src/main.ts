@@ -260,6 +260,7 @@ function act(a: Action) {
         const prev = history.pop();
         if (prev) {
             state = prev;
+            if (stopped !== null) started = performance.now() - stopped;
             stopped = null;
             stage.current?.sync(state);
             toast = '';
@@ -402,7 +403,7 @@ function render() {
             html += `<button class="primary cross" data-action="go" ${busy || frozen ? 'disabled' : ''}>${game === 'river' ? t.cross : s.walk} <span aria-hidden="true">→</span></button>`;
         html += `<p class="help">${s.help}</p></div>`;
         if (def.logic.failure(state))
-            html += modal(game === 'river' ? t.failed : s.timeout.replace('{m}', String(state.minutes)), game === 'river' ? `<p>${s[state.failure.reason]}</p>` : '', button('undo', t.undo, true) + button('restart', t.restart) + button('menu', t.menu), true);
+            html += modal(game === 'river' ? t.failed : s.timeout.replace('{limit}', String(l.limit)).replace('{m}', String(state.minutes)), game === 'river' ? `<p>${s[state.failure.reason]}</p>` : '', button('undo', t.undo, true) + button('restart', t.restart) + button('menu', t.menu), true);
         else if (def.logic.isWin(state)) {
             const next = levelIds[levelIds.indexOf(state.level) + 1];
             html += modal(s.win, `<div class="stars">${stars(starCount())}</div><p>${resultLine()} · ${t.optimal} ${l.optimal}</p><p>${escapeHtml(challengeResult())}</p><label class="nickname">${st.nickname}<input id="nickname" maxlength="12" value="${escapeHtml(nickname)}" autocomplete="nickname"></label>`, button('share', st.share, true) + (next ? `<button data-level="${next}">${t.next}</button>` : '') + button('restart', t.replay) + button('menu', t.menu), true);

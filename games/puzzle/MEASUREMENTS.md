@@ -1,4 +1,20 @@
-# Round 13 verification — 2026-11-09
+# Round 14 verification — 2026-11-09
+
+Targeted polish only: puff clouds and birds fade with camera pitch and are hidden at low orbits; sun/moon discs and halos fade against composed altitude. The transparent bird material uses a single pass, retaining the atmosphere's draw budget. Scene coverage now includes polar **1.15 and 1.30**, with cloud-clearance coverage extended to **6,912 camera configurations**.
+
+Timeout undo resumes elapsed time from the stopped value, excluding time spent on the failure screen. English and Traditional Chinese timeout titles distinguish the lantern's level limit from the completed trip's total; the primary Undo action and keyboard hint remain. Mount renders once at the end; an unchanged viewport skips synchronous rendering/control updates while rAF is scheduled, retaining a synchronous fallback when paused.
+
+- `npm test`: **123 passed, 0 failed**.
+- `npm run build`: **passed**, including TypeScript.
+- `git diff --check`: **passed**.
+- All production JS chunks: **181,371 B gzip** (Node `gzipSync` defaults), **38,629 B** below the **220,000 B** budget.
+- The existing conservative scene submission checks pass at **≤160**; no geometry or extra draw passes were added. Browser pixels and actual GPU draw calls/FPS were not remeasured. The existing Vite raw-chunk warning remains.
+
+All changes stay in `games/puzzle/`; no dependencies, network access, commits or hook changes.
+
+---
+
+# Historical Round 13 verification — 2026-11-09
 
 All changes remain in `games/puzzle/`. No new dependencies, downloaded assets, external network access, commits or hook changes. Existing automation, metrics and sharing globals are unchanged.
 

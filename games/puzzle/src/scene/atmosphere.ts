@@ -26,7 +26,7 @@ export function clearsBoard(cloud: ScreenRect, board: ScreenRect) {
 export class Atmosphere extends Group {
     private sky: Mesh<PlaneGeometry, ShaderMaterial>;
     private clouds: Mesh<BufferGeometry, MeshBasicMaterial>[] = [];
-    private birds: InstancedMesh;
+    private birds: InstancedMesh<BufferGeometry, MeshBasicMaterial>;
     private boardRect = screenRect();
     private objectRect = screenRect();
     private boardCenter = new Vector3(0, 1.35, 0);
@@ -93,6 +93,8 @@ export class Atmosphere extends Group {
                     float r=length((screenUV-lightPosition)*vec2(aspect,1.0))*.032/lightRadius, radius=mix(.032,.025,night);
                     float disc=1.0-smoothstep(radius*.86,radius*1.1,r);
                     float halo=exp(-r*17.0)*.32+exp(-r*65.0)*.25;
+                    disc*=smoothstep(-.02,.03,altitude);
+                    halo*=smoothstep(-.1,.05,altitude);
                     vec3 glow=mix(vec3(1.0,.68,.31),vec3(.53,.65,1.0),night);
                     color+=glow*halo;
                     color=mix(color,mix(vec3(1.0,.88,.58),vec3(.88,.93,1.0),night),disc*.94);
@@ -159,7 +161,7 @@ export class Atmosphere extends Group {
         }
         const wing = new BufferGeometry();
         wing.setAttribute('position', new Float32BufferAttribute([-.7, .12, 0, 0, 0, .18, 0, 0, -.08, 0, 0, -.08, 0, 0, .18, .7, .12, 0], 3));
-        this.birds = new InstancedMesh(wing, new MeshBasicMaterial({ color: dark ? '#c5bdcb' : '#617c80', side: DoubleSide, toneMapped: false }), 5);
+        this.birds = new InstancedMesh(wing, new MeshBasicMaterial({ color: dark ? '#c5bdcb' : '#617c80', side: DoubleSide, toneMapped: false, transparent: true, depthWrite: false, forceSinglePass: true }), 5);
         this.birds.name = 'sky-birds'; this.birds.frustumCulled = false;
         this.add(this.birds);
         this.traverse(o => { o.castShadow = false; o.receiveShadow = false; o.raycast = () => {}; });
@@ -173,6 +175,9 @@ export class Atmosphere extends Group {
         const shader = this.sky.material;
         camera.getWorldDirection(this.viewDirection);
         const pitch = Math.asin(MathUtils.clamp(-this.viewDirection.y, -1, 1));
+        // Puffs and birds sit below world altitude zero; fade out before low orbits
+        // reveal them over the painted hills and meadow.
+        const fade = MathUtils.smoothstep(pitch, .45, .6);
         shader.uniforms.skyBlend.value = MathUtils.smoothstep(pitch, .26, .65);
         // Default elevation is 43 degrees: horizon at 42% from the top. Compress
         // to 30% near top-down, retaining blue, clouds and stars even at maximum zoom.
@@ -200,13 +205,14 @@ export class Atmosphere extends Group {
             const valid = projectBox(camera, center, cloud.userData.half, this.objectRect);
             const r = this.objectRect;
             const edge = Math.max(0, Math.min(1, (r.minX + 1) / .12, (1 - r.maxX) / .12, (r.minY + 1) / .12, (1 - r.maxY) / .12));
-            cloud.visible = boardValid && valid && edge > 0 && clearsBoard(r, this.boardRect);
-            cloud.material.opacity = cloud.userData.opacity * edge;
+            cloud.visible = fade > 0 && boardValid && valid && edge > 0 && clearsBoard(r, this.boardRect);
+            cloud.material.opacity = cloud.userData.opacity * edge * fade;
         }
         // A single instanced, loose V passes the distant sky for 18 seconds each 75 seconds.
         const pass = this.time % 75;
         this.flockCenter.set(-50 + pass * 5.5, -32 + Math.sin(pass * .15), -100);
-        this.birds.visible = !this.reduced.matches && pass < 18 && boardValid && projectBox(camera, this.flockCenter, this.flockHalf, this.objectRect) && clearsBoard(this.objectRect, this.boardRect);
+        this.birds.material.opacity = fade;
+        this.birds.visible = fade > 0 && !this.reduced.matches && pass < 18 && boardValid && projectBox(camera, this.flockCenter, this.flockHalf, this.objectRect) && clearsBoard(this.objectRect, this.boardRect);
         if (this.birds.visible) {
             for (let i = 0; i < 5; i++) {
                 const side = i % 2 ? 1 : -1, rank = Math.ceil(i / 2);
