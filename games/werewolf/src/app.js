@@ -1,6 +1,5 @@
-// Werewolf (狼人殺) — pass-one-phone UI. The app is the moderator: it deals
-// roles, walks the phone around twice each night, announces the morning,
-// handles the hunter, times the day and records the vote.
+// Werewolf (狼人殺) — pass-one-phone UI or a script for a human moderator.
+// Deals roles, announces the morning, handles the hunter, times the day and records the vote.
 // No network, no accounts; state lives in localStorage.
 import * as L from './logic.js';
 import { STRINGS, SEAT_ICONS, ROLE_ICON } from './i18n.js';
@@ -13,6 +12,7 @@ const defaults = () => ({
   lang: detectLang(),
   voice: true,
   kid: false,
+  host: 'app',
   minutes: 3,
   count: 8,
   names: [],
@@ -37,8 +37,11 @@ function load() {
   try {
     const s = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (!s || typeof s !== 'object' || !s.ui) return null;
+    s.host = s.host === 'human' ? 'human' : 'app';
+    s.count = Math.min(s.host === 'human' ? L.MAX_PLAYERS : L.PASS_AND_PLAY_MAX, Math.max(L.MIN_PLAYERS, Number(s.count) || 8));
     // Always open on the home screen; an unfinished game can be resumed from there.
-    if (s.game && !s.game.winner && !SETUP_SCREENS.includes(s.screen)) s.paused = { screen: s.screen, ui: s.ui };
+    if (s.game && !s.game.winner && !SETUP_SCREENS.includes(s.screen)) s.paused = { screen: s.screen, ui: s.ui, host: s.host };
+    if (s.paused) s.paused.host = s.paused.host === 'human' ? 'human' : 'app';
     if (!s.game || s.game.winner) s.paused = null;
     // A finished game has nothing secret left: reopen straight on the result.
     s.screen = s.game && s.game.winner && !['home', 'rules', 'setup'].includes(s.screen) ? 'end' : 'home';
@@ -57,7 +60,7 @@ function nextSeat(g, pass, after = -1) {
   return L.aliveSeats(g).find((s) => s > after && !passList(g, pass).includes(s));
 }
 
-/** After a reload, never land on a private screen: go back to a hand-off. */
+/** Keep app-mode secrets behind a hand-off; the human host resumes the saved script. */
 function normalize(s) {
   const g = s.game;
   if (!g) return { ...s, screen: 'home' };
@@ -90,6 +93,7 @@ function save() {
 
 const T = () => STRINGS[S.lang];
 const W = () => T().words[S.kid ? 'kid' : 'classic'];
+const maxPlayers = () => S.host === 'human' ? L.MAX_PLAYERS : L.PASS_AND_PLAY_MAX;
 const esc = (v) =>
   String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const nm = (seat) => S.game.players[seat].name;
@@ -216,16 +220,18 @@ function screenSetup() {
   return `${header()}
   <main class="stack">
     <h2>${esc(t.newGame)}</h2>
+    <div class="row between"><span>${esc(t.host)}</span>${chips('host', S.host, [['app', t.hostApp], ['human', t.hostHuman]])}</div>
+    <p class="muted small">${esc(S.host === 'human' ? t.hostHumanNote : t.hostAppNote)}</p>
     <div class="row between">
       <span>${esc(t.players)}</span>
       <div class="stepper">
         <button class="btn sq" data-a="count" data-v="-1" ${n <= L.MIN_PLAYERS ? 'disabled' : ''} aria-label="-1">−</button>
         <b aria-live="polite">${n}</b>
-        <button class="btn sq" data-a="count" data-v="1" ${n >= L.PASS_AND_PLAY_MAX ? 'disabled' : ''} aria-label="+1">＋</button>
+        <button class="btn sq" data-a="count" data-v="1" ${n >= maxPlayers() ? 'disabled' : ''} aria-label="+1">＋</button>
       </div>
     </div>
-    <p class="muted small">${esc(t.maxNote(L.PASS_AND_PLAY_MAX))}</p>
-    <p class="note">${esc(t.setupRoles(roleSummary(n)))}</p>
+    <p class="muted small">${esc(S.host === 'human' ? t.humanMaxNote(maxPlayers()) : t.maxNote(maxPlayers()))}</p>
+    <p class="note">${esc(t.setupRoles(roleSummary(n)))}${n <= 4 ? `<br>${esc(W().smallGame)}` : ''}</p>
     <div class="names">${inputs}</div>
     <div class="row between"><span>${esc(t.discussion)}</span>${chips('minutes', String(S.minutes), [2, 3, 5].map((m) => [String(m), t.minutes(m)]))}</div>
     <div class="row between"><span>${esc(t.voice)}</span>${chips('voice', S.voice ? '1' : '0', [['1', t.on], ['0', t.off]])}</div>
@@ -275,6 +281,95 @@ function screenReveal() {
       <div class="hold-face" hidden>${roleCard(turn)}</div>
     </div>
     <button class="btn primary" data-a="seen" ${S.ui.seen ? '' : 'disabled'}>${esc(t.seenNext)}</button>
+  </main>`;
+}
+
+function screenRevealChoice() {
+  const t = T();
+  return `${header()}
+  <main class="stack">
+    <h2>${esc(t.revealChoice)}</h2>
+    <button class="btn primary big" data-a="revealPass">${esc(t.revealPass)}</button>
+    <button class="btn" data-a="hostOverview">${esc(t.revealOverview)}</button>
+  </main>`;
+}
+
+function screenHostOverview() {
+  const t = T();
+  return `${header()}
+  <main class="stack">
+    <h2>${esc(t.allRoles)}</h2>
+    <p class="muted">${esc(t.hostOverviewNote)}</p>
+    <ul class="roles">${S.game.players.map((p, i) => `<li><span class="icon">${ROLE_ICON[p.role]}</span>
+      <div><b>${esc(label(i))}</b> · ${esc(t.roleName[p.role])}</div></li>`).join('')}</ul>
+    <button class="btn primary big" data-a="hostStart">${esc(t.hostStart)}</button>
+  </main>`;
+}
+
+const hostRoleSeats = (role) => S.game.players.map((_, i) => i).filter((s) => S.game.players[s].role === role);
+const hostActor = (role) => hostRoleSeats(role).find((s) => L.isAlive(S.game, s));
+const hostSteps = () => ['close', ...['guard', 'wolf', 'seer', 'witch'].filter((r) => hostRoleSeats(r).length), 'dawn'];
+
+function hostLine(step) {
+  if (step === 'wolf') return L.quietNight(S.game) ? W().hostQuietWolf : W().hostWolf;
+  if (step === 'witch') return L.quietNight(S.game) ? T().hostQuietWitch : W().hostWitch;
+  return T().hostScript[step];
+}
+
+function showHostStep(step, closing = '') {
+  speak(`${closing}${closing ? T().hostLineJoiner : ''}${hostLine(step)}`);
+  go('hostNight', { step });
+}
+
+function hostWitchBody(seat) {
+  const t = T();
+  const w = W();
+  const u = S.ui;
+  const v = L.witchView(S.game, seat);
+  if (L.quietNight(S.game)) return `<p class="secret">${esc(w.peaceful)}</p>`;
+  const victim = v.victim !== null ? w.witchVictim(label(v.victim)) : (S.game.potions.save ? w.peaceful : w.hostWitchNoSave(v.canPoison));
+  return `<p class="secret">${esc(victim)}</p>
+    ${v.victim !== null ? `<p class="muted">${esc(t.hostWitchNote)}</p>` : ''}
+    ${v.canSave ? `<button class="btn chip wide ${u.wsave ? 'on' : ''}" data-a="wSave">💊 ${esc(w.save(label(v.victim)))}</button>` : ''}
+    ${v.canPoison ? `<button class="btn chip wide ${u.poisonMode ? 'on' : ''}" data-a="hostPoison">${S.kid ? '😴' : '☠️'} ${esc(w.poison)}</button>` : ''}
+    ${u.poisonMode && v.canPoison ? `<p>${esc(w.pickPoison)}</p>${grid(v.poisonTargets, 'wPoison', u.wpoison)}` : ''}
+    <button class="btn chip wide ${u.wchose && !u.wsave && u.wpoison == null ? 'on' : ''}" data-a="wNone">${esc(t.noPotion)}</button>`;
+}
+
+function screenHostNight() {
+  const t = T();
+  const g = S.game;
+  const { step } = S.ui;
+  const quietWolf = step === 'wolf' && L.quietNight(g);
+  const roleSeats = hostRoleSeats(step);
+  const seat = hostActor(step);
+  let body = '';
+  let ready = true;
+  if (roleSeats.length) {
+    const holders = roleSeats.map((s) => `${label(s)} · ${g.players[s].alive ? t.hostAlive : W().outTag}`).join(t.sep);
+    body = `<p class="muted">${esc(t.hostRoleSeats(holders))}</p>`;
+    if (seat === undefined) body += `<p class="secret">${esc(W().hostInactive)}</p>`;
+    else if (step === 'witch') {
+      body += hostWitchBody(seat);
+      ready = witchIdle(seat) || Boolean(S.ui.wchose);
+    } else if (!quietWolf) {
+      if (step === 'guard' && g.lastGuard !== null) body += `<p class="secret">${esc(t.lastGuard(label(g.lastGuard)))}</p>`;
+      const checked = step === 'seer' && g.actions.pass1.includes(seat);
+      // Older saves can already contain a committed check. New picks only preview it.
+      const pick = checked ? g.actions.seer : S.ui.pick;
+      body += grid(checked ? [] : L.targets1(g, seat), 'hostPick', pick);
+      if (step === 'seer' && pick !== undefined) body += `<div class="host-answer" role="status">${esc(g.players[pick].role === 'wolf' ? t.hostSeerYes : t.hostSeerNo)}</div><p class="muted">${esc(t.hostSeerNote)}</p>`;
+      ready = checked || S.ui.pick !== undefined;
+    }
+  }
+  return `${header()}
+  <main class="stack night">
+    <p class="muted center">${esc(t.nightTitle(g.night))} · ${esc(t.hostRead)}</p>
+    <h2 class="host-line">${ROLE_ICON[step] || (step === 'dawn' ? '🌅' : '🌙')} ${esc(hostLine(step))}</h2>
+    ${quietWolf ? `<p class="muted small">${esc(t.hostQuietWolfNote)}</p>` : ''}
+    ${body}
+    <button class="btn primary big" data-a="hostNext" ${ready ? '' : 'disabled'}>${esc(t.hostNext)}</button>
+    ${roleSeats.length && !quietWolf ? `<p class="muted small">${esc(t.hostCloseNote(t.hostClose(t.roleName[step])))}</p>` : ''}
   </main>`;
 }
 
@@ -357,7 +452,7 @@ function screenNight() {
   let task = pass === 1 ? L.task1(g, turn) : L.task2(g, turn);
   // A witch with no potions left picks a suspect like everyone else, so her turn looks the same.
   if (task === 'witch' && witchIdle(turn)) task = 'suspect';
-  let title = task === 'wolf' ? W().wolfTask : t.task[task];
+  let title = task === 'wolf' ? (L.quietNight(g) ? W().quietWolfTask : W().wolfTask) : t.task[task];
   let body = '';
   let ready = S.ui.pick !== undefined;
   if (task === 'witch') {
@@ -527,7 +622,10 @@ const SCREENS = {
   home: screenHome,
   rules: screenRules,
   setup: screenSetup,
+  revealChoice: screenRevealChoice,
+  hostOverview: screenHostOverview,
   reveal: screenReveal,
+  hostNight: screenHostNight,
   nightIntro: screenNightIntro,
   night: screenNight,
   pass2Intro: screenPass2Intro,
@@ -544,7 +642,7 @@ function render() {
   document.documentElement.lang = S.lang;
   document.title = T().title;
   root.innerHTML = (SCREENS[S.screen] || screenHome)();
-  document.body.classList.toggle('is-night', ['nightIntro', 'night', 'pass2Intro'].includes(S.screen));
+  document.body.classList.toggle('is-night', ['nightIntro', 'night', 'pass2Intro', 'hostNight'].includes(S.screen));
   clearInterval(tick);
   if (S.screen === 'day' && S.ui.running) tick = setInterval(onTick, 250);
   bindHold();
@@ -630,7 +728,8 @@ function setting(fn) {
 function newDeal(names) {
   S.game = L.newGame(names);
   S.paused = null;
-  go('reveal', { turn: 0, step: 'handoff' });
+  if (S.host === 'human') go('revealChoice');
+  else go('reveal', { turn: 0, step: 'handoff' });
 }
 
 function startTurn() {
@@ -650,6 +749,7 @@ function startTurn() {
 
 function rerender(patch) {
   Object.assign(S.ui, patch);
+  save();
   render();
 }
 
@@ -663,12 +763,15 @@ const ACTIONS = {
   rules: () => go('rules'),
   setup: () => go('setup'),
   resume: () => {
+    S.host = S.paused.host || 'app';
+    S.count = Math.min(maxPlayers(), Math.max(L.MIN_PLAYERS, S.count));
     S.screen = S.paused.screen;
     S.ui = S.paused.ui;
     S.paused = null;
     S = normalize(S);
     save();
     render();
+    if (S.screen === 'hostNight') speak(hostLine(S.ui.step));
   },
   quit: () => {
     if (confirm(T().quitConfirm)) {
@@ -678,7 +781,11 @@ const ACTIONS = {
     }
   },
   count: setting((v) => {
-    S.count = Math.min(L.PASS_AND_PLAY_MAX, Math.max(L.MIN_PLAYERS, S.count + Number(v)));
+    S.count = Math.min(maxPlayers(), Math.max(L.MIN_PLAYERS, S.count + Number(v)));
+  }),
+  host: setting((v) => {
+    S.host = v === 'human' ? 'human' : 'app';
+    S.count = Math.min(maxPlayers(), Math.max(L.MIN_PLAYERS, S.count));
   }),
   minutes: setting((v) => (S.minutes = Number(v))),
   voice: setting((v) => (S.voice = v === '1')),
@@ -688,11 +795,42 @@ const ACTIONS = {
     newDeal(Array.from({ length: S.count }, (_, i) => S.names[i] || T().namePh(i + 1)));
   },
   again: () => newDeal(S.game.players.map((p) => p.name)),
+  revealPass: () => go('reveal', { turn: 0, step: 'handoff' }),
+  hostOverview: () => go('hostOverview'),
+  hostStart: () => showHostStep('close'),
   iam: () => go('reveal', { turn: S.ui.turn, step: 'show', seen: false }),
   seen: () => {
     const next = S.ui.turn + 1;
     if (next < S.game.n) go('reveal', { turn: next, step: 'handoff' });
+    else if (S.host === 'human') showHostStep('close');
     else go('nightIntro');
+  },
+  hostPick: (el) => rerender({ pick: Number(el.dataset.v) }),
+  hostPoison: () => rerender({ poisonMode: true, wchose: false, wsave: false, wpoison: null }),
+  hostNext: () => {
+    const g = S.game;
+    const { step } = S.ui;
+    const seat = hostActor(step);
+    if (step === 'dawn') {
+      ACTIONS.morning();
+      return;
+    }
+    if (seat !== undefined) {
+      if ((step === 'guard' || step === 'seer' || (step === 'wolf' && !L.quietNight(g))) && !g.actions.pass1.includes(seat)) {
+        if (S.ui.pick === undefined) return;
+        L.act1(g, seat, S.ui.pick);
+      }
+      if (step === 'witch') {
+        if (!witchIdle(seat) && !S.ui.wchose) return;
+        L.act2(g, seat, { save: Boolean(S.ui.wsave), poison: S.ui.wpoison ?? null });
+      }
+    }
+    const steps = hostSteps();
+    const next = steps[steps.indexOf(step) + 1];
+    if (next === 'witch' || next === 'dawn') L.fillPass(g, 1);
+    if (next === 'dawn') L.fillPass(g, 2);
+    const closing = hostRoleSeats(step).length && !(step === 'wolf' && L.quietNight(g)) ? T().hostClose(T().roleName[step]) : '';
+    showHostStep(next, closing);
   },
   beginNight: () => {
     speak(T().nightSay(S.game.night));
@@ -701,8 +839,8 @@ const ACTIONS = {
   beginPass2: () => go('night', { pass: 2, turn: nextSeat(S.game, 2), step: 'handoff' }),
   nightIam: startTurn,
   pick: (el) => rerender({ pick: Number(el.dataset.v) }),
-  wSave: () => rerender({ wchose: true, wsave: true, wpoison: null }),
-  wNone: () => rerender({ wchose: true, wsave: false, wpoison: null }),
+  wSave: () => rerender({ wchose: true, wsave: true, wpoison: null, poisonMode: false }),
+  wNone: () => rerender({ wchose: true, wsave: false, wpoison: null, poisonMode: false }),
   wPoison: (el) => rerender({ wchose: true, wsave: false, wpoison: Number(el.dataset.v) }),
   confirmPick: () => {
     const g = S.game;
@@ -775,7 +913,8 @@ const ACTIONS = {
   },
   nextNight: () => {
     L.nextNight(S.game);
-    go('nightIntro');
+    if (S.host === 'human') showHostStep('close');
+    else go('nightIntro');
   },
   end: () => {
     speak(winText());

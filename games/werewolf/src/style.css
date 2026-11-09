@@ -93,6 +93,8 @@ main:focus { outline: none; }
 .card > * + * { margin-top: 8px; }
 .secret { background: var(--secret); border-radius: 12px; padding: 10px 12px; font-weight: 600; }
 .big-text { font-size: 1.25rem; }
+.host-line { font-size: 1.65rem; text-align: center; }
+.host-answer { font-size: 2.4rem; font-weight: 800; text-align: center; padding: 12px; }
 
 body.is-night { background: var(--night); color: var(--night-fg); }
 body.is-night .brand { color: var(--night-fg); }

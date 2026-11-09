@@ -31,25 +31,162 @@ function night(g, p1 = {}, witch = {}) {
 const SEVEN = ['wolf', 'wolf', 'seer', 'witch', 'hunter', 'villager', 'villager'];
 
 test('role table for every supported size', () => {
+  assert.equal(L.MIN_PLAYERS, 3);
+  assert.equal(L.MAX_PLAYERS, 16);
   for (let n = L.MIN_PLAYERS; n <= L.MAX_PLAYERS; n++) {
     const r = L.rolesFor(n);
     assert.equal(r.length, n);
     assert.equal(r.filter((x) => x === 'wolf').length, L.wolfCount(n));
     assert.equal(r.filter((x) => x === 'seer').length, 1);
-    assert.equal(r.filter((x) => x === 'witch').length, 1);
+    assert.equal(r.filter((x) => x === 'witch').length, n >= 4 ? 1 : 0);
     assert.equal(r.filter((x) => x === 'hunter').length, n >= 7 ? 1 : 0);
     assert.equal(r.filter((x) => x === 'guard').length, n >= 10 ? 1 : 0);
     assert.ok(r.includes('villager'));
     assert.ok(L.wolfCount(n) * 2 < n, `wolves must start as a minority at n=${n}`);
   }
   assert.deepEqual(L.rolesFor(12).slice().sort(), ['guard', 'hunter', 'seer', 'villager', 'villager', 'villager', 'villager', 'witch', 'wolf', 'wolf', 'wolf', 'wolf'].sort());
-  assert.throws(() => L.rolesFor(4));
+  assert.deepEqual(L.rolesFor(3), ['wolf', 'seer', 'villager']);
+  assert.deepEqual(L.rolesFor(4), ['wolf', 'seer', 'witch', 'villager']);
+  assert.throws(() => L.rolesFor(2));
+  assert.throws(() => L.rolesFor(3.5));
   assert.throws(() => L.rolesFor(17));
 });
 
 test('newGame deals a permutation of the role table', () => {
   const g = L.newGame(names(9), seeded(4));
   assert.deepEqual(g.players.map((p) => p.role).sort(), L.rolesFor(9).sort());
+  assert.equal(g.quiet1, false);
+});
+
+for (const n of [3, 4]) {
+  test(`${n}-player first night is peaceful, potions are forbidden, seer still checks`, () => {
+    const g = fixed(L.rolesFor(n));
+    assert.equal(g.quiet1, true);
+    L.act1(g, 0, n - 1);
+    assert.equal(g.actions.wolf, null);
+    assert.equal(L.act1(g, 1, 0).isWolf, true);
+    for (let s = 2; s < n; s++) L.act1(g, s, L.targets1(g, s)[0]);
+    if (n === 4) {
+      assert.deepEqual(L.witchView(g, 2), { victim: null, canSave: false, canPoison: false, poisonTargets: [0, 1, 3] });
+      assert.throws(() => L.act2(g, 2, { poison: 0 }), /cannot poison/);
+      assert.throws(() => L.act2(g, 2, { save: true }), /cannot save/);
+    }
+    for (const s of L.aliveSeats(g)) L.act2(g, s, {});
+    // Resolution also protects a quiet night from stale/injected action data.
+    g.actions.wolf = n - 1;
+    g.actions.poison = 0;
+    assert.deepEqual(L.resolveNight(g).deaths, []);
+    assert.equal(L.aliveSeats(g).length, n);
+    assert.deepEqual(g.potions, { save: true, poison: true });
+    assert.equal(g.winner, null);
+
+    const goodCheck = fixed(L.rolesFor(n));
+    assert.equal(L.act1(goodCheck, 1, n - 1).isWolf, false);
+  });
+
+  test(`${n}-player correct day-one vote wins for the village`, () => {
+    const g = fixed(L.rolesFor(n));
+    assert.deepEqual(night(g).deaths, []);
+    assert.equal(L.vote(g, 0), 'good');
+  });
+
+  test(`${n}-player quiet rule ends after night one`, () => {
+    const g = fixed(L.rolesFor(n));
+    night(g);
+    L.vote(g, null);
+    L.nextNight(g);
+    for (const s of L.aliveSeats(g)) L.act1(g, s, s === 0 ? n - 1 : L.targets1(g, s)[0]);
+    if (n === 4) {
+      assert.equal(L.witchView(g, 2).victim, 3);
+      assert.equal(L.witchView(g, 2).canPoison, true);
+    }
+    for (const s of L.aliveSeats(g)) L.act2(g, s, {});
+    assert.deepEqual(L.resolveNight(g).deaths, [n - 1]);
+  });
+}
+
+test('wrong day-one vote in a 3-player game gives wolves parity', () => {
+  const g = fixed(L.rolesFor(3));
+  night(g);
+  assert.equal(L.vote(g, 2), 'wolf');
+});
+
+test('older saves without quiet1 retain their original first-night rules', () => {
+  const g = fixed(L.rolesFor(4));
+  delete g.quiet1;
+  const r = night(g, { 0: 3 }, { poison: 0 });
+  assert.deepEqual(r.deaths, [0, 3]);
+  assert.equal(g.winner, 'good');
+});
+
+test('fillPass fills only living unplayed seats and leaves role actions intact', () => {
+  const g = fixed(SEVEN);
+  g.players[6].alive = false;
+  L.act1(g, 0, 5);
+  L.act1(g, 2, 1);
+  const before = structuredClone(g.actions);
+  assert.throws(() => L.fillPass(g, 2), /pass 1/);
+  assert.deepEqual(g.actions, before);
+  L.fillPass(g, 1);
+  assert.deepEqual(g.actions.pass1, [0, 2, 1, 3, 4, 5]);
+  assert.equal(g.actions.wolf, 5);
+  assert.equal(g.actions.seer, 1);
+  assert.equal(g.actions.guard, null);
+  L.fillPass(g, 1);
+  assert.equal(g.actions.pass1.length, 6);
+  L.act2(g, 3, { save: true });
+  L.fillPass(g, 2);
+  assert.deepEqual(g.actions.pass2, [3, 0, 1, 2, 4, 5]);
+  assert.equal(g.actions.save, true);
+  assert.deepEqual(L.resolveNight(g).deaths, []);
+});
+
+test('fillPass respects game-over and pending-hunter guards', () => {
+  const g = fixed(SEVEN);
+  assert.throws(() => L.fillPass(g, 0), /invalid pass/);
+  g.winner = 'good';
+  for (const pass of [1, 2]) assert.throws(() => L.fillPass(g, pass), /game over/);
+  g.winner = null;
+  g.pendingShot = 4;
+  for (const pass of [1, 2]) assert.throws(() => L.fillPass(g, pass), /hunter/);
+  assert.deepEqual(g.actions.pass1, []);
+  assert.deepEqual(g.actions.pass2, []);
+});
+
+test('fillPass resolves like suspect picks after role seats have acted', () => {
+  const a = fixed(SEVEN);
+  const b = fixed(SEVEN);
+  for (const g of [a, b]) {
+    L.act1(g, 0, 5);
+    L.act1(g, 1, 5);
+    L.act1(g, 2, 0);
+  }
+  L.fillPass(a, 1);
+  for (let s = 3; s < b.n; s++) L.act1(b, s, L.targets1(b, s)[0]);
+  for (const g of [a, b]) L.act2(g, 3, { poison: 0 });
+  L.fillPass(a, 2);
+  for (const s of L.aliveSeats(b)) if (s !== 3) L.act2(b, s, { suspect: L.aliveSeats(b).find((t) => t !== s) });
+  assert.deepEqual(L.resolveNight(a), L.resolveNight(b));
+  assert.deepEqual(a, b);
+});
+
+test('human-host nights need only role seats plus fillPass, including guard and witch', () => {
+  const roles = ['wolf', 'wolf', 'wolf', 'seer', 'witch', 'hunter', 'guard', 'villager', 'villager', 'villager'];
+  for (const choice of [{ save: true }, { poison: 0 }, {}]) {
+    const g = fixed(roles);
+    L.act1(g, 6, choice.save ? 9 : 8);
+    L.act1(g, 0, 8); // Only one of three wolves acts; filling the rest preserves this pick.
+    assert.equal(L.act1(g, 3, 1).isWolf, true);
+    L.fillPass(g, 1);
+    assert.equal(g.actions.wolf, 8);
+    assert.equal(L.witchView(g, 4).victim, 8);
+    L.act2(g, 4, choice);
+    L.fillPass(g, 2);
+    assert.deepEqual(L.resolveNight(g).deaths, choice.poison === 0 ? [0] : []);
+    assert.equal(g.lastGuard, choice.save ? 9 : 8);
+    assert.equal(g.potions.save, !choice.save);
+    assert.equal(g.potions.poison, choice.poison !== 0);
+  }
 });
 
 test('wolves kill; peaceful night when the witch saves', () => {
@@ -195,8 +332,10 @@ test('random full games always finish', () => {
   const rng = seeded(9);
   const pick = (a) => a[Math.floor(rng() * a.length)];
   const wins = { good: 0, wolf: 0 };
+  const sizes = new Set();
   for (let k = 0; k < 600; k++) {
     const n = L.MIN_PLAYERS + (k % (L.MAX_PLAYERS - L.MIN_PLAYERS + 1));
+    sizes.add(n);
     const g = L.newGame(names(n), rng);
     let guard = 0;
     while (!g.winner && guard++ < 60) {
@@ -223,6 +362,7 @@ test('random full games always finish', () => {
     wins[g.winner]++;
   }
   assert.ok(wins.good > 0 && wins.wolf > 0);
+  assert.deepEqual([...sizes], Array.from({ length: 14 }, (_, i) => i + 3));
 });
 
 test('hunter attacked by wolves and also poisoned cannot shoot', () => {

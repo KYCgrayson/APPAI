@@ -8,8 +8,8 @@
 // or voted out may take someone with them; a poisoned hunter cannot.
 // Win: good wins when no wolf is alive; wolves win when alive wolves >= alive others.
 
-export const MIN_PLAYERS = 5;
-export const MAX_PLAYERS = 16; // rules support 16; the pass-one-phone UI caps at 12
+export const MIN_PLAYERS = 3;
+export const MAX_PLAYERS = 16; // human host; the pass-one-phone UI caps at 12
 export const PASS_AND_PLAY_MAX = 12;
 
 export const ROLES = ['wolf', 'villager', 'seer', 'witch', 'hunter', 'guard'];
@@ -27,7 +27,8 @@ export function rolesFor(n) {
     throw new RangeError(`players must be ${MIN_PLAYERS}-${MAX_PLAYERS}`);
   }
   const roles = Array(wolfCount(n)).fill('wolf');
-  roles.push('seer', 'witch');
+  roles.push('seer');
+  if (n >= 4) roles.push('witch');
   if (n >= 7) roles.push('hunter');
   if (n >= 10) roles.push('guard');
   while (roles.length < n) roles.push('villager');
@@ -48,6 +49,7 @@ export function newGame(names, rng = Math.random) {
   return {
     v: 2,
     n: names.length,
+    quiet1: names.length <= 4,
     players: names.map((name, i) => ({ name, role: roles[i], alive: true, cause: null, day: null })),
     night: 1,
     potions: { save: true, poison: true },
@@ -68,6 +70,8 @@ export const isAlive = (g, s) => g.players[s].alive;
 export const aliveSeats = (g) => seats(g).filter((s) => isAlive(g, s));
 export const wolfSeats = (g) => seats(g).filter((s) => g.players[s].role === 'wolf');
 export const seatOf = (g, role) => seats(g).find((s) => g.players[s].role === role);
+// Missing on older saves: their first night keeps the original rules.
+export const quietNight = (g) => Boolean(g.quiet1 && g.night === 1);
 
 /** Night pass-1 task for a seat. */
 export function task1(g, seat) {
@@ -110,7 +114,7 @@ export function act1(g, seat, target) {
   if (!targets1(g, seat).includes(target)) throw new Error('illegal target');
   const task = task1(g, seat);
   g.actions.pass1.push(seat);
-  if (task === 'wolf') g.actions.wolf = target; // later wolves see the proposal and may change it
+  if (task === 'wolf' && !quietNight(g)) g.actions.wolf = target; // last wolf pick wins
   if (task === 'guard') g.actions.guard = target;
   if (task === 'seer') {
     g.actions.seer = target;
@@ -121,12 +125,13 @@ export function act1(g, seat, target) {
 
 /** What the witch is told and allowed to do tonight. */
 export function witchView(g, seat) {
-  const victim = g.actions.wolf;
+  const quiet = quietNight(g);
+  const victim = quiet ? null : g.actions.wolf;
   return {
     // She only learns the victim while she still holds the save potion.
     victim: g.potions.save ? victim : null,
     canSave: g.potions.save && victim !== null && victim !== seat,
-    canPoison: g.potions.poison,
+    canPoison: g.potions.poison && !quiet,
     poisonTargets: aliveSeats(g).filter((s) => s !== seat),
   };
 }
@@ -155,6 +160,16 @@ export function act2(g, seat, choice = {}) {
   return { task: task2(g, seat) };
 }
 
+/** Complete unplayed living seats without changing any role's action (human host). */
+export function fillPass(g, pass) {
+  if (pass !== 1 && pass !== 2) throw new Error('invalid pass');
+  if (g.winner) throw new Error('game over');
+  if (g.pendingShot !== null) throw new Error('hunter must shoot first');
+  if (pass === 2 && !pass1Done(g)) throw new Error('pass 1 not finished');
+  const acted = pass === 1 ? g.actions.pass1 : g.actions.pass2;
+  for (const s of aliveSeats(g)) if (!acted.includes(s)) acted.push(s);
+}
+
 function kill(g, seat, cause) {
   const p = g.players[seat];
   p.alive = false;
@@ -169,8 +184,10 @@ export function resolveNight(g) {
   const { wolf, guard, save, poison } = g.actions;
   const deaths = [];
   // Poison wins over a wolf kill on the same seat, so a poisoned hunter cannot shoot.
-  if (wolf !== null && wolf !== guard && !save && wolf !== poison) deaths.push([wolf, 'wolf']);
-  if (poison !== null) deaths.push([poison, 'poison']);
+  if (!quietNight(g)) {
+    if (wolf !== null && wolf !== guard && !save && wolf !== poison) deaths.push([wolf, 'wolf']);
+    if (poison !== null) deaths.push([poison, 'poison']);
+  }
   // Variant: someone both guarded and healed survives (documented in the rules text).
   for (const [s, cause] of deaths) kill(g, s, cause);
   g.lastGuard = guard;
