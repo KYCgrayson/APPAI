@@ -71,11 +71,11 @@ const COPY: Record<string, HubCopy> = {
   en: {
     metaTitle: "Games — play free original brain games on AppAI",
     metaDescription:
-      "Original logic puzzles and family party games you can play in the browser on phone or desktop. No download, no ads, no sign-up needed to play.",
+      "Original brain games from AppAI, played in the browser on phone or desktop: a 3D logic puzzle today, family duels and party games on the way. No download, no sign-up needed to play.",
     label: "Games",
     title: "Games to play together",
     intro: [
-      "Small original games made at AppAI: logic puzzles to solve alone, number duels for a parent and child, and party games for the whole family around one phone.",
+      "Small original games made at AppAI. Start with a logic puzzle to solve on your own; number duels for a parent and child and party games for the whole family are on the way.",
       "Everything runs in your browser on a phone, tablet or computer. Nothing to install, and no sign-in needed to play.",
     ],
     notes: [
@@ -127,11 +127,11 @@ const COPY: Record<string, HubCopy> = {
   },
   "zh-TW": {
     metaTitle: "遊戲專區：在 AppAI 免費玩原創動腦遊戲",
-    metaDescription: "原創益智謎題與親子派對遊戲，手機、電腦打開瀏覽器就能玩。免下載、沒有廣告，玩遊戲不用註冊。",
+    metaDescription: "AppAI 原創動腦小遊戲，手機、電腦打開瀏覽器就能玩：現在有 3D 邏輯謎題，親子對戰和派對遊戲即將推出。免下載，玩遊戲不用註冊。",
     label: "遊戲專區",
     title: "一起來動動腦",
     intro: [
-      "這裡是 AppAI 自己做的原創小遊戲：一個人解的邏輯謎題、親子兩人的猜數字對決，還有全家圍著一支手機玩的派對遊戲。",
+      "這裡是 AppAI 自己做的原創小遊戲。現在可以先玩一個人解的邏輯謎題；親子兩人的猜數字對決、全家一起玩的派對遊戲即將推出。",
       "所有遊戲都在瀏覽器裡執行，手機、平板、電腦都能玩，不用安裝，玩遊戲也不用登入。",
     ],
     notes: ["更多遊戲準備中，標示「即將推出」的遊戲通過測試後就會開放。", "房號連線（每人用自己的手機輸入房號一起玩）即將推出。"],
@@ -168,11 +168,11 @@ const COPY: Record<string, HubCopy> = {
   },
   "zh-CN": {
     metaTitle: "游戏专区：在 AppAI 免费玩原创动脑游戏",
-    metaDescription: "原创益智谜题与亲子派对游戏，手机、电脑打开浏览器就能玩。免下载、没有广告，玩游戏不用注册。",
+    metaDescription: "AppAI 原创动脑小游戏，手机、电脑打开浏览器就能玩：现在有 3D 逻辑谜题，亲子对战和派对游戏即将推出。免下载，玩游戏不用注册。",
     label: "游戏专区",
     title: "一起来动动脑",
     intro: [
-      "这里是 AppAI 自己做的原创小游戏：一个人解的逻辑谜题、亲子两人的猜数字对决，还有全家围着一部手机玩的派对游戏。",
+      "这里是 AppAI 自己做的原创小游戏。现在可以先玩一个人解的逻辑谜题；亲子两人的猜数字对决、全家一起玩的派对游戏即将推出。",
       "所有游戏都在浏览器里运行，手机、平板、电脑都能玩，不用安装，玩游戏也不用登录。",
     ],
     notes: ["更多游戏准备中，标示“即将推出”的游戏通过测试后就会开放。", "房号联机（每人用自己的手机输入房号一起玩）即将推出。"],

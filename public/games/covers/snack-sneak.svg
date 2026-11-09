@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360" role="img" aria-label="Snack Sneaks">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360" role="img" aria-label="Hidden-role party game">
   <defs><radialGradient id="lamp" cx=".5" cy=".35" r=".7"><stop offset="0" stop-color="#4c1d95"/><stop offset="1" stop-color="#1e1b4b"/></radialGradient></defs>
   <rect width="640" height="360" fill="url(#lamp)"/>
   <circle cx="540" cy="70" r="30" fill="#fef3c7"/><circle cx="552" cy="62" r="26" fill="#3b2a85"/>
