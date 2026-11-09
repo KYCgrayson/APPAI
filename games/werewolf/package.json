@@ -1,0 +1,10 @@
+{
+  "name": "werewolf",
+  "private": true,
+  "type": "module",
+  "description": "Werewolf (狼人殺): pass-one-phone version of the classic folk party game, app as moderator. No build step, no dependencies.",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "dev": "python3 -m http.server 5180"
+  }
+}
