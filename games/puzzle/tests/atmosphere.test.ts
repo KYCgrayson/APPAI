@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DoubleSide, Mesh, PerspectiveCamera, ShaderMaterial, Spherical, Vector2, Vector3 } from 'three';
+import { DoubleSide, Mesh, PerspectiveCamera, ShaderMaterial, Spherical, Vector3 } from 'three';
 import { Atmosphere, clearsBoard, projectBox, screenRect } from '../src/scene/atmosphere.ts';
 
 const motion = { matches: false };
@@ -80,7 +80,7 @@ test('reduced motion freezes drift and twinkle; FPS fallback removes the third o
     assert.equal(sky.material.uniforms.quality.value, 0);
 });
 
-test('sky rays track world direction and pitch including view offset; birds bypass tone mapping', () => {
+test('hybrid sky retains world rays including view offset and a varied top-down sky; birds bypass tone mapping', () => {
     const atmosphere = new Atmosphere(false);
     const sky = atmosphere.getObjectByName('sky') as Mesh<import('three').PlaneGeometry, ShaderMaterial>;
     const camera = new PerspectiveCamera(38, 1.2, .1, 360);
@@ -99,9 +99,15 @@ test('sky rays track world direction and pitch including view offset; birds bypa
     camera.position.set(0, 20, .01); camera.lookAt(0, 0, 0); camera.updateMatrixWorld(); atmosphere.update(camera, 0, 1);
     for (const x of [-1, 1]) for (const y of [-1, 1]) {
         const ray = new Vector3(x, y, 1).applyMatrix4(sky.material.uniforms.inverseProjection.value).transformDirection(sky.material.uniforms.cameraWorld.value);
-        assert.ok(ray.y < -.85, 'top-down rays sample ground rather than a screen-bottom horizon');
+        assert.ok(ray.y < -.85, 'unmodified world rays still include the real camera pitch');
     }
-    assert.ok(sky.material.fragmentShader.includes('altitude=direction.y'));
+    assert.equal(sky.material.uniforms.skyBlend.value, 1);
+    assert.equal(sky.material.uniforms.skyHorizon.value, .70);
+    assert.ok(sky.material.fragmentShader.includes('mix(direction.y,screenAltitude,skyBlend)'));
+    assert.ok(sky.material.fragmentShader.includes('(screenUV.y-skyHorizon)*.8/(1.0-skyHorizon)'));
+    camera.position.setFromSpherical(new Spherical(20, 1.30, 0));
+    camera.lookAt(0, 0, 0); camera.updateMatrixWorld(); atmosphere.update(camera, 0, 1);
+    assert.ok(sky.material.uniforms.skyBlend.value < .003, 'low orbits return smoothly to the world horizon');
     const hash = sky.material.fragmentShader.split('float hash(vec2 p)')[1].split('float noise')[0];
     assert.ok(!hash.includes('sin('));
     const birds = atmosphere.getObjectByName('sky-birds') as Mesh;

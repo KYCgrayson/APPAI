@@ -1,4 +1,42 @@
-# Round 12 verification — 2026-11-09
+# Round 13 verification — 2026-11-09
+
+All changes remain in `games/puzzle/`. No new dependencies, downloaded assets, external network access, commits or hook changes. Existing automation, metrics and sharing globals are unchanged.
+
+## Sky composition
+
+Round 12's unmodified world altitude put the entire downward-facing default view below the sky horizon. The shader now blends world altitude with a screen altitude according to camera pitch. At the default 43-degree elevation, altitude zero is **42% from the top** and the top edge reaches the blue/deep-blue zenith. Near top-down the horizon compresses to **30% from the top**, retaining a gradient, clouds and a star region. Low orbits blend smoothly back to world altitude. Gradient, cloud masks, stars, hill bands and the restored procedural tree line all use the same composed altitude; horizontal features retain world azimuth and inverse-projection rays, including HUD view offsets.
+
+Sun/moon discs and halos use aspect-correct screen coordinates: below the portrait heading, above the tablet heading, in the desktop gap, and in the open top-left strip on home. Cloud wisps have stronger daytime contrast and cool lit night colours. Hills and trees are part of the existing sky shader, adding **zero meshes or draw calls**. The sin-free Hoskins star hash, reduced-motion freeze, persisted quality fallback, puff-cloud clearance, bird material fixes and all other Round 12 behavior remain.
+
+## Automated checks
+
+- `npm test`: **121 passed, 0 failed**.
+- `npm run build`: **passed**, strict TypeScript and Vite production build.
+- `git diff --check`: **passed**.
+- All production JS chunks combined: **181,216 B gzip**, below **220,000 B**, with **38,784 B** remaining.
+- Existing conservative material/shadow census: maximum **158 submissions**, below **160**; it includes all 14 possible atmosphere draws. This is a geometry census, not a GPU measurement.
+
+The new test in `tests/scenes.test.ts` creates every real puzzle scene at all three levels and fits its default camera at **390×844, 800×600 and 1440×900**, both with the play HUD view offset and with the full-screen home view. It reconstructs rays from the actual sky uniforms, numerically finds the composed altitude-zero horizon at three horizontal positions, and verifies the default **35–45%** band, a top-half horizon, distinct sky/ground ranges and sun/moon clearance from the heading, home menu and top-right controls. It also covers four azimuths and the 0.6/1/1.6 distance limits at default and near top-down pitch. The atmosphere regression retains world-ray/view-offset accuracy, verifies the low-orbit blend and keeps the sin-free star-hash check. Existing 5,760-configuration cloud-clearance checks still pass.
+
+| JavaScript chunk | Raw bytes | Gzip bytes |
+| --- | ---: | ---: |
+| bridge-scene-D2eWCUSv.js | 5,965 | 2,539 |
+| helpers-BjN8m_NS.js | 784 | 527 |
+| index-C4iPCKU0.js | 76,679 | 29,597 |
+| river-scene-DKiuh6jL.js | 11,326 | 4,669 |
+| three-L7Zacm_L.js | 576,451 | 141,016 |
+| water-scene-CXUmFejW.js | 7,102 | 2,868 |
+| **All JavaScript** | **678,307** | **181,216** |
+
+Sizes use Node `zlib.gzipSync` defaults; Vite's estimate differs slightly and is also below budget. Its existing warning about the raw shared Three.js chunk remains.
+
+## Browser verification limit
+
+The local preview command failed with **listen EPERM at 127.0.0.1:4173** under the process sandbox. No alternate server, permission or network workaround was attempted. The new checks verify uniforms, projection, composition and conservative control rectangles in Node; they **do not render GLSL/browser pixels or measure actual GPU draw calls/FPS**. Visual browser confirmation remains outstanding. Earlier browser measurements below are historical only.
+
+---
+
+# Historical Round 12 verification — 2026-11-09
 
 All changes remain in `games/puzzle/`. No dependencies, downloaded assets, network access, commits or hook changes were introduced. Existing test, metrics and sharing globals remain intact.
 

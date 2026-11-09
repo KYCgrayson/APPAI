@@ -1,4 +1,4 @@
-import { BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, ShaderMaterial, Vector3 } from 'three';
+import { BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Group, InstancedMesh, MathUtils, Matrix4, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, ShaderMaterial, Vector2, Vector3 } from 'three';
 import { bake, part } from './models.ts';
 
 export const horizonColor = (dark: boolean) => dark ? '#686781' : '#e7d7bb';
@@ -22,7 +22,7 @@ export function clearsBoard(cloud: ScreenRect, board: ScreenRect) {
     return cloud.maxX < board.minX - gap || cloud.minX > board.maxX + gap || cloud.maxY < board.minY - gap || cloud.minY > board.maxY + gap;
 }
 
-/** A low painted horizon with separate distant clouds, kept clear of every puzzle board. */
+/** A pitch-aware painted sky with separate distant clouds, kept clear of every puzzle board. */
 export class Atmosphere extends Group {
     private sky: Mesh<PlaneGeometry, ShaderMaterial>;
     private clouds: Mesh<BufferGeometry, MeshBasicMaterial>[] = [];
@@ -34,6 +34,7 @@ export class Atmosphere extends Group {
     private flockCenter = new Vector3();
     private flockHalf = new Vector3(4, 1.2, 3.2);
     private birdMatrix = new Matrix4();
+    private viewDirection = new Vector3();
     private lowQuality = false;
     private time = 0;
     private reduced = matchMedia('(prefers-reduced-motion: reduce)');
@@ -45,20 +46,24 @@ export class Atmosphere extends Group {
             uniforms: {
                 time: { value: 0 }, quality: { value: 1 }, night: { value: dark ? 1 : 0 },
                 inverseProjection: { value: new Matrix4() }, cameraWorld: { value: new Matrix4() },
-                lightDirection: { value: new Vector3(-.5, .55, -.7).normalize() },
+                skyBlend: { value: 1 }, skyHorizon: { value: .58 }, aspect: { value: 1 },
+                lightPosition: { value: new Vector2(.19, .70) }, lightRadius: { value: .026 },
                 zenith: { value: new Color(dark ? '#152744' : '#77b8df') }, horizon: { value: new Color(horizonColor(dark)) }
             },
             vertexShader: `varying vec3 worldRay;
+                varying vec2 screenUV;
                 uniform mat4 inverseProjection, cameraWorld;
                 void main(){
                     vec4 ray=inverseProjection*vec4(position.xy,1.0,1.0);
                     worldRay=mat3(cameraWorld)*ray.xyz;
+                    screenUV=position.xy*.5+.5;
                     gl_Position=vec4(position.xy,1.0,1.0);
                 }`,
             fragmentShader: `
                 varying vec3 worldRay;
-                uniform float time, quality, night;
-                uniform vec3 lightDirection;
+                varying vec2 screenUV;
+                uniform float time, quality, night, skyBlend, skyHorizon, aspect, lightRadius;
+                uniform vec2 lightPosition;
                 uniform vec3 zenith, horizon;
                 // Hoskins hash12: no large sin arguments on mobile GPUs.
                 float hash(vec2 p){
@@ -78,10 +83,14 @@ export class Atmosphere extends Group {
                 }
                 void main(){
                     vec3 direction=normalize(worldRay);
-                    float altitude=direction.y, azimuth=atan(direction.x,-direction.z);
+                    // Reveal the sky above a downward-facing board camera. At low orbits,
+                    // return continuously to world altitude; hills and clouds share this mapping.
+                    float screenAltitude=(screenUV.y-skyHorizon)*.8/(1.0-skyHorizon);
+                    float altitude=mix(direction.y,screenAltitude,skyBlend), azimuth=atan(direction.x,-direction.z);
                     vec2 p=vec2(azimuth/6.2831853+.5,asin(clamp(altitude,-1.0,1.0))/3.1415927+.5);
                     vec3 color=mix(horizon,zenith,smoothstep(-.12,.8,altitude));
-                    float r=length(direction-lightDirection), radius=mix(.032,.025,night);
+                    // Compose the disc in a clear HUD gap, with a circular, aspect-correct halo.
+                    float r=length((screenUV-lightPosition)*vec2(aspect,1.0))*.032/lightRadius, radius=mix(.032,.025,night);
                     float disc=1.0-smoothstep(radius*.86,radius*1.1,r);
                     float halo=exp(-r*17.0)*.32+exp(-r*65.0)*.25;
                     vec3 glow=mix(vec3(1.0,.68,.31),vec3(.53,.65,1.0),night);
@@ -98,17 +107,24 @@ export class Atmosphere extends Group {
                     vec2 wind=vec2(time*.009,time*.001);
                     vec2 wisps=direction.xz/max(.12,altitude+.2)*vec2(3.2,8.0)+wind;
                     wisps.x+=noise(wisps*.38)*1.6;
-                    float cloud=smoothstep(.48,.83,fbm(wisps))*smoothstep(-.05,.35,altitude);
-                    vec3 duskCloud=mix(vec3(.52,.37,.45),vec3(.27,.31,.45),smoothstep(.0,.7,altitude));
+                    float cloud=smoothstep(.45,.76,fbm(wisps))*smoothstep(.0,.22,altitude);
+                    vec3 duskCloud=mix(vec3(.38,.43,.57),vec3(.24,.31,.47),smoothstep(.0,.7,altitude));
                     vec3 lit=mix(vec3(1.0,.96,.86),duskCloud,night);
-                    color=mix(color,lit,cloud*mix(.47,.28,night));
+                    color=mix(color,lit,cloud*mix(.60,.32,night));
                     // Three low, irregular blue bands above a flat, fog-soft meadow.
                     for(int i=0;i<3;i++){
                         float f=float(i);
                         float edge=-.055-f*.035 + sin(azimuth*(5.0+f*2.0)+f)*.009 + noise(direction.xz*13.0+f*8.0)*.022;
-                        vec3 band=mix(vec3(.55,.67,.70),vec3(.32,.40,.51),night);
-                        band=mix(band,horizon,.62-f*.11);
+                        vec3 band=mix(vec3(.38,.55,.60),vec3(.10,.17,.28),night);
+                        band=mix(band,horizon,.42-f*.12);
                         color=mix(color,band,(1.0-smoothstep(edge-.002,edge+.002,altitude))*.75);
+                        if(i==2){
+                            float row=azimuth*75.0;
+                            float treeHeight=.012+hash(vec2(floor(row),7.0))*.022;
+                            float treeEdge=edge+treeHeight*(1.0-abs(fract(row)-.5)*2.0);
+                            vec3 forest=mix(vec3(.22,.36,.33),vec3(.06,.12,.20),night);
+                            color=mix(color,forest,(1.0-smoothstep(treeEdge-.001,treeEdge+.001,altitude))*.46);
+                        }
                     }
                     vec3 ground=mix(vec3(.72,.77,.66),vec3(.25,.32,.38),night);
                     color=mix(color,ground,(1.0-smoothstep(-.65,-.20,altitude))*.72);
@@ -149,13 +165,31 @@ export class Atmosphere extends Group {
         this.traverse(o => { o.castShadow = false; o.receiveShadow = false; o.raycast = () => {}; });
     }
     lowerQuality() { this.lowQuality = true; }
-    update(camera: PerspectiveCamera, dt: number, _aspect: number) {
+    update(camera: PerspectiveCamera, dt: number, aspect: number) {
         if (!this.reduced.matches) this.time += dt;
         this.sky.material.uniforms.time.value = this.time;
         this.sky.material.uniforms.inverseProjection.value.copy(camera.projectionMatrixInverse);
         this.sky.material.uniforms.cameraWorld.value.copy(camera.matrixWorld);
-        // Reduced motion also stops star twinkle, including changes made while playing.
         const shader = this.sky.material;
+        camera.getWorldDirection(this.viewDirection);
+        const pitch = Math.asin(MathUtils.clamp(-this.viewDirection.y, -1, 1));
+        shader.uniforms.skyBlend.value = MathUtils.smoothstep(pitch, .26, .65);
+        // Default elevation is 43 degrees: horizon at 42% from the top. Compress
+        // to 30% near top-down, retaining blue, clouds and stars even at maximum zoom.
+        shader.uniforms.skyHorizon.value = .58 + .12 * MathUtils.smoothstep(pitch, .85, 1.42);
+        shader.uniforms.aspect.value = aspect;
+        shader.uniforms.lightRadius.value = .026 * Math.min(1, aspect);
+        const view = camera.view;
+        const width = view?.enabled ? view.width : 1440;
+        const height = view?.enabled ? view.height : width / aspect;
+        const top = view?.enabled ? -view.offsetY : 0;
+        // Home's menu leaves the top-left strip open. During play use the space
+        // below the portrait heading, above the tablet heading, or the desktop gap.
+        const lightX = top === 0 ? .10 : width <= 650 ? .19 : width <= 1100 ? .22 : .62;
+        const lightY = top === 0 ? .05 : width <= 650
+            ? Math.min(.33, Math.max(.28, (top + 32) / height)) : width <= 1100 ? .07 : .21;
+        shader.uniforms.lightPosition.value.set(lightX, 1 - lightY);
+        // Reduced motion also stops star twinkle, including changes made while playing.
         shader.uniforms.quality.value = this.reduced.matches || this.lowQuality ? 0 : 1;
         const boardValid = projectBox(camera, this.boardCenter, this.boardHalf, this.boardRect);
         for (let i = 0; i < this.clouds.length; i++) {
