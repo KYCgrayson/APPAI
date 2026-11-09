@@ -42,10 +42,30 @@ export function restoreRoomState(room: Room): Game {
   }
   return restored;
 }
+/** Idle seconds and transport versions alone do not change anything on screen. */
+export function roomViewChanged(before: Room, after: Room, seat: Seat): boolean {
+  const presence = (room: Room) =>
+    [0, 1].map((s) => {
+      const player = room.seats.find((p) => p.seat === s);
+      return [
+        Boolean(player?.joined),
+        Boolean(player?.online),
+        s !== seat && s === room.turn && (player?.idleSeconds ?? 0) >= 120,
+      ];
+    });
+  return (
+    before.status !== after.status ||
+    before.turn !== after.turn ||
+    (after.status === 'waiting' && before.expiresAt !== after.expiresAt) ||
+    JSON.stringify(before.state) !== JSON.stringify(after.state) ||
+    JSON.stringify(presence(before)) !== JSON.stringify(presence(after))
+  );
+}
 export class OnlineSession {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private stopped = false;
   private busy = false;
+  private pollPending = false;
   client: RoomsClient;
   code: string;
   token: string;
@@ -76,18 +96,46 @@ export class OnlineSession {
   }
   stop() {
     this.stopped = true;
+    this.pollPending = false;
     clearTimeout(this.timer);
+  }
+  private update(room: Room) {
+    const changed = roomViewChanged(this.room, room, this.seat);
+    this.room = room;
+    if (changed) this.changed(room);
+  }
+  async poll() {
+    if (this.busy) {
+      this.pollPending = true;
+      return;
+    }
+    const d = await this.client.poll(this.code, this.token, this.room.version);
+    // A poll started before a send must never roll back that send's version/history.
+    if (this.stopped) return;
+    if (this.busy) {
+      this.pollPending = true;
+      return;
+    }
+    if (d.changed) {
+      if (d.room.version < this.room.version) return;
+      const processed = processMoves(this.room.state, d.room.moves, this.room.version);
+      this.update({ ...d.room, state: processed.state });
+    } else if (d.seats && d.version >= this.room.version) {
+      this.update({ ...this.room, seats: d.seats });
+    }
+  }
+  private async flushPoll() {
+    if (!this.pollPending || this.stopped) return;
+    this.pollPending = false;
+    try {
+      await this.poll();
+    } catch (e) {
+      this.failed(e);
+    }
   }
   private async tick() {
     try {
-      if (!this.busy) {
-        const d = await this.client.poll(this.code, this.token, this.room.version);
-        if (d.changed) {
-          const processed = processMoves(this.room.state, d.room.moves, this.room.version);
-          this.room = { ...d.room, state: processed.state };
-        } else if (d.seats) this.room = { ...this.room, seats: d.seats };
-        this.changed(this.room);
-      }
+      await this.poll();
     } catch (e) {
       this.failed(e);
     } finally {
@@ -118,19 +166,24 @@ export class OnlineSession {
         };
       };
       const d = await this.client.sendMove(this.code, this.token, build(this.room), build);
-      this.room = { ...d.room, state: sentState! };
-      this.changed(this.room);
+      this.update({ ...d.room, state: sentState! });
     } finally {
       this.busy = false;
+      await this.flushPoll();
     }
   }
   async skip() {
-    const d = await this.client.skip(this.code, this.token, this.room.version);
-    this.room = {
-      ...d.room,
-      state: processMoves(this.room.state, d.room.moves, this.room.version).state,
-    };
-    this.changed(this.room);
+    this.busy = true;
+    try {
+      const d = await this.client.skip(this.code, this.token, this.room.version);
+      this.update({
+        ...d.room,
+        state: processMoves(this.room.state, d.room.moves, this.room.version).state,
+      });
+    } finally {
+      this.busy = false;
+      await this.flushPoll();
+    }
   }
 }
 

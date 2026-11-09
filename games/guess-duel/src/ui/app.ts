@@ -1,4 +1,11 @@
-import { keyboardAction, rematchNames, roomURL } from './input.ts';
+import {
+  acceptsKeypadEvent,
+  EntryDrafts,
+  keyboardAction,
+  rematchNames,
+  roomURL,
+  selectOpponentHistory,
+} from './input.ts';
 import { header, content, secretSlots, shareURL } from './views.ts';
 import './style.css';
 import { esc, button } from './html.ts';
@@ -39,7 +46,8 @@ type Private = {
 };
 const root = document.querySelector<HTMLDivElement>('#app')!,
   params = new URLSearchParams(location.search),
-  audio = new Audio();
+  audio = new Audio(),
+  drafts = new EntryDrafts();
 let lang: Locale = locale(
     params.get('locale') ?? String(safeGet(storage, 'guess-duel:language') ?? navigator.language),
   ),
@@ -50,6 +58,7 @@ let mode: Mode = 'same',
   seat: Seat = 0,
   privateData: Partial<Record<Seat, Private>> = {},
   input = '',
+  roomDigits: string[] = [],
   message = '',
   hint = false,
   showOpponent = false,
@@ -73,6 +82,11 @@ if (params.get('theme') === 'dark') document.documentElement.dataset.theme = 'da
 if (/^[a-f\d]{6}$/i.test(params.get('color') ?? ''))
   document.documentElement.style.setProperty('--accent', '#' + params.get('color'));
 const labelName = (s: Seat) => game?.names[s] ?? names[s];
+let historyGame: Game | undefined,
+  historySeat: Seat = seat,
+  pendingOnlineRoom: Room | undefined,
+  advancing = false,
+  peekHold: { id: string; seat: Seat; screen: string; pointerId?: number } | undefined;
 function saveSettings() {
   safeSet(storage, 'guess-duel:settings', { n, names, sound: audio.enabled });
 }
@@ -83,34 +97,109 @@ function scoreKey() {
   ).key;
 }
 function render() {
+  if (game) {
+    showOpponent = selectOpponentHistory(
+      historySeat === seat ? historyGame : undefined,
+      game,
+      seat,
+      showOpponent,
+    );
+  }
+  historyGame = game;
+  historySeat = seat;
+  const entering = screen === 'secret' || screen === 'play';
+  if (game && entering) input = drafts.get(game.id, seat, screen as 'secret' | 'play');
+  const notesOpen = root.querySelector<HTMLDetailsElement>('.notes-disclosure')?.open;
   document.documentElement.lang = lang;
   root.innerHTML =
     header() +
-    `<main class="${screen}">${message ? `<p class="notice" role="status">${esc(message)}</p>${message === loginMessage() ? button(lang === 'en' ? 'Sign in' : '登入', 'login') : ''}${message === missingMessage() ? button(lang === 'en' ? 'New room' : '重新開房', 'createRoom') : ''}` : ''}${content()}</main>`;
+    `<main class="${screen}">${message && !entering ? `<p class="notice" role="status">${esc(message)}</p>${message === loginMessage() ? button(lang === 'en' ? 'Sign in' : '登入', 'login') : ''}${message === missingMessage() ? button(lang === 'en' ? 'New room' : '重新開房', 'createRoom') : ''}` : ''}${content()}</main>`;
   bind();
+  if (notesOpen && entering) {
+    const notes = root.querySelector<HTMLDetailsElement>('.notes-disclosure');
+    if (notes) notes.open = true;
+  }
+  paintPeek();
 }
+function setInput(value: string) {
+  if (!game || (screen !== 'secret' && screen !== 'play')) return;
+  input = value;
+  drafts.set(game.id, seat, screen, value);
+}
+// #app survives render(). Consume taps before pointerup/click can hit a replacement control.
+const pointerControls =
+  '.keypad button, [data-note], [data-action="peek"], ' +
+  '[data-action="ownHistory"], [data-action="opponentHistory"]';
+root.addEventListener('pointerdown', (e) => {
+  const key = (e.target as Element).closest<HTMLButtonElement>(pointerControls);
+  if (!key || key.disabled || !acceptsKeypadEvent(e)) return;
+  e.preventDefault();
+  if (key.dataset.action === 'peek') {
+    peekHold = { id: game!.id, seat, screen, pointerId: e.pointerId };
+    root.setPointerCapture(e.pointerId);
+    paintPeek();
+  } else activate(key);
+});
+root.addEventListener('click', (e) => {
+  const el = (e.target as Element).closest<HTMLElement>(
+    '[data-action], [data-mode], [data-note], [data-digit]',
+  );
+  if (!el || (el as HTMLButtonElement).disabled) return;
+  e.preventDefault();
+  if (el.closest(pointerControls) && !acceptsKeypadEvent(e)) return;
+  activate(el);
+});
+function activate(el: HTMLElement) {
+  if (el.dataset.digit !== undefined) digit(el.dataset.digit);
+  else if (el.dataset.action) void action(el.dataset.action);
+  else if (el.dataset.mode) void start(el.dataset.mode as Mode);
+  else if (el.dataset.note !== undefined && privateData[seat]) {
+    const d = +el.dataset.note;
+    privateData[seat]!.notes[d] = (privateData[seat]!.notes[d] + 1) % 3;
+    persist();
+    render();
+  }
+}
+function paintPeek() {
+  if (peekHold?.id !== game?.id || peekHold?.seat !== seat || peekHold?.screen !== screen)
+    peekHold = undefined;
+  const own = document.getElementById('own-secret');
+  if (own) own.textContent = peekHold ? (privateData[seat]?.secret ?? '') : '●'.repeat(game!.n);
+  const slots = document.getElementById('secret-slots');
+  if (slots)
+    slots.innerHTML = peekHold
+      ? Array.from(
+          { length: game!.n },
+          (_, i) => `<span class="chip">${input[i] ?? '·'}</span>`,
+        ).join('')
+      : secretSlots().replace(/^<div[^>]*>|<\/div>$/g, '');
+}
+function hidePeek() {
+  peekHold = undefined;
+  paintPeek();
+}
+for (const type of ['pointerup', 'pointercancel', 'lostpointercapture'])
+  root.addEventListener(type, (e) => {
+    if (peekHold?.pointerId === (e as PointerEvent).pointerId) hidePeek();
+  });
+root.addEventListener('keydown', (e) => {
+  if (![' ', 'Enter'].includes(e.key) || !(e.target as Element).closest('[data-action="peek"]'))
+    return;
+  e.preventDefault();
+  peekHold = { id: game!.id, seat, screen };
+  paintPeek();
+});
+root.addEventListener('keyup', (e) => {
+  if ([' ', 'Enter'].includes(e.key) && peekHold?.pointerId === undefined) hidePeek();
+});
+root.addEventListener('focusout', () => {
+  if (peekHold?.pointerId === undefined) hidePeek();
+});
+window.addEventListener('blur', hidePeek);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) hidePeek();
+});
 function bind() {
-  root.querySelectorAll<HTMLElement>('[data-action]').forEach((el) =>
-    el.addEventListener('click', (e) => {
-      e.preventDefault();
-      void action(el.dataset.action!);
-    }),
-  );
-  root
-    .querySelectorAll<HTMLElement>('[data-mode]')
-    .forEach((el) => (el.onclick = () => void start(el.dataset.mode as Mode)));
-  root
-    .querySelectorAll<HTMLElement>('[data-digit]')
-    .forEach((el) => (el.onclick = () => digit(el.dataset.digit!)));
-  root.querySelectorAll<HTMLElement>('[data-note]').forEach(
-    (el) =>
-      (el.onclick = () => {
-        const d = +el.dataset.note!;
-        privateData[seat]!.notes[d] = (privateData[seat]!.notes[d] + 1) % 3;
-        persist();
-        render();
-      }),
-  );
   const byId = (id: string) => document.getElementById(id) as HTMLInputElement | null;
   for (const i of [0, 1]) {
     const el = byId('name' + i);
@@ -155,52 +244,16 @@ function bind() {
   root.querySelectorAll<HTMLInputElement>('[data-room-digit]').forEach((el, i, all) => {
     el.oninput = () => {
       el.value = el.value.toUpperCase();
+      roomDigits = Array.from(all, (box) => box.value);
       if (el.value) all[i + 1]?.focus();
     };
     el.onpaste = (e) => {
       e.preventDefault();
       const code = e.clipboardData?.getData('text').replace(/[\s-]/g, '').toUpperCase() ?? '';
       all.forEach((box, j) => (box.value = code[j] ?? ''));
+      roomDigits = Array.from(all, (box) => box.value);
     };
   });
-  const peek = root.querySelector<HTMLElement>('[data-action="peek"]');
-  if (peek) {
-    const hide = () => {
-      const own = byId('own-secret');
-      if (own) own.textContent = '●'.repeat(game!.n);
-      const slots = byId('secret-slots');
-      if (slots) slots.innerHTML = secretSlots().replace(/^<div[^>]*>|<\/div>$/g, '');
-    };
-    const show = () => {
-      if (screen === 'secret') {
-        const el = byId('secret-slots');
-        if (el)
-          el.innerHTML = Array.from(
-            { length: game!.n },
-            (_, i) => `<span class="chip">${input[i] ?? '·'}</span>`,
-          ).join('');
-      } else {
-        const own = byId('own-secret');
-        if (own) own.textContent = privateData[seat]?.secret ?? '';
-      }
-    };
-    peek.onpointerdown = (e) => {
-      e.preventDefault();
-      peek.setPointerCapture(e.pointerId);
-      show();
-    };
-    peek.onpointerup = hide;
-    peek.onpointercancel = hide;
-    peek.onpointerleave = hide;
-    peek.onkeydown = (e) => {
-      if (e.key === ' ' || e.key === 'Enter') {
-        e.preventDefault();
-        show();
-      }
-    };
-    peek.onkeyup = hide;
-    peek.onblur = hide;
-  }
 }
 function digit(d: string) {
   audio.unlock();
@@ -212,7 +265,7 @@ function digit(d: string) {
   )
     return;
   if (input.length < game!.n && !input.includes(d)) {
-    input += d;
+    setInput(input + d);
     audio.play('key');
     render();
   }
@@ -229,10 +282,13 @@ async function action(a: string) {
       return;
     session?.stop();
     session = undefined;
+    pendingOnlineRoom = undefined;
     game = undefined;
     privateData = {};
     screen = 'home';
     input = '';
+    drafts.reset();
+    roomDigits = [];
     message = '';
     history.replaceState(
       null,
@@ -250,6 +306,7 @@ async function action(a: string) {
   }
   if (a === 'closeRules') {
     screen = returnScreen;
+    await flushOnlineUpdates();
     render();
     return;
   }
@@ -261,12 +318,13 @@ async function action(a: string) {
     return;
   }
   if (a === 'delete') {
-    input = input.slice(0, -1);
+    if (busy || thinking || (screen === 'play' && game?.turn !== seat)) return;
+    setInput(input.slice(0, -1));
     render();
     return;
   }
-  if (a === 'toggleHistory') {
-    showOpponent = !showOpponent;
+  if (a === 'ownHistory' || a === 'opponentHistory') {
+    showOpponent = a === 'opponentHistory';
     render();
     return;
   }
@@ -279,7 +337,6 @@ async function action(a: string) {
   if (a === 'nextPlayer') {
     seat = game!.turn;
     hint = false;
-    showOpponent = false;
     screen = 'handover';
     render();
     return;
@@ -339,10 +396,7 @@ async function action(a: string) {
     return;
   }
   if (a === 'joinRoom') {
-    const code = Array.from(root.querySelectorAll<HTMLInputElement>('[data-room-digit]'))
-      .map((x) => x.value)
-      .join('');
-    await connectRoom(code);
+    await connectRoom(roomDigits.join(''));
     return;
   }
   if (a === 'submit' && !busy) {
@@ -352,11 +406,14 @@ async function action(a: string) {
 async function start(m: Mode, first: Seat = 0) {
   session?.stop();
   session = undefined;
+  pendingOnlineRoom = undefined;
   mode = m;
   verified = null;
   recorded = false;
   privateData = {};
   input = '';
+  drafts.reset();
+  roomDigits = [];
   message = '';
   hint = false;
   showOpponent = false;
@@ -388,10 +445,10 @@ async function submit() {
     return;
   }
   busy = true;
+  const entry = { id: game.id, seat, screen: screen as 'secret' | 'play' };
   try {
     message = '';
     const code = input;
-    input = '';
     audio.play('submit');
     if (screen === 'secret') {
       const salt = randomSalt();
@@ -430,11 +487,14 @@ async function submit() {
         }
       }
     }
+    drafts.set(entry.id, entry.seat, entry.screen, '');
+    input = '';
     render();
   } catch (e) {
     showError(e);
   } finally {
     busy = false;
+    await flushOnlineUpdates();
   }
 }
 function announce() {
@@ -501,7 +561,6 @@ async function advance(afterGuess = false) {
   } else if (mode === 'same') {
     seat = game.turn;
     hint = false;
-    showOpponent = false;
     screen = afterGuess ? 'handover' : 'play';
   } else screen = 'play';
   render();
@@ -593,7 +652,23 @@ function getClient() {
     storage,
   );
 }
-let advancing = false;
+async function flushOnlineUpdates() {
+  if (advancing || busy || screen === 'rules' || !session) return;
+  advancing = true;
+  try {
+    while (pendingOnlineRoom && !busy && screen !== 'rules' && session) {
+      game = pendingOnlineRoom.state;
+      pendingOnlineRoom = undefined;
+      try {
+        await advance();
+      } catch (e) {
+        showError(e);
+      }
+    }
+  } finally {
+    advancing = false;
+  }
+}
 async function connectRoom(code?: string) {
   if (busy) return;
   message = '';
@@ -625,14 +700,8 @@ async function connectRoom(code?: string) {
       d.room,
       (room: Room) => {
         game = room.state;
-        if (!advancing && !busy && screen !== 'rules') {
-          advancing = true;
-          void advance()
-            .catch(showError)
-            .finally(() => {
-              advancing = false;
-            });
-        }
+        pendingOnlineRoom = room;
+        void flushOnlineUpdates();
       },
       showError,
     );
@@ -642,10 +711,11 @@ async function connectRoom(code?: string) {
     await advance();
     session.start();
   } catch (e) {
-    screen = 'home';
-    showError(e);
+    screen = code === undefined ? 'home' : 'onlineLobby';
+    showError(e, code !== undefined);
   } finally {
     busy = false;
+    await flushOnlineUpdates();
   }
 }
 function loginMessage() {
@@ -656,13 +726,14 @@ function loginMessage() {
 function missingMessage() {
   return lang === 'en' ? 'Room not found. Create a new room.' : '找不到這個房間，請重新開房。';
 }
-function showError(e: unknown) {
+function showError(e: unknown, joining = false) {
   if (e instanceof RoomError && e.status === 404) {
     session?.stop();
     session = undefined;
+    pendingOnlineRoom = undefined;
     privateData = {};
     game = undefined;
-    screen = 'home';
+    screen = joining ? 'onlineLobby' : 'home';
     message = missingMessage();
   } else if (e instanceof RoomError && e.error === 'login_required') message = loginMessage();
   else if (e instanceof RoomError && (e.status === 503 || e.error === 'unavailable'))
@@ -707,12 +778,12 @@ window.addEventListener('hashchange', () => {
       case 'mode':
         return start(a.mode);
       case 'setSecret':
-        input = a.code;
+        setInput(a.code);
         return submit();
       case 'handover':
         return action('handover');
       case 'guess':
-        input = a.code;
+        setInput(a.code);
         return submit();
       case 'rematch':
         return action('rematch');
@@ -725,6 +796,7 @@ render();
 if (location.hash.startsWith('#r=')) void openRelay();
 else if (params.has('room')) {
   mode = 'online';
+  roomDigits = params.get('room')!.replace(/[\s-]/g, '').toUpperCase().split('');
   void connectRoom(params.get('room')!);
 }
 function countdown() {
@@ -752,6 +824,7 @@ export {
   seat,
   privateData,
   input,
+  roomDigits,
   message,
   hint,
   showOpponent,

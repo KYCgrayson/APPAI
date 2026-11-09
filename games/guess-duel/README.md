@@ -14,6 +14,19 @@ npm run build
 npm run preview
 ```
 
+Optional viewport regressions use an existing Playwright installation and browser, without
+adding dependencies or contacting a server:
+
+```sh
+npm run build
+PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/browser-round5.mjs
+# Add BROWSER_ENGINE=webkit for an installed Playwright WebKit browser.
+```
+
+This checks both languages, both code lengths and all nine target viewports using the built
+assets. It verifies the selected phone history, empty hints, newest visible entry, stable
+keypad positions, tap target sizes and horizontal overflow.
+
 ## Modes
 
 - **Same device:** masked secret entry and a privacy curtain between setup and every turn. Secrets stay in memory and are cleared on Home.
@@ -25,15 +38,15 @@ Digit notes cycle unknown → ruled out → confirmed. Logical hints are off by 
 
 ## URL options
 
-| Option | Meaning |
-| --- | --- |
-| `?theme=dark` | Dark palette |
-| `?color=RRGGBB` | Accent color |
-| `?locale=zh-TW` or `?locale=en` | Language; any `zh*` selects Traditional Chinese |
-| `?api=http(s)://origin` | Rooms API origin override |
-| `?room=CODE` | Join or resume a room |
-| `?debug=1` | Allow local-mode secrets in the test hook |
-| `#r=…` | Relay public state; the fragment is never sent to a server |
+| Option                          | Meaning                                                    |
+| ------------------------------- | ---------------------------------------------------------- |
+| `?theme=dark`                   | Dark palette                                               |
+| `?color=RRGGBB`                 | Accent color                                               |
+| `?locale=zh-TW` or `?locale=en` | Language; any `zh*` selects Traditional Chinese            |
+| `?api=http(s)://origin`         | Rooms API origin override                                  |
+| `?room=CODE`                    | Join or resume a room                                      |
+| `?debug=1`                      | Allow local-mode secrets in the test hook                  |
+| `#r=…`                          | Relay public state; the fragment is never sent to a server |
 
 ## Test hook
 

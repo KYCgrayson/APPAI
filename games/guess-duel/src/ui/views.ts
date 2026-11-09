@@ -3,7 +3,13 @@ import { candidates, other, type Seat } from '../logic/game.ts';
 import { encode } from '../relay/codec.ts';
 import { readScores, scoreIdentity } from './storage.ts';
 import { button, esc } from './html.ts';
-import { rulesScreen, handoverScreen, waitingSecretScreen } from './screens.ts';
+import {
+  rulesScreen,
+  handoverScreen,
+  waitingSecretScreen,
+  historiesScreen,
+  onlineLobbyScreen,
+} from './screens.ts';
 import {
   lang,
   t,
@@ -14,6 +20,7 @@ import {
   privateData,
   input,
   message,
+  roomDigits,
   hint,
   showOpponent,
   thinking,
@@ -115,10 +122,7 @@ export function content(): string {
   if (screen === 'rules') return rulesScreen(t, lang === 'en');
   if (screen === 'handover')
     return handoverScreen(labelName(seat), seat === 0 ? '◆' : '●', t.pass, t.ready);
-  if (screen === 'onlineLobby')
-    return `<section class="panel">
-  <h1>${t.online}</h1>
-  <p>${lang === 'en' ? 'Create a room or enter a six-character room code.' : '建立房間或輸入六位房號。'}</p>${button(t.create, 'createRoom', 'primary')}<div class="room-boxes">${Array.from({ length: 6 }, (_, i) => `<input data-room-digit="${i}" maxlength="1" aria-label="${lang === 'en' ? 'Room code' : '房號'} ${i + 1}" autocapitalize="characters">`).join('')}</div>${button(t.join, 'joinRoom')}</section>`;
+  if (screen === 'onlineLobby') return onlineLobbyScreen(t, lang === 'en', roomDigits);
   if (screen === 'share' || screen === 'waiting') return shareView();
   if (screen === 'reply') {
     const e = game!.history[seat].at(-1)!;
@@ -136,7 +140,7 @@ export function content(): string {
     return `<section class="play-top">
   <div class="eyebrow">${seat === 0 ? '◆' : '●'} ${esc(labelName(seat))}</div>
   <h1>${t.secret}</h1>
-  <p>${lang === 'en' ? `${esc(game.n)} distinct digits. Zero can come first.` : `${esc(game.n)} 個不重複的數字，第一位可以是 0。`}</p>${secretSlots()}${button(t.peek, 'peek', 'eye')}</section>${keypad(true)}`;
+  <p>${lang === 'en' ? `${esc(game.n)} distinct digits. Zero can come first.` : `${esc(game.n)} 個不重複的數字，第一位可以是 0。`}</p>${entryStatus()}${secretSlots()}${button(t.peek, 'peek', 'eye')}</section>${keypad(true)}`;
   if (screen === 'play')
     return `<section class="play-top">
   <div class="eyebrow">${seat === 0 ? '◆' : '●'} ${esc(labelName(seat))}</div>
@@ -146,7 +150,7 @@ export function content(): string {
   <span>${lang === 'en' ? 'My secret' : '我的秘密數字'}</span>
   <strong id="own-secret">${'●'.repeat(game.n)}</strong>${button(t.peek, 'peek', 'eye')}</div>`
       : ''
-  }${session ? onlineStatus() : ''}</section>
+  }${entryStatus()}</section>
   <div class="play-middle">${histories()}<details class="notes-disclosure">
   <summary>${t.notes}</summary>${notes()}</details>
   </div>${game.turn === seat && !thinking ? `<div class="guess-slots">${Array.from({ length: game.n }, (_, i) => `<span class="chip">${esc(input[i] ?? '·')}</span>`).join('')}</div>${keypad(false)}` : ''}`;
@@ -159,32 +163,7 @@ function keypad(secret: boolean) {
   return `<section class="keypad" aria-label="${secret ? t.secret : t.guess}">${Array.from({ length: 10 }, (_, d) => `<button data-digit="${d}" ${input.includes(String(d)) ? 'disabled' : ''}>${d}</button>`).join('')}${button('⌫', 'delete')}${button(t.submit, 'submit', 'primary')}</section>`;
 }
 function histories() {
-  if (!game) return '';
-  const order = [seat, other(seat)];
-  return `<section class="histories">${order
-    .map(
-      (
-        s,
-        i,
-      ) => `<div class="history ${i ? 'opponent-history ' + (!showOpponent ? 'collapsed' : '') : ''}">
-  <h2>${s === 0 ? '◆' : '●'} ${esc(labelName(s as Seat))} <small>${game!.history[s].length}</small>
-  </h2>
-  <ol>${
-    [...game!.history[s]]
-      .reverse()
-      .map(
-        (e) => `<li>
-  <span class="guess-chips">${[...e.g].map((d) => `<span class="mini-chip">${esc(d)}</span>`).join('')}</span>
-  <strong class="reply">${e.r ? `${esc(e.r.a)}A${esc(e.r.b)}B` : '…'}</strong>
-  </li>`,
-      )
-      .join('') || `<li class="empty">—</li>`
-  }</ol>
-  </div>`,
-    )
-    .join(
-      '',
-    )}</section>${button(showOpponent ? t.history : t.opponent, 'toggleHistory', 'history-toggle quiet')}`;
+  return game ? historiesScreen(game, seat, showOpponent, t) : '';
 }
 function notes() {
   if (!privateData[seat] || !game) return '';
@@ -201,7 +180,7 @@ function notes() {
 function shareView() {
   if (!game) return '';
   if (session) {
-    const waiting = waitingSecretScreen(session.room, seat, t.waitingSecret);
+    const waiting = waitingSecretScreen(session.room, seat, t.waitingSecret, t.savingSecret);
     if (waiting) return waiting;
   }
   const url = shareURL(),
@@ -221,10 +200,11 @@ export function shareURL() {
   else if (game) u.hash = encode(game);
   return u.href;
 }
-function onlineStatus() {
-  const opp = session!.room.seats.find((s) => s.seat === other(seat)),
-    holder = session!.room.seats.find((s) => s.seat === session!.room.turn);
-  return `<p>${opp?.joined && !opp.online ? `${esc(labelName(other(seat)))} ${t.offline}` : ''}</p>${holder && holder.seat !== seat && holder.idleSeconds >= 120 ? button(t.skip, 'skip') : ''}`;
+function entryStatus() {
+  const opp = session?.room.seats.find((s) => s.seat === other(seat)),
+    holder = session?.room.seats.find((s) => s.seat === session?.room.turn),
+    offline = opp?.joined && !opp.online ? `${labelName(other(seat))} ${t.offline}` : '';
+  return `<div class="entry-status"><p class="${message ? 'notice' : ''}" role="status">${esc(message || offline)}</p>${screen === 'play' && holder && holder.seat !== seat && holder.idleSeconds >= 120 ? button(t.skip, 'skip') : ''}</div>`;
 }
 function resultView() {
   if (!game) return '';
