@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: copy.metaTitle,
     description: copy.metaDescription,
-    openGraph: { title: copy.metaTitle, description: copy.metaDescription, images: ["/games/covers/river-crossing.svg"] },
+    openGraph: { title: copy.metaTitle, description: copy.metaDescription },
   };
 }
 
@@ -49,30 +49,31 @@ export default async function GamesPage() {
           <ul className="mx-auto grid max-w-6xl gap-6 md:grid-cols-2 lg:grid-cols-3">
             {GAMES.map((game) => {
               const g = copy.games[game.slug];
+              const playable = game.status !== "soon";
               const href = gamePlayHref(game, locale);
               return (
                 <li key={game.slug} className="flex flex-col overflow-hidden rounded-2xl border border-gray-800 bg-gray-900/60">
-                  {/* Plain <a>: games are static files outside the app router. */}
-                  <a href={href} tabIndex={-1} aria-hidden="true" className="block">
-                    {/* eslint-disable-next-line @next/next/no-img-element -- Same-origin SVG cover; no optimisation needed. */}
-                    <img src={game.cover} alt="" width={640} height={360} className="aspect-video w-full object-cover" />
-                  </a>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- Same-origin SVG cover; no optimisation needed. */}
+                  <img src={game.cover} alt="" width={640} height={360} className={`aspect-video w-full object-cover ${playable ? "" : "opacity-60"}`} />
                   <div className="flex flex-1 flex-col p-5 sm:p-6">
                     <div className="flex items-center gap-2">
                       <h2 className="text-xl font-semibold text-white">{g.name}</h2>
                       {game.status === "beta" && (
                         <span className="rounded-full border border-amber-500/40 px-2 py-0.5 text-xs text-amber-300">{copy.beta}</span>
                       )}
+                      {game.status === "soon" && (
+                        <span className="rounded-full border border-gray-600 px-2 py-0.5 text-xs text-gray-300">{copy.soon}</span>
+                      )}
                     </div>
                     <p className="mt-2 leading-relaxed text-gray-300">{g.tagline}</p>
 
                     <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
                       <div className="rounded-lg bg-gray-950/70 px-3 py-2">
-                        <dt className="text-xs text-gray-500">{copy.players}</dt>
+                        <dt className="text-xs text-gray-400">{copy.players}</dt>
                         <dd className="mt-0.5 text-gray-100">{g.players}</dd>
                       </div>
                       <div className="rounded-lg bg-gray-950/70 px-3 py-2">
-                        <dt className="text-xs text-gray-500">{copy.ages}</dt>
+                        <dt className="text-xs text-gray-400">{copy.ages}</dt>
                         <dd className="mt-0.5 text-gray-100">{g.ages}</dd>
                       </div>
                     </dl>
@@ -85,6 +86,8 @@ export default async function GamesPage() {
                     </ol>
 
                     <div className="mt-auto pt-6">
+                      {playable ? (
+                      /* Plain <a>: games are static files outside the app router. */
                       <a
                         href={href}
                         className="flex min-h-12 w-full items-center justify-center rounded-xl px-6 font-semibold text-gray-950 transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
@@ -93,6 +96,11 @@ export default async function GamesPage() {
                         {copy.play}
                         <span className="sr-only">: {g.name}</span>
                       </a>
+                      ) : (
+                        <p className="flex min-h-12 w-full items-center justify-center rounded-xl border border-gray-700 px-6 font-semibold text-gray-400">
+                          {copy.soon}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </li>

@@ -31,6 +31,8 @@ build_one() {
   fi
   local tmp
   tmp="$(mktemp -d)"
+  # Clean up on any failure below (set -e exits the script).
+  trap 'rm -rf "$tmp"' EXIT
   case "$kind" in
     vite)
       (cd "$src" && npm ci --silent && npx vite build --base="/games/$slug/" --outDir "$tmp" --emptyOutDir >/dev/null)
@@ -38,15 +40,16 @@ build_one() {
     static)
       cp "$src/index.html" "$tmp/"
       cp -R "$src/src" "$tmp/"
-      # Insert <base> right after <meta charset>; fail loudly if it is missing.
-      grep -q '<meta charset' "$tmp/index.html" || { echo "$slug: no <meta charset> to anchor <base>" >&2; exit 1; }
+      # Insert <base> right after <meta charset="utf-8">; fail loudly if that did not work.
       sed -i.bak "s#<meta charset=\"utf-8\">#<meta charset=\"utf-8\">\\
   <base href=\"/games/$slug/\">#" "$tmp/index.html" && rm "$tmp/index.html.bak"
+      grep -q "<base href=\"/games/$slug/\">" "$tmp/index.html" || { echo "$slug: could not insert <base> (expected <meta charset=\"utf-8\">)" >&2; exit 1; }
       ;;
   esac
   rm -rf "$OUT/$slug"
   mkdir -p "$OUT"
   mv "$tmp" "$OUT/$slug"
+  trap - EXIT
   chmod 755 "$OUT/$slug"
   echo "built $slug -> public/games/$slug"
 }

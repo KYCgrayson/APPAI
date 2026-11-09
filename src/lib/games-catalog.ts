@@ -14,7 +14,8 @@ export type GameEntry = {
   localeParam: GameLocaleParam;
   /** Accent used for the card. */
   accent: string;
-  status: "live" | "beta";
+  /** live/beta: playable link. soon: card shown, no link, no files served. */
+  status: "live" | "beta" | "soon";
 };
 
 export type GameCopy = {
@@ -37,6 +38,7 @@ type HubCopy = {
   players: string;
   ages: string;
   beta: string;
+  soon: string;
   nav: string;
   games: Record<string, GameCopy>;
 };
@@ -54,14 +56,14 @@ export const GAMES: GameEntry[] = [
     cover: "/games/covers/guess-duel.svg",
     localeParam: { name: "locale", zh: "zh-TW", en: "en" },
     accent: "#f59e0b",
-    status: "beta",
+    status: "soon",
   },
   {
     slug: "snack-sneak",
     cover: "/games/covers/snack-sneak.svg",
     localeParam: { name: "lang", zh: "zh", en: "en" },
     accent: "#ec4899",
-    status: "beta",
+    status: "soon",
   },
 ];
 
@@ -77,7 +79,7 @@ const COPY: Record<string, HubCopy> = {
       "Everything runs in your browser on a phone, tablet or computer. Nothing to install, and no sign-in needed to play.",
     ],
     notes: [
-      "Games marked Beta are new — tell us what you think through Feedback.",
+      "More games are on the way — cards marked Coming soon open once they pass testing.",
       "Online rooms (each player on their own phone with a room code) are coming soon.",
     ],
     play: "Play",
@@ -85,6 +87,7 @@ const COPY: Record<string, HubCopy> = {
     players: "Players",
     ages: "Ages",
     beta: "Beta",
+    soon: "Coming soon",
     nav: "Games",
     games: {
       "river-crossing": {
@@ -100,25 +103,25 @@ const COPY: Record<string, HubCopy> = {
       },
       "guess-duel": {
         name: "Guess Duel",
-        tagline: "Each side hides a secret number; take turns guessing and read the A/B clues to crack it first.",
+        tagline: "Hide a secret number, take turns guessing, and deduce your opponent's code from the A/B clues.",
         howToPlay: [
           "Pick 3 or 4 different digits as your secret.",
           "Take turns guessing. A = right digit, right place. B = right digit, wrong place.",
           "Play on one device, against the computer, or pass a link between two phones.",
         ],
         players: "2 (or 1 vs computer)",
-        ages: "7+",
+        ages: "8+ (3 digits for kids, 4 for a challenge)",
       },
       "snack-sneak": {
-        name: "Snack Sneaks",
-        tagline: "Someone has been sneaking snacks at night. Pass one phone around, ask questions and vote to find them.",
+        name: "Hidden-role party game",
+        tagline: "A family-friendly whodunit for a group: everyone gets a secret role, then talks it over and votes.",
         howToPlay: [
-          "Pass the phone around so everyone secretly sees their role.",
-          "At night every player picks one seat: sneaks pick a plate, the Sniffer checks a player, the Guard protects a plate. The app narrates.",
-          "In the morning, talk it over and vote. Anyone voted out washes dishes instead of leaving the game. Catch every sneak before half the plates are gone.",
+          "Everyone secretly sees their own role.",
+          "The app hosts each night and morning, so no one has to sit out as host.",
+          "Discuss, vote, and see which side wins.",
         ],
-        players: "5–12, one phone",
-        ages: "6+",
+        players: "5–12",
+        ages: "8+",
       },
     },
   },
@@ -131,12 +134,13 @@ const COPY: Record<string, HubCopy> = {
       "這裡是 AppAI 自己做的原創小遊戲：一個人解的邏輯謎題、親子兩人的猜數字對決，還有全家圍著一支手機玩的派對遊戲。",
       "所有遊戲都在瀏覽器裡執行，手機、平板、電腦都能玩，不用安裝，玩遊戲也不用登入。",
     ],
-    notes: ["標示「試玩版」的是新遊戲，玩完歡迎到「意見回饋」告訴我們。", "房號連線（每人用自己的手機輸入房號一起玩）即將推出。"],
+    notes: ["更多遊戲準備中，標示「即將推出」的遊戲通過測試後就會開放。", "房號連線（每人用自己的手機輸入房號一起玩）即將推出。"],
     play: "開始玩",
     howToPlay: "怎麼玩",
     players: "人數",
     ages: "適合年齡",
     beta: "試玩版",
+    soon: "即將推出",
     nav: "遊戲",
     games: {
       "river-crossing": {
@@ -148,17 +152,17 @@ const COPY: Record<string, HubCopy> = {
       },
       "guess-duel": {
         name: "猜數字對決",
-        tagline: "雙方各藏一組數字，輪流猜、看 A 和 B 的提示推理，先猜中的人贏。",
+        tagline: "各自藏一組數字，輪流猜、看「幾A幾B」推理出對方的答案。",
         howToPlay: ["選 3 或 4 個不重複的數字當祕密。", "輪流猜：A 是數字和位置都對，B 是數字對、位置不對。", "可以在同一台裝置對戰、跟電腦玩，或用連結在兩支手機之間傳。"],
         players: "2 人（或 1 人對電腦）",
-        ages: "7 歲以上",
+        ages: "8 歲以上（3 位數是兒童模式）",
       },
       "snack-sneak": {
-        name: "點心小偷",
-        tagline: "晚上有人偷吃點心！一支手機傳著玩，大家討論、投票，把小偷找出來。",
-        howToPlay: ["手機輪流傳，每個人偷偷看自己的身分。", "晚上每個人都選一個座位：小偷挑盤子偷吃、靈鼻子聞一個人、餐盤守衛守一盤，由 app 主持。", "天亮後大家討論、投票，被投出的人去洗碗、不用出局；在一半的盤子被吃光前抓到所有小偷。"],
-        players: "5–12 人，一支手機",
-        ages: "6 歲以上",
+        name: "隱藏身分推理遊戲",
+        tagline: "適合全家一起玩的多人推理遊戲：每個人拿到祕密身分，大家討論、投票，看哪一邊贏。",
+        howToPlay: ["每個人偷偷看自己的身分。", "晚上和白天都由 app 主持，不用有人專門當主持人。", "大家討論、投票，看哪一邊先達成目標。"],
+        players: "5–12 人",
+        ages: "8 歲以上",
       },
     },
   },
@@ -171,12 +175,13 @@ const COPY: Record<string, HubCopy> = {
       "这里是 AppAI 自己做的原创小游戏：一个人解的逻辑谜题、亲子两人的猜数字对决，还有全家围着一部手机玩的派对游戏。",
       "所有游戏都在浏览器里运行，手机、平板、电脑都能玩，不用安装，玩游戏也不用登录。",
     ],
-    notes: ["标示“试玩版”的是新游戏，玩完欢迎到“意见反馈”告诉我们。", "房号联机（每人用自己的手机输入房号一起玩）即将推出。"],
+    notes: ["更多游戏准备中，标示“即将推出”的游戏通过测试后就会开放。", "房号联机（每人用自己的手机输入房号一起玩）即将推出。"],
     play: "开始玩",
     howToPlay: "怎么玩",
     players: "人数",
     ages: "适合年龄",
     beta: "试玩版",
+    soon: "即将推出",
     nav: "游戏",
     games: {
       "river-crossing": {
@@ -188,17 +193,17 @@ const COPY: Record<string, HubCopy> = {
       },
       "guess-duel": {
         name: "猜数字对决",
-        tagline: "双方各藏一组数字，轮流猜、看 A 和 B 的提示推理，先猜中的人赢。",
+        tagline: "各自藏一组数字，轮流猜、看“几A几B”推理出对方的答案。",
         howToPlay: ["选 3 或 4 个不重复的数字当秘密。", "轮流猜：A 是数字和位置都对，B 是数字对、位置不对。", "可以在同一台设备对战、跟电脑玩，或用链接在两部手机之间传。"],
         players: "2 人（或 1 人对电脑）",
-        ages: "7 岁以上",
+        ages: "8 岁以上（3 位数是儿童模式）",
       },
       "snack-sneak": {
-        name: "点心小偷",
-        tagline: "晚上有人偷吃点心！一部手机传着玩，大家讨论、投票，把小偷找出来。",
-        howToPlay: ["手机轮流传，每个人偷偷看自己的身份。", "晚上每个人都选一个座位：小偷挑盘子偷吃、灵鼻子闻一个人、餐盘守卫守一盘，由 app 主持。", "天亮后大家讨论、投票，被投出的人去洗碗、不用出局；在一半的盘子被吃光前抓到所有小偷。"],
-        players: "5–12 人，一部手机",
-        ages: "6 岁以上",
+        name: "隐藏身份推理游戏",
+        tagline: "适合全家一起玩的多人推理游戏：每个人拿到秘密身份，大家讨论、投票，看哪一边赢。",
+        howToPlay: ["每个人偷偷看自己的身份。", "晚上和白天都由 app 主持，不用有人专门当主持人。", "大家讨论、投票，看哪一边先达成目标。"],
+        players: "5–12 人",
+        ages: "8 岁以上",
       },
     },
   },
