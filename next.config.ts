@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+import { OWN_GAME_SLUGS } from "./src/lib/games-catalog";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+const ownGameSlugPattern = OWN_GAME_SLUGS.map((slug) =>
+  slug.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+).join("|");
 
 const securityHeaders = [
   {
@@ -102,6 +106,18 @@ const nextConfig: NextConfig = {
     "/spec/[topic]": ["./docs/spec/**", "./AGENT_INSTRUCTIONS.md"],
     "/llms-full.txt": ["./docs/spec/**", "./AGENT_INSTRUCTIONS.md"],
     "/spec/examples/*": ["./docs/examples/**"],
+  },
+  // Static game builds live in public/games/<slug>/index.html (#64). Next.js
+  // does not serve index.html for a folder path, so map /games/<slug> to it.
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: `/games/:slug(${ownGameSlugPattern})`,
+          destination: "/games/:slug/index.html",
+        },
+      ],
+    };
   },
   async headers() {
     return [

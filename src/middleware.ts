@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "@/i18n/routing";
+import { STATIC_GAME_PATH_SEGMENTS } from "@/lib/games-catalog";
 import { corsHeaders, roomRateBucket } from "@/lib/rooms-cors";
 
 // ---------------------------------------------------------------------------
@@ -180,6 +181,15 @@ export function middleware(request: NextRequest) {
     const requestHeaders = new Headers(request.headers);
     // Always overwrite visitor-supplied headers; hosted locales are independent of next-intl.
     requestHeaders.set("x-appai-hosted-path", pathname);
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
+  // Own static game builds and covers under public/games/ are locale-free files;
+  // the /games hub and other game slugs go through next-intl.
+  if (
+    pathname.startsWith("/games/") &&
+    STATIC_GAME_PATH_SEGMENTS.includes(pathname.split("/")[2])
+  ) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
