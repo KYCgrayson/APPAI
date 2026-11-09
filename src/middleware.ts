@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "@/i18n/routing";
+import { RESERVED_GAME_SLUGS } from "@/lib/games-catalog";
 
 // ---------------------------------------------------------------------------
 // next-intl middleware for locale detection + redirect
@@ -170,9 +171,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
-  // Static game builds (public/games/<slug>/, #64) are locale-free files;
-  // only the /games hub itself goes through next-intl.
-  if (pathname.startsWith("/games/")) {
+  // Own static game builds and covers under public/games/ are locale-free files;
+  // the /games hub and other game slugs go through next-intl.
+  if (
+    pathname.startsWith("/games/") &&
+    RESERVED_GAME_SLUGS.includes(pathname.split("/")[2])
+  ) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 

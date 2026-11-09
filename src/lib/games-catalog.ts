@@ -67,6 +67,11 @@ export const GAMES: GameEntry[] = [
   },
 ];
 
+export const OWN_GAME_SLUGS: readonly string[] = GAMES.map((g) => g.slug);
+
+// #67 uses this list to block user games from taking these slugs.
+export const RESERVED_GAME_SLUGS: readonly string[] = [...OWN_GAME_SLUGS, "covers"];
+
 const COPY: Record<string, HubCopy> = {
   en: {
     metaTitle: "Games — play free original brain games on AppAI",

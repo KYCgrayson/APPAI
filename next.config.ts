@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+import { OWN_GAME_SLUGS } from "./src/lib/games-catalog";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+const ownGameSlugPattern = OWN_GAME_SLUGS.map((slug) =>
+  slug.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+).join("|");
 
 const securityHeaders = [
   {
@@ -108,7 +112,10 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return {
       beforeFiles: [
-        { source: "/games/:slug", destination: "/games/:slug/index.html" },
+        {
+          source: `/games/:slug(${ownGameSlugPattern})`,
+          destination: "/games/:slug/index.html",
+        },
       ],
     };
   },
