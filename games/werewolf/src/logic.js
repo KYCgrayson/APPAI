@@ -168,8 +168,10 @@ export function resolveNight(g) {
   if (!pass1Done(g) || !pass2Done(g)) throw new Error('night not complete');
   const { wolf, guard, save, poison } = g.actions;
   const deaths = [];
-  if (wolf !== null && wolf !== guard && !save) deaths.push([wolf, 'wolf']);
-  if (poison !== null && !deaths.some(([s]) => s === poison)) deaths.push([poison, 'poison']);
+  // Poison wins over a wolf kill on the same seat, so a poisoned hunter cannot shoot.
+  if (wolf !== null && wolf !== guard && !save && wolf !== poison) deaths.push([wolf, 'wolf']);
+  if (poison !== null) deaths.push([poison, 'poison']);
+  // Variant: someone both guarded and healed survives (documented in the rules text).
   for (const [s, cause] of deaths) kill(g, s, cause);
   g.lastGuard = guard;
   const report = { night: g.night, deaths: deaths.map(([s]) => s).sort((a, b) => a - b), shot: null, voted: undefined };

@@ -36,10 +36,11 @@ npm test        # node --test (rules engine)
 - Night, round one (everyone alive): guard protects (not the same person two nights running),
   werewolves choose a victim (a later wolf sees and may change the earlier pick), seer checks
   one person. Everyone else picks a suspect, so every turn looks alike.
-- Night, round two (everyone alive): the witch sees tonight's victim while she still has the
+- Night, round two (everyone alive): the witch (once she has no potions left she picks a suspect like everyone else) sees tonight's victim while she still has the
   healing potion; she may heal (not herself) or poison someone, one potion per night, each once.
 - Morning: who is out is announced; roles stay secret until the end.
-- Hunter: when killed by werewolves or voted out, may take one person; not when poisoned.
+- Hunter: when killed by werewolves or voted out, may take one person; not when poisoned (poison wins if the wolves picked the same person).
+- Someone both guarded and healed on the same night survives (a common house variant).
 - Day: discussion timer, then a single vote (tie = nobody out).
 - Win: village wins when no werewolf is alive; werewolves win when alive werewolves ≥ everyone else.
 

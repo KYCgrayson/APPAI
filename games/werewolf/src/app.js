@@ -191,7 +191,7 @@ function screenRules() {
   return `${header()}
   <main class="stack">
     <h2>${esc(t.rules)}</h2>
-    ${t.rulesBody.map((p) => `<p>${esc(p)}</p>`).join('')}
+    ${(S.kid ? t.rulesBodyKid : t.rulesBody).map((p) => `<p>${esc(p)}</p>`).join('')}
     <ul class="roles">${L.ROLES.map(
       (r) => `<li><span class="icon">${ROLE_ICON[r]}</span><div><b>${esc(t.roleName[r])}</b><br>${esc(W().desc[r])}</div></li>`,
     ).join('')}</ul>
@@ -323,7 +323,7 @@ function witchBody(seat) {
   const v = L.witchView(g, seat);
   const u = S.ui;
   const parts = [];
-  parts.push(`<p class="secret">${esc(v.victim !== null ? w.witchVictim(label(v.victim)) : t.witchNoSave)}</p>`);
+  parts.push(`<p class="secret">${esc(v.victim !== null ? w.witchVictim(label(v.victim)) : w.witchNoSave)}</p>`);
   if (v.canSave) parts.push(`<button class="btn chip wide ${u.wsave ? 'on' : ''}" data-a="wSave">💊 ${esc(w.save(label(v.victim)))}</button>`);
   parts.push(`<button class="btn chip wide ${u.wchose && !u.wsave && u.wpoison == null ? 'on' : ''}" data-a="wNone">${esc(t.noPotion)}</button>`);
   if (v.canPoison) {
@@ -331,6 +331,11 @@ function witchBody(seat) {
     parts.push(grid(v.poisonTargets, 'wPoison', u.wpoison));
   }
   return parts.join('');
+}
+
+function witchIdle(seat) {
+  const v = L.witchView(S.game, seat);
+  return !v.canSave && !v.canPoison;
 }
 
 function screenNight() {
@@ -349,7 +354,9 @@ function screenNight() {
       <button class="btn primary big" data-a="nextTurn">${esc(t.coverNext)}</button>
     </main>`;
   }
-  const task = pass === 1 ? L.task1(g, turn) : L.task2(g, turn);
+  let task = pass === 1 ? L.task1(g, turn) : L.task2(g, turn);
+  // A witch with no potions left picks a suspect like everyone else, so her turn looks the same.
+  if (task === 'witch' && witchIdle(turn)) task = 'suspect';
   let title = task === 'wolf' ? W().wolfTask : t.task[task];
   let body = '';
   let ready = S.ui.pick !== undefined;
@@ -475,7 +482,7 @@ function screenVote() {
     <h2 class="center">${esc(t.voteTitle)}</h2>
     <p>${esc(W().voteHow)}</p>
     ${grid(L.aliveSeats(S.game), 'votePick')}
-    <button class="btn" data-a="noOne">${esc(t.noOne)}</button>
+    <button class="btn" data-a="noOne">${esc(W().noOne)}</button>
   </main>`;
 }
 
@@ -485,7 +492,7 @@ function screenVoteResult() {
   return `${header()}
   <main class="center stack">
     <div class="hero">${seat === null ? '🤝' : '💤'}</div>
-    <p class="announce">${esc(seat === null ? t.nobody : W().voteOut(label(seat)))}</p>
+    <p class="announce">${esc(seat === null ? W().nobody : W().voteOut(label(seat)))}</p>
     ${tableLine()}
     ${afterButton('night')}
   </main>`;
@@ -705,7 +712,7 @@ const ACTIONS = {
       if (S.ui.pick === undefined) return;
       const r = L.act1(g, turn, S.ui.pick);
       if (r.task === 'seer') feedback = { task: 'seer', target: S.ui.pick, isWolf: r.isWolf };
-    } else if (L.task2(g, turn) === 'witch') {
+    } else if (L.task2(g, turn) === 'witch' && !witchIdle(turn)) {
       if (!S.ui.wchose) return;
       L.act2(g, turn, { save: Boolean(S.ui.wsave), poison: S.ui.wpoison ?? null });
     } else {
@@ -757,7 +764,7 @@ const ACTIONS = {
   cancelVote: () => go('vote'),
   noOne: () => {
     L.vote(S.game, null);
-    speak(T().nobody);
+    speak(W().nobody);
     go('voteResult', { voted: null });
   },
   doVote: () => {

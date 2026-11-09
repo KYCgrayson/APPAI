@@ -224,3 +224,19 @@ test('random full games always finish', () => {
   }
   assert.ok(wins.good > 0 && wins.wolf > 0);
 });
+
+test('hunter attacked by wolves and also poisoned cannot shoot', () => {
+  const g = fixed(SEVEN);
+  night(g, { 0: 4, 1: 4 }, { poison: 4 });
+  assert.equal(g.players[4].alive, false);
+  assert.equal(g.players[4].cause, 'poison');
+  assert.equal(g.pendingShot, null);
+  assert.deepEqual(g.log[0].deaths, [4]);
+});
+
+test('guarded and healed on the same night survives', () => {
+  const roles = ['wolf', 'wolf', 'wolf', 'seer', 'witch', 'hunter', 'guard', 'villager', 'villager', 'villager'];
+  const g = fixed(roles);
+  const r = night(g, { 0: 8, 1: 8, 2: 8, 6: 8 }, { save: true });
+  assert.deepEqual(r.deaths, []);
+});

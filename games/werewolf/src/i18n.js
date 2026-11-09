@@ -49,7 +49,6 @@ const zh = {
   },
   suspectNote: '只是幫你想一想，不會公布。',
   lastGuard: (name) => `昨晚守了 ${name}，今晚要換人。`,
-  witchNoSave: '解藥已經用掉了，你看不到今晚誰被攻擊。',
   noPotion: '這次都不用',
   confirm: '確定',
   seerYes: (name) => `${name} 是狼人！`,
@@ -69,10 +68,8 @@ const zh = {
   timeUp: '時間到！',
   toVote: '開始投票',
   voteTitle: '投票',
-  noOne: '平手，今天沒人出局',
   yes: '確定',
   cancel: '取消',
-  nobody: '今天平手，沒有人出局。',
   continueDay: '繼續',
   nextNight: '進入下一晚',
   seeResult: '看結果',
@@ -88,6 +85,9 @@ const zh = {
   words: {
     classic: {
       outTag: '出局',
+      witchNoSave: '解藥已經用掉了，你看不到今晚誰被攻擊。',
+      noOne: '平手，今天沒人出局',
+      nobody: '今天平手，沒有人出局。',
       wolfTask: '選一個人殺掉',
       proposal: (n) => `隊友想殺 ${n}，你可以照選或改選。`,
       witchVictim: (n) => `今晚 ${n} 被狼人殺了。`,
@@ -115,6 +115,9 @@ const zh = {
     },
     kid: {
       outTag: '睡覺中',
+      witchNoSave: '醒醒藥水已經用掉了，你看不到今晚誰被抓走。',
+      noOne: '平手，今天大家都留下',
+      nobody: '今天平手，大家都留下來。',
       wolfTask: '選一個人抓走',
       proposal: (n) => `隊友想抓 ${n}，你可以照選或改選。`,
       witchVictim: (n) => `今晚 ${n} 被狼人抓走了。`,
@@ -141,13 +144,21 @@ const zh = {
       },
     },
   },
+  rulesBodyKid: [
+    '大家分成兩邊：狼人陣營和好人陣營。狼人知道彼此是誰，好人不知道誰是狼人。',
+    '晚上：手機傳兩圈，每個還在場上的人每圈都要選一次。第一圈：守衛守人、狼人選要抓走的人、預言家查驗；第二圈：女巫決定要不要用藥水。其他人每圈都選一個可疑的人，所以傳手機時看不出誰是什麼身分。',
+    '早上：app 公布昨晚誰被抓走、回家睡覺（不公布身分）。獵人回家時可以拉一個人一起回家。',
+    '白天：大家輪流發言，然後一起投票，得票最多的人回家睡覺。',
+    '狼人全部被找到，好人獲勝；狼人人數追上好人，狼人獲勝。',
+    '適合 5–12 人。被守衛守護又被救的人也會留下。',
+  ],
   rulesBody: [
     '大家分成兩邊：狼人陣營和好人陣營。狼人知道彼此是誰，好人不知道誰是狼人。',
     '晚上：手機傳兩圈，每個還在場上的人每圈都要選一次。第一圈：守衛守人、狼人選目標、預言家查驗；第二圈：女巫決定要不要用藥。其他人每圈都選一個可疑的人，所以傳手機時看不出誰是什麼身分。',
     '早上：app 公布昨晚誰出局（不公布身分）。獵人出局時可以帶走一個人。',
     '白天：大家輪流發言，然後一起投票，得票最多的人出局。',
     '狼人全部出局，好人獲勝；狼人人數追上好人，狼人獲勝。',
-    '適合 5–12 人。「親子用語」可以把「殺」「出局」換成「抓走」「回家睡覺」。',
+    '適合 5–12 人。被守衛守護又被女巫救的人不會出局。「親子用語」可以把「殺」「出局」換成「抓走」「回家睡覺」。',
   ],
 };
 
@@ -196,7 +207,6 @@ const en = {
   },
   suspectNote: 'Just to help you think. Not announced.',
   lastGuard: (name) => `You protected ${name} last night; pick someone else.`,
-  witchNoSave: 'Your healing potion is used up, so you cannot see who was attacked tonight.',
   noPotion: 'Use nothing',
   confirm: 'Confirm',
   seerYes: (name) => `${name} is a werewolf!`,
@@ -216,10 +226,8 @@ const en = {
   timeUp: "Time's up!",
   toVote: 'Go to vote',
   voteTitle: 'Vote',
-  noOne: 'Tie: nobody is out today',
   yes: 'Yes',
   cancel: 'Cancel',
-  nobody: 'A tie: nobody is out today.',
   continueDay: 'Continue',
   nextNight: 'Next night',
   seeResult: 'See result',
@@ -235,6 +243,9 @@ const en = {
   words: {
     classic: {
       outTag: 'out',
+      witchNoSave: 'Your healing potion is used up, so you cannot see who was attacked tonight.',
+      noOne: 'Tie: nobody is out today',
+      nobody: 'A tie: nobody is out today.',
       wolfTask: 'Pick someone to eliminate',
       proposal: (n) => `Your teammate picked ${n}. Keep it or change it.`,
       witchVictim: (n) => `Tonight the werewolves attacked ${n}.`,
@@ -262,6 +273,9 @@ const en = {
     },
     kid: {
       outTag: 'sleeping',
+      witchNoSave: 'Your wake-up potion is used up, so you cannot see who was taken tonight.',
+      noOne: 'Tie: everyone stays today',
+      nobody: 'A tie: everyone stays today.',
       wolfTask: 'Pick someone to take away',
       proposal: (n) => `Your teammate picked ${n}. Keep it or change it.`,
       witchVictim: (n) => `Tonight the werewolves took ${n}.`,
@@ -288,13 +302,21 @@ const en = {
       },
     },
   },
+  rulesBodyKid: [
+    'Two teams: werewolves and the village. Werewolves know each other; villagers do not know who the werewolves are.',
+    'Night: the phone goes around twice and everyone still in the game picks someone each time. Round one: the guard protects, the werewolves choose who to take, the seer checks. Round two: the witch decides on potions. Everyone else picks a suspect, so passing the phone reveals nothing.',
+    'Morning: the app announces who was taken home to sleep (roles stay secret). A hunter going home may bring someone along.',
+    'Day: take turns to speak, then vote together; whoever gets the most votes goes home to sleep.',
+    'The village wins when every werewolf is found; the werewolves win when they match the village in number.',
+    'For 5–12 players. Someone both protected and healed stays in the game.',
+  ],
   rulesBody: [
     'Two teams: werewolves and the village. Werewolves know each other; villagers do not know who the werewolves are.',
     'Night: the phone goes around twice and everyone still in the game picks someone each time. Round one: the guard protects, the werewolves choose, the seer checks. Round two: the witch decides on potions. Everyone else picks a suspect, so passing the phone reveals nothing.',
     'Morning: the app announces who is out (roles stay secret). A hunter who goes out may take someone along.',
     'Day: take turns to speak, then vote together; whoever gets the most votes is out.',
     'The village wins when every werewolf is out; the werewolves win when they match the village in number.',
-    'For 5–12 players. "Family wording" swaps "killed"/"out" for "taken"/"sent home to sleep".',
+    'For 5–12 players. Someone both protected and healed survives. "Family wording" swaps "killed"/"out" for "taken"/"sent home to sleep".',
   ],
 };
 

@@ -121,7 +121,7 @@ body.is-night .link { color: #f08a4b; }
 .table { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .seat { display: inline-flex; flex-direction: column; align-items: center; font-size: 1.6rem; line-height: 1.1; }
 .seat small { font-size: 0.75rem; color: var(--muted); }
-.seat.out { opacity: 0.5; }
+.seat.out { opacity: 0.75; }
 .announce { font-size: 1.2rem; font-weight: 700; background: var(--secret); border-radius: 14px; padding: 12px; }
 .timer { font-size: 4.5rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
 .timer.done { font-size: 2.6rem; color: var(--accent); }
