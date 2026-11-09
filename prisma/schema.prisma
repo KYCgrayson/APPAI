@@ -720,3 +720,53 @@ model GameRoomRateLimit {
   windowStart DateTime
   count       Int
 }
+
+// Global puzzle leaderboards (#68). No account profile data is exposed by the API.
+model GamePlayer {
+  userId        String   @id
+  nickname      String
+  nicknameKey   String   @unique
+  nicknameSetAt DateTime
+  status        String   @default("active")
+  createdAt     DateTime @default(now())
+}
+
+model GameRun {
+  id         String   @id @default(cuid())
+  game       String
+  board      String
+  tokenHash  String   @unique
+  status     String
+  startedAt  DateTime @default(now())
+  finishedAt DateTime?
+  score      Int?
+  timeMs     Int?
+  moves      Json?
+  userId     String?
+  expiresAt  DateTime
+
+  @@index([expiresAt])
+  @@index([userId, board])
+  // Bounded seven-day replay cleanup without a full-table scan.
+  @@index([finishedAt])
+}
+
+model GameScore {
+  id         String   @id @default(cuid())
+  game       String
+  board      String
+  userId     String
+  tier       String
+  score      Int
+  timeMs     Int
+  achievedAt DateTime
+  runId      String
+  hidden     Boolean  @default(false)
+  // Internal account IDs deduplicate reports; never returned. Capped at 3.
+  reporters  String[] @default([])
+
+  @@unique([board, userId, tier])
+  @@index([board, tier, hidden, score, timeMs, achievedAt])
+  // Profile deletion and lookup span all boards.
+  @@index([userId])
+}

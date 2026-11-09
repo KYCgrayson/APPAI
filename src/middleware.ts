@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "@/i18n/routing";
 import { STATIC_GAME_PATH_SEGMENTS } from "@/lib/games-catalog";
-import { corsHeaders, roomRateBucket } from "@/lib/rooms-cors";
+import { corsHeaders, roomRateBucket, leaderboardRateBucket, roomOriginAllowed } from "@/lib/rooms-cors";
 
 // ---------------------------------------------------------------------------
 // next-intl middleware for locale detection + redirect
@@ -47,6 +47,7 @@ interface RateLimitRule {
 }
 
 const rules: RateLimitRule[] = [
+  { match: (p, m) => m === "GET" && p.startsWith("/api/games/"), limit: 300, windowMs: 60_000 },
   { match: (p) => p === "/api/feedback/web", limit: 5, windowMs: 3600000 },
   { match: (p) => p === "/api/v1/feedback", limit: 20, windowMs: 3600000 },
   {
@@ -113,7 +114,7 @@ function handleRateLimit(request: NextRequest): NextResponse | null {
   const method = request.method;
 
   // Room preflights do no database work, and a 429 on a preflight would surface as an opaque CORS error.
-  if (method === "OPTIONS" && pathname.startsWith("/api/rooms")) return null;
+  if (method === "OPTIONS" && (pathname.startsWith("/api/rooms") || pathname.startsWith("/api/games/"))) return null;
 
   const rule = resolveRule(pathname, method);
   if (!rule) return null;
@@ -123,7 +124,7 @@ function handleRateLimit(request: NextRequest): NextResponse | null {
     request.headers.get("x-real-ip") ??
     "unknown";
 
-  const key = `${ip}:${roomRateBucket(pathname, method) ?? pathname}`;
+  const key = `${ip}:${roomRateBucket(pathname, method) ?? leaderboardRateBucket(pathname, method) ?? pathname}`;
   const now = Date.now();
   const entry = rateLimitMap.get(key);
 
@@ -135,12 +136,12 @@ function handleRateLimit(request: NextRequest): NextResponse | null {
   if (entry.count >= rule.limit) {
     const retryAfterSeconds = Math.ceil((entry.resetTime - now) / 1000);
     return NextResponse.json(
-      { error: "Too many requests. Please try again later." },
+      { error: "rate_limited", message: "Too many requests. Please try again later." },
       {
         status: 429,
         headers: {
           // Browser games on other origins must be able to read this 429 to back off.
-          ...(pathname.startsWith("/api/rooms") ? corsHeaders(request, process.env) : {}),
+          ...((pathname.startsWith("/api/rooms") || pathname.startsWith("/api/games/")) ? corsHeaders(request, process.env) : {}),
           "Retry-After": String(retryAfterSeconds),
         },
       }
@@ -162,6 +163,14 @@ export function middleware(request: NextRequest) {
   }
   request = new NextRequest(request, { headers: requestHeaders });
   const { pathname } = request.nextUrl;
+
+  if (pathname.startsWith("/api/games/")) {
+    const origin = request.headers.get("origin");
+    if (origin && !roomOriginAllowed(origin, process.env)) return NextResponse.json(
+      { error: "origin_not_allowed", message: "This origin may not use leaderboards" },
+      { status: 403, headers: corsHeaders(request, process.env) }
+    );
+  }
 
   // Rate limiting for API routes
   if (pathname.startsWith("/api/")) {

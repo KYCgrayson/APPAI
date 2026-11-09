@@ -27,3 +27,15 @@ export function roomRateBucket(pathname: string, method: string): string | null 
   if (pathname.endsWith("/start")) return "rooms:start";
   return "rooms:create";
 }
+
+// One bucket per leaderboard action, independent of attacker-selected slugs/IDs.
+export function leaderboardRateBucket(pathname: string, method: string): string | null {
+  if (!pathname.startsWith('/api/games/')) return null;
+  if (method === 'OPTIONS') return 'lb:options';
+  if (method === 'GET') return 'lb:read';
+  if (pathname.endsWith('/finish')) return 'lb:finish';
+  if (pathname.endsWith('/claim')) return 'lb:claim';
+  if (pathname.endsWith('/report')) return 'lb:report';
+  if (pathname === '/api/games/profile') return 'lb:profile';
+  return 'lb:create';
+}
