@@ -1,0 +1,10 @@
+{
+  "name": "snack-sneak",
+  "private": true,
+  "type": "module",
+  "description": "Snack Sneaks: original pass-one-phone hidden-role party game for families. No build step, no dependencies.",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "dev": "python3 -m http.server 5180"
+  }
+}

@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Standalone static games (own tests, no build step).
+    "games/**",
   ]),
 ]);
 
