@@ -1,20 +1,26 @@
 import { createHash, createHmac, randomBytes, randomInt } from "node:crypto";
+import { corsHeaders, roomOriginAllowed } from "./rooms-cors.ts";
 
-// Generic room-code rooms for turn-based games played on two or more devices.
+// Generic room-code rooms for turn-based games played on two to four devices.
 // The server stores only public game state; hidden information stays on each device.
 
+export { ROOM_ORIGINS, corsHeaders, roomOriginAllowed } from "./rooms-cors.ts";
 export const ROOM_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 export const ROOM_CODE_LENGTH = 6;
 export const MAX_STATE_BYTES = 8 * 1024;
 export const MAX_MOVE_BYTES = 1024;
 export const MAX_BODY_BYTES = 12 * 1024;
 export const ROOM_TTL_MS = 24 * 60 * 60 * 1000;
+// A room nobody finished joining is reclaimed quickly so empty rooms cannot pile up.
+export const WAITING_TTL_MS = 30 * 60 * 1000;
 export const MAX_MOVES_PER_ROOM = 2000;
+export const RECENT_MOVES = 20;
 export const MAX_ACTIVE_ROOMS = 5000;
 export const MIN_SEATS = 2;
 export const MAX_SEATS = 4;
-
-export const ROOM_ORIGINS = ["https://appai.info", "https://www.appai.info", "https://kycgrayson.github.io"];
+export const ONLINE_WINDOW_MS = 30 * 1000;
+export const TOUCH_INTERVAL_MS = 10 * 1000;
+export const SKIP_AFTER_MS = 60 * 1000;
 
 export const RATE_LIMITS = {
   create: { limit: 20, windowMs: 60 * 60 * 1000 },
@@ -24,6 +30,7 @@ export const RATE_LIMITS = {
 export type RateKind = keyof typeof RATE_LIMITS;
 
 export type RoomStatus = "waiting" | "playing" | "finished";
+export interface RoomMove { version: number; seat: number; move: unknown; skipped?: number }
 export interface RoomRecord {
   code: string;
   game: string;
@@ -32,12 +39,15 @@ export interface RoomRecord {
   turn: number | null;
   // sha256 hex of each seat's token; "" while the seat is empty.
   seatTokens: string[];
-  lastMove: { seat: number; move: unknown } | null;
+  // Last time each seat polled or moved; epoch 0 for empty seats.
+  seatSeenAt: Date[];
+  moves: RoomMove[];
   status: RoomStatus;
   moveCount: number;
+  createdAt: Date;
   expiresAt: Date;
 }
-export type RoomUpdate = Pick<RoomRecord, "state" | "version" | "turn" | "seatTokens" | "lastMove" | "status" | "moveCount">;
+export type RoomUpdate = Pick<RoomRecord, "state" | "version" | "turn" | "seatTokens" | "seatSeenAt" | "moves" | "status" | "moveCount" | "expiresAt">;
 
 export interface RoomStore {
   // Atomically count one hit for key in the current window; returns the count including this hit.
@@ -49,6 +59,8 @@ export interface RoomStore {
   findRoom(code: string, now: Date): Promise<RoomRecord | null>;
   // Compare-and-swap on version; returns false when another write won.
   updateRoom(code: string, expectedVersion: number, update: RoomUpdate, now: Date): Promise<boolean>;
+  // Presence only: sets one seat's last-seen time without changing the version.
+  touchSeat(code: string, seat: number, now: Date): Promise<void>;
   cleanup(now: Date): Promise<void>;
 }
 type Env = Record<string, string | undefined>;
@@ -81,19 +93,16 @@ function newToken() {
 export function jsonBytes(value: unknown) {
   return Buffer.byteLength(JSON.stringify(value), "utf8");
 }
+// Postgres jsonb rejects NUL and unpaired surrogates; catch them as a 400 instead of a 500.
+export function jsonStorable(value: unknown): boolean {
+  if (typeof value === "string") return !value.includes("\0") && value.isWellFormed();
+  if (Array.isArray(value)) return value.every(jsonStorable);
+  if (typeof value === "object" && value !== null) {
+    return Object.entries(value).every(([key, item]) => jsonStorable(key) && jsonStorable(item));
+  }
+  return true;
+}
 
-export function roomOriginAllowed(origin: string, env: Env) {
-  const extra = (env.ROOMS_ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean);
-  if (ROOM_ORIGINS.includes(origin) || extra.includes(origin)) return true;
-  if (env.NODE_ENV !== "production") return /^http:\/\/(localhost|127\.0\.0\.1)(:\d{1,5})?$/.test(origin);
-  return false;
-}
-export function corsHeaders(request: Request, env: Env): Record<string, string> {
-  const origin = request.headers.get("origin");
-  const headers: Record<string, string> = { Vary: "Origin", "Cache-Control": "no-store" };
-  if (origin && roomOriginAllowed(origin, env)) headers["Access-Control-Allow-Origin"] = origin;
-  return headers;
-}
 export function roomsPreflight(request: Request, env: Env) {
   const origin = request.headers.get("origin");
   if (!origin || !roomOriginAllowed(origin, env)) return new Response(null, { status: 403, headers: { Vary: "Origin" } });
@@ -108,15 +117,26 @@ export function roomsPreflight(request: Request, env: Env) {
   });
 }
 
+// IPv6 hosts usually control a whole /64, so limits apply per /64.
+export function clientNetwork(ip: string): string {
+  if (!ip.includes(":")) return ip;
+  const mapped = ip.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i);
+  if (mapped) return mapped[1];
+  const [head, tail = ""] = ip.toLowerCase().split("::");
+  const left = head ? head.split(":") : [];
+  const right = tail ? tail.split(":") : [];
+  const groups = ip.includes("::") ? [...left, ...Array(Math.max(0, 8 - left.length - right.length)).fill("0"), ...right] : left;
+  return `${groups.slice(0, 4).map(g => g.replace(/^0+(?=.)/, "")).join(":")}::/64`;
+}
 export function roomIpKey(request: Request, env: Env): string | null {
   const secret = env.ROOM_IP_SALT || env.NEXTAUTH_SECRET || env.AUTH_SECRET || (env.NODE_ENV !== "production" ? "dev-only-room-salt" : "");
   if (!secret) return null;
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
-  return createHmac("sha256", secret).update(`room-ip\0${ip}`).digest("hex").slice(0, 32);
+  return createHmac("sha256", secret).update(`room-ip\0${clientNetwork(ip)}`).digest("hex").slice(0, 32);
 }
 
 type ErrorCode =
-  | "invalid_request" | "state_too_large" | "room_not_found" | "room_full" | "unauthorized"
+  | "invalid_request" | "state_too_large" | "room_not_found" | "room_full"
   | "version_conflict" | "not_your_turn" | "room_finished" | "room_not_ready" | "rate_limited"
   | "origin_not_allowed" | "unavailable";
 class RoomError extends Error {
@@ -132,6 +152,8 @@ class RoomError extends Error {
     this.retryAfter = retryAfter;
   }
 }
+// A wrong or missing seat token looks exactly like a missing room, so poll and move cannot reveal which codes exist.
+const notFound = () => new RoomError(404, "room_not_found", "Room not found or expired");
 
 async function readBody(request: Request): Promise<Record<string, unknown>> {
   const length = request.headers.get("content-length");
@@ -166,20 +188,32 @@ function isSeat(value: unknown, seats: number): value is number {
 function checkState(state: unknown) {
   if (typeof state !== "object" || state === null) throw new RoomError(400, "invalid_request", "state must be a JSON object or array");
   if (jsonBytes(state) > MAX_STATE_BYTES) throw new RoomError(413, "state_too_large", `state must be at most ${MAX_STATE_BYTES} bytes`);
+  if (!jsonStorable(state)) throw new RoomError(400, "invalid_request", "state contains NUL or invalid Unicode");
 }
 
-export function publicRoom(room: RoomRecord) {
+function idleMs(room: RoomRecord, seat: number, now: Date) {
+  return now.getTime() - room.seatSeenAt[seat].getTime();
+}
+export function publicRoom(room: RoomRecord, now: Date) {
   return {
     code: room.code,
     game: room.game,
     version: room.version,
     state: room.state,
     turn: room.turn,
-    seats: room.seatTokens.map((token, seat) => ({ seat, joined: token !== "" })),
-    lastMove: room.lastMove,
+    seats: publicSeats(room, now),
+    moves: room.moves,
+    lastMove: room.moves.at(-1) ?? null,
     status: room.status,
     expiresAt: room.expiresAt.toISOString(),
   };
+}
+function publicSeats(room: RoomRecord, now: Date) {
+  return room.seatTokens.map((token, seat) => {
+    const joined = token !== "";
+    const idle = joined ? Math.max(0, Math.floor(idleMs(room, seat, now) / 1000)) : null;
+    return { seat, joined, online: joined && idleMs(room, seat, now) < ONLINE_WINDOW_MS, idleSeconds: idle };
+  });
 }
 
 async function rateLimit(kind: RateKind, request: Request, deps: RoomDeps, now: Date) {
@@ -190,22 +224,27 @@ async function rateLimit(kind: RateKind, request: Request, deps: RoomDeps, now: 
   if (count > limit) throw new RoomError(429, "rate_limited", "Too many requests. Please try again later.", {}, Math.ceil(windowMs / 1000));
 }
 
-function seatForToken(room: RoomRecord, request: Request): number {
+function bearer(request: Request) {
   const header = request.headers.get("authorization") || "";
-  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
-  if (!token) throw new RoomError(401, "unauthorized", "Missing seat token");
-  const seat = room.seatTokens.indexOf(hashToken(token));
-  if (seat < 0) throw new RoomError(401, "unauthorized", "Seat token does not match this room");
-  return seat;
+  return header.startsWith("Bearer ") ? header.slice(7).trim() : "";
 }
-
-async function loadRoom(rawCode: string, deps: RoomDeps, now: Date) {
+// Loads the room and the caller's seat; any mismatch is reported as a missing room.
+async function loadSeat(rawCode: string, request: Request, deps: RoomDeps, now: Date) {
+  const token = bearer(request);
   const code = normalizeRoomCode(rawCode);
-  const room = code ? await deps.store.findRoom(code, now) : null;
-  if (!room) throw new RoomError(404, "room_not_found", "Room not found or expired");
-  return room;
+  if (!token || !code) throw notFound();
+  const room = await deps.store.findRoom(code, now);
+  const seat = room ? room.seatTokens.indexOf(hashToken(token)) : -1;
+  if (!room || seat < 0) throw notFound();
+  return { room, seat };
 }
 
+function isMissingTable(error: unknown) {
+  if (typeof error !== "object" || error === null || !("code" in error)) return false;
+  if (error.code === "P2021") return true;
+  // Raw queries report a missing table as P2010 carrying the Postgres code 42P01.
+  return error.code === "P2010" && "meta" in error && JSON.stringify(error.meta ?? "").includes("42P01");
+}
 async function respond(request: Request, deps: RoomDeps, run: () => Promise<{ status: number; body: unknown }>) {
   const headers = corsHeaders(request, deps.env);
   const origin = request.headers.get("origin");
@@ -220,10 +259,11 @@ async function respond(request: Request, deps: RoomDeps, run: () => Promise<{ st
       const extra: Record<string, string> = error.retryAfter ? { "Retry-After": String(error.retryAfter) } : {};
       return Response.json({ error: error.code, message: error.message, ...error.extra }, { status: error.status, headers: { ...headers, ...extra } });
     }
-    if (typeof error === "object" && error !== null && "code" in error && error.code === "P2021") {
+    if (isMissingTable(error)) {
       return Response.json({ error: "unavailable", message: "Rooms are not available yet" }, { status: 503, headers });
     }
-    console.error("Room request failed");
+    const name = typeof error === "object" && error !== null ? ("code" in error ? String(error.code) : (error as Error).name) : typeof error;
+    console.error(`Room request failed: ${name}`);
     return Response.json({ error: "unavailable", message: "Room request failed" }, { status: 500, headers });
   }
 }
@@ -233,6 +273,7 @@ async function respond(request: Request, deps: RoomDeps, run: () => Promise<{ st
 // ---------------------------------------------------------------------------
 
 const gamePattern = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;
+const EPOCH = new Date(0);
 
 export function createRoom(request: Request, deps: RoomDeps) {
   return respond(request, deps, async () => {
@@ -259,9 +300,10 @@ export function createRoom(request: Request, deps: RoomDeps) {
       const room: RoomRecord = {
         code: generateRoomCode(), game, state, version: 1, turn: turn as number | null,
         seatTokens: Array.from({ length: seatCount }, (_, i) => i === 0 ? hashToken(token) : ""),
-        lastMove: null, status: "waiting", moveCount: 0, expiresAt: new Date(now.getTime() + ROOM_TTL_MS),
+        seatSeenAt: Array.from({ length: seatCount }, (_, i) => i === 0 ? now : EPOCH),
+        moves: [], status: "waiting", moveCount: 0, createdAt: now, expiresAt: new Date(now.getTime() + WAITING_TTL_MS),
       };
-      if (await deps.store.createRoom(room)) return { status: 201, body: { code: room.code, seat: 0, token, room: publicRoom(room) } };
+      if (await deps.store.createRoom(room)) return { status: 201, body: { code: room.code, seat: 0, token, room: publicRoom(room, now) } };
     }
     throw new RoomError(503, "unavailable", "Could not allocate a room code");
   });
@@ -271,19 +313,27 @@ export function joinRoom(request: Request, rawCode: string, deps: RoomDeps) {
   return respond(request, deps, async () => {
     const now = deps.now?.() ?? new Date();
     await rateLimit("join", request, deps, now);
+    await deps.store.cleanup(now);
+    const code = normalizeRoomCode(rawCode);
+    if (!code) throw notFound();
     for (let attempt = 0; attempt < 3; attempt++) {
-      const room = await loadRoom(rawCode, deps, now);
+      const room = await deps.store.findRoom(code, now);
+      if (!room) throw notFound();
       if (room.status === "finished") throw new RoomError(409, "room_finished", "This game has ended");
       const seat = room.seatTokens.indexOf("");
       if (seat < 0) throw new RoomError(409, "room_full", "All seats are taken");
       const token = newToken();
       const seatTokens = room.seatTokens.map((value, i) => i === seat ? hashToken(token) : value);
+      const full = !seatTokens.includes("");
       const update: RoomUpdate = {
-        state: room.state, turn: room.turn, lastMove: room.lastMove, moveCount: room.moveCount,
-        seatTokens, version: room.version + 1, status: seatTokens.includes("") ? "waiting" : "playing",
+        state: room.state, turn: room.turn, moves: room.moves, moveCount: room.moveCount,
+        seatTokens, seatSeenAt: room.seatSeenAt.map((value, i) => i === seat ? now : value),
+        version: room.version + 1, status: full ? "playing" : "waiting",
+        // A full room gets the full 24 hours from creation.
+        expiresAt: full ? new Date(room.createdAt.getTime() + ROOM_TTL_MS) : room.expiresAt,
       };
       if (await deps.store.updateRoom(room.code, room.version, update, now)) {
-        return { status: 200, body: { seat, token, room: publicRoom({ ...room, ...update }) } };
+        return { status: 200, body: { seat, token, room: publicRoom({ ...room, ...update }, now) } };
       }
     }
     throw new RoomError(409, "version_conflict", "Room is busy, please retry");
@@ -293,10 +343,16 @@ export function joinRoom(request: Request, rawCode: string, deps: RoomDeps) {
 export function pollRoom(request: Request, rawCode: string, deps: RoomDeps) {
   return respond(request, deps, async () => {
     const now = deps.now?.() ?? new Date();
-    const room = await loadRoom(rawCode, deps, now);
+    const { room, seat } = await loadSeat(rawCode, request, deps, now);
+    if (idleMs(room, seat, now) >= TOUCH_INTERVAL_MS) {
+      await deps.store.touchSeat(room.code, seat, now);
+      room.seatSeenAt[seat] = now;
+    }
     const since = Number(new URL(request.url).searchParams.get("since"));
-    if (Number.isInteger(since) && since >= room.version) return { status: 200, body: { changed: false, version: room.version } };
-    return { status: 200, body: { changed: true, room: publicRoom(room) } };
+    if (Number.isInteger(since) && since >= room.version) {
+      return { status: 200, body: { changed: false, version: room.version, seats: publicSeats(room, now) } };
+    }
+    return { status: 200, body: { changed: true, seat, room: publicRoom(room, now) } };
   });
 }
 
@@ -304,33 +360,46 @@ export function sendMove(request: Request, rawCode: string, deps: RoomDeps) {
   return respond(request, deps, async () => {
     const now = deps.now?.() ?? new Date();
     await rateLimit("move", request, deps, now);
-    const room = await loadRoom(rawCode, deps, now);
-    const seat = seatForToken(room, request);
+    const { room, seat } = await loadSeat(rawCode, request, deps, now);
     const body = await readBody(request);
     if (!Number.isInteger(body.version)) throw new RoomError(400, "invalid_request", "version is required");
     const move = body.move === undefined ? null : body.move;
     if (jsonBytes(move) > MAX_MOVE_BYTES) throw new RoomError(413, "state_too_large", `move must be at most ${MAX_MOVE_BYTES} bytes`);
+    if (!jsonStorable(move)) throw new RoomError(400, "invalid_request", "move contains NUL or invalid Unicode");
     const seats = room.seatTokens.length;
     if (body.nextTurn !== undefined && body.nextTurn !== null && !isSeat(body.nextTurn, seats)) throw new RoomError(400, "invalid_request", "nextTurn must be a seat index or null");
     if (body.end !== undefined && typeof body.end !== "boolean") throw new RoomError(400, "invalid_request", "end must be a boolean");
+    if (body.skip !== undefined && typeof body.skip !== "boolean") throw new RoomError(400, "invalid_request", "skip must be a boolean");
     const state = body.state === undefined ? room.state : body.state;
     checkState(state);
 
     if (room.status === "finished") throw new RoomError(409, "room_finished", "This game has ended");
     if (room.status !== "playing") throw new RoomError(409, "room_not_ready", "Waiting for players to join");
-    if (body.version !== room.version) throw new RoomError(409, "version_conflict", "Room changed; refresh and retry", { room: publicRoom(room) });
-    if (room.turn !== null && room.turn !== seat) throw new RoomError(409, "not_your_turn", "It is not your turn", { room: publicRoom(room) });
+    if (body.version !== room.version) throw new RoomError(409, "version_conflict", "Room changed; refresh and retry", { room: publicRoom(room, now) });
     if (room.moveCount >= MAX_MOVES_PER_ROOM) throw new RoomError(409, "room_finished", "Move limit reached for this room");
 
+    let skipped: number | undefined;
+    if (body.skip === true) {
+      // Any other seated player may pass the turn of a player who has gone quiet.
+      if (room.turn === null || room.turn === seat) throw new RoomError(400, "invalid_request", "skip is only for another player's turn");
+      if (idleMs(room, room.turn, now) < SKIP_AFTER_MS) throw new RoomError(409, "not_your_turn", "That player is still connected", { room: publicRoom(room, now) });
+      skipped = room.turn;
+    } else if (room.turn !== null && room.turn !== seat) {
+      throw new RoomError(409, "not_your_turn", "It is not your turn", { room: publicRoom(room, now) });
+    }
+    const defaultTurn = skipped === undefined ? room.turn : (skipped + 1) % seats;
+    const version = room.version + 1;
+    const entry: RoomMove = skipped === undefined ? { version, seat, move } : { version, seat, move, skipped };
     const update: RoomUpdate = {
-      state, seatTokens: room.seatTokens, version: room.version + 1,
-      turn: body.nextTurn === undefined ? room.turn : body.nextTurn as number | null,
-      lastMove: { seat, move }, status: body.end === true ? "finished" : "playing", moveCount: room.moveCount + 1,
+      state, seatTokens: room.seatTokens, seatSeenAt: room.seatSeenAt.map((value, i) => i === seat ? now : value), version,
+      turn: body.nextTurn === undefined ? defaultTurn : body.nextTurn as number | null,
+      moves: [...room.moves, entry].slice(-RECENT_MOVES), status: body.end === true ? "finished" : "playing",
+      moveCount: room.moveCount + 1, expiresAt: room.expiresAt,
     };
     if (!await deps.store.updateRoom(room.code, room.version, update, now)) {
       const latest = await deps.store.findRoom(room.code, now);
-      throw new RoomError(409, "version_conflict", "Room changed; refresh and retry", latest ? { room: publicRoom(latest) } : {});
+      throw new RoomError(409, "version_conflict", "Room changed; refresh and retry", latest ? { room: publicRoom(latest, now) } : {});
     }
-    return { status: 200, body: { room: publicRoom({ ...room, ...update }) } };
+    return { status: 200, body: { room: publicRoom({ ...room, ...update }, now) } };
   });
 }

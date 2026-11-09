@@ -703,7 +703,8 @@ model GameRoom {
   version    Int
   turn       Int?
   seatTokens String[]
-  lastMove   Json?
+  seatSeenAt DateTime[]
+  moves      Json
   status     String
   moveCount  Int      @default(0)
   createdAt  DateTime @default(now())

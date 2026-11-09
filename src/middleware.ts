@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "@/i18n/routing";
+import { corsHeaders, roomRateBucket } from "@/lib/rooms-cors";
 
 // ---------------------------------------------------------------------------
 // next-intl middleware for locale detection + redirect
@@ -83,9 +84,10 @@ const rules: RateLimitRule[] = [
     windowMs: 60_000,
   },
   {
-    // Room polling runs about once a second per device, and two devices often share one home IP.
-    match: (p, m) => m === "GET" && /^\/api\/rooms\/[^/]+$/.test(p),
-    limit: 300,
+    // Room polling runs about once a second per device, and up to four devices can share one home IP.
+    // Room keys are per IP and action (see roomRateBucket), not per room code.
+    match: (p, m) => m === "GET" && p.startsWith("/api/rooms/"),
+    limit: 600,
     windowMs: 60_000,
   },
   {
@@ -117,7 +119,7 @@ function handleRateLimit(request: NextRequest): NextResponse | null {
     request.headers.get("x-real-ip") ??
     "unknown";
 
-  const key = `${ip}:${pathname}`;
+  const key = `${ip}:${roomRateBucket(pathname, method) ?? pathname}`;
   const now = Date.now();
   const entry = rateLimitMap.get(key);
 
@@ -133,6 +135,8 @@ function handleRateLimit(request: NextRequest): NextResponse | null {
       {
         status: 429,
         headers: {
+          // Browser games on other origins must be able to read this 429 to back off.
+          ...(pathname.startsWith("/api/rooms") ? corsHeaders(request, process.env) : {}),
           "Retry-After": String(retryAfterSeconds),
         },
       }

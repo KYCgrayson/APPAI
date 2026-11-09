@@ -1,16 +1,17 @@
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import type { RoomDeps, RoomRecord, RoomStatus } from "@/lib/rooms";
+import { RATE_LIMITS, type RoomDeps, type RoomMove, type RoomRecord, type RoomStatus } from "@/lib/rooms";
 
 type Row = Prisma.GameRoomGetPayload<object>;
 function toRecord(row: Row): RoomRecord {
   return {
     code: row.code, game: row.game, state: row.state, version: row.version, turn: row.turn,
-    seatTokens: row.seatTokens, lastMove: row.lastMove as RoomRecord["lastMove"],
-    status: row.status as RoomStatus, moveCount: row.moveCount, expiresAt: row.expiresAt,
+    seatTokens: row.seatTokens, seatSeenAt: row.seatSeenAt, moves: row.moves as unknown as RoomMove[],
+    status: row.status as RoomStatus, moveCount: row.moveCount, createdAt: row.createdAt, expiresAt: row.expiresAt,
   };
 }
-const json = (value: unknown) => (value === null ? Prisma.JsonNull : value) as Prisma.InputJsonValue;
+const json = (value: unknown) => value as Prisma.InputJsonValue;
+const longestWindowMs = Math.max(...Object.values(RATE_LIMITS).map(rule => rule.windowMs));
 
 export const roomDeps: RoomDeps = {
   env: process.env,
@@ -29,9 +30,7 @@ export const roomDeps: RoomDeps = {
     activeRoomCount: now => db.gameRoom.count({ where: { expiresAt: { gt: now } } }),
     async createRoom(room) {
       try {
-        await db.gameRoom.create({
-          data: { ...room, state: json(room.state), lastMove: json(room.lastMove) },
-        });
+        await db.gameRoom.create({ data: { ...room, state: json(room.state), moves: json(room.moves) } });
         return true;
       } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return false;
@@ -45,14 +44,18 @@ export const roomDeps: RoomDeps = {
     async updateRoom(code, expectedVersion, update, now) {
       const result = await db.gameRoom.updateMany({
         where: { code, version: expectedVersion, expiresAt: { gt: now } },
-        data: { ...update, state: json(update.state), lastMove: json(update.lastMove) },
+        data: { ...update, state: json(update.state), moves: json(update.moves) },
       });
       return result.count === 1;
     },
+    async touchSeat(code, seat, now) {
+      // Postgres arrays are 1-based. Presence does not bump the version.
+      await db.$executeRaw`UPDATE "GameRoom" SET "seatSeenAt"[${seat + 1}::int] = ${now} WHERE "code" = ${code}`;
+    },
     async cleanup(now) {
-      const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const staleRates = new Date(now.getTime() - longestWindowMs);
       await db.$executeRaw`DELETE FROM "GameRoom" WHERE "code" IN (SELECT "code" FROM "GameRoom" WHERE "expiresAt" <= ${now} LIMIT 200)`;
-      await db.$executeRaw`DELETE FROM "GameRoomRateLimit" WHERE "key" IN (SELECT "key" FROM "GameRoomRateLimit" WHERE "windowStart" <= ${dayAgo} LIMIT 500)`;
+      await db.$executeRaw`DELETE FROM "GameRoomRateLimit" WHERE "key" IN (SELECT "key" FROM "GameRoomRateLimit" WHERE "windowStart" <= ${staleRates} LIMIT 1000)`;
     },
   },
 };
