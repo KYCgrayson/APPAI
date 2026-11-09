@@ -56,7 +56,7 @@ export const GAMES: GameEntry[] = [
     cover: "/games/covers/guess-duel.svg",
     localeParam: { name: "locale", zh: "zh-TW", en: "en" },
     accent: "#f59e0b",
-    status: "soon",
+    status: "beta",
   },
   {
     slug: "werewolf",
