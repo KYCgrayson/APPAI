@@ -1,8 +1,8 @@
-import { BoxGeometry, CircleGeometry, ConeGeometry, CylinderGeometry, DirectionalLight, Fog, DoubleSide, DynamicDrawUsage, Group, HemisphereLight, InstancedMesh, MathUtils, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, PlaneGeometry, Raycaster, RingGeometry, SRGBColorSpace, Scene, Vector2, Vector3, WebGLRenderer } from 'three';
+import { ACESFilmicToneMapping, PCFSoftShadowMap, BufferGeometry, Float32BufferAttribute, SphereGeometry, PointLight, BoxGeometry, CircleGeometry, ConeGeometry, CylinderGeometry, DirectionalLight, Fog, DoubleSide, DynamicDrawUsage, Group, HemisphereLight, InstancedMesh, MathUtils, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, PlaneGeometry, Raycaster, RingGeometry, SRGBColorSpace, Scene, Spherical, Vector2, Vector3, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { levels, type State } from '../logic/index.ts';
-import { character, part, material } from './models.ts';
-import { ACTOR_SCALE, HIT_WIDTH, bankSlot, boatSeats } from './layout.ts';
+import { character, part, material, bake } from './models.ts';
+import { ACTOR_SCALE, HIT_WIDTH, bankSlot, boatSeats, TREE_Z, BUSH_X, BUSH_Z, SIGN_X, ROCK_Z } from './layout.ts';
 export interface Metrics {
     firstFrameMs: number;
     fps: number;
@@ -36,8 +36,28 @@ export class Diorama {
     private down = { x: 0, y: 0 };
     private dragged = false;
     private activePointer = -1;
+    private pointers = new Set<number>();
     private oars: Group[] = [];
     private clouds: Group[] = [];
+    private flyers: Group[] = [];
+    private fireflies?: InstancedMesh;
+    private wake = new Group();
+    private qualityChecked = false;
+    private qualityStart = 0;
+    private sun!: DirectionalLight;
+    private blobMatrix = new Matrix4();
+    private flyMatrix = new Matrix4();
+    private flyScale = new Vector3();
+    private cloudPoint = new Vector3();
+    private defaultPosition = new Vector3();
+    private defaultTarget = new Vector3(0, .4, 0);
+    private returning = false;
+    private idleOrbit = true;
+    private returnOrbit = new Spherical();
+    private defaultOrbit = new Spherical();
+    private won = false;
+    private emptyTap = { time: 0, x: 0, y: 0 };
+    private qualityFrames = 0;
     private markers = new Map<string, Group>();
     menu = true;
     private viewport = '';
@@ -53,42 +73,102 @@ export class Diorama {
         this.scene.fog = new Fog(dark ? '#44465e' : '#cbded9', 32, 65);
         for (let i = 0; i < 4; i++) {
             const cloud = new Group();
-            for (let j = 0; j < 3; j++) part(cloud, 'sphere', dark ? '#858899' : '#ffffff', [(j - 1) * .65, j === 1 ? .2 : 0, 0], [.85, .4, .5]);
-            cloud.position.set(i * 4 - 6, 4 + i % 2, -5 - i % 2);
+            for (let j = 0; j < 3; j++) part(cloud, 'sphere', '#ffffff', [(j - 1) * .65, j === 1 ? .2 : 0, 0], [.85, .4, .5]);
+            cloud.scale.setScalar(.55);
+            cloud.position.set(Math.sin(i * Math.PI / 2) * 22, 12 + i % 2, Math.cos(i * Math.PI / 2) * 22);
+            bake(cloud);
+            cloud.traverse(o => {
+                o.castShadow = false;
+                o.receiveShadow = false;
+                o.raycast = () => {};
+                if (o instanceof Mesh) {
+                    o.material.dispose();
+                    o.material = new MeshBasicMaterial({ color: dark ? '#a5abc5' : '#ffffff', transparent: true, opacity: dark ? .12 : .55, depthWrite: false });
+                }
+            });
             this.clouds.push(cloud); this.scene.add(cloud);
         }
         this.renderer.outputColorSpace = SRGBColorSpace;
+        this.renderer.toneMapping = ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = dark ? .85 : 1.1;
+        this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = PCFSoftShadowMap;
         this.renderer.info.autoReset = true;
-        this.scene.add(new HemisphereLight('#fff3dc', '#687961', 3));
-        const sun = new DirectionalLight('#ffdeb0', 3);
+        this.scene.add(new HemisphereLight(dark ? '#99b5ed' : '#dbeeff', '#687961', dark ? 1.4 : 2));
+        const sun = this.sun = new DirectionalLight(dark ? '#ffbd89' : '#ffdeb0', dark ? 1.8 : 3);
+        sun.castShadow = true; sun.shadow.mapSize.set(512,512);
+        Object.assign(sun.shadow.camera, {left:-6,right:6,top:5,bottom:-5,near:1,far:20}); sun.shadow.bias=-.001; sun.shadow.normalBias=.025;
         sun.position.set(-3, 9, 6);
         this.scene.add(sun);
         const board = new Group();
         this.scene.add(board);
         part(board, 'box', '#bca383', [0, -.47, 0], [10, .5, 8]);
+        // Three rectangular rings make a tiny bevelled bank without a general extrusion engine.
+        const bankGeometry=new BufferGeometry(), bankVertices:number[]=[], bankIndices:number[]=[];
+        for(const [w,d,y] of [[1.51,3.75,.04],[1.59,3.83,-.015],[1.59,3.83,-.10]])
+            for(const [x,z] of [[-w,-d],[w,-d],[w,d],[-w,d]])bankVertices.push(x,y,z);
+        bankIndices.push(0,2,1,0,3,2);
+        for(let r=0;r<2;r++)for(let i=0;i<4;i++){const a=r*4+i,b=r*4+(i+1)%4;bankIndices.push(a,b,b+4,a,b+4,a+4);}
+        bankGeometry.setAttribute('position',new Float32BufferAttribute(bankVertices,3));bankGeometry.setIndex(bankIndices);bankGeometry.computeVertexNormals();
         for (const x of [-3.35, 3.35])
-            part(board, 'box', '#92af73', [x, -.12, 0], [3.3, .4, 7.8]);
+            {
+            part(board, 'box', '#8a7765', [x, -.30, 0], [3.3,.22,7.8]);
+            part(board, 'box', '#b59672', [x, -.16, 0], [3.26,.18,7.76]);
+            const bank=new Mesh(bankGeometry,material('#92af73'));bank.position.set(x,-.04,0);bank.receiveShadow=true;board.add(bank);
+            part(board,'box','#dcc794',[Math.sign(x)*1.79,.035,0],[.23,.075,7.65]);
+        }
         const waterGeo = new PlaneGeometry(3.35, 7.8, 12, 20);
         waterGeo.rotateX(-Math.PI / 2);
-        this.water = new Mesh(waterGeo, new MeshStandardMaterial({ color: '#71b9bd', flatShading: true, metalness: .1, roughness: .4 }));
+        this.water = new Mesh(waterGeo, new MeshStandardMaterial({ color: '#71b9bd', flatShading: true, metalness: .1, roughness: .24 }));
+        (this.water.material as MeshStandardMaterial).onBeforeCompile=shader=>{
+            shader.uniforms.time={value:0};this.water.userData.shader=shader;
+            shader.vertexShader='uniform float time;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n transformed.y += sin(position.x*4.0+time*1.6+position.z*2.0)*0.025;');
+            shader.fragmentShader='uniform float time;\n'+shader.fragmentShader.replace('#include <dithering_fragment>','#include <dithering_fragment>\n gl_FragColor.rgb += pow(max(0.0,sin(gl_FragCoord.x*.17+time)*sin(gl_FragCoord.y*.19-time*.7)),24.0)*0.10;');
+        };
         this.water.position.y = -.06;
         this.scene.add(this.water);
-        // Repeated scenery uses two instanced draw calls.
-        const trunks = new InstancedMesh(new CylinderGeometry(.08, .1, .7, 5), material('#99704f'), 6);
-        const crowns = new InstancedMesh(new ConeGeometry(.5, 1.3, 6), material('#527e62'), 6);
-        const matrix = new Matrix4();
-        for (let i = 0; i < 6; i++) {
-            const x = (i < 3 ? -1 : 1) * (3.1 + (i % 3) * .55), z = -3.35 + (i % 3) * .18;
-            matrix.makeTranslation(x, .38, z);
-            trunks.setMatrixAt(i, matrix);
-            matrix.makeTranslation(x, 1.25, z);
-            crowns.setMatrixAt(i, matrix);
+        // Seeded placement; each repeated geometry/material is one draw call.
+        let seed=7319;
+        const random=()=>{seed=(seed*16807)%2147483647;return (seed-1)/2147483646;};
+        const scatter=(geometry: import('three').BufferGeometry,color:string,count:number,place:(i:number,o:Object3D)=>void)=>{
+            const mesh=new InstancedMesh(geometry,material(color),count),o=new Object3D();
+            for(let i=0;i<count;i++){o.position.set(0,0,0);o.rotation.set(0,0,0);o.scale.set(1,1,1);place(i,o);o.updateMatrix();mesh.setMatrixAt(i,o.matrix);}
+            mesh.receiveShadow=true;this.scene.add(mesh);return mesh;
+        };
+        const edge=(o:Object3D)=>{o.position.set((random()<.5?-1:1)*(2.15+random()*2.65),.12,(random()<.5?-1:1)*(2.7+random()*.95));};
+        scatter(new ConeGeometry(.06,.27,4),'#71985a',100,(_,o)=>{edge(o);o.rotation.z=(random()-.5)*.6;o.scale.y=.6+random();});
+        for(const c of ['#e5b46c','#d89caa','#f5e5b9'])scatter(new SphereGeometry(.045,5,4),c,22,(_,o)=>{edge(o);o.position.y=.23;o.scale.set(1,.7,1);});
+        scatter(new SphereGeometry(1,7,5),'#aaa99a',30,(_,o)=>{edge(o);o.scale.set(.05+random()*.10,.04+random()*.05,.07+random()*.08);});
+        scatter(new CylinderGeometry(.018,.025,.6,5),'#81935c',36,(_,o)=>{o.position.set((iSide(_))*(1.85+random()*.12),.27,(random()<.5?-1:1)*(2.6+random()));});
+        function iSide(i:number){return i%2?1:-1;}
+        scatter(new CylinderGeometry(.045,.045,.15,6),'#795b40',18,(i,o)=>{o.position.set(iSide(i)*1.9,.59,(i%9/9)*1.1+2.5);});
+        const trunks=new Group(), crowns=new Group();
+        for(let i=0;i<6;i++){
+            const x=(i<3?-1:1)*(3.05+i%3*.55),z=TREE_Z,h=.8+random()*.55;
+            part(trunks,'cylinder','#90694f',[x,h*.32,z],[.085,h*.64,.085]);
+            part(crowns,i%2?'cone':'sphere',i%3?'#54866b':'#75955e',[x,h+.25,z],i%2?[.25,h,.25]:[.25,h*.52,.25]);
+        }bake(trunks);bake(crowns);this.scene.add(trunks,crowns);
+        scatter(new SphereGeometry(1,8,6),'#6c925e',8,(i,o)=>{o.position.set(iSide(i)*(BUSH_X+random()*.06),.22,BUSH_Z+random()*.12);o.scale.set(.12+random()*.04,.20,.14);});
+        const details=new Group();
+        for(const side of [-1,1]){
+            for(let i=0;i<7;i++)part(details,'box',i%2?'#bc946a':'#c9a378',[side*1.94,.13,-.65+i*.21],[.68,.10,.18]);
+            for(const z of [-.7,.7])part(details,'cylinder','#806149',[side*2.12,.05,z],[.055,.65,.055]);
+            part(details,'cylinder','#826344',[side*SIGN_X,.65,2.75],[.055,1.3,.055]);
+            part(details,'box','#caaa74',[side*SIGN_X,1.17,2.75],[.46,.27,.09]);
+            part(details,'sphere',dark?'#ffc878':'#e5c89b',[side*SIGN_X,.94,2.85],[.10,.13,.10]);
+            if(dark){const light=new PointLight('#ffbf71',1.4,2.4);light.position.set(side*SIGN_X,1,2.8);this.scene.add(light);}
         }
-        this.scene.add(trunks, crowns);
+        bake(details);this.scene.add(details);
+        for(const side of [-1,1])scatter(new SphereGeometry(1,6,4),'#c8e6d8',40,(i,o)=>{o.position.set(side*1.66,.005,-3.8+i*.195);o.scale.set(.055,.012,.11);});
+        for(let i=0;i<2;i++){
+            const bird=new Group();for(const side of [-1,1]){const wing=part(bird,'sphere','#e9ce94',[side*.1,0,0],[.13,.018,.065]);wing.rotation.z=side*.3;}
+            bake(bird);bird.traverse(o => { o.castShadow = false; o.receiveShadow = false; o.raycast = () => {}; });this.flyers.push(bird);this.scene.add(bird);
+        }
+        if(dark){this.fireflies=new InstancedMesh(new SphereGeometry(.025,5,4),new MeshBasicMaterial({color:'#ffe6a0'}),18);this.scene.add(this.fireflies);}
+        for(let i=0;i<3;i++){const r=new Mesh(new RingGeometry(.2+i*.15,.22+i*.15,20),new MeshBasicMaterial({color:'#d6efdf',transparent:true,opacity:.25,side:DoubleSide,depthWrite:false}));r.rotation.x=-Math.PI/2;r.scale.y=2;this.wake.add(r);}this.scene.add(this.wake);
         this.blobs.instanceMatrix.setUsage(DynamicDrawUsage);
         this.scene.add(this.blobs);
         for (const x of [-4.5, 4.5])
-            part(board, 'sphere', '#a5a89b', [x, .14, 1.9], [.35, .23, .3]);
+            part(board, 'sphere', '#a5a89b', [x, .14, ROCK_Z], [.35, .23, .3]);
         part(this.boat, 'box', '#895b3e', [0, .08, 0], [1.35, .19, 4.7]);
         for (const x of [-.73, .73]) part(this.boat, 'box', '#c38d5a', [x, .27, 0], [.13, .35, 4.9]);
         for (const z of [-2.4, 2.4]) part(this.boat, 'box', '#ad774b', [0, .24, z], [1.45, .29, .12]);
@@ -97,29 +177,40 @@ export class Diorama {
             const oar = new Group(); oar.position.set(side * .8, .45, 0);
             part(oar, 'box', '#e0bb83', [side * .48, 0, 0], [1.3, .07, .09]);
             part(oar, 'box', '#d4ab75', [side * 1.12, 0, 0], [.5, .09, .28]);
-            this.oars.push(oar); this.boat.add(oar);
+            bake(oar); this.oars.push(oar); this.boat.add(oar);
         }
+        for(let i=0;i<7;i++)part(this.boat,'box',i%2?'#a7774d':'#bb8a59',[-.55+i*.18,.19,0],[.16,.045,4.65]);
+        for(const z of [-1.9,-.9,.9,1.9])for(const side of [-1,1])part(this.boat,'box','#755039',[side*.64,.3,z],[.08,.32,.09]);
+        part(this.boat,'cylinder','#76543b',[.55,.8,-2.15],[.025,1,.025]);
+        part(this.boat,'box','#cb7860',[.72,1.15,-2.15],[.34,.20,.025]);
+        bake(this.boat);
         this.boat.userData.id = 'boat';
         this.scene.add(this.boat);
         this.hit.push(this.boat);
         this.controls = new OrbitControls(this.camera, canvas);
         this.controls.enableDamping = true;
         this.controls.enablePan = false;
-        this.controls.minPolarAngle = .48;
-        this.controls.maxPolarAngle = 1.05;
-        this.controls.minAzimuthAngle = -.35;
-        this.controls.maxAzimuthAngle = .35;
+        this.controls.minPolarAngle = .15;
+        this.controls.maxPolarAngle = 1.30;
+        this.controls.minAzimuthAngle = -Infinity;
+        this.controls.maxAzimuthAngle = Infinity;
+        this.controls.enableZoom = true;
+        this.controls.addEventListener('start', () => { this.returning = false; });
         this.controls.minDistance = 10;
         this.controls.maxDistance = 25;
         this.controls.target.set(0, 0, 0);
-        canvas.addEventListener('pointerdown', e => { this.down = { x: e.clientX, y: e.clientY }; this.dragged = false; this.activePointer = e.pointerId; });
+        canvas.addEventListener('pointerdown', e => { this.pointers.add(e.pointerId); if (this.pointers.size > 1) { this.dragged = true; this.emptyTap.time = 0; return; } this.down = { x: e.clientX, y: e.clientY }; this.dragged = false; this.activePointer = e.pointerId; });
         canvas.addEventListener('pointerup', e => { if (e.pointerId === this.activePointer && !this.dragged && Math.hypot(e.clientX - this.down.x, e.clientY - this.down.y) <= 8) {
             const id = this.intersect(e);
-            if (id)
-                this.pick(id);
-        } });
-        canvas.addEventListener('pointercancel', () => { this.activePointer = -1; this.dragged = true; });
-        canvas.addEventListener('pointermove', e => { if (e.pointerId === this.activePointer && Math.hypot(e.clientX - this.down.x, e.clientY - this.down.y) > 8) this.dragged = true; this.hover = this.intersect(e); canvas.style.cursor = this.hover ? 'pointer' : 'grab'; });
+            if (id) { this.emptyTap.time = 0; this.pick(id); }
+            else {
+                const now = performance.now();
+                if (this.emptyTap.time > 0 && now - this.emptyTap.time < 350 && Math.hypot(e.clientX - this.emptyTap.x, e.clientY - this.emptyTap.y) < 24) { this.resetView(true); this.emptyTap.time = 0; }
+                else this.emptyTap = { time: now, x: e.clientX, y: e.clientY };
+            }
+        } this.pointers.delete(e.pointerId); if (!this.pointers.size) this.activePointer = -1; });
+        canvas.addEventListener('pointercancel', e => { this.pointers.delete(e.pointerId); this.activePointer = -1; this.dragged = true; this.emptyTap.time = 0; });
+        canvas.addEventListener('pointermove', e => { if (e.pointerId === this.activePointer && Math.hypot(e.clientX - this.down.x, e.clientY - this.down.y) > 8) { this.dragged = true; this.emptyTap.time = 0; } this.hover = this.intersect(e); canvas.style.cursor = this.hover ? 'pointer' : 'grab'; });
         window.addEventListener('resize', () => this.resize());
         window.addEventListener('orientationchange', () => requestAnimationFrame(() => this.resize()));
         document.addEventListener('visibilitychange', () => { if (document.hidden)
@@ -128,6 +219,7 @@ export class Diorama {
             this.last = performance.now();
             this.epoch = this.last;
             this.frames = 0;
+            this.qualityStart = 0; this.qualityFrames = 0;
             this.loop();
         } });
         this.resize();
@@ -151,11 +243,37 @@ export class Diorama {
         return (pieces.length ? pieces : [...candidates]).sort((a, b) => a[1] - b[1])[0]?.[0] ?? '';
     }
     snapshot(): HTMLCanvasElement {
-        this.renderer.render(this.scene, this.camera);
-        const copy = document.createElement('canvas');
-        copy.width = this.renderer.domElement.width; copy.height = this.renderer.domElement.height;
-        copy.getContext('2d')!.drawImage(this.renderer.domElement, 0, 0);
-        return copy;
+        // Capture only the diorama, regardless of menu state or orbit angle.
+        const atmosphere = [...this.clouds, ...this.flyers];
+        const visibility = atmosphere.map(o => o.visible);
+        try {
+            atmosphere.forEach(o => { o.visible = false; });
+            this.renderer.render(this.scene, this.camera);
+            const copy = document.createElement('canvas');
+            copy.width = this.renderer.domElement.width; copy.height = this.renderer.domElement.height;
+            copy.getContext('2d')!.drawImage(this.renderer.domElement, 0, 0);
+            return copy;
+        } finally {
+            atmosphere.forEach((o, i) => { o.visible = visibility[i]; });
+            this.renderer.render(this.scene, this.camera);
+        }
+    }
+
+    resetView(animate = false) {
+        const position = this.camera.position.clone(), target = this.controls.target.clone();
+        this.controls.autoRotate = false;
+        this.idleOrbit = false;
+        this.returning = false;
+        this.controls.enableDamping = false; this.controls.update();
+        this.controls.enableDamping = true;
+        this.viewport = '';
+        this.resize();
+        this.controls.reset(); // Clear residual damping and zoom momentum.
+        this.camera.zoom = 1;
+        this.camera.position.copy(this.defaultPosition);
+        this.controls.target.copy(this.defaultTarget);
+        this.controls.update();
+        if (animate) { this.camera.position.copy(position); this.controls.target.copy(target); this.returning = true; }
     }
     resize() {
         const top = document.querySelector('.topbar')?.getBoundingClientRect().bottom ?? 0;
@@ -165,8 +283,9 @@ export class Diorama {
         if (viewport === this.viewport) return;
         this.viewport = viewport;
         const canvas = this.renderer.domElement;
-        canvas.style.top = `${top}px`;
-        this.renderer.setSize(w, h);
+        canvas.style.top = '0px';
+        this.renderer.setSize(w, innerHeight);
+        this.camera.setViewOffset(w, h, 0, -top, w, innerHeight);
         this.camera.aspect = w / h;
         const elevation = 43 * Math.PI / 180;
         const vertical = this.camera.fov * Math.PI / 360;
@@ -181,13 +300,15 @@ export class Diorama {
         }
         this.controls.target.set(0, .4, 0);
         this.camera.position.set(0, .4 + distance * Math.sin(elevation), distance * Math.cos(elevation));
-        this.controls.minDistance = distance * .9; this.controls.maxDistance = distance * 1.3;
-        this.camera.updateProjectionMatrix(); this.controls.update();
+        this.controls.minDistance = distance * .6; this.controls.maxDistance = distance * 1.6;
+        this.defaultPosition.copy(this.camera.position);
+        this.defaultOrbit.setFromVector3(this.camera.position.clone().sub(this.defaultTarget));
+        this.camera.updateProjectionMatrix(); this.controls.update(); this.controls.saveState();
     }
     sync(s: State) {
         if (this.state?.level !== s.level) {
             for (const g of this.actors.values()) {
-                g.traverse(o => { if (o instanceof Mesh && o.material instanceof MeshStandardMaterial) o.material.dispose(); });
+                g.traverse(o => { if (o instanceof Mesh && o.material instanceof MeshStandardMaterial) {o.material.dispose();if(o.geometry!==this.hitGeo)o.geometry.dispose();} });
                 this.scene.remove(g);
             }
             this.actors.clear();
@@ -206,6 +327,7 @@ export class Diorama {
                 part(marker, 'sphere', '#ff493e', [0, -.18, 0], [.08, .08, .08]);
                 this.markers.set(p.id, marker); this.scene.add(marker);
                 g.userData.id = p.id;
+                g.userData.phase = Array.from(p.id).reduce((n, c) => n + c.charCodeAt(0), 0) * .73;
                 const hitbox = new Mesh(this.hitGeo, this.hitMat);
                 hitbox.position.y = .55;
                 g.add(hitbox);
@@ -218,7 +340,9 @@ export class Diorama {
                 this.hit.push(hitbox);
             }
         }
+        const previous = this.state;
         this.state = s;
+        this.won = Object.values(s.positions).every(b => b === 1) && !s.failure;
         this.boat.position.x = s.boat === 0 ? -1.08 : 1.08;
         for (const bank of [0, 1]) {
             const pieces = levels[s.level].pieces;
@@ -238,9 +362,10 @@ export class Diorama {
             this.targets.set(id, new Vector3(this.boat.position.x, .38, seats[seat]));
         }
         for (const [id, actor] of this.actors) if (!s.aboard.includes(id)) delete actor.userData.seat;
-        for (const [id, g] of this.actors)
-            if (g.position.lengthSq() === 0)
-                g.position.copy(this.targets.get(id)!);
+        for (const [id, g] of this.actors) {
+            if (g.position.lengthSq() === 0) g.position.copy(this.targets.get(id)!);
+            else if(previous && previous.aboard.includes(id)!==s.aboard.includes(id)) g.userData.hop={start:performance.now(),from:g.position.clone()};
+        }
     }
     sail(to: State, done: () => void) { this.sailing = true; this.sailStart = performance.now(); this.sailFrom = this.boat.position.x; this.sailTo = to.boat === 0 ? -1.08 : 1.08; this.onLand = () => { this.sync(to); done(); }; }
     private loop = () => {
@@ -250,11 +375,14 @@ export class Diorama {
         const now = performance.now(), dt = Math.min((now - this.last) / 1000, .05);
         this.last = now;
         const t = now / 1000;
-        this.controls.autoRotate = this.menu;
+        this.controls.autoRotate = this.menu && this.idleOrbit && !this.returning;
         this.controls.autoRotateSpeed = .35;
-        this.controls.minAzimuthAngle = this.menu ? -Infinity : -.35;
-        this.controls.maxAzimuthAngle = this.menu ? Infinity : .35;
-        for (let i = 0; i < this.clouds.length; i++) this.clouds[i].position.x = Math.sin(t * .035 + i * 1.7) * 7;
+        this.controls.minAzimuthAngle = -Infinity;
+        this.controls.maxAzimuthAngle = Infinity;
+        for (let i = 0; i < this.clouds.length; i++) {
+            const angle = t * .008 + i * Math.PI / 2;
+            this.clouds[i].position.set(Math.sin(angle) * 22, 12 + i % 2, Math.cos(angle) * 22);
+        }
         this.oars.forEach((oar, i) => { oar.rotation.y = this.sailing ? Math.sin(t * 10) * .45 * (i ? 1 : -1) : 0; oar.rotation.z = this.sailing ? Math.cos(t * 10) * .12 : 0; });
         if (this.sailing) {
             const p = Math.min((now - this.sailStart) / 800, 1), ease = p * p * (3 - 2 * p);
@@ -272,16 +400,28 @@ export class Diorama {
             }
         }
         this.boat.position.y = Math.sin(t * 2) * .025;
+        this.wake.visible=this.sailing;this.wake.position.set(this.boat.position.x-(this.sailTo>this.sailFrom?.6:-.6),.025,0);
+        this.wake.scale.setScalar(1+Math.sin(t*9)*.08);
+        this.flyers.forEach((bird,i)=>{bird.position.set(Math.sin(t*.18+i*3)*4,2.4+Math.sin(t*.7+i)*.25,-2+Math.cos(t*.18+i*3));bird.rotation.z=Math.sin(t*8+i)*.25;});
+        if(this.fireflies){const m=this.flyMatrix;for(let i=0;i<18;i++){m.makeTranslation((i%2?1:-1)*(2.1+(i%5)*.48+Math.sin(t*.4+i)*.12),.4+(i%4)*.2+Math.sin(t+i)*.1,-3+(i%7));m.scale(this.flyScale.setScalar(.6+.4*Math.sin(t*2+i)**2));this.fireflies.setMatrixAt(i,m);}this.fireflies.instanceMatrix.needsUpdate=true;}
         let blobIndex = 0;
-        const blobMatrix = new Matrix4();
+        const blobMatrix = this.blobMatrix;
         for (const [id, g] of this.actors) {
             const target = this.targets.get(id);
-            if (target)
-                g.position.lerp(target, 1 - Math.exp(-dt * 13));
+            const hop=g.userData.hop;
+            if (target && hop) {const p=Math.min((now-hop.start)/380,1);g.position.lerpVectors(hop.from,target,p*p*(3-2*p));g.position.y+=Math.sin(p*Math.PI)*.28;if(p===1)delete g.userData.hop;}
+            else if (target) g.position.lerp(target, 1 - Math.exp(-dt * 13));
+            const phase=g.userData.phase;
+            const blink=(t+phase)% (3.7+(phase%2));
+            g.userData.eyes.scale.y=blink<.13?.12:1;
+            g.userData.moving.rotation.z=Math.sin(t*2+phase)*.045;
+            g.userData.moving.rotation.y=Math.sin(t*1.6+phase)*.065;
+            g.userData.tail.rotation.y=Math.sin(t*2.4+phase)*.1;
+            g.rotation.y=Math.sin(t*.6+phase)*.04+(g.position.x<0?.08:-.08);
             const failed = this.state?.failure?.ids.includes(id);
-            g.rotation.z = failed ? Math.sin(t * 12) * .13 : 0;
+            g.rotation.z = failed ? Math.sin(t * 12) * .13 : g.userData.kind==='cabbage'?Math.sin(t*1.7+phase)*.035:0;
             g.position.y += (isFinite(dt) ? Math.sin(t * 3 + id.length) * .0015 : 0);
-            if (this.state && Object.values(this.state.positions).every(b => b === 1) && !this.state.failure)
+            if (this.won)
                 g.position.y = Math.max(g.position.y, (target?.y ?? 0) + Math.abs(Math.sin(t * 5 + id.length)) * .24);
             const ring = this.rings.get(id)!;
             ring.position.set(g.position.x, .14, g.position.z);
@@ -302,15 +442,42 @@ export class Diorama {
         }
         this.blobs.count = blobIndex;
         this.blobs.instanceMatrix.needsUpdate = true;
-        const pos = this.water.geometry.attributes.position;
-        for (let i = 0; i < pos.count; i++)
-            pos.setY(i, Math.sin(pos.getX(i) * 3 + t * 1.6 + pos.getZ(i) * 2) * .025);
-        pos.needsUpdate = true;
+        if(this.water.userData.shader)this.water.userData.shader.uniforms.time.value=t;
+        if (this.returning) {
+            const a = 1 - Math.exp(-dt * 8);
+            this.returnOrbit.setFromVector3(this.cloudPoint.copy(this.camera.position).sub(this.controls.target));
+            const turn = Math.atan2(Math.sin(this.defaultOrbit.theta-this.returnOrbit.theta), Math.cos(this.defaultOrbit.theta-this.returnOrbit.theta));
+            this.returnOrbit.theta += turn*a;
+            this.returnOrbit.phi = MathUtils.lerp(this.returnOrbit.phi,this.defaultOrbit.phi,a);
+            this.returnOrbit.radius = MathUtils.lerp(this.returnOrbit.radius,this.defaultOrbit.radius,a);
+            this.controls.target.lerp(this.defaultTarget, a);
+            this.camera.position.setFromSpherical(this.returnOrbit).add(this.controls.target);
+            if (this.camera.position.distanceToSquared(this.defaultPosition) < .00001) { this.camera.position.copy(this.defaultPosition); this.controls.target.copy(this.defaultTarget); this.returning = false; }
+        }
         this.controls.update();
+        // Only menu clouds wholly in the sky band may render. Project a generous
+        // board envelope so even a full orbit/zoom cannot put them over the toys.
+        this.camera.updateMatrixWorld();
+        let boardTop = .65;
+        for (const x of [-5.5, 5.5]) for (const y of [-.8, 3.5]) for (const z of [-4.5, 4.5]) {
+            this.cloudPoint.set(x, y, z).project(this.camera);
+            boardTop = Math.max(boardTop, this.cloudPoint.y + .08);
+        }
+        for (const cloud of this.clouds) {
+            cloud.visible = this.menu;
+            for (const x of [-.85, .85]) for (const y of [-.25, .4]) for (const z of [-.3, .3]) {
+                this.cloudPoint.set(x, y, z).add(cloud.position).project(this.camera);
+                if (this.cloudPoint.y < boardTop || this.cloudPoint.z < -1 || this.cloudPoint.z > 1) cloud.visible = false;
+            }
+        }
         this.renderer.render(this.scene, this.camera);
         if (!this.metrics.firstFrameMs)
             this.metrics.firstFrameMs = performance.now();
         this.frames++;
+        if (!this.qualityStart) { this.qualityStart = performance.now(); this.qualityFrames = 0; }
+        else this.qualityFrames++;
+        if(!this.qualityChecked && now-this.qualityStart>=2000){this.qualityChecked=true;if(this.qualityFrames*1000/(now-this.qualityStart)<45){this.sun.castShadow=false;this.renderer.shadowMap.enabled=false;this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.25));this.viewport='';this.resize();}}
+
         if (now - this.epoch >= 1000) {
             this.metrics.fps = Math.round(this.frames * 1000 / (now - this.epoch));
             this.metrics.drawCalls = this.renderer.info.render.calls;

@@ -123,6 +123,7 @@ function act(a: Action) {
         }
         scene.sync(state);
         render();
+        scene.resetView();
         return;
     }
     if (a.type === 'menu') {
@@ -130,6 +131,7 @@ function act(a: Action) {
         rulesOpen = false;
         toast = '';
         render();
+        scene.resetView();
         return;
     }
     if (screen !== 'game')
@@ -156,7 +158,7 @@ function act(a: Action) {
         if (r.ok) {
             history.push(state);
             state = r.state;
-            audio.play('select');
+            audio.play(state.aboard.includes(a.id) ? 'select' : 'leave');
             if (showHints) hints = Math.min(hints + 1, 2);
             scene.sync(state);
             render();
@@ -183,7 +185,7 @@ function act(a: Action) {
             }
             catch { }
         }
-        scene.sail(r.state, () => { state = r.state; if (state.failure)
+        scene.sail(r.state, () => { audio.play('land'); state = r.state; if (state.failure)
             audio.play('fail');
         else if (isWin(state)) {
             stopped = performance.now() - started;
@@ -222,7 +224,7 @@ function render() {
         else if (rulesOpen)
             html += modal(t.rules, `<p>${t[`${state.level}Rules`]}</p><p>${t.help}</p>`, button('close', t.close, true));
     }
-    html += `<button class="sound" data-action="sound" aria-pressed="${!audio.muted}">${t.sound} ${audio.muted ? t.off : t.on}</button>`;
+    html += `<div class="view-tools"><button class="sound" data-action="music" aria-pressed="${audio.music}">${t.music} ${audio.music ? t.on : t.off}</button><button class="sound" data-action="sound" aria-pressed="${!audio.muted}">${t.sound} ${audio.muted ? t.off : t.on}</button><button data-action="reset-view" aria-label="${t.resetView}" title="${t.resetView}">⟲</button></div>`;
     if (toast)
         html += `<div class="toast" role="status">${toast}</div>`;
     if (previewUrl) html += modal(st.preview, `<img class="share-image" src="${escapeHtml(previewUrl)}" alt="${escapeHtml(resultLine())}"><p id="copy-hint" role="status">${st.hint}</p><input id="challenge-link" readonly aria-label="${st.copy}" value="${escapeHtml(window.__puzzleShare.lastUrl || '')}">`, `<a class="download" href="${escapeHtml(previewUrl)}" download="river-crossing.png">${st.download}</a>` + button('copy-link', st.copy) + button('close-preview', st.close));
@@ -236,9 +238,11 @@ function render() {
         act({ type: 'toggle', id: b.dataset.piece });
         return;
     } const a = b.dataset.action; if (a === 'sound') {
-        audio.muted = !audio.muted;
+        audio.toggleSound();
         render();
     }
+    else if (a === 'reset-view') scene.resetView(true);
+    else if (a === 'music') { audio.toggleMusic(); render(); }
     else if (a === 'close-preview') closePreview();
     else if (a === 'copy-link') {
         void (async () => { try { await navigator.clipboard.writeText(window.__puzzleShare.lastUrl || ''); const hint = app.querySelector('#copy-hint'); if (hint) hint.textContent = st.copied; }
@@ -256,8 +260,8 @@ function render() {
     const focus = dialogs[dialogs.length - 1]?.querySelector<HTMLElement>('.actions button, .actions a');
     focus?.focus();
 }
-document.addEventListener('pointerdown', () => audio.unlock(), { once: true });
-document.addEventListener('keydown', e => { if (e.repeat)
+for (const event of ['pointerdown', 'pointerup', 'touchend', 'click']) document.addEventListener(event, () => audio.unlock(), { passive: true });
+document.addEventListener('keydown', e => { audio.unlock(); if (e.repeat)
     return; if (e.code === 'Escape') {
     e.preventDefault();
     rulesOpen = false;

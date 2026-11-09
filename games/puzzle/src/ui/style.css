@@ -17,3 +17,28 @@ canvas{bottom:auto}
 .challenge-banner p{color:inherit}
 
 .dark .target-chip{color:inherit}
+.sound { min-width:44px; min-height:44px; }
+.sound.music { right:auto; left:16px; }
+body { background: radial-gradient(ellipse at 50% 40%, #e8eee1 0%, #c2d7d3 65%, #8faeaa 100%); }
+body.dark { background: radial-gradient(ellipse at 50% 40%, #66627d, #292e47); }
+@media(max-width:650px){
+ .sound.music{left:auto;right:12px;top:max(62px,calc(env(safe-area-inset-top) + 50px));width:104px}
+ .sound:not(.music){width:104px}
+ .topbar .identity{max-width:calc(100% - 116px);min-height:100px}
+ .menu{padding-top:94px}
+}
+
+/* One control cluster stays above the scene and clear of both gameplay panels. */
+.view-tools{position:absolute;top:max(18px,env(safe-area-inset-top));right:24px;display:flex;gap:4px;padding:4px;background:var(--panel);border-radius:16px}
+.view-tools .sound{position:static;width:auto;min-width:44px;min-height:44px;padding:8px;font-size:12px}
+.view-tools>button:last-child{font-size:25px;padding:4px 10px}
+.topbar{right:290px}
+.menu{top:86px;max-height:calc(100dvh - 106px)}
+@media(max-width:1000px) and (min-width:651px){.topbar{right:24px;padding-top:62px}.menu{top:86px}}
+@media(max-width:650px){
+ .view-tools{top:max(12px,env(safe-area-inset-top));right:12px;gap:2px;padding:3px}
+ .view-tools .sound{position:static;width:auto;font-size:11px;padding:6px}
+ .topbar{right:12px;padding-top:60px}
+ .topbar .identity{max-width:100%;min-height:0}
+ .menu{top:76px;padding-top:16px;max-height:calc(100dvh - 92px)}
+}

@@ -41,3 +41,11 @@ Challenge URLs retain only `locale`, `theme`, and `color` from the current page,
 Malformed or duplicate challenge fields invalidate the whole challenge silently. Valid challenges show a menu banner, direct start button, target chip, and victory comparison (fewer crossings wins; equal crossings requires a faster time). Challenge values are user-supplied and are not verified records. No backend, analytics, runtime network, or AI service is used.
 
 `window.__puzzleTest.state()` also returns `elapsedMs` and decoded `challenge`; `act({type:'share'})` runs the share flow after a win. `window.__puzzleShare.lastCardDataUrl` and `.lastUrl` expose the most recently generated PNG and challenge link for browser checks.
+
+## Round 7: a richer procedural diorama
+
+Travelers are original rounded wooden/felt toys with highlighted eyes, cheeks, blinking, breathing, moving ears/tails, boarding hops and victory hops. Farmer clothing, wool, layered cabbage leaves, animal markings and peaked captain caps are built from geometry, with decorative pieces baked into vertex-colored meshes.
+
+The tabletop now has bevelled banks with soil strata and sandy shores, shader-driven water waves and sparkle, foam, a sailing wake, docks, reeds, flowers, pebbles, bushes, varied trees, signposts and flying butterflies. Dusk (`?theme=dark`) adds warm lanterns and animated fireflies. ACES lighting uses one tightly framed soft shadow light; a first-two-second FPS check disables shadow mapping and reduces pixel ratio below 45 FPS. Repeated props use instancing or merged geometry; picking still uses the separate traveler hitboxes and boat only.
+
+**Music** and **Sound effects** are independent, at least 44×44 px buttons (繁中：**音樂 開/關**、**音效 開/關**). Both default on and remember changes locally when storage is available. Music begins after a pointer or keyboard gesture, pauses with a hidden tab and resumes on return. Web Audio generates an 84 BPM, 16-bar pentatonic pad/melody/plucked-bass progression with changing phrases, a victory flourish, and layered wooden, splash, landing and chime effects. Gain ramps avoid abrupt toggle clicks. Nothing is downloaded for the art or sound, and no runtime network or AI calls are introduced.

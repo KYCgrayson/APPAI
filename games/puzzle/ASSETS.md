@@ -1,5 +1,7 @@
 # Assets and licenses
 
+**Everything procedural:** all game art and audio are generated in code; no downloaded models, textures, fonts or audio files.
+
 | Asset / third-party piece | Origin | License / status |
 | --- | --- | --- |
 | Three.js 0.187.0, including OrbitControls | Installed npm package `three` | MIT; bundled runtime library |
@@ -7,9 +9,9 @@
 | Vite 8 | Installed development package | MIT; build-only |
 | TypeScript 5 | Installed development package | Apache-2.0; build-only |
 | Farmer, wolf, goat, cabbage, rabbit and fox models | Generated in code, original, no external file | Original prototype artwork |
-| Boat, oars, grassy banks, tabletop, trees and rocks | Generated in code, original, no external file | Original prototype artwork |
-| Water geometry, materials, highlights and blob shadows | Generated in code, original, no external file | Original prototype artwork; no texture files |
-| Selection, sailing, failure and victory sounds | Generated in code, original, no external file | Web Audio oscillator synthesis |
+| Planked boat, oars, flag, bevelled layered banks, sandy shores, docks, tabletop, trees, bushes, grass, flowers, reeds, pebbles, signs, lanterns, butterflies and fireflies | Generated in code, original, no external file | Original prototype artwork |
+| Water vertex/fragment shader, foam, wake, materials, highlights, soft shadow maps and blob shadows | Generated in code, original, no external file | Original prototype artwork; no texture files |
+| 16-bar background music, win flourish, board/leave, sailing, landing, failure and victory sounds | Generated in code, original, no external file | Web Audio oscillators, filtered seeded noise and gain envelopes |
 | Fonts | System fonts, nothing shipped | Platform-provided fonts; no downloadable font assets |
 | Interface icons and star indicators | Unicode text and CSS, no external file | Platform glyphs; original layout |
 | Puzzle rules | Traditional folk logic puzzles | Public-domain concepts; original presentation and names |
