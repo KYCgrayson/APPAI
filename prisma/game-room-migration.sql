@@ -1,6 +1,7 @@
 CREATE TABLE "GameRoom" (
   "code" TEXT PRIMARY KEY,
   "game" TEXT NOT NULL,
+  "creatorId" TEXT NOT NULL,
   "state" JSONB NOT NULL CHECK (octet_length("state"::text) <= 16384),
   "version" INTEGER NOT NULL,
   "turn" INTEGER,

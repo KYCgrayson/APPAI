@@ -1188,13 +1188,14 @@ The iframe receives `?locale=` with the current hosted-page locale, normally `en
 Set canonicalUrl only for an app's own primary marketing site (e.g. a custom domain homepage), never the *.vercel.app tool URL embedded in iframe-tool.
 
 ### Room-code multiplayer (rooms API)
-Turn-based games for 2–4 players, each on their own device. One device creates a room and shows a 6-character code, and the others type it in. No login and no API key are needed. The server keeps only **public** game state. Secrets such as a hidden answer or a hand of cards stay on the device that owns them and never go in `state` or `move`. The server does not check game rules, so every client must validate the moves it receives.
+Turn-based games for 2–4 players, each on their own device. One device creates a room and shows a 6-character code, and the others type it in. Creating a room needs the creator to be signed in to AppAI (Google sign-in, same-site cookie, so the game page must be served from appai.info). Joining and playing need no login and no API key. The server keeps only **public** game state. Secrets such as a hidden answer or a hand of cards stay on the device that owns them and never go in `state` or `move`. The server does not check game rules, so every client must validate the moves it receives.
 
 | Call | Request | Response |
 |---|---|---|
-| Create | `POST /api/rooms` `{ "game": "my-game", "seats": 2, "state": {}, "turn": 0 }` | `201 { code, seat: 0, token, room }` |
+| Create | `POST /api/rooms` `{ "game": "my-game", "seats": 2, "state": {}, "turn": 0 }` (signed in) | `201 { code, seat: 0, token, room }` · `401 login_required` |
 | Join | `POST /api/rooms/{code}/join` `{}` | `200 { seat, token, room }` · `409 room_full` |
 | Poll | `GET /api/rooms/{code}?since={version}` + `Authorization: Bearer {token}` | `200 { changed: true, seat, room }` or `{ changed: false, version, seats }` |
+| Start | `POST /api/rooms/{code}/start` + `Authorization: Bearer {token}` (seat 0 only) | `200 { room }` — starts with the players present (at least 2); empty seats are removed |
 | Move | `POST /api/rooms/{code}/moves` + `Authorization: Bearer {token}` `{ "version": 3, "move": {}, "state": {}, "nextTurn": 1, "end": false }` | `200 { room }` |
 
 `room` = `{ code, game, version, state, turn, seats: [{ seat, joined, online, idleSeconds }], moves: [{ version, seat, move, skipped? }], lastMove, status: "waiting" | "playing" | "finished", expiresAt }`.
@@ -1203,12 +1204,12 @@ Turn-based games for 2–4 players, each on their own device. One device creates
 |---|---|
 | Code | 6 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789`; input is case-insensitive, and spaces and `-` are ignored |
 | `game` | 1–40 characters of `a-z`, `0-9`, `-` |
-| Players | `seats` 2–4 (default 2). Seats fill in join order (0, 1, 2, 3). `turn` is a seat index, or `null` for no turn order (default 0) |
+| Players | `seats` 2–4 (default 2). Seats fill in join order (0, 1, 2, 3). The game starts when every seat is taken or when seat 0 calls Start. `turn` is a seat index, or `null` for no turn order (default 0); if Start removes the seat holding `turn`, it becomes 0 |
 | Size | `state` ≤ 8 KB of JSON (object or array), `move` ≤ 1 KB, nesting ≤ 64 levels, no NUL characters |
 | Moves | Compare-and-swap: `version` must equal the room's current version, and success increments it. Only the seat whose `turn` it is may move. Omit `nextTurn` to keep the turn; `end: true` finishes the room. Moves start once every seat has joined. `moves` holds the last 20, so read every entry with `version > since`, not just `lastMove` |
 | Presence | Each poll marks your seat as seen. `online` means seen in the last 30 s; `idleSeconds` is the time since that seat was last seen |
 | Timeout | When the seat whose turn it is has been idle for ≥ 120 s, any other seat may send `{ "version": v, "skip": true }` (optionally with a `move` note). The turn passes to the next seat, and the entry records `skipped`. A skip cannot carry `state`, `nextTurn` or `end`. A player who returns keeps their seat |
-| Lifetime | A room that is not full expires 30 minutes after creation. A full room closes after 15 minutes with no polls or moves, a finished one 15 minutes after its last move, and any room 24 hours after creation. Afterwards it is `404 room_not_found` |
+| Lifetime | A room that has not started closes 2 minutes after it was created or after the latest join. A full room closes after 15 minutes with no polls or moves, a finished one 15 minutes after its last move, and any room 24 hours after creation. Afterwards it is `404 room_not_found` |
 | Polling | Every 1–1.5 s while the page is visible; every 15 s while it is hidden, so the player is not marked idle. A closed app counts as idle. On `429`, wait for `Retry-After` |
 | Token | Store it per room (e.g. `localStorage["room:{code}"]`) so a reload keeps the seat. Never put it in a URL. A wrong token gets the same `404` as a missing room |
 | Origins | Browser calls are accepted from `https://appai.info`, `https://www.appai.info` and `https://kycgrayson.github.io`; other origins get `403 origin_not_allowed`. Ask the owner to add a game's origin |
@@ -1218,7 +1219,8 @@ Errors are `{ "error": code, "message": text }`:
 | Status | Codes |
 |---|---|
 | 400 | `invalid_request` |
-| 403 | `origin_not_allowed` |
+| 401 | `login_required` |
+| 403 | `origin_not_allowed`, `not_host` |
 | 404 | `room_not_found` |
 | 409 | `room_full`, `room_not_ready`, `room_finished`, `version_conflict`, `not_your_turn` (the last two include the latest `room`) |
 | 413 | `state_too_large` |

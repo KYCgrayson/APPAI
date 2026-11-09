@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  createRoom, joinRoom, pollRoom, sendMove, roomsPreflight, normalizeRoomCode, generateRoomCode, roomOriginAllowed, clientNetwork, roomIpKey,
+  createRoom, joinRoom, pollRoom, sendMove, startRoom, roomsPreflight, normalizeRoomCode, generateRoomCode, roomOriginAllowed, clientNetwork, roomIpKey,
   RATE_LIMITS, MAX_STATE_BYTES, MAX_ACTIVE_ROOMS, ROOM_TTL_MS, WAITING_TTL_MS, SKIP_AFTER_MS, IDLE_TTL_MS, RECENT_MOVES, type RoomDeps, type RoomRecord, type RoomStore,
 } from "../src/lib/rooms.ts";
 import { roomRateBucket } from "../src/lib/rooms-cors.ts";
@@ -40,8 +40,9 @@ function memoryStore() {
 function setup(env: Record<string, string | undefined> = { NODE_ENV: "test" }) {
   const mem = memoryStore();
   let clock = new Date("2026-11-09T00:00:00Z");
-  const deps: RoomDeps = { store: mem.store, env, now: () => clock };
-  return { ...mem, deps, advance: (ms: number) => { clock = new Date(clock.getTime() + ms); } };
+  let user: string | null = "user-1";
+  const deps: RoomDeps = { store: mem.store, env, now: () => clock, currentUser: async () => user };
+  return { ...mem, deps, advance: (ms: number) => { clock = new Date(clock.getTime() + ms); }, signIn: (id: string | null) => { user = id; } };
 }
 function req(path: string, init: { method?: string; body?: unknown; token?: string; ip?: string; origin?: string; raw?: string } = {}) {
   const headers: Record<string, string> = { "x-forwarded-for": init.ip ?? "203.0.113.1" };
@@ -214,7 +215,7 @@ test("token from one room does not work in another", async () => {
   assert.equal((await poll(t, b.code, a.token)).status, 404);
 });
 
-test("unfilled rooms expire after 30 minutes; full rooms 24 hours after creation", async () => {
+test("unstarted rooms close 2 minutes after the latest join; full rooms stay while active", async () => {
   const t = setup();
   const c = await (await createRoom(req("/x", { body: { game: "x" } }), t.deps)).json();
   assert.equal(new Date(c.room.expiresAt).getTime() - new Date("2026-11-09T00:00:00Z").getTime(), WAITING_TTL_MS);
@@ -322,13 +323,14 @@ test("concurrent joins never share a seat; concurrent moves apply once", async (
   assert.equal(t2.rooms.get(code)!.moves.length, 1);
 });
 
-test("per-IP limits apply to create and join attempts, including misses", async () => {
+test("create limits are per account; join limits per network, including misses", async () => {
   const t = setup();
-  for (let i = 0; i < RATE_LIMITS.create.limit; i++) assert.equal((await createRoom(req("/x", { body: { game: "x" } }), t.deps)).status, 201);
-  const limited = await createRoom(req("/x", { body: { game: "x" } }), t.deps);
+  for (let i = 0; i < RATE_LIMITS.create.limit; i++) assert.equal((await createRoom(req("/x", { body: { game: "x" }, ip: `198.51.100.${i}` }), t.deps)).status, 201);
+  const limited = await createRoom(req("/x", { body: { game: "x" }, ip: "198.51.100.200" }), t.deps);
   assert.equal(limited.status, 429);
   assert.ok(Number(limited.headers.get("retry-after")) > 0);
-  assert.equal((await createRoom(req("/x", { body: { game: "x" }, ip: "198.51.100.7" }), t.deps)).status, 201);
+  t.signIn("user-2");
+  assert.equal((await createRoom(req("/x", { body: { game: "x" } }), t.deps)).status, 201);
 
   for (let i = 0; i < RATE_LIMITS.join.limit; i++) await joinRoom(req("/x", { body: {}, ip: "192.0.2.50" }), "ZZZZZZ", t.deps);
   assert.equal((await joinRoom(req("/x", { body: {}, ip: "192.0.2.50" }), "ZZZZZZ", t.deps)).status, 429);
@@ -347,8 +349,8 @@ test("IPv6 clients are limited per /64", async () => {
   assert.equal(key("2001:db8:1:2::1"), key("2001:db8:1:2:ffff::9"));
   assert.notEqual(key("2001:db8:1:2::1"), key("2001:db8:1:3::1"));
   const t = setup();
-  for (let i = 0; i < RATE_LIMITS.create.limit; i++) await createRoom(req("/x", { body: { game: "x" }, ip: `2001:db8:1:2::${i.toString(16)}` }), t.deps);
-  assert.equal((await createRoom(req("/x", { body: { game: "x" }, ip: "2001:db8:1:2::ffff" }), t.deps)).status, 429);
+  for (let i = 0; i < RATE_LIMITS.join.limit; i++) await joinRoom(req("/x", { body: {}, ip: `2001:db8:1:2::${i.toString(16)}` }), "ZZZZZZ", t.deps);
+  assert.equal((await joinRoom(req("/x", { body: {}, ip: "2001:db8:1:2::ffff" }), "ZZZZZZ", t.deps)).status, 429);
 });
 
 test("middleware buckets room routes by action, never by room code", () => {
@@ -416,12 +418,12 @@ test("deeply nested JSON is a 400, not a 500", async () => {
   assert.equal((await createRoom(req("/x", { body: { game: "x", state: ok } }), t.deps)).status, 201);
 });
 
-test("daily create limit bounds rooms per network", async () => {
+test("daily create limit bounds rooms per account", async () => {
   const t = setup();
   let created = 0;
   for (let hour = 0; hour < 3; hour++) {
     for (let i = 0; i < RATE_LIMITS.create.limit; i++) {
-      if ((await createRoom(req("/x", { body: { game: "x" } }), t.deps)).status === 201) created++;
+      if ((await createRoom(req("/x", { body: { game: "x" }, ip: `198.51.100.${hour * 30 + i}` }), t.deps)).status === 201) created++;
     }
     t.advance(RATE_LIMITS.create.windowMs + 1);
   }
@@ -444,4 +446,52 @@ test("polling a finished room does not keep it open", async () => {
   await sendMove(req("/x", { body: { version: 2, end: true }, token: created.token }), code, t.deps);
   for (let i = 0; i < 3; i++) { t.advance(6 * 60_000); await poll(t, code, joined.token); }
   assert.equal((await poll(t, code, joined.token)).status, 404);
+});
+
+test("creating a room requires sign-in; joining does not", async () => {
+  const t = setup();
+  t.signIn(null);
+  const res = await createRoom(req("/x", { body: { game: "x" } }), t.deps);
+  assert.equal(res.status, 401);
+  assert.equal((await res.json()).error, "login_required");
+  t.signIn("user-1");
+  const c = await (await createRoom(req("/x", { body: { game: "x" } }), t.deps)).json();
+  assert.equal(t.rooms.get(c.code)!.creatorId, "user-1");
+  assert.ok(!JSON.stringify(c).includes("user-1"));
+  t.signIn(null);
+  assert.equal((await joinRoom(req("/x", { body: {} }), c.code, t.deps)).status, 200);
+});
+
+test("waiting room timer restarts on each join", async () => {
+  const t = setup();
+  const c = await (await createRoom(req("/x", { body: { game: "x", seats: 4 } }), t.deps)).json();
+  t.advance(WAITING_TTL_MS - 1000);
+  assert.equal((await joinRoom(req("/x", { body: {} }), c.code, t.deps)).status, 200);
+  t.advance(WAITING_TTL_MS - 1000);
+  assert.equal((await joinRoom(req("/x", { body: {} }), c.code, t.deps)).status, 200);
+  t.advance(WAITING_TTL_MS - 1000);
+  assert.equal((await poll(t, c.code, c.token)).status, 200);
+  t.advance(2000);
+  assert.equal((await poll(t, c.code, c.token)).status, 404);
+});
+
+test("the creator can start with the players present", async () => {
+  const t = setup();
+  const c = await (await createRoom(req("/x", { body: { game: "x", seats: 4, turn: 3 } }), t.deps)).json();
+  const start = (token: string) => startRoom(req("/x", { body: {}, token }), c.code, t.deps);
+  assert.equal((await (await start(c.token)).json()).error, "room_not_ready"); // alone
+  const b = await (await joinRoom(req("/x", { body: {} }), c.code, t.deps)).json();
+  const d = await (await joinRoom(req("/x", { body: {} }), c.code, t.deps)).json();
+  assert.equal((await start(b.token)).status, 403);
+  assert.equal((await start("forged")).status, 404);
+  const res = await start(c.token);
+  assert.equal(res.status, 200);
+  const room = (await res.json()).room;
+  assert.equal(room.status, "playing");
+  assert.equal(room.seats.length, 3);
+  assert.equal(room.turn, 0); // seat 3 no longer exists
+  assert.equal((await joinRoom(req("/x", { body: {} }), c.code, t.deps)).status, 409);
+  assert.equal((await start(c.token)).status, 409);
+  assert.equal((await sendMove(req("/x", { body: { version: room.version, move: 1, nextTurn: 2 }, token: c.token }), c.code, t.deps)).status, 200);
+  assert.equal((await sendMove(req("/x", { body: { version: room.version + 1, move: 2 }, token: d.token }), c.code, t.deps)).status, 200);
 });

@@ -24,5 +24,6 @@ export function roomRateBucket(pathname: string, method: string): string | null 
   if (method === "GET") return "rooms:poll";
   if (pathname.endsWith("/join")) return "rooms:join";
   if (pathname.endsWith("/moves")) return "rooms:moves";
+  if (pathname.endsWith("/start")) return "rooms:start";
   return "rooms:create";
 }

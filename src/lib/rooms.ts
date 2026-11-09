@@ -11,8 +11,8 @@ export const MAX_STATE_BYTES = 8 * 1024;
 export const MAX_MOVE_BYTES = 1024;
 export const MAX_BODY_BYTES = 12 * 1024;
 export const ROOM_TTL_MS = 24 * 60 * 60 * 1000;
-// A room nobody finished joining is reclaimed quickly so empty rooms cannot pile up.
-export const WAITING_TTL_MS = 30 * 60 * 1000;
+// A room that has not started closes 2 minutes after it was created or after the latest join.
+export const WAITING_TTL_MS = 2 * 60 * 1000;
 export const MAX_MOVES_PER_ROOM = 2000;
 export const RECENT_MOVES = 20;
 export const MAX_ACTIVE_ROOMS = 5000;
@@ -27,8 +27,11 @@ export const IDLE_TTL_MS = 15 * 60 * 1000;
 export const MAX_JSON_DEPTH = 64;
 
 export const RATE_LIMITS = {
+  // Room creation needs a signed-in account; these limits are per account.
   create: { limit: 20, windowMs: 60 * 60 * 1000 },
   createDaily: { limit: 40, windowMs: 24 * 60 * 60 * 1000 },
+  // Backstop for many accounts behind one network.
+  createNetwork: { limit: 60, windowMs: 60 * 60 * 1000 },
   join: { limit: 30, windowMs: 10 * 60 * 1000 },
   move: { limit: 300, windowMs: 10 * 60 * 1000 },
 } as const;
@@ -39,6 +42,8 @@ export interface RoomMove { version: number; seat: number; move: unknown; skippe
 export interface RoomRecord {
   code: string;
   game: string;
+  // Internal user id of the signed-in creator; never returned by the API.
+  creatorId: string;
   state: unknown;
   version: number;
   turn: number | null;
@@ -72,6 +77,8 @@ export interface RoomStore {
 type Env = Record<string, string | undefined>;
 export interface RoomDeps {
   store: RoomStore;
+  // Signed-in AppAI user id for this request, or null.
+  currentUser(request: Request): Promise<string | null>;
   env: Env;
   now?: () => Date;
 }
@@ -154,7 +161,7 @@ export function roomIpKey(request: Request, env: Env): string | null {
 type ErrorCode =
   | "invalid_request" | "state_too_large" | "room_not_found" | "room_full"
   | "version_conflict" | "not_your_turn" | "room_finished" | "room_not_ready" | "rate_limited"
-  | "origin_not_allowed" | "unavailable";
+  | "origin_not_allowed" | "unavailable" | "login_required" | "not_host";
 class RoomError extends Error {
   status: number;
   code: ErrorCode;
@@ -232,11 +239,11 @@ function publicSeats(room: RoomRecord, now: Date) {
   });
 }
 
-async function rateLimit(kind: RateKind, request: Request, deps: RoomDeps, now: Date) {
+async function rateLimit(kind: RateKind, request: Request, deps: RoomDeps, now: Date, subject?: string) {
   const ipKey = roomIpKey(request, deps.env);
   if (!ipKey) throw new RoomError(503, "unavailable", "Rooms are not configured");
   const { limit, windowMs } = RATE_LIMITS[kind];
-  const count = await deps.store.rateHit(`${kind}:${ipKey}`, windowMs, now);
+  const count = await deps.store.rateHit(`${kind}:${subject ?? ipKey}`, windowMs, now);
   if (count > limit) throw new RoomError(429, "rate_limited", "Too many requests. Please try again later.", {}, Math.ceil(windowMs / 1000));
 }
 
@@ -307,15 +314,18 @@ export function createRoom(request: Request, deps: RoomDeps) {
     const turn = body.turn === undefined ? 0 : body.turn;
     if (turn !== null && !isSeat(turn, seatCount)) throw new RoomError(400, "invalid_request", "turn must be a seat index or null");
 
-    await rateLimit("create", request, deps, now);
-    await rateLimit("createDaily", request, deps, now);
+    const userId = await deps.currentUser(request);
+    if (!userId) throw new RoomError(401, "login_required", "Sign in to AppAI to create a room");
+    await rateLimit("createNetwork", request, deps, now);
+    await rateLimit("create", request, deps, now, `user:${userId}`);
+    await rateLimit("createDaily", request, deps, now, `user:${userId}`);
     await deps.store.cleanup(now);
     if (await deps.store.activeRoomCount(now) >= MAX_ACTIVE_ROOMS) throw new RoomError(503, "unavailable", "Too many active rooms. Please try again later.");
 
     const token = newToken();
     for (let attempt = 0; attempt < 5; attempt++) {
       const room: RoomRecord = {
-        code: generateRoomCode(), game, state, version: 1, turn: turn as number | null,
+        code: generateRoomCode(), game, creatorId: userId, state, version: 1, turn: turn as number | null,
         seatTokens: Array.from({ length: seatCount }, (_, i) => i === 0 ? hashToken(token) : ""),
         seatSeenAt: Array.from({ length: seatCount }, (_, i) => i === 0 ? now : EPOCH),
         moves: [], status: "waiting", moveCount: 0, createdAt: now, expiresAt: new Date(now.getTime() + WAITING_TTL_MS),
@@ -345,7 +355,7 @@ export function joinRoom(request: Request, rawCode: string, deps: RoomDeps) {
       const update: RoomUpdate = {
         state: room.state, turn: room.turn, moves: room.moves, moveCount: room.moveCount,
         seatTokens, version: room.version + 1, status: full ? "playing" : "waiting",
-        expiresAt: full ? activeExpiry(room, now) : room.expiresAt,
+        expiresAt: full ? activeExpiry(room, now) : new Date(now.getTime() + WAITING_TTL_MS),
       };
       if (await deps.store.updateRoom(room.code, room.version, update, now)) {
         await touchAfterWrite(deps, room.code, seat, now);
@@ -425,6 +435,30 @@ export function sendMove(request: Request, rawCode: string, deps: RoomDeps) {
     }
     await touchAfterWrite(deps, room.code, seat, now);
     const seatSeenAt = room.seatSeenAt.map((value, i) => i === seat ? now : value);
+    return { status: 200, body: { room: publicRoom({ ...room, ...update, seatSeenAt }, now) } };
+  });
+}
+
+// The creator (seat 0) starts the game with whoever has joined; empty seats are dropped.
+export function startRoom(request: Request, rawCode: string, deps: RoomDeps) {
+  return respond(request, deps, async () => {
+    const now = deps.now?.() ?? new Date();
+    await rateLimit("move", request, deps, now);
+    const { room, seat } = await loadSeat(rawCode, request, deps, now);
+    if (seat !== 0) throw new RoomError(403, "not_host", "Only the room creator can start the game");
+    if (room.status !== "waiting") throw new RoomError(409, "room_finished", "The game has already started");
+    const seatTokens = room.seatTokens.filter(token => token !== "");
+    if (seatTokens.length < MIN_SEATS) throw new RoomError(409, "room_not_ready", `At least ${MIN_SEATS} players are needed`);
+    // Seats fill in order and nobody leaves before the start, so joined seats are 0..n-1.
+    const update: RoomUpdate = {
+      state: room.state, seatTokens, version: room.version + 1,
+      turn: room.turn !== null && room.turn >= seatTokens.length ? 0 : room.turn,
+      moves: room.moves, status: "playing", moveCount: room.moveCount, expiresAt: activeExpiry(room, now),
+    };
+    if (!await deps.store.updateRoom(room.code, room.version, update, now)) {
+      throw new RoomError(409, "version_conflict", "Room changed; refresh and retry");
+    }
+    const seatSeenAt = room.seatSeenAt.slice(0, seatTokens.length);
     return { status: 200, body: { room: publicRoom({ ...room, ...update, seatSeenAt }, now) } };
   });
 }

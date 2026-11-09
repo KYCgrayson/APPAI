@@ -1,11 +1,12 @@
 import { Prisma } from "@prisma/client";
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { RATE_LIMITS, type RoomDeps, type RoomMove, type RoomRecord, type RoomStatus } from "@/lib/rooms";
 
 type Row = Prisma.GameRoomGetPayload<object>;
 function toRecord(row: Row): RoomRecord {
   return {
-    code: row.code, game: row.game, state: row.state, version: row.version, turn: row.turn,
+    code: row.code, game: row.game, creatorId: row.creatorId, state: row.state, version: row.version, turn: row.turn,
     seatTokens: row.seatTokens, seatSeenAt: row.seatSeenAt, moves: row.moves as unknown as RoomMove[],
     status: row.status as RoomStatus, moveCount: row.moveCount, createdAt: row.createdAt, expiresAt: row.expiresAt,
   };
@@ -15,6 +16,10 @@ const longestWindowMs = Math.max(...Object.values(RATE_LIMITS).map(rule => rule.
 
 export const roomDeps: RoomDeps = {
   env: process.env,
+  async currentUser() {
+    const session = await auth();
+    return session?.user?.id ?? null;
+  },
   store: {
     async rateHit(key, windowMs, now) {
       const cutoff = new Date(now.getTime() - windowMs);
