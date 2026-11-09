@@ -83,6 +83,12 @@ const rules: RateLimitRule[] = [
     windowMs: 60_000,
   },
   {
+    // Room polling runs about once a second per device, and two devices often share one home IP.
+    match: (p, m) => m === "GET" && /^\/api\/rooms\/[^/]+$/.test(p),
+    limit: 300,
+    windowMs: 60_000,
+  },
+  {
     // Catch-all for any other API route
     match: (p) => p.startsWith("/api/"),
     limit: 60,
