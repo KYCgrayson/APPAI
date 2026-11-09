@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "@/i18n/routing";
-import { RESERVED_GAME_SLUGS } from "@/lib/games-catalog";
+import { STATIC_GAME_PATH_SEGMENTS } from "@/lib/games-catalog";
 
 // ---------------------------------------------------------------------------
 // next-intl middleware for locale detection + redirect
@@ -175,7 +175,7 @@ export function middleware(request: NextRequest) {
   // the /games hub and other game slugs go through next-intl.
   if (
     pathname.startsWith("/games/") &&
-    RESERVED_GAME_SLUGS.includes(pathname.split("/")[2])
+    STATIC_GAME_PATH_SEGMENTS.includes(pathname.split("/")[2])
   ) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }

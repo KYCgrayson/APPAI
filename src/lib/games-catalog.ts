@@ -69,8 +69,12 @@ export const GAMES: GameEntry[] = [
 
 export const OWN_GAME_SLUGS: readonly string[] = GAMES.map((g) => g.slug);
 
+export const STATIC_GAME_PATH_SEGMENTS: readonly string[] = [...OWN_GAME_SLUGS, "covers"];
+
+// covers is the public/games/covers folder; profile and boards are reserved
+// for #68 leaderboard pages.
 // #67 uses this list to block user games from taking these slugs.
-export const RESERVED_GAME_SLUGS: readonly string[] = [...OWN_GAME_SLUGS, "covers"];
+export const RESERVED_GAME_SLUGS: readonly string[] = [...STATIC_GAME_PATH_SEGMENTS, "profile", "boards"];
 
 const COPY: Record<string, HubCopy> = {
   en: {
