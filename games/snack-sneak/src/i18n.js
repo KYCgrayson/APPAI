@@ -21,7 +21,7 @@ const zh = {
   start: '開始發身分',
   setupNote: (s, t) => `這局有 ${s} 個偷吃鬼。偷吃鬼吃掉 ${t} 盤點心就贏；好人把偷吃鬼全部請去洗碗就贏。`,
   maxNote: (m) => `一支手機傳著玩，最多 ${m} 人。`,
-  passTo: (name) => `請把手機交給`,
+  passTo: () => '請把手機交給',
   iAm: (name) => `我是 ${name}`,
   holdToSee: '按住這裡看你的身分',
   release: '放開就會蓋起來',

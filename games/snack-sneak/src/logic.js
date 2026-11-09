@@ -56,7 +56,7 @@ export function newGame(names, rng = Math.random) {
 }
 
 function emptyActions() {
-  return { sneak: null, guard: null, sniff: null, helpers: [], done: [] };
+  return { sneak: null, guard: null, sniff: null, helpers: [], done: [], hint: null };
 }
 
 export const isActive = (g, seat) => !g.players[seat].out;
@@ -123,7 +123,8 @@ export function crumbHint(g, rng = Math.random) {
   if (!sneaks.length) return null;
   const s = sneaks[Math.floor(rng() * sneaks.length)];
   const start = s - Math.floor(rng() * 3);
-  return [0, 1, 2].map((k) => (((start + k) % g.n) + g.n) % g.n).sort((a, b) => a - b);
+  // In seat order around the table, so a wrapped window reads 12, 1, 2.
+  return [0, 1, 2].map((k) => (((start + k) % g.n) + g.n) % g.n);
 }
 
 export function nightComplete(g) {

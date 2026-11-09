@@ -20,6 +20,7 @@ const defaults = () => ({
 
 let S = load() || defaults();
 let tick = null;
+let lockUntil = 0;
 
 function detectLang() {
   const q = new URLSearchParams(location.search).get('lang');
@@ -36,7 +37,8 @@ function load() {
       s.paused = { screen: s.screen, ui: s.ui };
     }
     if (!s.game || s.game.winner) s.paused = null;
-    s.screen = 'home';
+    // A finished game has nothing secret left: reopen straight on the result.
+    s.screen = s.game && s.game.winner && !['home', 'rules', 'setup'].includes(s.screen) ? 'end' : 'home';
     s.ui = {};
     if (new URLSearchParams(location.search).get('lang')) s.lang = detectLang();
     return s;
@@ -52,11 +54,16 @@ function normalize(s) {
   if (s.screen === 'reveal') s.ui = { turn: s.ui.turn || 0, step: 'handoff' };
   if (s.screen === 'night') {
     let turn = s.ui.turn || 0;
-    while (turn < g.n && g.actions.done.includes(turn)) turn++;
+    // If the reload interrupted someone's private result, hand the phone back to them.
+    if (s.ui.step !== 'feedback') while (turn < g.n && g.actions.done.includes(turn)) turn++;
     s.ui = { turn, step: 'handoff' };
     if (turn >= g.n) s.screen = 'nightDone';
   }
-  if (s.screen === 'day') s.ui = { ...s.ui, running: false };
+  if (s.screen === 'day') {
+    // Resume from the time left when the page was closed, not from the full timer.
+    const left = s.ui.running ? (s.ui.lastSaved ?? s.ui.left) : s.ui.left;
+    s.ui = { running: false, left };
+  }
   return s;
 }
 
@@ -298,8 +305,8 @@ function screenNight() {
     if (g.actions.sneak !== null) notes.push(t.proposal(label(g.actions.sneak)));
   }
   if (task === 'guard' && g.lastGuard !== null) notes.push(t.lastGuard(label(g.lastGuard)));
-  if (g.players[turn].role === 'crumb' && task !== 'helper' && S.ui.hint) {
-    notes.push(t.crumbHint(S.ui.hint.map((s) => t.seat(s + 1)).join(T().sep)));
+  if (g.players[turn].role === 'crumb' && task !== 'helper' && g.actions.hint) {
+    notes.push(t.crumbHint(g.actions.hint.map((s) => t.seat(s + 1)).join(T().sep)));
   }
   if (task === 'suspect') notes.push(t.suspectNote);
   const plateMode = task === 'sneak' || task === 'guard';
@@ -454,10 +461,21 @@ function render() {
   clearInterval(tick);
   if (S.screen === 'day' && S.ui.running) tick = setInterval(onTick, 250);
   bindHold();
+  // Ignore taps for a moment so a double tap cannot open the next player's private screen.
+  lockUntil = Date.now() + 450;
+  const main = root.querySelector('main');
+  if (main) {
+    main.tabIndex = -1;
+    main.focus({ preventScroll: true });
+  }
 }
 
 function onTick() {
   const left = timeLeft();
+  if (left !== S.ui.lastSaved) {
+    S.ui.lastSaved = left;
+    if (left % 5 === 0) save();
+  }
   const el = root.querySelector('.timer');
   if (left === 0) {
     clearInterval(tick);
@@ -521,9 +539,18 @@ function deal() {
 
 function startNightTurn() {
   const g = S.game;
-  const ui = { turn: S.ui.turn, step: 'act' };
-  if (g.players[S.ui.turn].role === 'crumb' && L.isActive(g, S.ui.turn)) ui.hint = L.crumbHint(g);
-  go('night', ui);
+  const seat = S.ui.turn;
+  if (g.actions.done.includes(seat)) {
+    // Resumed after a reload on this player's result screen: show it again.
+    const task = L.nightTask(g, seat);
+    const pick = task === 'sniffer' ? g.actions.sniff : null;
+    const feedback = task === 'sniffer' ? { task, isSneak: g.players[pick].role === 'sneak' } : { task };
+    go('night', { turn: seat, step: 'feedback', pick, feedback });
+    return;
+  }
+  // One clue per night, kept in the saved game so a reload cannot redraw it.
+  if (g.players[seat].role === 'crumb' && L.isActive(g, seat) && !g.actions.hint) g.actions.hint = L.crumbHint(g);
+  go('night', { turn: seat, step: 'act' });
 }
 
 const ACTIONS = {
@@ -640,7 +667,7 @@ const ACTIONS = {
 
 root.addEventListener('click', (e) => {
   const el = e.target.closest('[data-a]');
-  if (!el || el.disabled) return;
+  if (!el || el.disabled || Date.now() < lockUntil) return;
   const fn = ACTIONS[el.dataset.a];
   if (fn) fn(el);
 });
@@ -648,6 +675,13 @@ root.addEventListener('click', (e) => {
 root.addEventListener('input', (e) => {
   if (e.target.matches('[data-name]')) {
     S.names[Number(e.target.dataset.name)] = e.target.value.trim();
+    save();
+  }
+});
+
+window.addEventListener('pagehide', () => {
+  if (S.screen === 'day' && S.ui.running) {
+    S.ui.lastSaved = timeLeft();
     save();
   }
 });

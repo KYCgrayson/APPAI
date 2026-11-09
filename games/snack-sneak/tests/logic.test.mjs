@@ -191,3 +191,10 @@ test('random full games always terminate with a winner', () => {
   }
   assert.ok(wins.good > 0 && wins.sneak > 0);
 });
+
+test('crumb hint wraps around the table in seat order', () => {
+  const g = fixed(['sneak', 'sniffer', 'guard', 'detective', 'detective', 'detective', 'crumb']);
+  // rng 0.99 -> start = 0 - 2 -> seats 5, 6, 0
+  assert.deepEqual(L.crumbHint(g, () => 0.99), [5, 6, 0]);
+  assert.equal(g.actions.hint, null);
+});
