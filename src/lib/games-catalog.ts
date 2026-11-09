@@ -63,7 +63,7 @@ export const GAMES: GameEntry[] = [
     cover: "/games/covers/werewolf.svg",
     localeParam: { name: "lang", zh: "zh", en: "en" },
     accent: "#a78bfa",
-    status: "soon",
+    status: "beta",
   },
 ];
 
