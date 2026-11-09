@@ -1,10 +1,10 @@
-# Prototype verification — 2026-11-08
+# Prototype verification — 2026-11-09
 
 Environment: Node v24.22.2, Three.js 0.187.0, Vite 8.3.6. All work stayed in `games/puzzle/`; no deployment or commit was performed.
 
 ## Build and solver
 
-`npm run build` passes strict TypeScript checking and production bundling. `npm test` passes all 15 tests, including full optimal solutions replayed through the public toggle/cross functions.
+`npm run build` passes strict TypeScript checking and production bundling. `npm test` passes all 47 tests, including full optimal solutions replayed through the public toggle/cross functions.
 
 | Level | BFS minimum | Includes boat restriction |
 | --- | ---: | --- |
@@ -18,12 +18,12 @@ Production file sizes measured with Node `fs.readFileSync` and `zlib.gzipSync` (
 
 | Output | Raw | Gzip |
 | --- | ---: | ---: |
-| HTML | 1,115 B | 645 B |
-| CSS | 7,281 B | 2,335 B |
-| JavaScript | 589,765 B | 149,089 B |
-| Total | 598,161 B | 152,069 B |
+| HTML | 1,115 B | 644 B |
+| CSS | 8,112 B | 2,539 B |
+| JavaScript | 599,217 B | 153,261 B |
+| Total | 608,444 B | 156,444 B |
 
-Vite also reports its compressed JS estimate as 150.06 kB, below the 160 KB limit. It emits an advisory about the JavaScript chunk exceeding 500 kB raw. No runtime dependencies were added.
+Vite also reports its compressed JS estimate as 154.30 kB, below the 160 KB limit. It emits an advisory about the JavaScript chunk exceeding 500 kB raw. No runtime dependencies were added.
 
 
 ## Presentation choices
@@ -56,3 +56,9 @@ iOS Simulator first frame: 62 ms (warm Safari) on the final build; 1,731 ms on t
 **Limits of these numbers:** all GPU work ran on the Mac's GPU. Chrome's CPU throttling slows JavaScript, not the GPU, and the iOS Simulator renders with the Mac's GPU, so neither is a real phone. **No real phone has been measured yet**; that is required before release.
 
 Checked by hand and by an independent reviewer (Chrome via Playwright): tapping 3D models picks the right piece; all three levels can be won at the optimum (the reviewer drove this in the browser before the captain rule was added; the new hard level is covered by a test that replays its 13-crossing solution through the same public functions); fail → undo/restart; input during the sailing animation is ignored; light and `?theme=dark` sky gradients render behind the scene; every button is at least 44×44 px at 375 px width; the page loads only same-origin files.
+
+## Round 4 verification — 2026-11-09
+
+Added a pure sharing module with 32 new tests (47 total), elapsed timer, per-device run storage, validated challenge receiving, synchronous WebGL snapshot, Canvas PNG card, native sharing and preview/download/clipboard fallback. The table above was remeasured from the final production build using Node gzip defaults. Total JavaScript is 153,261 bytes gzip, below even the decimal 160,000-byte cap. Vite uses a different compression estimate (154.30 kB); both are under the limit.
+
+`npm test` and `npm run build` pass. No dependencies were added. Browser QA was attempted but could not run in this restricted session: binding Vite's local listening port returned EPERM, and launching Chrome through the existing external Playwright installation aborted with permission errors. Consequently the new card, native sharing, clipboard fallback, and 375×812 / 1440×900 layouts have not been visually verified in this round. Earlier runtime measurements above are historical and were not repeated for this build.

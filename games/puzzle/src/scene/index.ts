@@ -150,6 +150,13 @@ export class Diorama {
         const pieces = [...candidates].filter(([id]) => id !== 'boat');
         return (pieces.length ? pieces : [...candidates]).sort((a, b) => a[1] - b[1])[0]?.[0] ?? '';
     }
+    snapshot(): HTMLCanvasElement {
+        this.renderer.render(this.scene, this.camera);
+        const copy = document.createElement('canvas');
+        copy.width = this.renderer.domElement.width; copy.height = this.renderer.domElement.height;
+        copy.getContext('2d')!.drawImage(this.renderer.domElement, 0, 0);
+        return copy;
+    }
     resize() {
         const top = document.querySelector('.topbar')?.getBoundingClientRect().bottom ?? 0;
         const bottom = document.querySelector('.bottom')?.getBoundingClientRect().top ?? innerHeight;

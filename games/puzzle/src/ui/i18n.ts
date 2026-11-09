@@ -3,3 +3,8 @@ const zh: typeof en = { title: '過河謎題', pitch: '一艘小船，幾位旅�
 const params = new URLSearchParams(location.search);
 export const locale = (params.get('locale') || navigator.language).toLowerCase().startsWith('zh') ? 'zh-TW' : 'en';
 export const strings = locale === 'zh-TW' ? zh : en;
+export const shareStrings = locale === 'zh-TW' ? {
+ share: '分享成績', nickname: '你的名字（選填）', leaderboard: '我的排行榜', friend: '一位朋友', challenge: '挑戰', target: '目標', beat: '你贏了！', tie: '平手！', missed: '差一點！', cta: '你能用更少趟嗎？', preview: '分享預覽', hint: '長按或右鍵存圖', download: '下載圖片', copy: '複製挑戰連結', copied: '已複製連結', manual: '請複製下方連結', close: '關閉', start: '接受挑戰', banner: '過了這一關，換你挑戰！', error: '無法分享，請再試一次。'
+} : {
+ share: 'Share result', nickname: 'Your name (optional)', leaderboard: 'My best runs', friend: 'A friend', challenge: 'Challenge', target: 'Target', beat: 'You won!', tie: "It's a tie!", missed: 'So close!', cta: 'Can you cross in fewer trips?', preview: 'Share preview', hint: 'Long press or right-click to save', download: 'Download image', copy: 'Copy challenge link', copied: 'Link copied', manual: 'Copy the link below', close: 'Close', start: 'Accept challenge', banner: 'cleared this level. Your turn!', error: 'Could not share. Please try again.'
+};
