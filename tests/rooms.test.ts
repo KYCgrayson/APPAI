@@ -491,7 +491,7 @@ test("the creator can start with the players present", async () => {
   assert.equal(room.seats.length, 3);
   assert.equal(room.turn, 0); // seat 3 no longer exists
   assert.equal((await joinRoom(req("/x", { body: {} }), c.code, t.deps)).status, 409);
-  assert.equal((await start(c.token)).status, 409);
+  assert.equal((await (await start(c.token)).json()).error, "already_started");
   assert.equal((await sendMove(req("/x", { body: { version: room.version, move: 1, nextTurn: 2 }, token: c.token }), c.code, t.deps)).status, 200);
   assert.equal((await sendMove(req("/x", { body: { version: room.version + 1, move: 2 }, token: d.token }), c.code, t.deps)).status, 200);
 });

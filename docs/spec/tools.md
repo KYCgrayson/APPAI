@@ -270,7 +270,7 @@ Turn-based games for 2–4 players, each on their own device. One device creates
 | Lifetime | A room that has not started closes 2 minutes after it was created or after the latest join. A full room closes after 15 minutes with no polls or moves, a finished one 15 minutes after its last move, and any room 24 hours after creation. Afterwards it is `404 room_not_found` |
 | Polling | Every 1–1.5 s while the page is visible; every 15 s while it is hidden, so the player is not marked idle. A closed app counts as idle. On `429`, wait for `Retry-After` |
 | Token | Store it per room (e.g. `localStorage["room:{code}"]`) so a reload keeps the seat. Never put it in a URL. A wrong token gets the same `404` as a missing room |
-| Origins | Browser calls are accepted from `https://appai.info`, `https://www.appai.info` and `https://kycgrayson.github.io`; other origins get `403 origin_not_allowed`. Ask the owner to add a game's origin |
+| Origins | Browser calls are accepted from `https://appai.info`, `https://www.appai.info` and `https://kycgrayson.github.io`; other origins get `403 origin_not_allowed`. Only pages on `https://appai.info` itself can create rooms (the sign-in cookie is not sent cross-site); the other listed origins can join and play. Ask the owner to add a game's origin |
 
 Errors are `{ "error": code, "message": text }`:
 
@@ -280,7 +280,7 @@ Errors are `{ "error": code, "message": text }`:
 | 401 | `login_required` |
 | 403 | `origin_not_allowed`, `not_host` |
 | 404 | `room_not_found` |
-| 409 | `room_full`, `room_not_ready`, `room_finished`, `version_conflict`, `not_your_turn` (the last two include the latest `room`) |
+| 409 | `room_full`, `room_not_ready`, `room_finished`, `already_started`, `version_conflict`, `not_your_turn` (the last two include the latest `room`) |
 | 413 | `state_too_large` |
 | 429 | `rate_limited` |
 | 503 | `unavailable` |

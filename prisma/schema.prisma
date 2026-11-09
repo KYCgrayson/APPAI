@@ -695,7 +695,7 @@ model Feedback {
   @@index([createdAt])
 }
 
-// Room-code rooms for turn-based games (#59). Public state only; no personal data.
+// Room-code rooms for turn-based games (#59). Public game state only, plus the creator's internal user id (never returned).
 model GameRoom {
   code       String   @id
   game       String

@@ -161,7 +161,7 @@ export function roomIpKey(request: Request, env: Env): string | null {
 type ErrorCode =
   | "invalid_request" | "state_too_large" | "room_not_found" | "room_full"
   | "version_conflict" | "not_your_turn" | "room_finished" | "room_not_ready" | "rate_limited"
-  | "origin_not_allowed" | "unavailable" | "login_required" | "not_host";
+  | "origin_not_allowed" | "unavailable" | "login_required" | "not_host" | "already_started";
 class RoomError extends Error {
   status: number;
   code: ErrorCode;
@@ -446,10 +446,11 @@ export function startRoom(request: Request, rawCode: string, deps: RoomDeps) {
     await rateLimit("move", request, deps, now);
     const { room, seat } = await loadSeat(rawCode, request, deps, now);
     if (seat !== 0) throw new RoomError(403, "not_host", "Only the room creator can start the game");
-    if (room.status !== "waiting") throw new RoomError(409, "room_finished", "The game has already started");
+    if (room.status !== "waiting") throw new RoomError(409, "already_started", "The game has already started");
     const seatTokens = room.seatTokens.filter(token => token !== "");
     if (seatTokens.length < MIN_SEATS) throw new RoomError(409, "room_not_ready", `At least ${MIN_SEATS} players are needed`);
     // Seats fill in order and nobody leaves before the start, so joined seats are 0..n-1.
+    // seatSeenAt keeps its old length in storage; every reader maps over seatTokens, so the extra entries are unused.
     const update: RoomUpdate = {
       state: room.state, seatTokens, version: room.version + 1,
       turn: room.turn !== null && room.turn >= seatTokens.length ? 0 : room.turn,
