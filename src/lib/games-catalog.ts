@@ -71,15 +71,15 @@ const COPY: Record<string, HubCopy> = {
   en: {
     metaTitle: "Games — play free original brain games on AppAI",
     metaDescription:
-      "Original brain games from AppAI, played in the browser on phone or desktop: a 3D logic puzzle today, family duels and party games on the way. No download, no sign-up needed to play.",
+      "Original brain games from AppAI, played in the browser on phone or desktop: a 3D logic puzzle, a number duel for two and a party game for the whole family. No download, no sign-up needed to play.",
     label: "Games",
     title: "Games to play together",
     intro: [
-      "Small original games made at AppAI. Start with a logic puzzle to solve on your own; number duels for a parent and child and party games for the whole family are on the way.",
+      "Small original games made at AppAI: a logic puzzle to solve on your own, a number duel for a parent and child, and a party game for the whole family around one phone.",
       "Everything runs in your browser on a phone, tablet or computer. Nothing to install, and no sign-in needed to play.",
     ],
     notes: [
-      "More games are on the way — cards marked Coming soon open once they pass testing.",
+      "Games marked Beta are new — tell us what you think through Feedback.",
       "Online rooms (each player on their own phone with a room code) are coming soon.",
     ],
     play: "Play",
@@ -127,14 +127,14 @@ const COPY: Record<string, HubCopy> = {
   },
   "zh-TW": {
     metaTitle: "遊戲專區：在 AppAI 免費玩原創動腦遊戲",
-    metaDescription: "AppAI 原創動腦小遊戲，手機、電腦打開瀏覽器就能玩：現在有 3D 邏輯謎題，親子對戰和派對遊戲即將推出。免下載，玩遊戲不用註冊。",
+    metaDescription: "AppAI 原創動腦小遊戲，手機、電腦打開瀏覽器就能玩：3D 邏輯謎題、兩人猜數字對決、全家一起玩的派對遊戲。免下載，玩遊戲不用註冊。",
     label: "遊戲專區",
     title: "一起來動動腦",
     intro: [
-      "這裡是 AppAI 自己做的原創小遊戲。現在可以先玩一個人解的邏輯謎題；親子兩人的猜數字對決、全家一起玩的派對遊戲即將推出。",
+      "這裡是 AppAI 自己做的原創小遊戲：一個人解的邏輯謎題、親子兩人的猜數字對決，還有全家圍著一支手機玩的派對遊戲。",
       "所有遊戲都在瀏覽器裡執行，手機、平板、電腦都能玩，不用安裝，玩遊戲也不用登入。",
     ],
-    notes: ["更多遊戲準備中，標示「即將推出」的遊戲通過測試後就會開放。", "房號連線（每人用自己的手機輸入房號一起玩）即將推出。"],
+    notes: ["標示「試玩版」的是新遊戲，玩完歡迎到「意見回饋」告訴我們。", "房號連線（每人用自己的手機輸入房號一起玩）即將推出。"],
     play: "開始玩",
     howToPlay: "怎麼玩",
     players: "人數",
@@ -168,14 +168,14 @@ const COPY: Record<string, HubCopy> = {
   },
   "zh-CN": {
     metaTitle: "游戏专区：在 AppAI 免费玩原创动脑游戏",
-    metaDescription: "AppAI 原创动脑小游戏，手机、电脑打开浏览器就能玩：现在有 3D 逻辑谜题，亲子对战和派对游戏即将推出。免下载，玩游戏不用注册。",
+    metaDescription: "AppAI 原创动脑小游戏，手机、电脑打开浏览器就能玩：3D 逻辑谜题、两人猜数字对决、全家一起玩的派对游戏。免下载，玩游戏不用注册。",
     label: "游戏专区",
     title: "一起来动动脑",
     intro: [
-      "这里是 AppAI 自己做的原创小游戏。现在可以先玩一个人解的逻辑谜题；亲子两人的猜数字对决、全家一起玩的派对游戏即将推出。",
+      "这里是 AppAI 自己做的原创小游戏：一个人解的逻辑谜题、亲子两人的猜数字对决，还有全家围着一部手机玩的派对游戏。",
       "所有游戏都在浏览器里运行，手机、平板、电脑都能玩，不用安装，玩游戏也不用登录。",
     ],
-    notes: ["更多游戏准备中，标示“即将推出”的游戏通过测试后就会开放。", "房号联机（每人用自己的手机输入房号一起玩）即将推出。"],
+    notes: ["标示“试玩版”的是新游戏，玩完欢迎到“意见反馈”告诉我们。", "房号联机（每人用自己的手机输入房号一起玩）即将推出。"],
     play: "开始玩",
     howToPlay: "怎么玩",
     players: "人数",
