@@ -80,7 +80,7 @@ Copy this complete request body into both the dry-run and publish POSTs. Change 
 | Pages | https://appai.info/spec/pages | Page configuration, CRUD and workflow |
 | Sections | https://appai.info/spec/sections | Section schemas and icons |
 | Multi-language & multi-page | https://appai.info/spec/i18n | Languages, child pages and navigation |
-| Tools | https://appai.info/spec/tools | Wrapped tool, Connected tool, identity and interactive schemas |
+| Tools | https://appai.info/spec/tools | Wrapped tool, Connected tool, identity, interactive schemas and room-code multiplayer |
 | Universal App | https://appai.info/spec/apps | Universal App manifests, releases, review and runtime |
 
 ## Document Guide
