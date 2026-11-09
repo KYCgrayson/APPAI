@@ -109,6 +109,11 @@ export function jsonStorable(value: unknown, depth = 0): boolean {
   }
   return true;
 }
+// The write has already committed; a failed presence update must not turn it into an error
+// (for a join that would lose the token of a seat that is already taken).
+async function touchAfterWrite(deps: RoomDeps, code: string, seat: number, now: Date) {
+  try { await deps.store.touchSeat(code, seat, now, null); } catch { console.error("Room presence update failed"); }
+}
 // Full rooms live 24 hours from creation, but close early once every seat has gone quiet.
 export function activeExpiry(room: Pick<RoomRecord, "createdAt">, now: Date) {
   return new Date(Math.min(room.createdAt.getTime() + ROOM_TTL_MS, now.getTime() + IDLE_TTL_MS));
@@ -343,7 +348,7 @@ export function joinRoom(request: Request, rawCode: string, deps: RoomDeps) {
         expiresAt: full ? activeExpiry(room, now) : room.expiresAt,
       };
       if (await deps.store.updateRoom(room.code, room.version, update, now)) {
-        await deps.store.touchSeat(room.code, seat, now, null);
+        await touchAfterWrite(deps, room.code, seat, now);
         const seatSeenAt = room.seatSeenAt.map((value, i) => i === seat ? now : value);
         return { status: 200, body: { seat, token, room: publicRoom({ ...room, ...update, seatSeenAt }, now) } };
       }
@@ -357,7 +362,8 @@ export function pollRoom(request: Request, rawCode: string, deps: RoomDeps) {
     const now = deps.now?.() ?? new Date();
     const { room, seat } = await loadSeat(rawCode, request, deps, now);
     if (idleMs(room, seat, now) >= TOUCH_INTERVAL_MS) {
-      const expiresAt = room.status === "waiting" ? null : activeExpiry(room, now);
+      // Only a game in progress is kept open by polling; waiting and finished rooms keep their expiry.
+      const expiresAt = room.status === "playing" ? activeExpiry(room, now) : null;
       await deps.store.touchSeat(room.code, seat, now, expiresAt);
       room.seatSeenAt[seat] = now;
       if (expiresAt) room.expiresAt = expiresAt;
@@ -417,7 +423,7 @@ export function sendMove(request: Request, rawCode: string, deps: RoomDeps) {
       const latest = await deps.store.findRoom(room.code, now);
       throw new RoomError(409, "version_conflict", "Room changed; refresh and retry", latest ? { room: publicRoom(latest, now) } : {});
     }
-    await deps.store.touchSeat(room.code, seat, now, null);
+    await touchAfterWrite(deps, room.code, seat, now);
     const seatSeenAt = room.seatSeenAt.map((value, i) => i === seat ? now : value);
     return { status: 200, body: { room: publicRoom({ ...room, ...update, seatSeenAt }, now) } };
   });

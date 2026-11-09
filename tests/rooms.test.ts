@@ -427,3 +427,21 @@ test("daily create limit bounds rooms per network", async () => {
   }
   assert.equal(created, RATE_LIMITS.createDaily.limit);
 });
+
+test("a failed presence write after a join or move does not lose the result", async () => {
+  const t = setup();
+  const c = await (await createRoom(req("/x", { body: { game: "x" } }), t.deps)).json();
+  t.deps.store.touchSeat = async () => { throw new Error("blip"); };
+  const j = await joinRoom(req("/x", { body: {} }), c.code, t.deps);
+  assert.equal(j.status, 200);
+  assert.equal(typeof (await j.json()).token, "string");
+  const m = await sendMove(req("/x", { body: { version: 2, move: 1 }, token: c.token }), c.code, t.deps);
+  assert.equal(m.status, 200);
+});
+
+test("polling a finished room does not keep it open", async () => {
+  const { t, created, joined, code } = await startGame();
+  await sendMove(req("/x", { body: { version: 2, end: true }, token: created.token }), code, t.deps);
+  for (let i = 0; i < 3; i++) { t.advance(6 * 60_000); await poll(t, code, joined.token); }
+  assert.equal((await poll(t, code, joined.token)).status, 404);
+});
