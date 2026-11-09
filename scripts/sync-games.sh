@@ -20,7 +20,7 @@ OUT="$ROOT/public/games"
 GAMES=(
   "river-crossing|games/puzzle|vite"
   "guess-duel|games/guess-duel|vite"
-  "snack-sneak|games/snack-sneak|static"
+  "werewolf|games/werewolf|static"
 )
 
 build_one() {
