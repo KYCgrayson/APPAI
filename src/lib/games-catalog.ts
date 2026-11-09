@@ -76,11 +76,11 @@ const COPY: Record<string, HubCopy> = {
   en: {
     metaTitle: "Games — play free original brain games on AppAI",
     metaDescription:
-      "Original brain games from AppAI, played in the browser on phone or desktop: a 3D logic puzzle, a number duel for two and a party game for the whole family. No download, no sign-up needed to play.",
+      "Original brain games from AppAI, played in the browser on phone or desktop: three 3D logic puzzles, a number duel for two and a party game for the whole family. No download, no sign-up needed to play.",
     label: "Games",
     title: "Games to play together",
     intro: [
-      "Small original games made at AppAI: a logic puzzle to solve on your own, a number duel for a parent and child, and a party game for the whole family around one phone.",
+      "Small original games made at AppAI: three logic puzzles to solve on your own, a number duel for a parent and child, and a party game for the whole family around one phone.",
       "Everything runs in your browser on a phone, tablet or computer. Nothing to install, and no sign-in needed to play.",
     ],
     notes: [
@@ -96,12 +96,12 @@ const COPY: Record<string, HubCopy> = {
     nav: "Games",
     games: {
       "river-crossing": {
-        name: "River Crossing",
-        tagline: "One small boat, a few passengers who can't be left alone together — get everyone safely across.",
+        name: "Tabletop Puzzles",
+        tagline: "Three 3D logic puzzles: River Crossing, Night Bridge and Water Pouring.",
         howToPlay: [
-          "Tap passengers to put them in the boat, then tap the boat to cross.",
-          "Don't leave a pair that will cause trouble alone together on either bank.",
-          "Three levels, from 7 crossings to 13. Undo one step at a time.",
+          "Pick a puzzle and one of three difficulty levels.",
+          "Select who crosses, then tap the boat or lantern; tap two jugs to pour water.",
+          "Get everyone across or measure the target amount of water in the fewest moves or minutes.",
         ],
         players: "1",
         ages: "6+",
@@ -132,11 +132,11 @@ const COPY: Record<string, HubCopy> = {
   },
   "zh-TW": {
     metaTitle: "遊戲專區：在 AppAI 免費玩原創動腦遊戲",
-    metaDescription: "AppAI 原創動腦小遊戲，手機、電腦打開瀏覽器就能玩：3D 邏輯謎題、兩人猜數字對決、全家一起玩的派對遊戲。免下載，玩遊戲不用註冊。",
+    metaDescription: "AppAI 原創動腦小遊戲，手機、電腦打開瀏覽器就能玩：三個 3D 邏輯謎題、兩人猜數字對決、全家一起玩的派對遊戲。免下載，玩遊戲不用註冊。",
     label: "遊戲專區",
     title: "一起來動動腦",
     intro: [
-      "這裡是 AppAI 自己做的原創小遊戲：一個人解的邏輯謎題、親子兩人的猜數字對決，還有全家圍著一支手機玩的派對遊戲。",
+      "這裡是 AppAI 自己做的原創小遊戲：三個適合一個人解的邏輯謎題、親子兩人的猜數字對決，還有全家圍著一支手機玩的派對遊戲。",
       "所有遊戲都在瀏覽器裡執行，手機、平板、電腦都能玩，不用安裝，玩遊戲也不用登入。",
     ],
     notes: ["標示「試玩版」的是新遊戲，玩完歡迎到「意見回饋」告訴我們。", "房號連線（每人用自己的手機輸入房號一起玩）即將推出。"],
@@ -149,9 +149,9 @@ const COPY: Record<string, HubCopy> = {
     nav: "遊戲",
     games: {
       "river-crossing": {
-        name: "過河謎題",
-        tagline: "一艘小船、幾位不能單獨相處的乘客，排好順序，把大家平安送到對岸。",
-        howToPlay: ["點乘客上船，再點小船過河。", "會出事的組合不能單獨留在同一邊岸上。", "三個關卡，最少 7 趟到 13 趟，可以一步一步悔棋。"],
+        name: "桌上謎題",
+        tagline: "過河、夜過橋、量水，三個 3D 邏輯謎題等你來解。",
+        howToPlay: ["選一個謎題，再選入門、進階或挑戰難度。", "選好旅伴，再點船或燈出發；量水時依序點兩個水壺互倒。", "把大家送到對岸或量出指定水量，挑戰最少趟數、最少步數或最短過橋時間。"],
         players: "1 人",
         ages: "6 歲以上",
       },
@@ -173,11 +173,11 @@ const COPY: Record<string, HubCopy> = {
   },
   "zh-CN": {
     metaTitle: "游戏专区：在 AppAI 免费玩原创动脑游戏",
-    metaDescription: "AppAI 原创动脑小游戏，手机、电脑打开浏览器就能玩：3D 逻辑谜题、两人猜数字对决、全家一起玩的派对游戏。免下载，玩游戏不用注册。",
+    metaDescription: "AppAI 原创动脑小游戏，手机、电脑打开浏览器就能玩：三个 3D 逻辑谜题、两人猜数字对决、全家一起玩的派对游戏。免下载，玩游戏不用注册。",
     label: "游戏专区",
     title: "一起来动动脑",
     intro: [
-      "这里是 AppAI 自己做的原创小游戏：一个人解的逻辑谜题、亲子两人的猜数字对决，还有全家围着一部手机玩的派对游戏。",
+      "这里是 AppAI 自己做的原创小游戏：三个适合一个人解的逻辑谜题、亲子两人的猜数字对决，还有全家围着一部手机玩的派对游戏。",
       "所有游戏都在浏览器里运行，手机、平板、电脑都能玩，不用安装，玩游戏也不用登录。",
     ],
     notes: ["标示“试玩版”的是新游戏，玩完欢迎到“意见反馈”告诉我们。", "房号联机（每人用自己的手机输入房号一起玩）即将推出。"],
@@ -190,9 +190,9 @@ const COPY: Record<string, HubCopy> = {
     nav: "游戏",
     games: {
       "river-crossing": {
-        name: "过河谜题",
-        tagline: "一艘小船、几位不能单独相处的乘客，排好顺序，把大家平安送到对岸。",
-        howToPlay: ["点乘客上船，再点小船过河。", "会出事的组合不能单独留在同一边岸上。", "三个关卡，最少 7 趟到 13 趟，可以一步一步悔棋。"],
+        name: "桌上谜题",
+        tagline: "过河、夜过桥、量水，三个 3D 逻辑谜题等你来解。",
+        howToPlay: ["选一个谜题，再选入门、进阶或挑战难度。", "选好同伴，再点船或灯出发；量水时依次点两个水壶互相倒水。", "把大家送到对岸或量出指定水量，挑战最少趟数、最少步数或最短过桥时间。"],
         players: "1 人",
         ages: "6 岁以上",
       },
