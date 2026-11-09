@@ -1,0 +1,2 @@
+import { defineConfig } from 'vite';
+export default defineConfig({ base: './', build: { target: 'es2020', reportCompressedSize: true, rollupOptions: { output: { manualChunks: (id: string) => id.includes('/node_modules/three/') ? 'three' : undefined, chunkFileNames: chunk => { const puzzle = chunk.facadeModuleId?.match(/puzzles\/(river|bridge|water)\/scene/); return puzzle ? `assets/${puzzle[1]}-scene-[hash].js` : 'assets/[name]-[hash].js'; } } } } });
