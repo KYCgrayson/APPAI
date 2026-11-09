@@ -1,3 +1,57 @@
+# Round 11 verification — 2026-11-09
+
+The collection, shared Stage, two new puzzles, generalized sharing/storage and low horizon scenery are implemented in games/puzzle/. No dependencies, external assets, deployment or commits were added.
+
+## Automated checks
+
+- npm test: **97 passed, 0 failed**, including all original 65 tests.
+- npm run build: **passed**, strict TypeScript and Vite production bundling.
+- git diff --check: **passed**.
+- The prepared parent-plan patch passes git apply --check. The parent document itself is outside the writable workspace and was not modified; apply puzzle-plan-round11.patch from the repository root when permitted.
+
+| Puzzle | Easy optimum | Medium optimum | Hard optimum | Two-star ceilings | Lantern limits |
+| --- | ---: | ---: | ---: | --- | --- |
+| River | 7 crossings | 11 crossings | 13 crossings | 10 / 15 / 17 | — |
+| Bridge | 17 min | 29 min | 28 min | 18 / 31 / 30 | 22 / 38 / 36 min |
+| Water | 6 steps | 7 steps | 11 steps | 8 / 10 / 15 | — |
+
+Bridge Dijkstra and Water BFS solutions replay through public actions at every optimum. Tests cover immutable inputs, bridge selection/capacity/remote/frozen/timeout boundaries, naive fastest escort (19/32/34), water conservation/rejections/goals, registry stars, URL routing and per-puzzle challenge validation, Run.score migration and per-game ranking.
+
+Headless geometry checks instantiate and dispose every puzzle/level, replay each optimal scene animation, and verify each callback fires once with busy cleared. They exercise actual Stage camera fitting at 375×812, 390×844, 768×1024, 800×600 and 1440×900 using representative reserved HUD/control regions. These are numerical projection checks, **not CSS/pixel verification**. Existing atmosphere tests still exercise cloud clearance over 5,760 orbit/zoom/theme configurations. All text badges use a stub canvas in Node scene tests; no browser or GPU rendering is implied.
+
+## Production bundles
+
+Measured from the final dist/assets/*.js with Node zlib.gzipSync defaults, summing **all** JS chunks (decimal bytes):
+
+| Chunk | Raw bytes | Gzip bytes |
+| --- | ---: | ---: |
+| bridge-scene-B27mpCPz.js | 6,024 | 2,606 |
+| helpers-dJEmR_zX.js | 784 | 527 |
+| index-Bkt-gCRk.js | 72,195 | 28,120 |
+| river-scene-lBCW4jXc.js | 11,192 | 4,622 |
+| three-L7Zacm_L.js | 576,451 | 141,016 |
+| water-scene-C62xRwrq.js | 7,059 | 2,840 |
+| **All JavaScript** | **673,705** | **179,731** |
+
+Budget: **220,000 B** gzip; remaining: **40,269 B**. Vite's compression estimate differs slightly from Node gzip defaults; both are under budget. The existing warning about a raw chunk over 500 kB refers to shared Three.js, not a gzip-budget failure. Three and its installed addons share one chunk, and each puzzle scene has a named dynamic chunk. Card hover/focus preloads that scene.
+
+## Scenery and rendering
+
+The tall circular hill walls and windmill were removed. Three low, irregular, blue-hazed bands are painted into the background shader, with calm flat ground fading below them. Their maximum top is below 28% of viewport height measured from the bottom, independent of orbit, so they cannot become a dome behind the board. The sun/moon uses an open left-side position on narrow layouts and the gap between the heading and toolbar on wide layouts. The sky, clouds, stars, reduced-motion behavior and atmosphere-free share snapshot remain.
+
+A conservative initial-scene material/shadow submission census (maximum of three levels, plus all 14 possible atmosphere draws) gives **River 147 / Bridge 53 / Water 46**. It deliberately counts children inside hidden decoration groups and extra transparent passes, and does not apply camera culling. The automated scene check stays below 160 at each initial state. These are geometry counts, **not GPU-measured draw calls for every gameplay state**. Actual rendered draw calls and the 60 FPS phone target remain unmeasured this round. Scene disposal releases owned geometries, materials, badge textures and instance buffers; shared primitive/palette caches remain reusable.
+
+## Browser verification limits
+
+Starting Vite on 127.0.0.1:5173 failed with listen EPERM under the filesystem/process sandbox. The connected Chrome browser's automatic approval review also rejected opening http://localhost:5173 because access to that origin was not granted. No alternate browser surface, external server, local-file workaround or policy bypass was attempted.
+
+Consequently the requested light/dark pixel checks at 375×812, 390×844, 768×1024 and 1440×900, the zh-TW 800×600 scenery inspection from default/low/top-down cameras for all three puzzles, actual chip wrapping/44 px hit targets/overlap, audio listening, share-card/native-share smoke checks and real-phone FPS are **not browser-verified**. CSS specifies minimum 44 px buttons, wrapping chips, scrolling menus and separate view-tool/header rows; these still need visual QA.
+
+Collection total uses 27 stars (nine levels × three stars); each puzzle card uses the specified 9-star total. Optional Coming Soon card was omitted.
+
+<details>
+<summary>Historical Round 10 and earlier measurements (not current runtime evidence)</summary>
+
 # Prototype verification — 2026-11-09
 
 Environment: Node v24.22.2, Three.js 0.187.0, Vite 8.3.6. All work stayed in `games/puzzle/`; no deployment or commit was performed.
@@ -97,3 +151,5 @@ The full-screen Three.js sky is one draw, with `depthWrite:false`, a gradient, s
 Five new regression tests cover depth clipping, the screen clearance margin, actual puff vertices across **5,760 camera configurations** (four viewport sizes × 48 azimuths × five elevations × three zoom factors × two themes), reduced-motion/fallback behavior, and ray-tested celestial-disc clearance around the hill ring. Every visible puff clears the projected board/toy envelope, including during unrestricted orbit and zoom. Representative unobstructed gameplay regions at 375×812, 390×844, 768×1024 and 1440×900 are used for these projection tests. These tests do not render pixels or measure CSS layout. Default fitted views retain visible puffs at each size. Phone/tablet CSS places the level header below the view-tools cluster; desktop reserves its right-hand space. Safe-area offsets are included, and menu panels scroll above the bottom safe area.
 
 **Browser QA remains unverified:** Vite could not bind a local port (`EPERM`); a local static-server attempt also returned `EPERM`. The connected browser's automatic approval review rejected opening the self-contained local-file preview because its URL policy allows only HTTP/HTTPS. No alternate browser surface or policy workaround was attempted. Consequently current pixel/layout checks at the four requested sizes, iframe navigation, rendered GLSL/day/night appearance, share-card smoke checks, hard-level draw calls (target ≤160), and actual-phone FPS (target 60) could not be measured. Earlier runtime tables remain historical and must not be treated as Round 10 results.
+
+</details>

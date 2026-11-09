@@ -1,60 +1,94 @@
-# River Crossing
+# Tabletop Puzzle Collection
 
-An original, low-poly tabletop presentation of public-domain river-crossing puzzles. Three levels, animated primitive characters, synthesized sound, undo, local star scores, and Traditional Chinese / English UI. No runtime network or AI calls.
+Three original, procedural 3D logic puzzles, each with three levels: River Crossing, Night Bridge and Water Pouring. Traditional Chinese and English, synthesized music/SFX, undo, local stars, personal leaderboards, share cards and challenge links. No downloaded art, new dependencies, runtime network or AI calls.
 
 ```sh
 npm run dev
-npm run build
 npm test
+npm run build
 ```
 
-Vite serves the game locally (normally http://localhost:5173). `dist/` is a self-contained static build using relative asset paths. Nothing needs to be added to the parent Next.js application.
+Vite normally serves `http://localhost:5173`. `dist/` is a self-contained static build with relative assets; no parent Next.js changes are required. WebGL and a modern browser are required.
 
-Use the house icon **首頁 / Home** at the far left of the level header to return to level selection. It is disabled during sailing; fail/win sheets also offer **回首頁 / Home**. Tap characters or the accessible traveler buttons to board/unboard. Tap the boat or **Set sail** to cross. Drag to orbit, scroll/pinch to zoom. Space sails, Z undoes, R restarts. Undo reverses one boarding or crossing action; after failure it restores the pre-departure state. Undo is disabled after a win.
+## Screens and controls
 
-URL parameters:
+The collection home opens a puzzle's level menu; the house button during play returns to that menu. **← All puzzles / ← 所有謎題** or Escape on a level menu returns to the collection. The home keeps the last-played diorama rotating behind the cards (river by default). The About link appears only on collection home, outside iframes, and keeps the existing plain URL and `target="_top"`.
 
-- `?locale=zh-TW` (any `zh*` selects Traditional Chinese; other values select English). Without the parameter, uses `navigator.language`.
-- `?theme=dark` uses a darker scene and UI.
-- `?color=426b58` sets the button accent; accepts exactly six hexadecimal digits, with an optional `#` (URL-encode a hash as `%23`).
-- `?debug=1` shows FPS, approximate average frame time, draw calls, triangles, and first rendered frame time.
+- **River:** tap a toy or chip to board/leave; tap the boat or Set sail. Space sails, Z undoes and R restarts. Passengers remain aboard on landing. All previous farmer, predator, captain, capacity and boat-balance rules are unchanged. Undo includes successful toggles and crossings and restores the loaded boat after failure.
+- **Bridge:** select one or two friends on the lantern's side, then Walk, or tap the lantern/bridge. Space walks; 1–6 toggle friends; Z/R undo/restart. Travel takes the slower person's minutes. A timeout permits undo. The scene is always night, independently of the DOM theme.
+- **Water:** tap one jug, then another to pour; tap the selected jug again to deselect. Easy includes a pump to fill and a flower bed to empty into, plus buttons. 1–3 select, F fills, E empties, Z/R undo/restart. Selecting never adds a step or history entry. Medium/Hard conserve the starting water and have no fill/empty controls.
 
-`window.__puzzleMetrics` updates once a second. `firstFrameMs` is the absolute `performance.now()` timestamp of the first rendered frame. `window.__puzzleTest.state()` returns a cloned state plus screen/animation status. `act({type:'start',level:'easy'})`, `act({type:'toggle',id:'goat'})`, `act({type:'cross'})`, `act({type:'undo'})`, `act({type:'restart'})`, and `act({type:'menu'})` drive the public game flow. Wait until `state().animating === false` after each crossing (800 ms). Passengers stay aboard after landing until toggled off. Repeated animals use IDs `rabbit1`…`rabbit5` and `fox1`…`fox5`.
+Every game keeps the free horizontal orbit, polar range 0.15–1.30 radians, pinch/wheel zoom, reset view and empty-space double-tap reset. Music and SFX remain independent, remembered controls. Undo does not rewind the elapsed timer and is disabled after victory; restart begins a fresh timer. Inputs are locked during scene moves.
 
-The pure logic module exports `solution(level)` (concrete passenger lists) and `solve(level)` (minimum crossings). BFS confirms **7 / 11 / 13**. Hard has five rabbits and five foxes, capacity three, and keeps the in-boat balance rule. Only `rabbit1` and `fox1` (wearing captain hats) can row; every crossing needs at least one of them. With all travelers allowed to row, hard takes 11 crossings. Rules are evaluated after landing with docked passengers counted on that bank. Loading itself never triggers a bank failure.
+## Levels and stars
 
-WebGL and a modern browser are required. See ASSETS.md for licenses and MEASUREMENTS.md for verification details.
+| Puzzle | Optimum, easy / medium / hard | Two-star ceiling | Failure limit |
+| --- | --- | --- | --- |
+| River | 7 / 11 / 13 crossings | 10 / 15 / 17 | Existing bank/boat rules |
+| Bridge | 17 / 29 / 28 minutes | 18 / 31 / 30 | Lantern: 22 / 38 / 36 minutes |
+| Water | 6 / 7 / 11 steps | 8 / 10 / 15 | None |
 
-## Results, sharing, and challenges
+Three stars at or below optimum; two at or below the two-star ceiling; otherwise one on completion. The lantern lasts `ceil(optimal * 1.3)` so a child can win without finding the perfect answer. Its two-star threshold is `floor(optimal * 1.1)`; the fastest-escort plans (19 / 32 / 34 minutes) earn one star but still win. Exceeding the limit, rather than reaching it, extinguishes the lantern. Water gives a one-time undo/restart suggestion at twice optimum.
 
-The clock starts when a level starts and stops on victory, including sailing time. Undo never rewinds it; restarting starts a new clock. Each completed run is saved to `localStorage['river-runs']`, retaining the best five per level, ordered by crossings, elapsed milliseconds, then completion date. **This leaderboard is personal and per-device until a backend exists.** Storage failures are tolerated.
+Each puzzle card shows stars out of 9. The collection total counts all nine levels, out of 27. Reference solvers are in `../../docs/games/solvers.py`; the local test suite independently solves/replays all nine levels through public actions.
 
-After winning, tap **分享成績 / Share result** to generate a 1080×1350 PNG from the original 3D scene, result, stars, and personal leaderboard. Supported devices open native file sharing with the challenge URL in the share text. Cancellation is silent. Other environments show a scrollable image preview with download and copy-link actions; clipboard failure selects a read-only URL for manual copying. Preview object URLs are revoked on close. The optional nickname is stored in `river-name` and appears only on the card and challenge link.
+## Architecture and bundles
 
-Challenge URLs retain only `locale`, `theme`, and `color` from the current page, plus:
+- `src/main.ts`: routing, screens, HUD, history, storage and share flow.
+- `src/routing.ts`: pure `resolveRoute(params, registry)`.
+- `src/puzzles/types.ts`: common logic, scene, registry, action and scoring contracts.
+- `src/puzzles/registry.ts`: all logic and localized strings; scene modules load through dynamic imports and preload on card hover/focus.
+- `src/puzzles/{river,bridge,water}/`: pure logic, localized strings and separate scene chunks; river also owns its original layout.
+- `src/scene/stage.ts`: renderer, lights/atmosphere presets, fitting to scene bounds, camera/controls, preferred picking, quality fallback, metrics and snapshots.
+- `src/scene/models.ts`: original toy builders, shared palette/primitives, baking and resource disposal.
+- `src/ui/home.ts`: collection HTML and original inline SVG icons.
 
-- `challenge=easy|medium|hard`
-- `c`: integer crossings, from that level’s optimum through 999
-- `t`: whole elapsed seconds, 1–86399
-- `n`: optional nickname, trimmed and limited to 12 Unicode characters after removing control characters and `<>&"'`
+Old `src/logic/index.ts` and `src/scene/layout.ts` paths re-export the moved river modules. `src/scene/index.ts` provides the legacy river-only `Diorama` facade. The original river solver still returns passenger lists; registry logic returns replayable actions for every puzzle.
 
-Malformed or duplicate challenge fields invalidate the whole challenge silently. Valid challenges show a menu banner, direct start button, target chip, and victory comparison (fewer crossings wins; equal crossings requires a faster time). Challenge values are user-supplied and are not verified records. No backend, analytics, runtime network, or AI service is used.
+Vite 8's function-form `manualChunks` groups `three` (including its installed addons) into a shared chunk, equivalent to the requested `three: ['three']` grouping; its typings reject the older object form. Each puzzle scene is a named lazy chunk. See `MEASUREMENTS.md` for every chunk's gzip size and validation limits.
 
-`window.__puzzleTest.state()` also returns `elapsedMs` and decoded `challenge`; `act({type:'share'})` runs the share flow after a win. `window.__puzzleShare.lastCardDataUrl` and `.lastUrl` expose the most recently generated PNG and challenge link for browser checks.
+The scenery uses three low, irregular, bluish-faded bands painted into the sky shader, above a calm ground fade. There are no hill walls, mound or windmill. The sun/moon sits away from the header; cloud clearance, reduced motion and the quality fallback remain. Scene switches dispose owned geometry/materials, badge textures and instance buffers while retaining shared primitive/palette resources.
 
-## Round 7: a richer procedural diorama
+## URL scheme
 
-Travelers are original rounded wooden/felt toys with highlighted eyes, cheeks, blinking, breathing, moving ears/tails, boarding hops and victory hops. Farmer clothing, wool, layered cabbage leaves, animal markings and peaked captain caps are built from geometry, with decorative pieces baked into vertex-colored meshes.
+| URL query | Screen |
+| --- | --- |
+| No `game` | Collection home |
+| `game=bridge` | Bridge levels |
+| `game=water&level=medium` | Starts medium Water |
+| `challenge=easy&c=7&t=42` | Legacy river levels + challenge |
+| `game=bridge&challenge=medium&c=29&t=90&n=Amy` | Bridge levels + challenge |
+| Unknown `game` | Collection home |
 
-The tabletop now has bevelled banks with soil strata and sandy shores, shader-driven water waves and sparkle, foam, a sailing wake, docks, reeds, flowers, pebbles, bushes, varied trees, signposts and flying butterflies. Dusk (`?theme=dark`) adds warm lanterns and animated fireflies. ACES lighting uses one tightly framed soft shadow light; a first-two-second FPS check disables shadow mapping and reduces pixel ratio below 45 FPS. Repeated props use instancing or merged geometry; picking still uses the separate traveler hitboxes and boat only.
+Navigation uses `history.replaceState`, preserving locale/theme/color/debug and other unrelated parameters. `locale=zh-TW` (any `zh*`) selects Traditional Chinese, otherwise English; the fallback is `navigator.language`. `theme=dark` styles the DOM and river; Bridge remains night and Water remains day. `color=426b58` accepts six hex digits with an optional URL-encoded `#`. `debug=1` shows metrics.
 
-**Music** and **Sound effects** are independent, at least 44×44 px buttons (繁中：**音樂 開/關**、**音效 開/關**). Both default on and remember changes locally when storage is available. Music begins after a pointer or keyboard gesture, pauses with a hidden tab and resumes on return. Web Audio generates an 84 BPM, 16-bar pentatonic pad/melody/plucked-bass progression with changing phrases, a victory flourish, and layered wooden, splash, landing and chime effects. Gain ramps avoid abrupt toggle clicks. Nothing is downloaded for the art or sound, and no runtime network or AI calls are introduced.
+Challenge links always include `game`, `challenge`, `c` (score from that puzzle/level's optimum through 999), `t` (whole seconds 1–86399), and optional `n` (up to 12 sanitized Unicode characters). Duplicate/malformed fields invalidate the challenge. These are user-supplied challenges, not verified records. Lower score wins, then whole seconds.
 
+## Storage and sharing
 
-## Round 10: Home and the landscape
+Runs use `{game, level, score, ms, at}` and retain the best five **per game and level**, ordered by score, milliseconds, then date. Storage keys are `river-runs/-stars/-hints`, `bridge-runs/-stars/-hints`, and `water-runs/-stars/-hints`. Old river `{crossings}` runs migrate to `score`. Nicknames read `puzzle-name`, fall back to `river-name`, and write `puzzle-name`. `river-music` and `river-sfx` remain shared and unchanged. `puzzle-last` remembers the last started puzzle. Unavailable storage is tolerated. Leaderboards are personal and per-device.
 
-The Home button pairs an original inline house icon with a localized label, with a minimum 44×44 px target. The level title stays immediately beside it; the toolbar contains Undo, Restart and Rules. Phone and tablet layouts reserve a separate row for the music / SFX / reset-view cluster. The menu includes **← 遊戲介紹 / ← About this game**, opening `https://appai.info/p/river-crossing` with `target="_top"`. The link is hidden inside any iframe, including when frame detection throws. The game uses `locale`, so the About URL stays plain.
+Victory sharing preserves the 1080×1350 Canvas card, native file sharing, silent cancellation and preview/download/copy fallback. Titles, units, optimum, rankings, CTA and filenames match the puzzle: `river-crossing.png`, `night-bridge.png`, `water-pouring.png`. Snapshots hide the atmosphere and river's decorative flyers. The nickname appears only in the card/challenge. Preview object URLs are revoked on close.
 
-A Three.js full-screen sky shader paints a blue-to-warm afternoon gradient, soft sun and halo, and slowly drifting wisps using three noise octaves. Dark mode paints a dusk/night sky with a moon, halo, twinkling stars and softly lit clouds. Three closed, low-poly hill rings surround the tabletop; a merged tree line includes an original four-sailed lookout mill. The distant landscape sits below the tabletop and outside the camera's orbit range, with aerial fog matching the sky's horizon. CSS supplies only a solid fallback before the first frame.
+## Automation hooks
 
-Twelve merged puff clouds of varied sizes and heights drift through the distant landscape during both selection and play. Their projected bounding rectangles must clear the full board/character envelope, with extra padding, before they can appear; clouds also fade before touching screen edges. An instanced five-bird V passes occasionally. `prefers-reduced-motion` stops sky/puff drift and star twinkle and hides the passing flock. The existing FPS fallback also reduces sky noise from three octaves to two and disables star twinkle, alongside its shadow and pixel-ratio reductions. The share snapshot hides the entire atmosphere and retains the card's readable painted gradient.
+`window.__puzzleTest.state()` returns a clone of puzzle state plus `{game, level, screen, animating, elapsedMs, challenge}`. Screens are `home | levels | game`. Wait for `animating === false` after starts and moves, including lazy loading.
+
+```js
+__puzzleTest.act({type:'home'});
+__puzzleTest.act({type:'open',game:'bridge'});
+__puzzleTest.act({type:'start',game:'bridge',level:'easy'}); // game optional
+__puzzleTest.act({type:'toggle',id:'1'}); // bridge IDs are minute strings
+__puzzleTest.act({type:'walk'}); // go also works
+__puzzleTest.act({type:'start',game:'water',level:'easy'});
+__puzzleTest.act({type:'select',jug:1}); // zero-based
+__puzzleTest.act({type:'fill',jug:1});
+__puzzleTest.act({type:'pour',from:1,to:0});
+__puzzleTest.act({type:'empty',jug:0});
+```
+
+`menu | undo | restart | share` remain available. River `toggle{id}` and `cross` remain identical, with `go` as a crossing alias. River IDs remain `farmer/wolf/goat/cabbage`, `rabbit1…5`, `fox1…5`.
+
+`window.__puzzleMetrics` retains `{firstFrameMs, fps, drawCalls, triangles}`; firstFrameMs is the `performance.now()` timestamp of the first rendered puzzle frame. `window.__puzzleShare.lastUrl` holds the generated challenge URL and `lastCardDataUrl` exposes its PNG when `debug=1`.
+
+See `ASSETS.md` for origins/licenses and `MEASUREMENTS.md` for what was and was not verified this round.

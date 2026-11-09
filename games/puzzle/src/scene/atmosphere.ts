@@ -22,7 +22,7 @@ export function clearsBoard(cloud: ScreenRect, board: ScreenRect) {
     return cloud.maxX < board.minX - gap || cloud.minX > board.maxX + gap || cloud.maxY < board.minY - gap || cloud.minY > board.maxY + gap;
 }
 
-/** A painted landscape below a floating tabletop; all geometry is outside the orbit range. */
+/** A low painted horizon with separate distant clouds, kept clear of every puzzle board. */
 export class Atmosphere extends Group {
     private sky: Mesh<PlaneGeometry, ShaderMaterial>;
     private clouds: Mesh<BufferGeometry, MeshBasicMaterial>[] = [];
@@ -44,7 +44,7 @@ export class Atmosphere extends Group {
             depthTest: false, depthWrite: false, fog: false, toneMapped: false,
             uniforms: {
                 time: { value: 0 }, aspect: { value: 1 }, quality: { value: 1 }, night: { value: dark ? 1 : 0 },
-                lightPosition: { value: new Vector2(.5, .955) },
+                lightPosition: { value: new Vector2(.16, .955) },
                 zenith: { value: new Color(dark ? '#152744' : '#77b8df') }, horizon: { value: new Color(horizonColor(dark)) }
             },
             vertexShader: `varying vec2 uvSky;
@@ -90,55 +90,22 @@ export class Atmosphere extends Group {
                     vec3 duskCloud=mix(vec3(.52,.37,.45),vec3(.27,.31,.45),smoothstep(.35,.88,uvSky.y));
                     vec3 lit=mix(vec3(1.0,.96,.86),duskCloud,night);
                     color=mix(color,lit,cloud*mix(.47,.28,night));
+                    // Three low, irregular blue bands above a flat, fog-soft meadow.
+                    for(int i=0;i<3;i++){
+                        float f=float(i);
+                        float edge=.245-f*.027 + sin(p.x*(5.0+f*2.0)+f)*.009 + noise(vec2(p.x*13.0+f*8.0,2.0))*.022;
+                        vec3 band=mix(vec3(.55,.67,.70),vec3(.32,.40,.51),night);
+                        band=mix(band,horizon,.62-f*.11);
+                        color=mix(color,band,(1.0-smoothstep(edge-.002,edge+.002,uvSky.y))*.75);
+                    }
+                    vec3 ground=mix(vec3(.72,.77,.66),vec3(.25,.32,.38),night);
+                    color=mix(color,ground,(1.0-smoothstep(.02,.20,uvSky.y))*.72);
                     gl_FragColor=vec4(color,1.0);
                     #include <colorspace_fragment>
                 }`
         }));
         this.sky.name = 'sky'; this.sky.frustumCulled = false; this.sky.renderOrder = -100;
         this.add(this.sky);
-
-        // Three continuous, closed silhouette strips: no seam at any azimuth.
-        const hill = (a: number, layer: number) => -47 - layer * 19 + Math.sin(a * 3 + layer) * 5 + Math.sin(a * 7 + layer * 2) * 2.8 + Math.cos(a * 11) * 1.2;
-        for (let layer = 2; layer >= 0; layer--) {
-            const radius = 94 + layer * 38, vertices: number[] = [], colors: number[] = [];
-            const tint = new Color((dark ? ['#4f596e', '#60677e', '#74748b'] : ['#839f92', '#9bb1ab', '#b4c3c0'])[layer]);
-            const haze = new Color(horizonColor(dark));
-            for (let i = 0; i < 128; i++) {
-                const a = i / 128 * Math.PI * 2, b = (i + 1) / 128 * Math.PI * 2;
-                for (const [angle, y] of [[a, hill(a, layer)], [b, hill(b, layer)], [a, -180], [b, hill(b, layer)], [b, -180], [a, -180]]) {
-                    vertices.push(Math.sin(angle) * radius, y, Math.cos(angle) * radius);
-                    const c = tint.clone().lerp(haze, y < -100 ? .8 : .12);
-                    colors.push(c.r, c.g, c.b);
-                }
-            }
-            const geometry = new BufferGeometry();
-            geometry.setAttribute('position', new Float32BufferAttribute(vertices, 3));
-            geometry.setAttribute('color', new Float32BufferAttribute(colors, 3));
-            // Winding faces inward, towards the camera and tabletop.
-            this.add(new Mesh(geometry, new MeshBasicMaterial({ vertexColors: true, toneMapped: false })));
-        }
-        const treeline = new Group();
-        for (let i = 0; i < 144; i++) {
-            const a = i * Math.PI * 2 / 144, radius = 93, h = 1.8 + (Math.sin(i * 73.1) + 1) * 1.3;
-            part(treeline, 'cone', dark ? '#495366' : '#6e8e83', [Math.sin(a) * radius, hill(a, 0) + h * .4, Math.cos(a) * radius], [.65, h, .65]);
-        }
-        // Original little four-sailed lookout mill, baked into the tree line's one draw call.
-        const mill = new Group(); mill.position.set(19, hill(Math.PI - .2, 0) + .3, -92);
-        part(mill, 'cylinder', dark ? '#707387' : '#c1c6b6', [0, 2.1, 0], [.8, 4.2, .8]);
-        part(mill, 'cone', dark ? '#474c65' : '#6f8b87', [0, 4.7, 0], [1.15, 1.5, 1.15]);
-        for (let i = 0; i < 4; i++) {
-            const a = Math.PI * .17 + i * Math.PI / 2;
-            const sail = part(mill, 'box', dark ? '#97929c' : '#ded7bd', [Math.sin(a) * 1.3, 3.6 + Math.cos(a) * 1.3, 1], [.42, 2.9, .12]);
-            sail.rotation.z = -a;
-        }
-        bake(mill);
-        // Flatten the mill into treeline coordinates before the final merge.
-        for (const child of [...mill.children]) { child.position.add(mill.position); treeline.add(child); }
-        bake(treeline);
-        for (const child of treeline.children) if (child instanceof Mesh) {
-            child.material.dispose(); child.material = new MeshBasicMaterial({ vertexColors: true, toneMapped: false });
-        }
-        treeline.name = 'distant-treeline'; this.add(treeline);
 
         for (let i = 0; i < 12; i++) {
             const puff = new Group();
@@ -175,8 +142,8 @@ export class Atmosphere extends Group {
         this.sky.material.uniforms.time.value = this.time;
         this.sky.material.uniforms.aspect.value = aspect;
         // Keep the disc in the open sky above the header, clear of phone view tools.
-        const wide = Math.max(0, Math.min(1, (aspect - .7) / .6));
-        this.sky.material.uniforms.lightPosition.value.x = .2 + .3 * wide * wide * (3 - 2 * wide);
+
+        this.sky.material.uniforms.lightPosition.value.x = aspect > 1.45 ? .4 : .16;
         // Reduced motion also stops star twinkle, including changes made while playing.
         const shader = this.sky.material;
         shader.uniforms.quality.value = this.reduced.matches || this.lowQuality ? 0 : 1;

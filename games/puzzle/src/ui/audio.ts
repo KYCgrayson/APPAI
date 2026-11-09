@@ -54,11 +54,11 @@ export class Audio {
   this.noiseBuffers.set(duration,buffer);}
   const source=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();source.buffer=buffer;filter.type='lowpass';filter.frequency.value=frequency;gain.gain.setValueAtTime(.13,t);gain.gain.exponentialRampToValueAtTime(.0001,t+duration);source.connect(filter).connect(gain).connect(this.effectsGain!);source.start(t);source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};
  }
- play(kind:'select'|'leave'|'sail'|'land'|'fail'|'win') {const ctx=this.context;if(!ctx)return;const t=ctx.currentTime;
+ play(kind:import('../puzzles/types.ts').Sfx) {const ctx=this.context;if(!ctx)return;const t=ctx.currentTime;
   if(kind==='win'){this.flourishUntil=t+2;if(this.music)for(let i=0;i<8;i++)this.tone(523*2**([0,4,7,12,7,4,9,12][i]/12),t+i*.16,1,.15,this.musicGain!);}
   if(this.muted)return;
-  const notes={select:[430,220],leave:[330,190],sail:[140,210],land:[110],fail:[330,277,220],win:[523,659,784,1046,1318]}[kind];
+  const notes={select:[430,220],leave:[330,190],sail:[140,210],land:[110],fail:[330,277,220],win:[523,659,784,1046,1318],step:[165,130],creak:[95,83],lantern:[660,880],pour:[290,360,420],fill:[220,330,440],empty:[390,270,180]}[kind];
   notes.forEach((f,i)=>this.tone(f,t+i*.11,kind==='win'?.7:.22,.09,this.effectsGain!,kind==='select'||kind==='land'?'triangle':'sine'));
-  if(kind==='sail'){this.noise(t,.6,1100);this.noise(t+.3,.35,700);}else if(kind==='select'||kind==='leave'||kind==='land')this.noise(t,.09,650);
+  if(['pour','fill','empty'].includes(kind)){this.noise(t,.55,kind==='fill'?1700:1000);}else if(kind==='step'||kind==='creak'){this.noise(t,.14,330);this.noise(t+.25,.16,240);}else if(kind==='sail'){this.noise(t,.6,1100);this.noise(t+.3,.35,700);}else if(kind==='select'||kind==='leave'||kind==='land')this.noise(t,.09,650);
  }
 }

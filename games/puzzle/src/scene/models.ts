@@ -1,4 +1,4 @@
-import { BoxGeometry, ConeGeometry, Group, Mesh, MeshStandardMaterial, SphereGeometry, CylinderGeometry, Float32BufferAttribute } from 'three';
+import { BoxGeometry, ConeGeometry, Group, Mesh, InstancedMesh, MeshStandardMaterial, SphereGeometry, CylinderGeometry, Float32BufferAttribute } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Kind } from '../logic/index.ts';
 const sphere = new SphereGeometry(1, 10, 8), box = new BoxGeometry(1, 1, 1), cone = new ConeGeometry(1, 1, 8), cylinder = new CylinderGeometry(1, 1, 1, 12);
@@ -64,4 +64,35 @@ export function character(kind: Kind, captain = false): Group {
  pivot(moving,0,.82,0); pivot(tail,.14,.35,-.15);
  bake(g); g.add(eyes,moving,tail); g.userData.tail=tail; g.userData.kind=kind; g.userData.eyes=eyes; g.userData.moving=moving;
  return g;
+}
+
+/** Dispose scene-owned resources; cached primitive geometry and palette materials remain reusable. */
+export function disposeRoot(root:Group){
+ const sharedGeo=new Set([sphere,box,cone,cylinder]),sharedMat=new Set(mats.values()),disposed=new Set<unknown>();
+ root.traverse(o=>{if(o instanceof InstancedMesh)o.dispose();if(o instanceof Mesh||o.type==='Sprite'){
+  const mesh=o as Mesh; if(mesh.geometry&&!sharedGeo.has(mesh.geometry as typeof sphere)&&!disposed.has(mesh.geometry)){mesh.geometry.dispose();disposed.add(mesh.geometry);}
+  for(const mat of Array.isArray(mesh.material)?mesh.material:[mesh.material])if(mat&&!sharedMat.has(mat as MeshStandardMaterial)&&!disposed.has(mat)){const map=(mat as MeshStandardMaterial).map;map?.dispose();mat.dispose();disposed.add(mat);}
+ }});root.clear();
+}
+
+/** Hand-carved toy friends, differentiated by clothing, silhouette and a tiny trade prop. */
+export function person(variant:number):Group{
+ const g=new Group(),eyes=new Group(),skin=variant>=8?'#e4bb9a':'#f0c7a0';
+ const coat:Record<number,string>={1:'#e8ad58',2:'#6fa697',3:'#c887a4',4:'#7493b5',5:'#e5c8a0',6:'#7e9c64',8:'#7797a2',10:'#b88b9e',12:'#aa7957'};
+ const h=variant===1?.86:1;
+ part(g,'cylinder',coat[variant],[0,.43,0],[.40,.46,.31]);
+ for(const x of [-.12,.12]){part(g,'sphere','#5a5146',[x,.10,.05],[.11,.12,.18]);part(g,'sphere',coat[variant],[x*2,.44,0],[.09,.19,.09]);}
+ part(g,'sphere',skin,[0,.82,0],[.25,.25,.23]);
+ part(g,'sphere',variant>=8?'#d9d5c5':'#634e40',[0,.97,-.035],[.25,.13,.23]);
+ part(g,'sphere',skin,[0,.76,.225],[.045,.045,.05]);
+ for(const x of [-.09,.09]){part(eyes,'sphere','#283a3f',[x,0,0],[.027,.037,.021]);part(g,'sphere','#d99085',[x*1.75,.75,.18],[.04,.02,.02]);}
+ if(variant===2)part(g,'box','#e7e0bd',[0,.94,.195],[.44,.06,.06]);
+ if(variant===3){part(g,'cone','#dba5b8',[0,.26,0],[.44,.23,.4]);part(g,'sphere','#dba5b8',[.20,1.05,0],[.12,.12,.1]);}
+ if(variant===4){part(g,'sphere','#4c647c',[0,1.05,0],[.28,.08,.24]);part(g,'box','#ceaa75',[.3,.32,.04],[.2,.05,.25]);part(g,'sphere','#c56f5c',[.30,.37,.07],[.04,.025,.04]);}
+ if(variant===5){part(g,'sphere','#fff1d2',[0,1.08,0],[.27,.17,.24]);part(g,'box','#fff0d0',[0,.41,.17],[.3,.32,.025]);}
+ if(variant===6){part(g,'cylinder','#d5b577',[0,1.04,0],[.35,.06,.30]);part(g,'cone','#9eab79',[.33,.3,.05],[.13,.2,.1]);}
+ if(variant===8){part(g,'cylinder','#74583f',[.36,.25,.10],[.035,.65,.035]);for(const x of [-.10,.10])part(g,'sphere','#bdc5bc',[x,.83,.213],[.09,.08,.025]);}
+ if(variant===10){part(g,'sphere','#ca9a64',[.36,.27,.04],[.16,.19,.14]);part(g,'sphere','#d6bd81',[.36,.43,.04],[.14,.025,.13]);}
+ if(variant===12)for(let i=0;i<3;i++){const log=part(g,'cylinder','#977047',[.33,.3+i*.1,0],[.08,.43,.08]);log.rotation.x=Math.PI/2;}
+ bake(g);bake(eyes);eyes.position.set(0,.84,.211);g.add(eyes);g.userData.eyes=eyes;g.userData.height=h;g.scale.setScalar(h);return g;
 }
