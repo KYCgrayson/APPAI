@@ -114,7 +114,7 @@ const COPY: Record<string, HubCopy> = {
       },
       "werewolf": {
         name: "Werewolf",
-        tagline: "Night falls, close your eyes! Pass one phone around; the app is the moderator.",
+        tagline: "One phone, with the app or a person as host",
         howToPlay: [
           "Pick a host: pass the phone with the app as host, or let one adult read the script.",
           "At night the werewolves choose someone, the seer checks a player, and the witch can save or poison.",
@@ -159,7 +159,7 @@ const COPY: Record<string, HubCopy> = {
       },
       "werewolf": {
         name: "狼人殺",
-        tagline: "天黑請閉眼！一支手機傳著玩，app 當法官。",
+        tagline: "一支手機就能玩，App 或真人當主持人",
         howToPlay: ["選誰當主持人：App 主持就傳手機，真人主持就由一位大人照著台詞念。", "晚上狼人選人，預言家查人，女巫救人或毒人。", "白天大家討論、投票，抓出所有狼人。3–4 人的小局一局只要約 5 分鐘。"],
         players: "3–16 人（App 主持 3–12 人）",
         ages: "8 歲以上（6–7 歲請開親子用語、大人陪看身分）",
@@ -200,7 +200,7 @@ const COPY: Record<string, HubCopy> = {
       },
       "werewolf": {
         name: "狼人杀",
-        tagline: "天黑请闭眼！一部手机传着玩，app 当法官。",
+        tagline: "一部手机就能玩，App 或真人当主持人",
         howToPlay: ["选谁当主持人：App 主持就传手机，真人主持就由一位大人照着台词念。", "晚上狼人选人，预言家查人，女巫救人或毒人。", "白天大家讨论、投票，抓出所有狼人。3–4 人的小局一局只要约 5 分钟。"],
         players: "3–16 人（App 主持 3–12 人）",
         ages: "8 岁以上（6–7 岁请开亲子用语、大人陪看身份）",
