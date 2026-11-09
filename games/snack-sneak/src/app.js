@@ -21,6 +21,7 @@ const defaults = () => ({
 let S = load() || defaults();
 let tick = null;
 let lockUntil = 0;
+let lastKey = '';
 
 function detectLang() {
   const q = new URLSearchParams(location.search).get('lang');
@@ -464,7 +465,10 @@ function render() {
   // Ignore taps for a moment so a double tap cannot open the next player's private screen.
   lockUntil = Date.now() + 450;
   const main = root.querySelector('main');
-  if (main) {
+  const key = `${S.screen}:${S.ui.turn ?? ''}:${S.ui.step ?? ''}:${S.ui.confirm ?? ''}`;
+  const moved = key !== lastKey;
+  lastKey = key;
+  if (main && moved) {
     main.tabIndex = -1;
     main.focus({ preventScroll: true });
   }

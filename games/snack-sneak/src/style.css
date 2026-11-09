@@ -95,11 +95,13 @@ main:focus { outline: none; }
 
 body.is-night { background: var(--night); color: var(--night-fg); }
 body.is-night .brand { color: var(--night-fg); }
+body.is-night .link { color: #f08a4b; }
+.night .tile.sel { border-color: #f08a4b; box-shadow: 0 0 0 2px #f08a4b; }
 .night { color: var(--night-fg); }
 .night .muted { color: #bdb3dc; }
 .night .secret { background: var(--night-card); color: var(--night-fg); }
 .night .tile { background: var(--night-card); color: var(--night-fg); border-color: #4a4270; }
-.night .tile.sel { border-color: var(--accent); background: #4b3a5e; }
+.night .tile.sel { background: #4b3a5e; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
 .tile {
