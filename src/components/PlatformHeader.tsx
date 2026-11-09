@@ -4,8 +4,9 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 import { auth } from "@/lib/auth";
 import { AccountControls } from "./AccountControls";
 import { getDirectoryCopy } from "@/lib/directory-copy";
+import { getGamesCopy } from "@/lib/games-catalog";
 
-export async function PlatformHeader({ currentSection }: { currentSection?: "websites" | "tools" | "apps" }) {
+export async function PlatformHeader({ currentSection }: { currentSection?: "websites" | "tools" | "apps" | "games" }) {
   const [t, session, locale] = await Promise.all([getTranslations("common"), auth(), getLocale()]);
   const copy = getDirectoryCopy(locale);
 
@@ -34,6 +35,15 @@ export async function PlatformHeader({ currentSection }: { currentSection?: "web
                 </Link>
               </li>
             ))}
+            <li>
+              <Link
+                href="/games"
+                aria-current={currentSection === "games" ? "page" : undefined}
+                className={`text-sm transition-colors hover:text-white ${currentSection === "games" ? "text-cyan-300" : "text-gray-400"}`}
+              >
+                {getGamesCopy(locale).nav}
+              </Link>
+            </li>
           </ul>
         </nav>
       </div>

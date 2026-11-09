@@ -103,6 +103,15 @@ const nextConfig: NextConfig = {
     "/llms-full.txt": ["./docs/spec/**", "./AGENT_INSTRUCTIONS.md"],
     "/spec/examples/*": ["./docs/examples/**"],
   },
+  // Static game builds live in public/games/<slug>/index.html (#64). Next.js
+  // does not serve index.html for a folder path, so map /games/<slug> to it.
+  async rewrites() {
+    return {
+      beforeFiles: [
+        { source: "/games/:slug", destination: "/games/:slug/index.html" },
+      ],
+    };
+  },
   async headers() {
     return [
       {

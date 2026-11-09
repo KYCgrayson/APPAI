@@ -170,6 +170,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
+  // Static game builds (public/games/<slug>/, #64) are locale-free files;
+  // only the /games hub itself goes through next-intl.
+  if (pathname.startsWith("/games/")) {
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
   // Skip i18n for non-public routes
   if (
     pathname.startsWith("/dashboard") ||
