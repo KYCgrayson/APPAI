@@ -1,23 +1,26 @@
 import { type LeaderboardData, type LeaderboardDeps, type Player, type Run, type Score, isBetter, DAY } from '../../src/lib/games/leaderboard.ts';
-import type { Board, Tier } from '../../src/lib/games/boards.ts';
+import type { Board, Tier, ScoreDirection } from '../../src/lib/games/boards.ts';
+import { NICKNAME_COOLDOWN_MS } from '../../src/lib/rooms-rate-limit.ts';
 export function setup(boards?: readonly Board[]) {
   let now = new Date('2026-11-09T00:00:00Z'), user: string | null = null;
   const players = new Map<string, Player>(), runs = new Map<string, Run>(), scores = new Map<string, Score>();
   const rates = new Map<string, { start: number; count: number }>();
-  const compare = (a: Score, b: Score) => isBetter(a, b) ? -1 : isBetter(b, a) ? 1 : a.id.localeCompare(b.id);
-  const visible = (game: string, board: string, tier: Tier) => [...scores.values()].filter(s => s.game === game && s.board === board && s.tier === tier && !s.hidden && players.get(s.userId)?.status === 'active').sort(compare);
+  const compare = (direction: ScoreDirection) => (a: Score, b: Score) => isBetter(a, b, direction) ? -1 : isBetter(b, a, direction) ? 1 : a.id.localeCompare(b.id);
+  const visible = (game: string, board: string, tier: Tier, direction: ScoreDirection) => [...scores.values()].filter(s => s.game === game && s.board === board && s.tier === tier && !s.hidden && players.get(s.userId)?.status === 'active' && players.get(s.userId)?.nickname !== '').sort(compare(direction));
   const data: LeaderboardData = {
     async player(id) { return structuredClone(players.get(id) ?? null); },
     async nicknameOwner(key) { return structuredClone([...players.values()].find(p => p.nicknameKey === key) ?? null); },
     async putPlayer(p) { players.set(p.userId, structuredClone(p)); },
+    async nicknameSetAt(key) { const hit = rates.get(key); return hit ? new Date(hit.start) : null; },
+    async putNicknameCooldown(key, time) { rates.set(key, { start: +time, count: 1 }); },
     async run(id) { return structuredClone(runs.get(id) ?? null); },
     async putRun(r) { runs.set(r.id, structuredClone(r)); },
     async score(board, userId, tier) { return structuredClone([...scores.values()].find(s => s.board === board && s.userId === userId && s.tier === tier) ?? null); },
     async scoreById(id) { return structuredClone(scores.get(id) ?? null); },
     async putScore(s) { scores.set(s.id, structuredClone(s)); },
-    async rank(game, board, tier, result) { return visible(game, board, tier).filter(s => isBetter(s, result)).length + 1; },
-    async view(game, board, tier, limit, userId) {
-      const all = visible(game, board, tier).map((s, i) => ({ id: s.id, nickname: players.get(s.userId)!.nickname, tier: s.tier, rank: i + 1, score: s.score, timeMs: s.timeMs, achievedAt: s.achievedAt }));
+    async rank(game, board, tier, result, direction, excludeUserId) { return visible(game, board, tier, direction).filter(s => s.userId !== excludeUserId && isBetter(s, result, direction)).length + 1; },
+    async view(game, board, tier, limit, userId, direction) {
+      const all = visible(game, board, tier, direction).map((s, i) => ({ id: s.id, nickname: players.get(s.userId)!.nickname, tier: s.tier, rank: i + 1, score: s.score, timeMs: s.timeMs, achievedAt: s.achievedAt }));
       const ownId = [...scores.values()].find(s => s.game === game && s.board === board && s.tier === tier && s.userId === userId)?.id;
       return { entries: all.slice(0, limit), total: all.length, ...(userId ? { me: all.find(s => s.id === ownId) ?? null } : {}) };
     },
@@ -32,12 +35,13 @@ export function setup(boards?: readonly Board[]) {
   const deps: LeaderboardDeps = { env: { NODE_ENV: 'test' }, boards, now: () => now, currentUser: async () => user, store: {
     async transaction(fn) {
       const previous = queue; let release = () => {}; queue = new Promise(resolve => { release = resolve; }); await previous;
-      const oldPlayers = structuredClone(players), oldRuns = structuredClone(runs), oldScores = structuredClone(scores);
+      const oldPlayers = structuredClone(players), oldRuns = structuredClone(runs), oldScores = structuredClone(scores), oldRates = structuredClone(rates);
       try { return await fn(data); }
       catch (error) {
         players.clear(); oldPlayers.forEach((p, k) => players.set(k, p));
         runs.clear(); oldRuns.forEach((r, k) => runs.set(k, r));
         scores.clear(); oldScores.forEach((s, k) => scores.set(k, s));
+        rates.clear(); oldRates.forEach((r, k) => rates.set(k, r));
         throw error;
       } finally { release(); }
     },
@@ -48,6 +52,7 @@ export function setup(boards?: readonly Board[]) {
     },
     async cleanup(time) {
       for (const r of runs.values()) { if (r.expiresAt <= time) r.status = 'expired'; if (r.finishedAt && +r.finishedAt <= +time - 7 * DAY) r.moves = null; }
+      for (const [key, hit] of rates) if (key.startsWith('lb:') && hit.start <= +time - (key.startsWith('lb:nick:') ? NICKNAME_COOLDOWN_MS : DAY)) rates.delete(key);
     },
   } };
   return { deps, players, runs, scores, rates, signIn: (id: string | null) => { user = id; }, advance: (ms: number) => { now = new Date(+now + ms); } };

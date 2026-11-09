@@ -10,6 +10,7 @@ import { RESERVED_GAME_SLUGS } from '../src/lib/games-catalog.ts';
 import { setup, req } from './helpers/leaderboard-memory.ts';
 import type { PuzzleAction } from '../games/puzzle/src/puzzles/types.ts';
 const slug = 'river-crossing';
+const pointsBoard: Board = { game: 'external-test', key: 'external-test:points', metric: 'points', direction: 'desc', tier: 'unverified', min: 5, max: 100, maxPerSecond: 10 };
 type Context = ReturnType<typeof setup>;
 async function start(t: Context, board = 'water:easy', game = slug) {
   const response = await createRun(req({ board }), game, t.deps);
@@ -24,6 +25,13 @@ async function completed(t: Context, moves: PuzzleAction[] = puzzleLogics.water.
 }
 const list = (t: Context, board = 'water:easy', tier = 'verified', limit = '50') => getLeaderboard(req(undefined, undefined, { path: `/api/games/${slug}/leaderboard?board=${board}&tier=${tier}&limit=${limit}` }), slug, t.deps);
 const nickname = (t: Context, name: string) => profile(req({ nickname: name }, undefined, { method: 'PUT' }), t.deps);
+const pointsList = (t: Context) => getLeaderboard(req(undefined, undefined, { path: `/api/games/${pointsBoard.game}/leaderboard?board=${pointsBoard.key}&tier=unverified&limit=1` }), pointsBoard.game, t.deps);
+async function pointsRun(t: Context, score: number, duration = 10_000) {
+  const run = await start(t, pointsBoard.key, pointsBoard.game); t.advance(duration);
+  const response = await finishRun(req({ score }, run.token), pointsBoard.game, run.runId, t.deps);
+  assert.equal(response.status, 200);
+  return { ...run, result: await response.json() };
+}
 for (const board of BOARDS) {
   if (board.tier !== 'verified') continue;
   const logic = puzzleLogics[board.validator], solution = logic.solution(board.level);
@@ -136,7 +144,7 @@ test('nickname attempts throttle with Retry-After', async () => {
 });
 test('unverified injected board accepts bounds/rate and stays separate from verified; production has nine verified boards', async () => {
   assert.equal(BOARDS.length, 9); assert.ok(BOARDS.every(b => b.tier === 'verified' && b.game === slug));
-  const fake: Board = { game: 'external-test', key: 'external-test:points', metric: 'points', direction: 'asc', tier: 'unverified', min: 5, max: 100, maxPerSecond: 10 };
+  const fake = pointsBoard;
   const t = setup([fake]); t.signIn('u1'); await nickname(t, 'Bear');
   for (const [score, ms, status] of [[50, 10_000, 200], [101, 100_000, 422], [4, 100_000, 422], [50, 1000, 422], [50.1, 10_000, 422]] as const) {
     const run = await start(t, fake.key, fake.game); t.advance(ms);
@@ -148,11 +156,126 @@ test('unverified injected board accepts bounds/rate and stays separate from veri
       assert.equal((await claimRun(req({}, run.token), fake.game, run.runId, t.deps)).status, 200);
     } else assert.equal(body.error, 'replay_failed');
   }
+  t.signIn('u2'); await nickname(t, 'Hawk');
+  const higher = await pointsRun(t, 80);
+  assert.equal(higher.result.wouldRank, 1);
+  assert.equal((await claimRun(req({}, higher.token), fake.game, higher.runId, t.deps)).status, 200);
   for (const tier of ['verified', 'unverified']) {
     const response = await getLeaderboard(req(undefined, undefined, { path: `/api/games/external-test/leaderboard?board=${fake.key}&tier=${tier}` }), fake.game, t.deps);
-    const body = await response.json(); assert.equal(body.entries.length, tier === 'unverified' ? 1 : 0);
-    assert.equal(body.tier, tier); if (tier === 'unverified') assert.equal(body.entries[0].tier, tier);
+    const body = await response.json(); assert.equal(body.entries.length, tier === 'unverified' ? 2 : 0);
+    assert.equal(body.tier, tier);
+    if (tier === 'unverified') {
+      assert.equal(body.entries[0].tier, tier); assert.equal(body.direction, 'desc');
+      assert.deepEqual(body.entries.map((e: { score: number }) => e.score), [80, 50]);
+    }
   }
+});
+test('descending boards rank by score desc, time asc, achievement asc and expose me outside the limit', async () => {
+  const t = setup([pointsBoard]);
+  for (const [user, score, duration, rank] of [
+    ['Low', 30, 10_000, 1], ['Early', 80, 12_000, 1], ['Later', 80, 12_000, 2],
+    ['Fast', 80, 10_000, 1], ['High', 90, 20_000, 1],
+  ] as const) {
+    t.signIn(user); assert.equal((await nickname(t, user)).status, 200);
+    const run = await pointsRun(t, score, duration);
+    assert.equal(run.result.wouldRank, rank);
+    const claimed = await (await claimRun(req({}, run.token), pointsBoard.game, run.runId, t.deps)).json();
+    assert.equal(claimed.rank, rank);
+  }
+  const all = await getLeaderboard(req(undefined, undefined, { path: `/api/games/external-test/leaderboard?board=${pointsBoard.key}&tier=unverified` }), pointsBoard.game, t.deps);
+  assert.deepEqual((await all.json()).entries.map((e: { nickname: string }) => e.nickname), ['High', 'Fast', 'Early', 'Later', 'Low']);
+  t.signIn('Later');
+  const limited = await (await pointsList(t)).json();
+  assert.equal(limited.total, 5); assert.equal(limited.entries[0].nickname, 'High'); assert.equal(limited.me.rank, 4);
+});
+test('descending personal best replaces higher scores and faster ties, keeping worse and later ties', async () => {
+  const t = setup([pointsBoard]); t.signIn('owner'); await nickname(t, 'Bear');
+  let bestRun = '';
+  for (const [score, duration, personalBest, bestScore] of [
+    [50, 10_000, true, 50], [40, 5_000, false, 50], [80, 20_000, true, 80],
+    [80, 21_000, false, 80], [80, 10_000, true, 80], [80, 10_000, false, 80],
+  ] as const) {
+    const run = await pointsRun(t, score, duration);
+    const response = await claimRun(req({}, run.token), pointsBoard.game, run.runId, t.deps);
+    assert.equal(response.status, 200);
+    const result = await response.json();
+    assert.equal(result.personalBest, personalBest); assert.equal(result.score, bestScore);
+    if (personalBest) bestRun = run.runId;
+    assert.equal([...t.scores.values()][0].runId, bestRun);
+  }
+});
+for (const direction of ['asc', 'desc'] as const) test(`unverified ${direction} score rate is an upper ceiling, including boundary and zero duration`, async () => {
+  const board = { ...pointsBoard, direction, min: 0 }, t = setup([board]);
+  for (const [score, duration, status] of [[10, 1_000, 200], [11, 1_000, 422], [1, 1_000, 200], [0, 0, 422]] as const) {
+    const run = await start(t, board.key, board.game); t.advance(duration);
+    const response = await finishRun(req({ score }, run.token), board.game, run.runId, t.deps);
+    assert.equal(response.status, status);
+  }
+});
+for (const direction of ['asc', 'desc'] as const) test(`${direction} wouldRank excludes the signed-in player's row but anonymous ranks count it`, async () => {
+  const descending = direction === 'desc', t = setup(descending ? [pointsBoard] : undefined);
+  async function finish(duration: number, score: number) {
+    if (descending) return pointsRun(t, score, duration);
+    const run = await start(t); t.advance(duration);
+    const response = await finishRun(req({ moves: puzzleLogics.water.solution('easy') }, run.token), slug, run.runId, t.deps);
+    assert.equal(response.status, 200);
+    return { ...run, result: await response.json() };
+  }
+  for (const [user, duration, score] of [['Owner', 10_000, 80], ['Other', 20_000, 60]] as const) {
+    t.signIn(user); await nickname(t, user);
+    const run = await finish(duration, score);
+    assert.equal((await claimRun(req({}, run.token), descending ? pointsBoard.game : slug, run.runId, t.deps)).status, 200);
+  }
+  t.signIn('Owner'); assert.equal((await finish(25_000, 50)).result.wouldRank, 2);
+  assert.equal((await finish(10_000, 80)).result.wouldRank, 1);
+  t.signIn(null); assert.equal((await finish(25_000, 50)).result.wouldRank, 3);
+  assert.equal((await finish(10_000, 80)).result.wouldRank, 2);
+});
+test('nickname phone guard rejects separators and Unicode digits after NFKC while allowing short digit suffixes', async () => {
+  const t = setup(); t.signIn('owner');
+  for (const value of ['0912-345-678', '0912.345.678', '0912 345 678', '0912_345_678', '０９１２－３４５－６７８', '٠٩١٢-٣٤٥-٦٧٨', '०९१२.३४५.६७८', '09_12-3.4 5', 'Bear1234567']) {
+    assert.deepEqual(normalizeNickname(value), { error: 'invalid_nickname' }, value);
+    assert.equal((await nickname(t, value)).status, 422, value);
+  }
+  for (const value of ['Bear_2024', 'Bear ２０２４', '猫１２３', 'Bear123456', 'AB12-CD34']) assert.equal('error' in normalizeNickname(value), false, value);
+  assert.equal((await nickname(t, 'Bear_2024')).status, 200);
+});
+test('nickname cooldown survives deletion and daily cleanup without retaining the old nickname', async () => {
+  const t = setup(); t.signIn('private-account');
+  const saved = await (await nickname(t, 'Old Bear')).json(), key = `lb:nick:${hashToken('private-account')}`;
+  assert.equal((await profile(req(undefined, undefined, { method: 'DELETE' }), t.deps)).status, 204);
+  assert.equal(t.players.size, 0);
+  assert.deepEqual(t.rates.get(key), { start: Date.parse(saved.nextChangeAt) - 7 * DAY, count: 1 });
+  assert.doesNotMatch(JSON.stringify([...t.rates.entries()]), /Old Bear|old bear/);
+  const blocked = await nickname(t, 'New Bear'); assert.equal(blocked.status, 429);
+  assert.equal(blocked.headers.get('retry-after'), String(7 * DAY / 1000));
+  t.advance(DAY); await start(t);
+  assert.ok(t.rates.has(key)); assert.equal((await nickname(t, 'New Bear')).status, 429);
+  t.signIn('other'); assert.equal((await nickname(t, 'Old Bear')).status, 200);
+  t.signIn('private-account'); t.advance(6 * DAY - 1);
+  const almost = await nickname(t, 'New Bear'); assert.equal(almost.status, 429); assert.equal(almost.headers.get('retry-after'), '1');
+  t.advance(1); await start(t);
+  assert.equal(t.rates.has(key), false);
+  assert.equal((await nickname(t, 'New Bear')).status, 200);
+  const renewed = await nickname(t, 'Next Bear'); assert.equal(renewed.status, 429);
+  assert.equal(renewed.headers.get('retry-after'), String(7 * DAY / 1000));
+});
+test('deleting a legacy profile preserves its original nickname cooldown without extending it', async () => {
+  const t = setup(); t.signIn('owner'); await nickname(t, 'Bear');
+  const key = `lb:nick:${hashToken('owner')}`, original = t.rates.get(key)!.start;
+  t.rates.delete(key); t.advance(2 * DAY);
+  assert.equal((await profile(req(undefined, undefined, { method: 'DELETE' }), t.deps)).status, 204);
+  assert.equal(t.rates.get(key)!.start, original);
+  const blocked = await nickname(t, 'Hawk'); assert.equal(blocked.status, 429);
+  assert.equal(blocked.headers.get('retry-after'), String(5 * DAY / 1000));
+  t.advance(5 * DAY); assert.equal((await nickname(t, 'Hawk')).status, 200);
+});
+test('nickname conflicts and concurrent attempts do not consume or bypass the cooldown', async () => {
+  const t = setup(); t.signIn('other'); await nickname(t, 'Bear');
+  t.signIn('owner'); assert.equal((await nickname(t, 'Bear')).status, 409);
+  assert.equal(t.rates.has(`lb:nick:${hashToken('owner')}`), false);
+  const responses = await Promise.all([nickname(t, 'Hawk'), nickname(t, 'Wolf')]);
+  assert.deepEqual(responses.map(r => r.status).sort(), [200, 429]);
 });
 test('three distinct reporters hide scores, duplicates do not count, replacement stays hidden', async () => {
   const t = setup(); t.signIn('owner'); await nickname(t, 'Bear');
@@ -171,7 +294,8 @@ test('profile deletion removes nickname, claimed runs and scores; banned players
   const data = await (await profile(req(), t.deps)).json(); assert.equal(data.scores.length, 1); assert.doesNotMatch(JSON.stringify(data), /userId|token|reporters/);
   const response = await profile(req(undefined, undefined, { method: 'DELETE' }), t.deps);
   assert.equal(response.status, 204); assert.equal(await response.text(), ''); assert.equal(t.players.size + t.runs.size + t.scores.size, 0);
-  await nickname(t, 'Bear'); t.players.get('u1')!.status = 'banned';
+  t.advance(7 * DAY);
+  assert.equal((await nickname(t, 'Bear')).status, 200); t.players.get('u1')!.status = 'banned';
   t.signIn(null); const other = await completed(t); t.signIn('u1');
   assert.equal((await claimRun(req({}, other.token), slug, other.runId, t.deps)).status, 403);
 });

@@ -1,8 +1,9 @@
 import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { hashToken, roomIpKey, jsonStorable } from '../rooms.ts';
 import { corsHeaders, roomOriginAllowed } from '../rooms-cors.ts';
-import { BOARDS, replay, type Board, type Tier } from './boards.ts';
+import { BOARDS, replay, type Board, type Tier, type ScoreDirection } from './boards.ts';
 import { normalizeNickname } from './nickname.ts';
+import { NICKNAME_COOLDOWN_MS } from '../rooms-rate-limit.ts';
 
 export const DAY = 86_400_000;
 export const MAX_BODY_BYTES = 8192;
@@ -20,13 +21,15 @@ export interface LeaderboardData {
   player(userId: string): Promise<Player | null>;
   nicknameOwner(key: string): Promise<Player | null>;
   putPlayer(player: Player): Promise<void>;
+  nicknameSetAt(key: string): Promise<Date | null>;
+  putNicknameCooldown(key: string, now: Date): Promise<void>;
   run(id: string): Promise<Run | null>;
   putRun(run: Run): Promise<void>;
   score(board: string, userId: string, tier: Tier): Promise<Score | null>;
   scoreById(id: string): Promise<Score | null>;
   putScore(score: Score): Promise<void>;
-  rank(game: string, board: string, tier: Tier, result: ResultScore): Promise<number>;
-  view(game: string, board: string, tier: Tier, limit: number, userId: string | null): Promise<BoardView>;
+  rank(game: string, board: string, tier: Tier, result: ResultScore, direction: ScoreDirection, excludeUserId: string | null): Promise<number>;
+  view(game: string, board: string, tier: Tier, limit: number, userId: string | null, direction: ScoreDirection): Promise<BoardView>;
   profileScores(userId: string): Promise<Score[]>;
   deletePlayer(userId: string): Promise<void>;
 }
@@ -139,6 +142,7 @@ export function finishRun(request: Request, game: string, id: string, deps: Lead
     const now = clock(deps); // Stop at receipt, before replay/database work.
     await rate(request, deps, 'finish', 60, 10 * 60_000);
     const input = await body(request);
+    const userId = await deps.currentUser(request);
     return deps.store.transaction(async data => {
       const run = await loadRun(data, request, game, id, now);
       if (run.status !== 'open') fail(409, 'already_finished');
@@ -158,15 +162,16 @@ export function finishRun(request: Request, game: string, id: string, deps: Lead
         score = result.score;
       } else {
         if (!Number.isSafeInteger(input.score) || (input.score as number) < board.min || (input.score as number) > board.max ||
-          (input.score as number) > board.maxPerSecond * timeMs / 1000) return reject(422, 'replay_failed');
+          timeMs <= 0 || (input.score as number) / (timeMs / 1000) > board.maxPerSecond) return reject(422, 'replay_failed');
         score = input.score as number;
       }
       await data.putRun({ ...run, status: 'verified', finishedAt: now, score, timeMs, moves: board.tier === 'verified' ? input.moves : null, expiresAt: new Date(+now + DAY) });
-      return { body: { verified: board.tier === 'verified', tier: board.tier, score, timeMs, wouldRank: await data.rank(game, board.key, board.tier, { score, timeMs, achievedAt: now }) } };
+      return { body: { verified: board.tier === 'verified', tier: board.tier, score, timeMs, wouldRank: await data.rank(game, board.key, board.tier, { score, timeMs, achievedAt: now }, board.direction, userId) } };
     });
   });
 }
-export const isBetter = (a: ResultScore, b: ResultScore) => a.score < b.score || a.score === b.score && (a.timeMs < b.timeMs || a.timeMs === b.timeMs && a.achievedAt < b.achievedAt);
+export const isBetter = (a: ResultScore, b: ResultScore, direction: ScoreDirection) =>
+  (direction === 'desc' ? a.score > b.score : a.score < b.score) || a.score === b.score && (a.timeMs < b.timeMs || a.timeMs === b.timeMs && a.achievedAt < b.achievedAt);
 export function claimRun(request: Request, game: string, id: string, deps: LeaderboardDeps) {
   return respond(request, deps, async () => {
     const userId = await signedIn(request, deps, `/games/${encodeURIComponent(game)}/?claim=${encodeURIComponent(id)}`), now = clock(deps);
@@ -181,10 +186,10 @@ export function claimRun(request: Request, game: string, id: string, deps: Leade
       if (+now - +run.finishedAt >= DAY) fail(410, 'run_expired');
       const board = boardFor(deps, game, run.board), old = await data.score(board.key, userId, board.tier);
       const candidate: Score = { id: old?.id ?? randomUUID(), game, board: board.key, userId, tier: board.tier, score: run.score, timeMs: run.timeMs, achievedAt: run.finishedAt, runId: id, hidden: old?.hidden ?? false, reporters: old?.reporters ?? [] };
-      const personalBest = !old || isBetter(candidate, old), best = personalBest ? candidate : old!;
+      const personalBest = !old || isBetter(candidate, old, board.direction), best = personalBest ? candidate : old!;
       if (personalBest) await data.putScore(candidate);
       await data.putRun({ ...run, status: 'claimed', userId });
-      const view = await data.view(game, board.key, board.tier, 1, userId);
+      const view = await data.view(game, board.key, board.tier, 1, userId, board.direction);
       return { body: { rank: view.me?.rank ?? null, personalBest, needsNickname: !player?.nickname, score: best.score } };
     });
   });
@@ -197,7 +202,7 @@ export function getLeaderboard(request: Request, game: string, deps: Leaderboard
     if (!['verified', 'unverified'].includes(tier) || !/^\d+$/.test(rawLimit) || Number(rawLimit) < 1) fail(400, 'invalid_request');
     const userId = await deps.currentUser(request);
     return deps.store.transaction(async data => ({
-      body: { board: board.key, metric: board.metric, tier, ...await data.view(game, board.key, tier as Tier, Math.min(50, Number(rawLimit)), userId) },
+      body: { board: board.key, metric: board.metric, direction: board.direction, tier, ...await data.view(game, board.key, tier as Tier, Math.min(50, Number(rawLimit)), userId, board.direction) },
       headers: { 'Cache-Control': userId ? 'private, no-store' : 'public, max-age=30', Vary: 'Origin, Cookie' },
     }));
   });
@@ -205,7 +210,13 @@ export function getLeaderboard(request: Request, game: string, deps: Leaderboard
 export function profile(request: Request, deps: LeaderboardDeps) {
   return respond(request, deps, async () => {
     const userId = await signedIn(request, deps), now = clock(deps);
-    if (request.method === 'DELETE') return deps.store.transaction(async data => { await data.deletePlayer(userId); return { status: 204 }; });
+    if (request.method === 'DELETE') return deps.store.transaction(async data => {
+      // Preserve cooldowns for profiles created before the rate record existed.
+      const player = await data.player(userId), key = `lb:nick:${hashToken(userId)}`;
+      if (player && +(await data.nicknameSetAt(key) ?? 0) < +player.nicknameSetAt) await data.putNicknameCooldown(key, player.nicknameSetAt);
+      await data.deletePlayer(userId);
+      return { status: 204 };
+    });
     if (request.method === 'GET') return deps.store.transaction(async data => {
       const player = await allowedPlayer(data, userId);
       const scores = (await data.profileScores(userId)).map(({ game, board, tier, score, timeMs, achievedAt }) => ({ game, board, tier, score, timeMs, achievedAt }));
@@ -216,11 +227,16 @@ export function profile(request: Request, deps: LeaderboardDeps) {
     if ('error' in normalized) return fail(422, normalized.error);
     return deps.store.transaction(async data => {
       const player = await allowedPlayer(data, userId);
-      if (player && +now < +player.nicknameSetAt + 7 * DAY) throw new ApiError(429, 'rate_limited', 'Nicknames can change once every 7 days', {}, Math.ceil((+player.nicknameSetAt + 7 * DAY - +now) / 1000));
+      const cooldownKey = `lb:nick:${hashToken(userId)}`;
+      const lastSetAt = Math.max(+(await data.nicknameSetAt(cooldownKey) ?? 0), +(player?.nicknameSetAt ?? 0));
+      if (+now < lastSetAt + NICKNAME_COOLDOWN_MS) throw new ApiError(429, 'rate_limited', 'Nicknames can change once every 7 days', {}, Math.ceil((lastSetAt + NICKNAME_COOLDOWN_MS - +now) / 1000));
       const owner = await data.nicknameOwner(normalized.nicknameKey);
       if (owner && owner.userId !== userId) fail(409, 'nickname_taken');
       await data.putPlayer({ ...normalized, userId, nicknameSetAt: now, status: player?.status ?? 'active', createdAt: player?.createdAt ?? now });
-      return { body: { nickname: normalized.nickname, nextChangeAt: new Date(+now + 7 * DAY) } };
+      // Same transaction as the nickname: failed/conflicting writes consume no cooldown.
+      // This hashed rate record survives profile deletion and stores no nickname.
+      await data.putNicknameCooldown(cooldownKey, now);
+      return { body: { nickname: normalized.nickname, nextChangeAt: new Date(+now + NICKNAME_COOLDOWN_MS) } };
     });
   });
 }

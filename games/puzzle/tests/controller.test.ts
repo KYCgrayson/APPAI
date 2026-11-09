@@ -70,12 +70,17 @@ const savedSessions = new Map<string, string>();
 globalThis.sessionStorage = { getItem: (key: string) => savedSessions.get(key) ?? null, setItem: (key: string, value: string) => savedSessions.set(key, value) } as any;
 const apiCalls: { path: string; body: any; headers: Headers }[] = [];
 let runSequence = 0, claimMode: 'login' | 'nickname' | 'rank' = 'rank', nicknameTaken = false;
+let descendingBoard = false;
 globalThis.fetch = (async (path: string, init?: RequestInit) => {
     apiCalls.push({ path, body: init?.body ? JSON.parse(String(init.body)) : null, headers: new Headers(init?.headers) });
     if (path.endsWith('/runs')) return Response.json({ runId: `run-${++runSequence}`, token: 'a'.repeat(32), expiresAt: new Date(Date.now() + 86_400_000).toISOString() });
     if (path.endsWith('/finish')) return Response.json({ verified: true, score: 6, timeMs: 10000, wouldRank: 2 });
     if (path.endsWith('/claim')) return claimMode === 'login' ? Response.json({ error: 'login_required', loginUrl: '/login?callbackUrl=%2Fgames%2Friver-crossing%2F%3Fclaim%3Drun-1' }, { status: 401 }) : Response.json({ rank: claimMode === 'nickname' ? null : 2, needsNickname: claimMode === 'nickname', personalBest: true });
     if (path.endsWith('/profile')) return nicknameTaken ? Response.json({ error: 'nickname_taken', message: 'taken' }, { status: 409 }) : Response.json({ nickname: 'LittleBear', nextChangeAt: new Date().toISOString() });
+    if (descendingBoard) return Response.json({ board: 'water:easy', tier: 'unverified', direction: 'desc', total: 2, entries: [
+        { id: 'high', rank: 1, nickname: 'HighScore', score: 80, timeMs: 10000, tier: 'unverified' },
+        { id: 'low', rank: 2, nickname: 'LowScore', score: 50, timeMs: 5000, tier: 'unverified' },
+    ] });
     const entry = { id: 'score-1', rank: 2, nickname: 'LittleBear', score: 6, timeMs: 10000, tier: 'verified' };
     return Response.json({ board: new URL(path, 'https://appai.info').searchParams.get('board'), tier: 'verified', entries: [entry], total: 1, me: entry });
 }) as any;
@@ -153,6 +158,19 @@ test('controller regressions: loading, keyboard, modal guards, restart, timeout,
         assert.equal(registry.water.logic.isWin(replay), true); assert.equal(registry.water.logic.score(replay), 6);
         assert.ok(app.html.includes('Local top 5')); assert.ok(app.html.includes('Upload to global leaderboard'));
         button('global-tab').click(); await flush(); assert.ok(app.html.includes('LittleBear'));
+    });
+    await t.test('global leaderboard renders descending server order and unverified labels without sorting scores ascending', async () => {
+        descendingBoard = true;
+        try {
+            button('global-tab').click(); await flush();
+            const high = app.html.indexOf('1. HighScore'), low = app.html.indexOf('2. LowScore');
+            assert.ok(high >= 0 && low > high);
+            assert.match(app.html, /80 steps/); assert.match(app.html, /50 steps/);
+            assert.equal((app.html.match(/ · Unverified/g) ?? []).length, 2);
+        } finally {
+            descendingBoard = false;
+            button('global-tab').click(); await flush();
+        }
     });
     await t.test('upload redirects in the same top-level tab and nickname errors appear inline before rank', async () => {
         claimMode = 'login'; button('upload-global').click(); await flush();

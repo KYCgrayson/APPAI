@@ -4,10 +4,16 @@ import { logic as water, levels as waterLevels } from '../../../games/puzzle/src
 import type { GameId, LevelId, PuzzleAction } from '../../../games/puzzle/src/puzzles/types.ts';
 
 export type Tier = 'verified' | 'unverified';
-interface BoardBase { game: string; key: string; metric: string; direction: 'asc' }
+export type ScoreDirection = 'asc' | 'desc';
+interface BoardBase { game: string; key: string; metric: string; direction: ScoreDirection }
 export type Board = BoardBase & ({
   tier: 'verified'; validator: GameId; level: LevelId; minMsPerMove: number;
-} | { tier: 'unverified'; min: number; max: number; maxPerSecond: number });
+} | {
+  tier: 'unverified'; min: number; max: number;
+  // Caps score / elapsed seconds for either direction. On asc boards this is
+  // only a plausibility ceiling on reported units, not a minimum score/time.
+  maxPerSecond: number;
+});
 
 export const puzzleLogics = { river, bridge, water };
 // scene.ts durations: river 800ms -> 500ms (~62%); bridge shortest is
