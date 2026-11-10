@@ -1,4 +1,4 @@
-import type { LevelId, PuzzleAction, PuzzleLogic } from '../types.ts';
+import type { LevelId, PuzzleAction, PuzzleLogic } from '../logic-types.ts';
 export const people: Record<number, string> = { 1: 'kid', 2: 'runner', 3: 'dancer', 4: 'painter', 5: 'baker', 6: 'gardener', 8: 'grandpa', 10: 'grandma', 12: 'woodcutter' };
 export const levels = { easy: { times: [1, 2, 5, 10], optimal: 17, twoStar: 19, limit: 22 }, medium: { times: [1, 3, 6, 8, 12], optimal: 29, twoStar: 31, limit: 38 }, hard: { times: [1, 2, 4, 6, 8, 10], optimal: 28, twoStar: 30, limit: 36 } };
 export interface State {

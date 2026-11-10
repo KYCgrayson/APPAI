@@ -1,5 +1,5 @@
-import type { PuzzleLogic, PuzzleAction } from '../types.ts';
-export type LevelId = 'easy' | 'medium' | 'hard';
+import type { LevelId, PuzzleLogic, PuzzleAction } from '../logic-types.ts';
+export type { LevelId } from '../logic-types.ts';
 export type Kind = 'farmer' | 'wolf' | 'goat' | 'cabbage' | 'rabbit' | 'fox';
 export interface Piece {
     id: string;

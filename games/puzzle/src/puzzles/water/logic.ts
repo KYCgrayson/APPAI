@@ -1,4 +1,4 @@
-import type { LevelId, PuzzleAction, PuzzleLogic } from '../types.ts';
+import type { LevelId, PuzzleAction, PuzzleLogic } from '../logic-types.ts';
 export const levels = { easy: { caps: [3, 5], start: [0, 0], optimal: 6, twoStar: 8 }, medium: { caps: [8, 5, 3], start: [8, 0, 0], optimal: 7, twoStar: 10 }, hard: { caps: [12, 7, 5], start: [12, 0, 0], optimal: 11, twoStar: 15 } };
 export interface State {
     level: LevelId;

@@ -8,7 +8,7 @@ import { hashToken } from '../src/lib/rooms.ts';
 import { leaderboardRateBucket } from '../src/lib/rooms-cors.ts';
 import { RESERVED_GAME_SLUGS } from '../src/lib/games-catalog.ts';
 import { setup, req } from './helpers/leaderboard-memory.ts';
-import type { PuzzleAction } from '../games/puzzle/src/puzzles/types.ts';
+import type { PuzzleAction } from '../games/puzzle/src/puzzles/logic-types.ts';
 const slug = 'river-crossing';
 const pointsBoard: Board = { game: 'external-test', key: 'external-test:points', metric: 'points', direction: 'desc', tier: 'unverified', min: 5, max: 100, maxPerSecond: 10 };
 type Context = ReturnType<typeof setup>;

@@ -1,7 +1,7 @@
 import { logic as river, levels as riverLevels } from '../../../games/puzzle/src/puzzles/river/logic.ts';
 import { logic as bridge, levels as bridgeLevels } from '../../../games/puzzle/src/puzzles/bridge/logic.ts';
 import { logic as water, levels as waterLevels } from '../../../games/puzzle/src/puzzles/water/logic.ts';
-import type { GameId, LevelId, PuzzleAction } from '../../../games/puzzle/src/puzzles/types.ts';
+import type { GameId, LevelId, PuzzleAction } from '../../../games/puzzle/src/puzzles/logic-types.ts';
 
 export type Tier = 'verified' | 'unverified';
 export type ScoreDirection = 'asc' | 'desc';
