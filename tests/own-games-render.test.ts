@@ -20,10 +20,10 @@ function escapeHtml(value: string) {
 }
 
 test("detail routes enumerate own games and reject unknown slugs in the page and metadata", async () => {
-  assert.deepEqual(detail.generateStaticParams(), GAME_PAGE_SLUGS.map((slug) => ({ slug })));
+  assert.deepEqual(detail.generateStaticParams(), locales.flatMap((locale) => GAME_PAGE_SLUGS.map((slug) => ({ locale, slug }))));
   for (const slug of ["unknown", "covers", "toString"]) {
     const params = Promise.resolve({ locale: "en", slug });
-    await assert.rejects(() => detail.default({ params, searchParams: Promise.resolve({}) }), /NEXT_HTTP_ERROR_FALLBACK;404/);
+    await assert.rejects(() => detail.default({ params }), /NEXT_HTTP_ERROR_FALLBACK;404/);
     await assert.rejects(() => detail.generateMetadata({ params }), /NEXT_HTTP_ERROR_FALLBACK;404/);
   }
 });
@@ -32,7 +32,7 @@ test("all localized detail pages render one H1, cover, instructions, parent FAQ 
   for (const locale of locales) for (const game of GAMES) {
     fixtureDb.locale = locale;
     const params = Promise.resolve({ locale, slug: game.slug });
-    const html = await renderHtml(await detail.default({ params, searchParams: Promise.resolve({}) }));
+    const html = await renderHtml(await detail.default({ params }));
     const summary = getGamesCopy(locale).games[game.slug];
     const copy = getGamePageCopy(locale, game.slug);
     assert.equal([...html.matchAll(/<h1\b/g)].length, 1);
@@ -65,26 +65,17 @@ test("all localized detail pages render one H1, cover, instructions, parent FAQ 
   }
 });
 
-test("legacy shared links keep their language preference in the new page's Play link", async () => {
-  fixtureDb.locale = "en";
-  for (const game of GAMES) {
-    const params = Promise.resolve({ locale: "en", slug: game.slug });
-    const html = await renderHtml(await detail.default({ params, searchParams: Promise.resolve({ locale: "zh-TW" }) }));
-    assert.ok(html.includes(`href="${escapeHtml(gamePlayHref(game, "zh-TW"))}"`));
-    const metadata = await detail.generateMetadata({ params });
-    assert.equal(metadata.alternates?.canonical, platformUrl(gamePageHref(game), "en"));
-    if (game.slug === "werewolf") {
-      const legacy = await renderHtml(await detail.default({ params, searchParams: Promise.resolve({ lang: "zh" }) }));
-      assert.ok(legacy.includes('href="/games/werewolf/play?lang=zh"'));
-    }
-  }
+test("SSG detail module cannot read request queries, cookies or headers", () => {
+  const source = readFileSync(new URL("../src/app/[locale]/games/[slug]/page.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(source, /\b(searchParams|cookies|headers)\b/);
+  assert.match(source, /export function generateStaticParams\(/);
 });
 
 test("every game, collection and hub has linked breadcrumbs, home branding and the four footer links", async () => {
   for (const locale of locales) {
     fixtureDb.locale = locale;
     for (const slug of [undefined, ...GAME_PAGE_SLUGS]) {
-      const html = await renderHtml(slug ? await detail.default({ params: Promise.resolve({ locale, slug }), searchParams: Promise.resolve({}) }) : await hub.default());
+      const html = await renderHtml(slug ? await detail.default({ params: Promise.resolve({ locale, slug }) }) : await hub.default());
       const breadcrumb = html.match(new RegExp(`<nav aria-label="${escapeHtml(getGamePageLabels(locale).breadcrumb)}"[\\s\\S]*?<\\/nav>`))?.[0];
       assert.ok(breadcrumb);
       const items = gameBreadcrumbs(locale, slug);
@@ -92,12 +83,15 @@ test("every game, collection and hub has linked breadcrumbs, home branding and t
         const expected = href === "/" ? `${locale === "en" ? "" : `/${locale}`}/` : new URL(platformUrl(href, locale)).pathname;
         assert.ok(breadcrumb.includes(`href="${expected}"`));
         assert.ok(breadcrumb.includes(escapeHtml(name)));
+        const link = [...breadcrumb.matchAll(/<a\b[^>]*>/g)].find(([tag]) => tag.includes(`href="${expected}"`))?.[0];
+        assert.match(link ?? "", /class="[^"]*inline-flex[^"]*min-h-11[^"]*items-center/);
       }
       assert.equal([...breadcrumb.matchAll(/aria-current="page"/g)].length, 1);
       const current = items.at(-1)!;
       assert.ok([...breadcrumb.matchAll(/<a\b[^>]*>/g)].some(([tag]) => tag.includes(`href="${new URL(platformUrl(current.href, locale)).pathname}"`) && tag.includes('aria-current="page"')));
       const header = html.match(/<header\b[\s\S]*?<\/header>/)![0];
       assert.match(header, /src="\/appai-logo2.png"/);
+      assert.match(header, /<a[^>]*class="[^"]*min-h-11[^"]*min-w-11[^"]*"[^>]*><img[^>]*src="\/appai-logo2.png"/);
       const home = `${locale === "en" ? "" : `/${locale}`}/`;
       assert.ok(header.includes(`href="${home}"`));
       const footer = html.match(/<footer\b[\s\S]*?<\/footer>/)![0];
@@ -115,7 +109,7 @@ test("collection renders its own H1 and all three puzzle pages with no collectio
   for (const locale of locales) {
     fixtureDb.locale = locale;
     const slug = TABLETOP_COLLECTION.slug;
-    const html = await renderHtml(await detail.default({ params: Promise.resolve({ locale, slug }), searchParams: Promise.resolve({}) }));
+    const html = await renderHtml(await detail.default({ params: Promise.resolve({ locale, slug }) }));
     assert.equal([...html.matchAll(/<h1\b/g)].length, 1);
     assert.match(html, new RegExp(`<h1[^>]*>${escapeHtml(getGamesCopy(locale).games[slug].name)}</h1>`));
     for (const game of GAMES.filter((game) => game.puzzle)) assert.ok(html.includes(`href="${new URL(platformUrl(gamePageHref(game), locale)).pathname}"`));
@@ -188,7 +182,7 @@ test("middleware passes play/assets through but sends exact own-game pages throu
   const { middleware } = await import("../src/middleware.ts");
   const { NextRequest } = await import("next/server");
   for (const game of GAMES) {
-    for (const path of [gamePageHref(game), `${gamePageHref(game)}?locale=zh-TW`]) {
+    for (const path of [gamePageHref(game), ...["?locale=zh-TW", "?lang=zh", "?locale=ja"].map(query => `${gamePageHref(game)}${query}`)]) {
       const response = middleware(new NextRequest(`https://appai.info${path}`, { headers: { "accept-language": "en" } }));
       assert.equal(new URL(response.headers.get("x-middleware-rewrite")!).pathname, `/en/games/${game.slug}`);
     }

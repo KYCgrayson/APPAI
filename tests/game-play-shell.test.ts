@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
-import { GAMES, getOwnGame, gamePlayHref } from "../src/lib/games-catalog.ts";
+import { GAMES, getOwnGame, getGamesCopy, gamePlayHref } from "../src/lib/games-catalog.ts";
 import { gameNavigationLocale, injectGameNavigation } from "../src/lib/game-play-shell.ts";
 import { getGamePageLabels } from "../src/lib/games-pages-copy.ts";
 import { locales } from "../src/i18n/routing.ts";
@@ -12,6 +12,8 @@ test("play shell localizes three navigation links, reserves control space and ke
   for (const game of GAMES) for (const locale of locales) {
     const source = readFileSync(new URL(`../public/games/${game.buildSlug}/index.html`, import.meta.url), "utf8");
     const html = injectGameNavigation(source, game, locale);
+    assert.equal([...html.matchAll(/<title>/g)].length, 1);
+    assert.ok(html.includes(`<title>${getGamesCopy(locale).games[game.slug].name} · AppAI</title>`));
     const labels = getGamePageLabels(locale);
     const nav = html.match(/<nav id="appai-play-nav"[\s\S]*?<\/nav>/)![0];
     assert.equal([...nav.matchAll(/<a\b/g)].length, 3);
@@ -31,6 +33,25 @@ test("play shell localizes three navigation links, reserves control space and ke
       assert.match(html, /\.menu\{bottom:.*;max-height:none/);
     }
   }
+});
+
+test("play shell retains its localized per-game title after a game rewrites document.title", () => {
+  const game = getOwnGame("werewolf")!;
+  const html = injectGameNavigation('<html lang="en"><head><title>Original</title></head><body></body></html>', game, "zh-TW");
+  const script = html.match(/<script id="appai-play-title">([\s\S]*?)<\/script>/)![1];
+  const document = { title: "Original", querySelector: (selector: string) => { assert.equal(selector, "title"); return {}; } };
+  let onMutation: () => void = () => assert.fail("missing observer");
+  class MutationObserver {
+    constructor(callback: () => void) { onMutation = callback; }
+    observe() { /* The browser observes changes to the title element. */ }
+  }
+  runInNewContext(script, { document, MutationObserver });
+  assert.equal(document.title, "狼人殺 · AppAI");
+  document.title = "Werewolf";
+  onMutation();
+  assert.equal(document.title, "狼人殺 · AppAI");
+  onMutation();
+  assert.equal(document.title, "狼人殺 · AppAI");
 });
 
 test("navigation language respects explicit query, legacy Werewolf language, cookie, and English fallback", () => {

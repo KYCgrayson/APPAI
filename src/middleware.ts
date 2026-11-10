@@ -200,11 +200,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
-  // Shared room/challenge/claim links must reach play before locale routing.
+  // Decide here so statically generated game pages never read request queries.
+  // Shared room/challenge/claim links must reach play before locale routing;
+  // the helper carries a route locale into the game's own language parameter.
   // A browser inherits any original fragment across this 307; hash-only links
   // are handled on the description page by GamePlayCompatibility.
   const playRedirect = gamePlayServerRedirect(pathname, request.nextUrl.search);
-  if (playRedirect) return NextResponse.redirect(new URL(playRedirect, request.url));
+  if (playRedirect) return NextResponse.redirect(new URL(playRedirect, request.url), 307);
 
   // Skip i18n for non-public routes
   if (

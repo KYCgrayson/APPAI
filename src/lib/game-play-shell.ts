@@ -1,4 +1,4 @@
-import { TABLETOP_COLLECTION, type GameEntry } from "./games-catalog.ts";
+import { TABLETOP_COLLECTION, getGamesCopy, type GameEntry } from "./games-catalog.ts";
 import { gameContentLocale, getGamePageLabels } from "./games-pages-copy.ts";
 import { serializeJsonLd } from "./json-ld.ts";
 
@@ -6,6 +6,16 @@ import { serializeJsonLd } from "./json-ld.ts";
 export function injectGameNavigation(html: string, game: GameEntry, requestedLocale: string): string {
   const locale = gameContentLocale(requestedLocale);
   const labels = getGamePageLabels(locale);
+  const title = `${getGamesCopy(locale).games[game.slug].name} · AppAI`;
+  const titleHtml = title.replace(/[&<>"']/g, (character) => `&#${character.charCodeAt(0)};`);
+  // Werewolf writes document.title on each render. Keep the shell's localized
+  // game title after startup and subsequent game renders without editing builds.
+  const titleScript = `<script id="appai-play-title">(()=>{
+    const title=${serializeJsonLd(title)};
+    const update=()=>{if(document.title!==title)document.title=title;};
+    new MutationObserver(update).observe(document.querySelector("title"),{childList:true,subtree:true,characterData:true});
+    update();
+  })();</script>`;
   const prefix = locale === "en" ? "" : `/${locale}`;
   const style = `<style id="appai-play-style">
     :root{--appai-play-bar-height:calc(53px + env(safe-area-inset-top,0px))}
@@ -40,7 +50,8 @@ export function injectGameNavigation(html: string, game: GameEntry, requestedLoc
     addEventListener("popstate",update);addEventListener("hashchange",update);update();
   })();</script>` : "";
   return html.replace(/<html\b[^>]*\blang="[^"]*"/, (tag) => tag.replace(/lang="[^"]*"/, `lang="${locale}"`))
-    .replace("</head>", `${style}</head>`)
+    .replace(/<title\b[^>]*>[\s\S]*?<\/title>/i, "")
+    .replace("</head>", `<title>${titleHtml}</title>${titleScript}${style}</head>`)
     .replace(/<body\b([^>]*)>/, `<body$1 data-appai-play>${nav}${script}`);
 }
 

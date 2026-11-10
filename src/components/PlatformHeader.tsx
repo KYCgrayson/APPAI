@@ -18,7 +18,7 @@ export async function PlatformHeader({ currentSection, breadcrumbs }: {
     <header className="border-b border-gray-800 bg-gray-950/90 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 sm:px-6 sm:py-4">
         <div className={breadcrumbs ? "flex min-w-0 flex-1 items-center gap-3" : "contents"}>
-          <Link href="/" className="text-xl font-bold flex shrink-0 items-center gap-2 text-white">
+          <Link href="/" className="text-xl font-bold flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 text-white">
             {/* eslint-disable-next-line @next/next/no-img-element -- Small same-origin brand mark; keep the shared header independent of image optimization configuration. */}
             <img src="/appai-logo2.png" alt="AppAI" className="w-7 h-7 rounded" />
             {!breadcrumbs && <span>AppAI</span>}
@@ -29,7 +29,7 @@ export async function PlatformHeader({ currentSection, breadcrumbs }: {
                 {breadcrumbs.map(({ name, href }, index) => (
                   <li key={href} className="flex min-w-0 items-center gap-1.5">
                     {index > 0 && <span aria-hidden="true" className="text-gray-500">›</span>}
-                    <Link href={href} aria-current={index === breadcrumbs.length - 1 ? "page" : undefined} className="min-w-0 break-words hover:text-white hover:underline">{name}</Link>
+                    <Link href={href} aria-current={index === breadcrumbs.length - 1 ? "page" : undefined} className="inline-flex min-h-11 min-w-0 items-center break-words py-2 hover:text-white hover:underline">{name}</Link>
                   </li>
                 ))}
               </ol>

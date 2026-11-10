@@ -300,6 +300,10 @@ export function isStaticGamePath(pathname: string): boolean {
 export function gamePlayHref(game: GameEntry, locale: string): string {
   // The game falls back for languages it does not implement; the platform bar
   // reads this locale independently. Preserve Werewolf's old lang=zh links.
-  const lang = locale === "zh" || locale === "zh-TW" ? game.localeParam.zh : locale;
+  const lang = gameLocaleValue(game, locale);
   return `${gamePageHref(game)}/play?${game.localeParam.name}=${encodeURIComponent(lang)}${game.puzzle ? `&game=${game.puzzle}` : ""}`;
+}
+
+export function gameLocaleValue(game: GameEntry, locale: string): string {
+  return locale === "zh" || locale === "zh-TW" ? game.localeParam.zh : locale;
 }

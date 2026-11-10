@@ -2,19 +2,21 @@ import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { PlatformFooter } from "@/components/PlatformFooter";
-import { GamePlayCompatibility } from "@/components/GamePlayCompatibility";
+import { GamePlayCompatibility, GamePlayLink } from "@/components/GamePlayCompatibility";
 import { GAMES, GAME_PAGE_SLUGS, TABLETOP_COLLECTION, getOwnGame, getGamesCopy, gamePageHref, gamePlayHref, isPlayableGame } from "@/lib/games-catalog";
 import { getGamePageCopy, getGamePageLabels } from "@/lib/games-pages-copy";
 import { buildGamePageMetadata, buildGamePageJsonLd, buildCollectionPageJsonLd, gameBreadcrumbs } from "@/lib/games-page-seo";
 import { serializeJsonLd } from "@/lib/json-ld";
+import { locales } from "@/i18n/routing";
 
 type GamePageProps = {
   params: Promise<{ locale: string; slug: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export function generateStaticParams() {
-  return GAME_PAGE_SLUGS.map((slug) => ({ slug }));
+  // Complete paths let Next classify the shared request-dependent layout at
+  // build time instead of failing when a partially generated path is visited.
+  return locales.flatMap((locale) => GAME_PAGE_SLUGS.map((slug) => ({ locale, slug })));
 }
 
 export async function generateMetadata({ params }: Pick<GamePageProps, "params">) {
@@ -24,7 +26,7 @@ export async function generateMetadata({ params }: Pick<GamePageProps, "params">
   return buildGamePageMetadata(game, locale);
 }
 
-export default async function GamePage({ params, searchParams }: GamePageProps) {
+export default async function GamePage({ params }: GamePageProps) {
   const { locale, slug } = await params;
   const game = getOwnGame(slug);
   const page = game ?? (slug === TABLETOP_COLLECTION.slug ? TABLETOP_COLLECTION : undefined);
@@ -33,17 +35,12 @@ export default async function GamePage({ params, searchParams }: GamePageProps) 
   const summary = hub.games[slug];
   const copy = getGamePageCopy(locale, slug);
   const labels = getGamePageLabels(locale);
-  const query = await searchParams;
-  // Existing shared play links used ?locale= (Werewolf used ?lang=zh).
-  // Keep that play-language preference while canonicalizing to the route locale.
-  const requestedLocale = query.locale ?? (game ? query[game.localeParam.name] : undefined);
-  const playLocale = typeof requestedLocale === "string" ? requestedLocale : locale;
   const moreGames = GAMES.filter((other) => other.slug !== slug && isPlayableGame(other));
   const puzzles = GAMES.filter((other) => other.puzzle);
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
-      {game && <GamePlayCompatibility slug={slug} playHref={gamePlayHref(game, playLocale)} label={hub.play} />}
+      {game && <GamePlayCompatibility slug={slug} playHref={gamePlayHref(game, locale)} label={hub.play} />}
       <PlatformHeader currentSection="games" breadcrumbs={gameBreadcrumbs(locale, slug)} />
       <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
         <Link href="/games" className="text-sm text-emerald-300 hover:underline">← {labels.back}</Link>
@@ -58,13 +55,14 @@ export default async function GamePage({ params, searchParams }: GamePageProps) 
                 <div><dt className="text-gray-400">{hub.ages}</dt><dd className="mt-1">{summary.ages}</dd></div>
               </dl>
               {game && isPlayableGame(game) ? (
-                <a
-                  href={gamePlayHref(game, playLocale)}
+                <GamePlayLink
+                  slug={slug}
+                  href={gamePlayHref(game, locale)}
                   className="mt-7 inline-flex min-h-14 w-full items-center justify-center rounded-xl px-8 text-lg font-semibold text-gray-950 hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:w-auto"
                   style={{ backgroundColor: game.accent }}
                 >
                   {hub.play}<span className="sr-only">: {summary.name}</span>
-                </a>
+                </GamePlayLink>
               ) : game ? <p className="mt-7 text-gray-400">{hub.soon}</p> : null}
               {game?.puzzle && <Link href={gamePageHref(TABLETOP_COLLECTION)} className="mt-5 block text-emerald-300 hover:underline">{hub.games[TABLETOP_COLLECTION.slug].name} →</Link>}
             </div>

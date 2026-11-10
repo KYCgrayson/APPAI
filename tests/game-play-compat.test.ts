@@ -39,18 +39,25 @@ test("plain, language-only and unrelated queries stay on the description page", 
   }
 });
 
-test("server redirect strips only the platform locale and keeps raw query order, duplicates and encoding", () => {
+test("middleware decision carries the platform locale and keeps raw query order, duplicates and encoding", () => {
   for (const prefix of ["", ...locales.map((locale) => `/${locale}`)]) for (const slash of ["", "/"]) {
     const search = "?room=AB%20CD&locale=zh-TW&tag=a%2fb&room=EF%2bGH&empty=&bare";
     assert.equal(gamePlayServerRedirect(`${prefix}/games/guess-duel${slash}`, search), `/games/guess-duel/play${search}`);
-    assert.equal(gamePlayServerRedirect(`${prefix}/games/river-crossing${slash}`, "?claim=run%2D1"), "/games/river-crossing/play?claim=run%2D1");
-    for (const slug of ["night-bridge", "water-pouring"]) assert.equal(gamePlayServerRedirect(`${prefix}/games/${slug}${slash}`, "?game=water&level=hard&claim=run%2D1"), `/games/${slug}/play?game=water&level=hard&claim=run%2D1`);
+    const language = prefix ? `&locale=${prefix.slice(1)}` : "";
+    assert.equal(gamePlayServerRedirect(`${prefix}/games/river-crossing${slash}`, "?claim=run%2D1"), `/games/river-crossing/play?claim=run%2D1${language}`);
+    for (const slug of ["night-bridge", "water-pouring"]) assert.equal(gamePlayServerRedirect(`${prefix}/games/${slug}${slash}`, "?game=water&level=hard&claim=run%2D1"), `/games/${slug}/play?game=water&level=hard&claim=run%2D1${language}`);
+    assert.equal(gamePlayServerRedirect(`${prefix}/games/guess-duel${slash}`, "?room=AB%20CD&empty=&bare"), `/games/guess-duel/play?room=AB%20CD&empty=&bare${language}`);
   }
 });
 
+test("middleware decision keeps explicit game language ahead of a route locale", () => {
+  assert.equal(gamePlayServerRedirect("/zh-TW/games/river-crossing", "?challenge=hard"), "/games/river-crossing/play?challenge=hard&locale=zh-TW");
+  assert.equal(gamePlayServerRedirect("/zh-TW/games/guess-duel", "?room=AB12CD&locale=ja"), "/games/guess-duel/play?room=AB12CD&locale=ja");
+});
+
 test("server redirect leaves detail language, play, assets, hosted /p/ and unknown routes alone", () => {
-  for (const { slug } of GAMES) for (const search of ["", "?locale=zh-TW", "?lang=zh", "?utm_source=friend"]) {
-    assert.equal(gamePlayServerRedirect(`/games/${slug}`, search), null);
+  for (const { slug } of GAMES) for (const search of ["", "?locale=zh-TW", "?lang=zh", "?locale=ja", "?utm_source=friend"]) {
+    for (const prefix of ["", ...locales.map(locale => `/${locale}`)]) assert.equal(gamePlayServerRedirect(`${prefix}/games/${slug}`, search), null);
   }
   for (const pathname of ["/games", "/games/tabletop-puzzles", "/games/tabletop-puzzles/play", "/games/boards", "/games/profile", "/games/unknown", "/games/toString", "/games/guess-duel/play", "/games/guess-duel/play/", "/games/guess-duel/index.html", "/games/guess-duel/assets/index.js", "/p/guess-duel", "/p/river-crossing", "/xx/games/guess-duel", "/zh-TW/games/guess-duel/play"]) {
     assert.equal(gamePlayServerRedirect(pathname, "?room=AB12CD&claim=run-1"), null, pathname);
@@ -63,12 +70,13 @@ test("middleware sends a 307 to locale-free play before language detection with 
     const { NextRequest } = await import("next/server");
     const { middleware } = await import("../src/middleware.ts");
     for (const method of ["GET", "HEAD"]) for (const prefix of ["", "/zh-TW"]) {
-      for (const [slug, search] of [["guess-duel", "?room=AB%20CD&locale=zh-TW&room=EF%2bGH"], ["river-crossing", "?claim=run%2D1&locale=zh-TW"]]) {
+      for (const [slug, search] of [["guess-duel", "?room=AB%20CD&locale=zh-TW&room=EF%2bGH"], ["river-crossing", "?claim=run%2D1&locale=zh-TW"], ["river-crossing", "?challenge=hard"], ["guess-duel", "?room=AB12CD"]]) {
         const response = middleware(new NextRequest(`https://appai.info${prefix}/games/${slug}/${search}`, {
           method, headers: { "accept-language": "ja" },
         }));
         assert.equal(response.status, 307);
-        assert.equal(response.headers.get("location"), `https://appai.info/games/${slug}/play${search}`);
+        const language = prefix && !search.includes("locale=") ? "&locale=zh-TW" : "";
+        assert.equal(response.headers.get("location"), `https://appai.info/games/${slug}/play${search}${language}`);
       }
     }
   } finally { hooks.deregister(); }

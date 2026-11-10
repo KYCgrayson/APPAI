@@ -107,3 +107,25 @@ test("directory passes App URLs and published content into app classification", 
     }
   } finally { fixtureDb.apps = savedApps; fixtureDb.rows = savedRows; }
 });
+
+test("GAME templates and game-kind apps never enter the shared directories, even with tool/app signals", async () => {
+  const savedApps = fixtureDb.apps;
+  const savedRows = fixtureDb.rows;
+  try {
+    fixtureDb.locale = "en";
+    fixtureDb.apps = [
+      { ...baseApp, id: "game-template", organizationId: "platform-org", hostedPageSlug: "game-template", tags: ["appai:kind:tool"] },
+      { ...baseApp, id: "game-native", organizationId: "platform-org", hostedPageSlug: "game-native", appType: "example-game" },
+      { ...baseApp, id: "game-tag", organizationId: "platform-org", tags: ["appai:kind:game", "appai:kind:app"] },
+    ];
+    fixtureDb.rows = fixtureDb.apps.filter(app => app.hostedPageSlug).map(app => ({
+      ...savedRows[0], slug: app.hostedPageSlug, template: "GAME", content: { sections: [{ type: "tool" }, { type: "download" }] },
+    }));
+    for (const kind of [undefined, "tools", "apps", "websites"] as const) {
+      const html = await renderHtml(await PlatformDirectory({ kind }));
+      assert.doesNotMatch(html, /href="\/(?:p|app|apps)\/game-/);
+      assert.doesNotMatch(html, /href="\/app\/example-game"/);
+      assert.doesNotMatch(html, /Example app/);
+    }
+  } finally { fixtureDb.apps = savedApps; fixtureDb.rows = savedRows; }
+});

@@ -1,5 +1,5 @@
 import { locales } from "../i18n/routing.ts";
-import { GAMES } from "./games-catalog.ts";
+import { GAMES, getOwnGame, gameLocaleValue } from "./games-catalog.ts";
 
 // Derived from the checked-in game sources and their deployed public builds.
 // locale (puzzles/duel) and lang (werewolf) alone keep the description page.
@@ -20,11 +20,28 @@ export function needsGamePlayRedirect(slug: string, search: string, hash: string
   return GAME_STATE_QUERY_PARAMS[slug].some((name) => params.has(name));
 }
 
-/** Server decision: only detail routes, preserving the raw query verbatim. */
-export function gamePlayServerRedirect(pathname: string, search: string): string | null {
+/** Keep the raw query; append the game's language only when it is missing. */
+export function gamePlaySearch(slug: string, search: string, locale?: string): string {
+  const game = getOwnGame(slug);
+  if (!game) return search;
+  const params = new URLSearchParams(search);
+  if (params.has(game.localeParam.name)) return search;
+  const language = params.get("locale") ?? locale;
+  if (!language) return search;
+  const separator = !search ? "?" : search === "?" ? "" : "&";
+  return `${search}${separator}${game.localeParam.name}=${encodeURIComponent(gameLocaleValue(game, language))}`;
+}
+
+/** Only detail routes; fragments are supplied by the browser fallback. */
+export function gamePlayCompatibilityHref(pathname: string, search: string, hash = ""): string | null {
   const match = /^\/(?:([^/]+)\/)?games\/([^/]+)\/?$/.exec(pathname);
   if (!match) return null;
   const [, locale, slug] = match;
   if (locale && !locales.some((value) => value === locale)) return null;
-  return needsGamePlayRedirect(slug, search, "") ? `/games/${slug}/play${search}` : null;
+  return needsGamePlayRedirect(slug, search, hash) ? `/games/${slug}/play${gamePlaySearch(slug, search, locale)}${hash}` : null;
+}
+
+/** Middleware decision: the server never sees a fragment. */
+export function gamePlayServerRedirect(pathname: string, search: string): string | null {
+  return gamePlayCompatibilityHref(pathname, search);
 }
