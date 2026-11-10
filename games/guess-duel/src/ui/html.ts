@@ -3,5 +3,5 @@ export const esc = (s: unknown) =>
     /[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
   );
-export const button = (label: string, action: string, cls = '') =>
-  `<button class="${cls}" data-action="${action}">${esc(label)}</button>`;
+export const button = (label: string, action: string, cls = '', disabled = false) =>
+  `<button class="${cls}" data-action="${action}"${disabled ? ' disabled' : ''}>${esc(label)}</button>`;

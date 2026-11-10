@@ -242,6 +242,14 @@ input[type='checkbox'] {
   border-radius: 14px;
   background: var(--paper);
 }
+.room-progress {
+  min-height: 2em;
+  margin: 8px 0;
+}
+.room-countdown {
+  min-height: 2em;
+  font-variant-numeric: tabular-nums;
+}
 .handover {
   min-height: 75vh;
   display: grid;

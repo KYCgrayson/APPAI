@@ -26,6 +26,13 @@ import { commit, randomSalt, verifyGame } from '../logic/commit.ts';
 import { encode, decode } from '../relay/codec.ts';
 import { RoomsClient, RoomError, apiBase, normalizeCode, type Room } from '../net/rooms.ts';
 import { OnlineSession, onlineScreen, canResumeSeat } from '../net/online.ts';
+import {
+  formatRemaining,
+  remainingSeconds,
+  RoomCountdown,
+  waitingRoomState,
+  type RoomAction,
+} from '../net/lifecycle.ts';
 import { strings, locale, roomErrorText, type Locale } from './i18n.ts';
 import { Audio } from './audio.ts';
 import {
@@ -67,7 +74,11 @@ let mode: Mode = 'same',
   recorded = false,
   returnScreen = 'home',
   session: OnlineSession | undefined,
+  connecting: RoomAction,
+  roomFirst: Seat = 0,
   busy = false;
+let roomCountdown = new RoomCountdown(Date.now),
+  refreshingRoom: OnlineSession | undefined;
 const settings = safeGet(storage, 'guess-duel:settings') as any;
 let n = settings?.n === 4 ? 4 : 3,
   names: [string, string] =
@@ -113,7 +124,7 @@ function render() {
   document.documentElement.lang = lang;
   root.innerHTML =
     header() +
-    `<main class="${screen}">${message && !entering ? `<p class="notice" role="status">${esc(message)}</p>${message === loginMessage() ? button(lang === 'en' ? 'Sign in' : '登入', 'login') : ''}${message === missingMessage() ? button(lang === 'en' ? 'New room' : '重新開房', 'createRoom') : ''}` : ''}${content()}</main>`;
+    `<main class="${screen}">${message && !entering ? `<p class="notice" role="status">${esc(message)}</p>${message === loginMessage() ? button(lang === 'en' ? 'Sign in' : '登入', 'login') : ''}` : ''}${content()}</main>`;
   bind();
   if (notesOpen && entering) {
     const notes = root.querySelector<HTMLDetailsElement>('.notes-disclosure');
@@ -198,6 +209,7 @@ root.addEventListener('focusout', () => {
 window.addEventListener('blur', hidePeek);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) hidePeek();
+  else void refreshRoom();
 });
 function bind() {
   const byId = (id: string) => document.getElementById(id) as HTMLInputElement | null;
@@ -272,6 +284,7 @@ function digit(d: string) {
 }
 async function action(a: string) {
   audio.unlock();
+  if (connecting) return;
   if (a === 'peek') return;
   if (a === 'home') {
     if (
@@ -290,11 +303,7 @@ async function action(a: string) {
     drafts.reset();
     roomDigits = [];
     message = '';
-    history.replaceState(
-      null,
-      '',
-      location.pathname + location.search.replace(/([?&])room=[^&]*&?/, '$1').replace(/[?&]$/, ''),
-    );
+    clearRoomURL();
     render();
     return;
   }
@@ -404,6 +413,7 @@ async function action(a: string) {
   }
 }
 async function start(m: Mode, first: Seat = 0) {
+  if (connecting) return;
   session?.stop();
   session = undefined;
   pendingOnlineRoom = undefined;
@@ -669,73 +679,138 @@ async function flushOnlineUpdates() {
     advancing = false;
   }
 }
-async function connectRoom(code?: string) {
+async function connectRoom(code?: string, fromLink = false) {
   if (busy) return;
+  const previousScreen = screen;
+  let typedJoin = false;
   message = '';
   busy = true;
+  connecting = code === undefined ? 'creating' : 'joining';
+  if (screen !== 'roomClosed') screen = 'onlineLobby';
   render();
   try {
     const client = getClient();
     const clean = code === undefined ? undefined : normalizeCode(code);
+    const fresh =
+      clean === undefined
+        ? createGame({ n, names: [...names], first: game?.first ?? roomFirst })
+        : undefined;
+    if (clean === undefined) resetOnlineRoom(client);
     const saved = clean ? (safeGet(storage, client.tokenKey(clean)) as any) : null;
+    typedJoin = clean !== undefined && !saved && !fromLink;
     const d = saved
       ? { ...saved, code: clean, room: (await client.poll(clean!, saved.token, -1)).room }
       : clean !== undefined
         ? { ...(await client.join(clean)), code: clean }
-        : await client.create(game ?? createGame({ n, names }));
+        : await client.create(fresh!);
     if (!saved && code && d.room.state.commits[d.seat]) throw new RoomError(400, 'invalid_state');
     seat = d.seat;
     game = d.room.state;
+    roomFirst = game!.first;
     n = game!.n;
     names = [...game!.names];
     mode = 'online';
     const local = safeGet(storage, 'guess-duel:online:' + d.code) as any;
     if (local && isValidCode(local.secret, game!.n)) privateData[seat] = local;
     if (!(await canResumeSeat(game!, seat, local))) throw new RoomError(400, 'invalid_state');
-    session = new OnlineSession(
+    const connected = new OnlineSession(
       client,
       d.code,
       d.token,
       seat,
       d.room,
       (room: Room) => {
+        if (session !== connected) return;
+        if (waitingRoomState(room, client.serverNow()) === 'closed') {
+          closeRoom();
+          return;
+        }
         game = room.state;
         pendingOnlineRoom = room;
         void flushOnlineUpdates();
       },
-      showError,
+      (e) => {
+        if (session === connected) showError(e);
+      },
     );
+    session = connected;
+    roomCountdown = new RoomCountdown(Date.now);
     game = session.room.state;
     history.replaceState(null, '', roomURL(location.href, d.code));
+    if (waitingRoomState(session.room, client.serverNow()) === 'closed') {
+      closeRoom();
+      return;
+    }
     screen = code ? 'secret' : 'waiting';
     await advance();
     session.start();
   } catch (e) {
-    screen = code === undefined ? 'home' : 'onlineLobby';
-    showError(e, code !== undefined);
+    screen = previousScreen === 'roomClosed' ? 'roomClosed' : 'onlineLobby';
+    showError(e, code, typedJoin);
   } finally {
     busy = false;
+    connecting = undefined;
     await flushOnlineUpdates();
+    render();
   }
+}
+function clearRoomURL() {
+  const url = new URL(location.href);
+  url.searchParams.delete('room');
+  history.replaceState(null, '', url.pathname + url.search + url.hash);
+}
+function resetOnlineRoom(client: RoomsClient, expiredCode?: string) {
+  const rawCode = expiredCode ?? '';
+  let oldCode = rawCode;
+  try {
+    oldCode = normalizeCode(rawCode);
+  } catch {}
+  session?.stop();
+  if (oldCode) {
+    storage.removeItem((session?.client ?? client).tokenKey(oldCode));
+    storage.removeItem('room:' + oldCode);
+    storage.removeItem('guess-duel:online:' + oldCode);
+  }
+  session = undefined;
+  pendingOnlineRoom = undefined;
+  privateData = {};
+  game = undefined;
+  input = '';
+  drafts.reset();
+  roomDigits = [];
+  verified = null;
+  recorded = false;
+  thinking = false;
+  hint = false;
+  showOpponent = false;
+  if (expiredCode) clearRoomURL();
+}
+function closeRoom(
+  code = session?.code ?? new URL(location.href).searchParams.get('room') ?? roomDigits.join(''),
+) {
+  resetOnlineRoom(session?.client ?? getClient(), code);
+  mode = 'online';
+  screen = 'roomClosed';
+  message = '';
+  render();
 }
 function loginMessage() {
   return lang === 'en'
     ? 'Sign in to AppAI to create a room (joining doesn’t need it)'
     : '建房要先登入 AppAI（加入不用）';
 }
-function missingMessage() {
-  return lang === 'en' ? 'Room not found. Create a new room.' : '找不到這個房間，請重新開房。';
-}
-function showError(e: unknown, joining = false) {
-  if (e instanceof RoomError && e.status === 404) {
-    session?.stop();
-    session = undefined;
-    pendingOnlineRoom = undefined;
-    privateData = {};
-    game = undefined;
-    screen = joining ? 'onlineLobby' : 'home';
-    message = missingMessage();
-  } else if (e instanceof RoomError && e.error === 'login_required') message = loginMessage();
+function showError(e: unknown, code?: string, typedJoin = false) {
+  if (
+    e instanceof RoomError &&
+    (e.status === 404 || e.error === 'expired' || e.error === 'room_expired')
+  ) {
+    if (typedJoin) {
+      message = t.roomNotFound;
+      render();
+    } else closeRoom(code);
+    return;
+  }
+  if (e instanceof RoomError && e.error === 'login_required') message = loginMessage();
   else if (e instanceof RoomError && (e.status === 503 || e.error === 'unavailable'))
     message = t.unavailable;
   else if (e instanceof RoomError && e.error === 'room_not_ready') message = t.wait;
@@ -797,22 +872,55 @@ if (location.hash.startsWith('#r=')) void openRelay();
 else if (params.has('room')) {
   mode = 'online';
   roomDigits = params.get('room')!.replace(/[\s-]/g, '').toUpperCase().split('');
-  void connectRoom(params.get('room')!);
+  void connectRoom(params.get('room')!, true);
 }
 function countdown() {
-  const remaining = Math.max(
-    0,
-    Math.min(120, Math.ceil((Date.parse(session!.room.expiresAt) - Date.now()) / 1000)),
+  if (!session) return '';
+  return t.roomCloses.replace(
+    '{time}',
+    formatRemaining(roomCountdown.remaining(session.room.expiresAt, session.client.serverNow())),
   );
-  return `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')} ${lang === 'en' ? 'to enter the room code' : '內請對方輸入房號'}`;
 }
-setInterval(() => {
-  const el = document.querySelector('[data-countdown]');
-  if (el && session) {
-    el.textContent = countdown();
-    if (Date.parse(session.room.expiresAt) <= Date.now())
-      showError(new RoomError(404, 'room_not_found'));
+async function refreshRoom() {
+  const current = session;
+  if (!current || refreshingRoom === current) return;
+  refreshingRoom = current;
+  try {
+    const room = await current.poll(true);
+    if (
+      session === current &&
+      room &&
+      waitingRoomState(room, current.client.serverNow()) === 'closed'
+    )
+      closeRoom();
+  } catch (e) {
+    if (session === current) showError(e);
+  } finally {
+    if (refreshingRoom === current) refreshingRoom = undefined;
   }
+}
+function updateCountdown() {
+  if (!session) return;
+  const el = document.querySelector('[data-countdown]');
+  if (el) {
+    const text = countdown();
+    if (el.textContent !== text) el.textContent = text;
+  }
+}
+// Read near second boundaries without changing the one-second expiry-check cadence.
+setInterval(updateCountdown, 20);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) updateCountdown();
+});
+setInterval(() => {
+  if (!session) return;
+  updateCountdown();
+  if (
+    session.room.status === 'waiting' &&
+    (roomCountdown.expired ||
+      remainingSeconds(session.room.expiresAt, session.client.serverNow()) === 0)
+  )
+    void refreshRoom();
 }, 1000);
 export {
   storage,
@@ -831,6 +939,7 @@ export {
   thinking,
   verified,
   session,
+  connecting,
   n,
   names,
   difficulty,

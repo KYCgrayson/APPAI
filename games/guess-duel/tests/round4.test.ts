@@ -258,7 +258,7 @@ test('full-room waits never name the local player when its secret is waiting to 
 test('join failures keep the online panel, all code boxes and the localized error', async (t) => {
   for (const [status, error, notice] of [
     [409, 'room_full', strings.en.roomFull],
-    [404, 'room_not_found', 'Room not found. Create a new room.'],
+    [404, 'room_not_found', strings.en.roomNotFound],
     [503, 'unavailable', strings.en.unavailable],
   ] as const) {
     const view = loadApp(async () => Response.json({ error }, { status }));
