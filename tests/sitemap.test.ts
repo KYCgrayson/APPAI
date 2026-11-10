@@ -10,7 +10,7 @@ test("sitemap uses stable static dates, true update times and excludes login and
     { ...root, privacyPolicy: "Privacy" },
     { ...root, slug: "external", canonicalUrl: "https://example.org/official", privacyPolicy: "Privacy" },
   ], [{ id: "demo", updatedAt, hostedPageSlug: null }]);
-  assert.equal(entries.length, 7);
+  assert.equal(entries.length, 8); // 4 directories + /games + 3 hosted entries
   assert.ok(!entries.some(entry => /login|external/.test(entry.url)));
   assert.equal(entries.find(entry => entry.url === "https://appai.info/")?.lastModified, PLATFORM_CONTENT_MODIFIED);
   assert.equal(entries.find(entry => entry.url.endsWith("/p/site"))?.lastModified, updatedAt);
