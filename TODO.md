@@ -1,5 +1,15 @@
 # TODO — AppAI Project Roadmap
 
+## Own game pages (#73, stacked on #67)
+
+- [x] Canonical locale-aware pages for River Crossing, Night Bridge, Water Pouring, Guess Duel Beta and Werewolf Beta, plus the page-only Tabletop Puzzles collection, with parent FAQ, covers, instructions and structured data.
+- [x] Move static play to `/games/{slug}/play`; link hub cards and a compact homepage strip to detail pages, and include live/Beta pages in the sitemap.
+- [x] Update game routing documentation and add catalog, copy, routing, SEO, rendering and sitemap regression coverage.
+- [x] Round 2: audit game source/public links; preserve old room, relay, puzzle/challenge and leaderboard claim links through query-aware server redirects and fragment-aware client forwarding. Language-only links keep query-free detail canonicals; `/p/` routing stays with package C.
+- [x] Round 3: split puzzle descriptions and search terms without splitting builds or leaderboards; add shared linked breadcrumbs/BreadcrumbList, home branding, footer navigation and a localized play bar injected by the static HTML route handler. Existing `game` selectors, queries, fragments and same-origin sessions stay with the game; source and bundles are unchanged.
+- [x] Round 4: authored nine-language game/collection/hub copy, navigation and homepage strip; require translated nonempty FAQ answers and all nine SEO alternates. Expand the registered games spec with source-checked technical guidance, rooms example, actual leaderboard/review/identity status and a downloadable Guess Duel build-to-publish walkthrough; regenerate the full spec.
+- [ ] Browser QA of deployed detail/play routes, asset loading, 375px layout and authenticated room/leaderboard returns. Local preview was blocked by sandbox `listen EPERM`; automated routing, rendering and game-state checks pass.
+
 ## Platform SEO (#67, package A)
 
 - [x] Localized metadata and developer/agent homepage copy in nine languages; canonical, HTML language alternates and social previews on home/tools/apps/websites.

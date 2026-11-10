@@ -1,0 +1,69 @@
+{
+  "slug": "guess-duel-demo",
+  "template": "GAME",
+  "locale": "en",
+  "title": "Guess Duel Beta",
+  "tagline": "Hide a number and use A/B clues to deduce the other code.",
+  "metaDescription": "Play Guess Duel free in your browser on one device, against the computer or by passing links between two phones. Recommended for ages 8+. Beta.",
+  "themeColor": "#A5B4FC",
+  "themeColorSecondary": "#67E8F9",
+  "fontFamily": "Space Grotesk",
+  "darkMode": true,
+  "isPublished": true,
+  "content": {
+    "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+    "sections": [
+      {
+        "type": "game",
+        "order": 0,
+        "data": {
+          "gameUrl": "https://your-guess-duel.pages.dev/",
+          "description": "Choose a secret of three or four distinct digits. Take turns guessing: A means a correct digit in the correct position; B means a correct digit elsewhere. Play on one device, against the computer, or by passing links between two phones.",
+          "genre": "Number deduction",
+          "orientation": "any",
+          "aspectRatio": "9:16",
+          "players": {
+            "min": 1,
+            "max": 2
+          },
+          "controls": [
+            "touch",
+            "keyboard"
+          ],
+          "howToPlay": [
+            "Choose three or four different digits as your secret; a leading zero is allowed.",
+            "Take turns guessing. Use A for a correct digit in the correct position and B for a correct digit elsewhere.",
+            "On a shared device, look away while the other player enters a secret. You can also choose the computer opponent or exchange relay links."
+          ],
+          "ageRating": "7+",
+          "cover": {
+            "url": "https://your-guess-duel.pages.dev/cover.svg",
+            "alt": "Guess Duel number tiles and A/B clues",
+            "width": 640,
+            "height": 360
+          },
+          "listInGames": true,
+          "faq": [
+            {
+              "question": "Can two people share one phone?",
+              "answer": "Yes. Take turns and look away while the other person enters a secret or passes the privacy screen."
+            },
+            {
+              "question": "Can I play alone?",
+              "answer": "Yes. Choose the computer opponent. Three digits are a gentler start; four give you more to keep track of."
+            },
+            {
+              "question": "Can we play on separate phones?",
+              "answer": "Relay mode passes a link or QR code after a turn. Each device keeps its own secret. Room-code access depends on AppAI origin approval and is not promised by publishing this page."
+            },
+            {
+              "question": "What age is it for?",
+              "answer": "We suggest ages 8 and up, with help understanding the A/B clues. The 7+ metadata category is a broad rating; our play recommendation is 8+."
+            }
+          ],
+          "backgroundColor": "#0F172A"
+        }
+      }
+    ]
+  }
+}

@@ -175,3 +175,21 @@ export function registerGameRenderState() {
     },
   });
 }
+
+export function registerPlayCompatibilityEffects() {
+  return registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (specifier === 'react' && context.parentURL?.endsWith('/GamePlayCompatibility.tsx')) {
+        return { url: 'fixture:play-effects', shortCircuit: true };
+      }
+      return nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      if (url === 'fixture:play-effects') return {
+        format: 'module', shortCircuit: true,
+        source: 'export function useEffect(effect) { globalThis[Symbol.for("appai.test.play-effects")].push(effect); }',
+      };
+      return nextLoad(url, context);
+    },
+  });
+}

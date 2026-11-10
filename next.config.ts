@@ -106,15 +106,16 @@ const nextConfig: NextConfig = {
     "/spec/[topic]": ["./docs/spec/**", "./AGENT_INSTRUCTIONS.md"],
     "/llms-full.txt": ["./docs/spec/**", "./AGENT_INSTRUCTIONS.md"],
     "/spec/examples/*": ["./docs/examples/**"],
+    "/games/*/runtime": ["./public/games/**/index.html"],
   },
-  // Static game builds live in public/games/<slug>/index.html (#64). Next.js
-  // does not serve index.html for a folder path, so map /games/<slug> to it.
+  // The handler reads the existing static index (three puzzle slugs share it)
+  // and injects platform navigation without moving the game into an iframe.
   async rewrites() {
     return {
       beforeFiles: [
         {
-          source: `/games/:slug(${ownGameSlugPattern})`,
-          destination: "/games/:slug/index.html",
+          source: `/games/:slug(${ownGameSlugPattern})/play`,
+          destination: "/games/:slug/runtime",
         },
       ],
     };

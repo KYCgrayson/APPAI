@@ -7,6 +7,7 @@ import { normalizeNickname } from '../src/lib/games/nickname.ts';
 import { hashToken } from '../src/lib/rooms.ts';
 import { leaderboardRateBucket } from '../src/lib/rooms-cors.ts';
 import { RESERVED_GAME_SLUGS } from '../src/lib/games-catalog.ts';
+import { gamePlayServerRedirect } from '../src/lib/game-play-compat.ts';
 import { setup, req } from './helpers/leaderboard-memory.ts';
 import type { PuzzleAction } from '../games/puzzle/src/puzzles/logic-types.ts';
 const slug = 'river-crossing';
@@ -68,6 +69,8 @@ test('claim login callback, nickname gating, public privacy, cache policy and au
   assert.equal(anonymous.status, 401);
   const login = await anonymous.json(); assert.equal(login.error, 'login_required');
   assert.equal(new URL(login.loginUrl, 'https://appai.info').searchParams.get('callbackUrl'), `/games/${slug}/?claim=${run.runId}`);
+  const callback = new URL(new URL(login.loginUrl, 'https://appai.info').searchParams.get('callbackUrl')!, 'https://appai.info');
+  assert.equal(gamePlayServerRedirect(callback.pathname, callback.search), `/games/${slug}/play?claim=${run.runId}`);
   t.signIn('private-user-id');
   const claimed = await (await claimRun(req({}, run.token), slug, run.runId, t.deps)).json();
   assert.equal(claimed.needsNickname, true); assert.equal(claimed.rank, null);

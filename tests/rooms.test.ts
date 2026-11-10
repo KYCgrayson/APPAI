@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
 import {
   createRoom, joinRoom, pollRoom, sendMove, startRoom, roomsPreflight, normalizeRoomCode, generateRoomCode, roomOriginAllowed, clientNetwork, roomIpKey,
   RATE_LIMITS, MAX_STATE_BYTES, MAX_ACTIVE_ROOMS, ROOM_TTL_MS, WAITING_TTL_MS, SKIP_AFTER_MS, IDLE_TTL_MS, RECENT_MOVES, type RoomDeps, type RoomRecord, type RoomStore,
@@ -59,6 +61,48 @@ async function startGame(t = setup()) {
   const joined = await (await joinRoom(req(`/api/rooms/${created.code}/join`, { body: {}, ip: "203.0.113.2" }), created.code, t.deps)).json();
   return { t, created, joined, code: created.code as string };
 }
+
+test("games spec browser sample creates, joins, reads and moves against the real room handlers", async () => {
+  const doc = readFileSync(new URL("../docs/spec/games.md", import.meta.url), "utf8");
+  const script = doc.match(/```js\n([\s\S]*?)\n```/)![1];
+  const t = setup();
+  function client(origin: string) {
+    const saved = new Map<string, string>();
+    return runInNewContext(`${script}\n({ createRoom, joinRoom, readRoom, move })`, {
+      location: { origin },
+      sessionStorage: { setItem: (key: string, value: string) => saved.set(key, value) },
+      fetch: async (url: string, init: RequestInit) => {
+        const request = new Request(url, { ...init, headers: { ...init.headers, origin } });
+        const path = new URL(url).pathname.slice("/api/rooms".length);
+        if (!path) return createRoom(request, t.deps);
+        const code = path.split("/")[1];
+        if (path.endsWith("/join")) return joinRoom(request, code, t.deps);
+        if (path.endsWith("/moves")) return sendMove(request, code, t.deps);
+        return pollRoom(request, code, t.deps);
+      },
+      Error, JSON, encodeURIComponent,
+    });
+  }
+  const hostClient = client("https://appai.info");
+  const guestClient = client("https://kycgrayson.github.io");
+  await assert.rejects(guestClient.createRoom(), /same-origin AppAI/);
+  const host = await hostClient.createRoom();
+  assert.equal(host.seat, 0);
+  t.signIn(null); // Joining and playing use the seat token, not AppAI identity.
+  const guest = await guestClient.joinRoom(host.code.toLowerCase());
+  assert.equal(guest.seat, 1);
+  const started = await hostClient.readRoom(host);
+  assert.equal(started.room.status, "playing");
+  const first = await hostClient.move(host, started.room, { pass: true }, { turns: 1 });
+  assert.equal(first.room.turn, 1);
+  const state = await guestClient.readRoom(guest);
+  assert.deepEqual(state.room.state, { turns: 1 });
+  const second = await guestClient.move(guest, state.room, { pass: true }, { turns: 2 });
+  assert.equal(second.room.turn, 0);
+  assert.deepEqual((await hostClient.readRoom(host)).room.state, { turns: 2 });
+  assert.equal((await guestClient.readRoom(guest, second.room.version)).changed, false);
+  await assert.rejects(hostClient.move(host, started.room, {}, {}), (error: { result: { error: string } }) => error.result.error === "version_conflict");
+});
 
 test("room codes use the unambiguous alphabet and normalize user input", () => {
   for (let i = 0; i < 200; i++) assert.match(generateRoomCode(), /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/);

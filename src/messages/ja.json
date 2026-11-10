@@ -69,7 +69,10 @@
     "agentAppFlow": "Universal App：アプリのルートに appai.app.json を追加します。まず POST /api/v1/apps/your-app/release-packages で非公開アップロードの許可を取得し、パッケージをアップロードしてから、ソースパッケージを指定して POST /api/v1/apps/your-app/releases を送信します。PENDING の受付結果と releaseId を保持し、GET /api/v1/apps/your-app/releases/releaseId で状態を確認してください。AppAI が審査、ビルド、承認済み機能の構成を行った後、appai.info/app/your-app で公開されます。",
     "agentAppSafety": "Universal App の申請は宣言的なものです。organizationId、認証情報、ランタイム URL、SQL、秘密情報は送信しないでください。AppAI が審査後にのみスコープ付き ID と承認済み機能を提供します。",
     "agentReadCommands": "curl -s https://appai.info/spec\ncurl -s https://appai.info/llms-full.txt",
-    "agentSkillCommands": "/plugin marketplace add KYCgrayson/appai-skill\n/plugin install appai-publish@appai-skill"
+    "agentSkillCommands": "/plugin marketplace add KYCgrayson/appai-skill\n/plugin install appai-publish@appai-skill",
+    "gamesTitle": "AppAIが作ったゲームで遊ぶ",
+    "gamesDescription": "AppAIで配信するオリジナルのブラウザーゲームです。無料で遊べて、インストールは不要です。",
+    "gamesViewAll": "ゲーム一覧"
   },
   "apps": {
     "title": "アプリを探す",

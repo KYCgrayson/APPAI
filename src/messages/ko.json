@@ -69,7 +69,10 @@
     "agentAppFlow": "Universal App: 앱 루트에 appai.app.json을 추가하세요. 먼저 POST /api/v1/apps/your-app/release-packages로 비공개 업로드 권한을 받고 패키지를 업로드한 다음, 소스 패키지를 포함하여 POST /api/v1/apps/your-app/releases를 요청하세요. PENDING 접수 결과와 releaseId를 보관하고 GET /api/v1/apps/your-app/releases/releaseId로 상태를 확인하세요. AppAI가 검토, 빌드 및 승인된 기능 구성을 마친 후 appai.info/app/your-app에서 출시됩니다.",
     "agentAppSafety": "Universal App은 선언형 방식으로 제출합니다. organizationId, 자격 증명, 런타임 URL, SQL 또는 비밀 정보를 보내지 마세요. AppAI는 검토 후에만 범위가 지정된 신원 정보와 승인된 기능을 제공합니다.",
     "agentReadCommands": "curl -s https://appai.info/spec\ncurl -s https://appai.info/llms-full.txt",
-    "agentSkillCommands": "/plugin marketplace add KYCgrayson/appai-skill\n/plugin install appai-publish@appai-skill"
+    "agentSkillCommands": "/plugin marketplace add KYCgrayson/appai-skill\n/plugin install appai-publish@appai-skill",
+    "gamesTitle": "AppAI가 만든 게임을 즐겨 보세요",
+    "gamesDescription": "AppAI에서 호스팅하는 오리지널 브라우저 게임이에요. 설치 없이 무료로 즐기세요.",
+    "gamesViewAll": "전체 게임"
   },
   "apps": {
     "title": "앱 둘러보기",
