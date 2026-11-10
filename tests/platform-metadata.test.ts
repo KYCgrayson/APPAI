@@ -30,13 +30,13 @@ test("all nine homepage headings SSR with expected copy, phrase breaks and wrapp
   fixtureDb.rows = [];
   const expectedHeadings = {
     en: ["Host your AI app free", "for developers and\u00a0agents"],
-    ja: ["AIアプリを<wbr/>無料で<wbr/>ホスティング", "開発者と<wbr/>エージェントの<wbr/>ために"],
+    ja: ["AIアプリを<wbr/>無料で<wbr/>ホスティング", "開発者と<wbr/>エージェント向け"],
     ko: ["AI 앱을 무료로 호스팅하세요", "개발자와 에이전트를 위한 공간"],
     "zh-CN": ["免费托管 AI app", "为开发者<wbr/>与 agent<wbr/>打造"],
     "zh-TW": ["免費託管 AI app", "為開發者<wbr/>與 agent<wbr/>打造"],
-    de: ["Deine KI-App kostenlos hosten", "für Entwickler und Agenten"],
+    de: ["Deine KI-App kostenlos hosten", "für Entwickler und\u00a0Agenten"],
     fr: ["Hébergez votre app IA gratuitement", "pour les développeurs et\u00a0les\u00a0agents"],
-    es: ["Aloja tu app de IA gratis", "para desarrolladores y agentes"],
+    es: ["Aloja tu app de IA gratis", "para desarrolladores y\u00a0agentes"],
     hi: ["अपना AI ऐप मुफ़्त होस्ट करें", "डेवलपर और एजेंट के लिए"],
   };
   for (const [locale, [title1, title2]] of Object.entries(expectedHeadings)) {
@@ -59,7 +59,8 @@ test("all nine homepage headings SSR with expected copy, phrase breaks and wrapp
       assert.doesNotMatch(className, /break-words|overflow-wrap:anywhere/, locale);
     } else {
       assert.doesNotMatch(className, /word-break:keep-all/, locale);
-      assert.ok(className.includes("break-words [overflow-wrap:anywhere]"), locale);
+      assert.ok(className.includes("[overflow-wrap:anywhere]"), locale);
+      assert.doesNotMatch(className, /\bbreak-words\b/, locale);
     }
     assert.match(heading, /<br\/>/); // No responsive class hides this break on phones.
     assert.doesNotMatch(heading, /&lt;wbr|home\.heroTitle/);

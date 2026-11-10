@@ -62,7 +62,7 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-b from-cyan-950/40 via-gray-950 to-gray-950" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-cyan-500/10 rounded-full blur-3xl" />
         <div className="relative z-10 max-w-3xl mx-auto">
-          <h1 className={`text-4xl sm:text-5xl md:text-6xl font-bold mb-6 tracking-tight text-white text-balance ${["ja", "ko", "zh-CN", "zh-TW"].includes(locale) ? "[word-break:keep-all]" : "break-words [overflow-wrap:anywhere]"}`}>
+          <h1 className={`text-4xl sm:text-5xl md:text-6xl font-bold mb-6 tracking-tight text-white text-balance ${["ja", "ko", "zh-CN", "zh-TW"].includes(locale) ? "[word-break:keep-all]" : "[overflow-wrap:anywhere]"}`}>
             {t.rich("heroTitle1", { wbr: () => <wbr /> })}
             {" "}
             <br />

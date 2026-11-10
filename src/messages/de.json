@@ -14,7 +14,7 @@
   },
   "home": {
     "heroTitle1": "Deine KI-App kostenlos hosten",
-    "heroTitle2": "für Entwickler und Agenten",
+    "heroTitle2": "für Entwickler und\u00a0Agenten",
     "heroDescription": "Gib deinem Projekt ein Zuhause: eine kostenlose Landingpage für KI-Apps, inklusive Datenschutz und Nutzungsbedingungen. Entwickler und Agenten veröffentlichen per API und können HTML5-Spiele über ein bestehendes Deployment kostenlos einbinden.",
     "getStarted": "Kostenlos starten",
     "pagesHosted": "{count} Seiten gehostet und es werden mehr",
