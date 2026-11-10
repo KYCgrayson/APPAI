@@ -1,4 +1,5 @@
-export type LevelId = 'easy' | 'medium' | 'hard';
+import type { LevelId, PuzzleLogic, PuzzleAction } from '../logic-types.ts';
+export type { LevelId } from '../logic-types.ts';
 export type Kind = 'farmer' | 'wolf' | 'goat' | 'cabbage' | 'rabbit' | 'fox';
 export interface Piece {
     id: string;
@@ -127,3 +128,17 @@ export function solution(level: LevelId): string[][] {
     return [];
 }
 export function solve(level: LevelId): number { const path = solution(level); return path.length || Infinity; }
+
+export const logic: PuzzleLogic<State> = { initial: initial, apply: (s, a) => a.type === 'toggle' ? toggle(s, a.id) : ['cross', 'go'].includes(a.type) ? cross(s) : { ok: false, reason: 'unknown' }, isWin: isWin, failure: s => s.failure, score: s => s.crossings, isMove: a => a.type === 'cross' || a.type === 'go', solve: solve, solution: level => {
+        let aboard: string[] = [];
+        const actions: PuzzleAction[] = [];
+        for (const load of solution(level)) {
+            for (const id of aboard)
+                actions.push({ type: 'toggle', id });
+            for (const id of load)
+                actions.push({ type: 'toggle', id });
+            actions.push({ type: 'cross' });
+            aboard = load;
+        }
+        return actions;
+    }, hint: s => !s.aboard.includes('farmer') ? s.aboard.length ? 'farmerError' : 'hint0' : s.crossings === 0 && !s.aboard.includes('goat') ? s.aboard.length === 2 ? 'firstGoat' : 'hint1' : 'hint2' };

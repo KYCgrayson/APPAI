@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { RATE_LIMITS, type RoomDeps, type RoomMove, type RoomRecord, type RoomStatus } from "@/lib/rooms";
+import { expiredRateLimits } from "./rooms-rate-limit";
 
 type Row = Prisma.GameRoomGetPayload<object>;
 function toRecord(row: Row): RoomRecord {
@@ -62,9 +63,8 @@ export const roomDeps: RoomDeps = {
       }
     },
     async cleanup(now) {
-      const staleRates = new Date(now.getTime() - longestWindowMs);
       await db.$executeRaw`DELETE FROM "GameRoom" WHERE "code" IN (SELECT "code" FROM "GameRoom" WHERE "expiresAt" <= ${now} LIMIT 200)`;
-      await db.$executeRaw`DELETE FROM "GameRoomRateLimit" WHERE "key" IN (SELECT "key" FROM "GameRoomRateLimit" WHERE "windowStart" <= ${staleRates} LIMIT 1000)`;
+      await db.$executeRaw(Prisma.sql`DELETE FROM "GameRoomRateLimit" WHERE "key" IN (SELECT "key" FROM "GameRoomRateLimit" WHERE ${expiredRateLimits(now, longestWindowMs)} LIMIT 1000)`);
     },
   },
 };

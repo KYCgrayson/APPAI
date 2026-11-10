@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Minimal fixtures replace DOM, audio and GPU objects. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
@@ -5,14 +6,17 @@ import { registry } from '../src/puzzles/registry.ts';
 
 // Drive main's actual actions/keyboard/DOM handlers with a GPU-free scene and minimal DOM.
 class Element extends EventTarget {
-    dataset: Record<string, string> = {}; tagName = 'BUTTON'; style = { setProperty() {} };
+    dataset: Record<string, string> = {}; tagName = 'BUTTON'; id = ''; value = ''; style = { setProperty() {} };
     constructor(attributes = '') { super(); for (const [, key, value] of attributes.matchAll(/data-([\w-]+)="([^"]*)"/g)) this.dataset[key] = value; }
     setAttribute() {} matches() { return false; } focus() {} click() { this.dispatchEvent(new Event('click')); }
 }
 class App extends Element {
-    html = ''; buttons: Element[] = [];
-    set innerHTML(s: string) { this.html = s; this.buttons = [...s.matchAll(/<button\b([^>]*)>/g)].map(m => new Element(m[1])); }
-    querySelector(s: string) { const m = s.match(/^\[data-(\w+)="([^"]+)"\]$/); return m ? this.buttons.find(b => b.dataset[m[1]] === m[2]) ?? null : null; }
+    html = ''; buttons: Element[] = []; inputs: Element[] = [];
+    set innerHTML(s: string) {
+        this.html = s; this.buttons = [...s.matchAll(/<button\b([^>]*)>/g)].map(m => new Element(m[1]));
+        this.inputs = [...s.matchAll(/<input\b([^>]*)>/g)].map(m => Object.assign(new Element(), { tagName: 'INPUT', id: m[1].match(/id="([^"]*)"/)?.[1] ?? '', value: m[1].match(/value="([^"]*)"/)?.[1] ?? '' }));
+    }
+    querySelector(s: string) { if (s.startsWith('#')) return this.inputs.find(i => i.id === s.slice(1)) ?? null; const m = s.match(/^\[data-(\w+)="([^"]+)"\]$/); return m ? this.buttons.find(b => b.dataset[m[1]] === m[2]) ?? null : null; }
     querySelectorAll(s: string) { if (s === 'button') return this.buttons; const m = s.match(/^\[data-(\w+)\]$/); return m ? this.buttons.filter(b => m[1] in b.dataset) : []; }
 }
 class FakeScene {
@@ -32,7 +36,7 @@ class FakeAudio { music = false; muted = false; unlock() {} play() {} toggleMusi
 const mainURL = new URL('../src/main.ts', import.meta.url).href;
 registerHooks({
     resolve(specifier, context, next) {
-        if (context.parentURL === mainURL) {
+        if (context.parentURL?.split('?')[0] === mainURL) {
             if (specifier.endsWith('/stage.ts')) return { url: 'test:controller-stage', shortCircuit: true };
             if (specifier.endsWith('/audio.ts')) return { url: 'test:controller-audio', shortCircuit: true };
             if (specifier.endsWith('.css')) return { url: 'test:controller-css', shortCircuit: true };
@@ -54,7 +58,7 @@ globalThis.document = Object.assign(doc, {
     querySelector: (s: string) => s === '#app' ? app : new Element()
 }) as any;
 globalThis.window = Object.assign(win, {
-    self: win, top: win, history: { replaceState(_a: any, _b: any, url: URL) { globalThis.location = new URL(url) as any; } },
+    self: win, top: win, location: { href: '' }, history: { replaceState(_a: any, _b: any, url: URL) { globalThis.location = new URL(url) as any; } },
     setTimeout: () => 0
 }) as any;
 globalThis.localStorage = { getItem: () => null, setItem() {} } as any;
@@ -62,6 +66,24 @@ globalThis.getComputedStyle = (() => ({ getPropertyValue: () => '#426b58' })) as
 // The controller's timer interval is irrelevant here; use an explicit test clock.
 globalThis.setInterval = (() => 0) as any;
 globalThis.clearTimeout = () => {};
+const savedSessions = new Map<string, string>();
+globalThis.sessionStorage = { getItem: (key: string) => savedSessions.get(key) ?? null, setItem: (key: string, value: string) => savedSessions.set(key, value) } as any;
+const apiCalls: { path: string; body: any; headers: Headers }[] = [];
+let runSequence = 0, claimMode: 'login' | 'nickname' | 'rank' = 'rank', nicknameTaken = false;
+let descendingBoard = false;
+globalThis.fetch = (async (path: string, init?: RequestInit) => {
+    apiCalls.push({ path, body: init?.body ? JSON.parse(String(init.body)) : null, headers: new Headers(init?.headers) });
+    if (path.endsWith('/runs')) return Response.json({ runId: `run-${++runSequence}`, token: 'a'.repeat(32), expiresAt: new Date(Date.now() + 86_400_000).toISOString() });
+    if (path.endsWith('/finish')) return Response.json({ verified: true, score: 6, timeMs: 10000, wouldRank: 2 });
+    if (path.endsWith('/claim')) return claimMode === 'login' ? Response.json({ error: 'login_required', loginUrl: '/login?callbackUrl=%2Fgames%2Friver-crossing%2F%3Fclaim%3Drun-1' }, { status: 401 }) : Response.json({ rank: claimMode === 'nickname' ? null : 2, needsNickname: claimMode === 'nickname', personalBest: true });
+    if (path.endsWith('/profile')) return nicknameTaken ? Response.json({ error: 'nickname_taken', message: 'taken' }, { status: 409 }) : Response.json({ nickname: 'LittleBear', nextChangeAt: new Date().toISOString() });
+    if (descendingBoard) return Response.json({ board: 'water:easy', tier: 'unverified', direction: 'desc', total: 2, entries: [
+        { id: 'high', rank: 1, nickname: 'HighScore', score: 80, timeMs: 10000, tier: 'unverified' },
+        { id: 'low', rank: 2, nickname: 'LowScore', score: 50, timeMs: 5000, tier: 'unverified' },
+    ] });
+    const entry = { id: 'score-1', rank: 2, nickname: 'LittleBear', score: 6, timeMs: 10000, tier: 'verified' };
+    return Response.json({ board: new URL(path, 'https://appai.info').searchParams.get('board'), tier: 'verified', entries: [entry], total: 1, me: entry });
+}) as any;
 const loads: { game: string; resolve: (module: any) => void }[] = [];
 for (const def of Object.values(registry)) def.loadScene = () => new Promise(resolve => { loads.push({ game: def.id, resolve }); });
 const settle = async () => { await Promise.resolve(); await Promise.resolve(); };
@@ -118,5 +140,56 @@ test('controller regressions: loading, keyboard, modal guards, restart, timeout,
         act({ type: 'start', level: 'easy' });
         const params = new URLSearchParams(location.search);
         assert.equal(params.get('level'), 'easy'); assert.equal(params.get('challenge'), 'easy'); assert.equal(params.get('c'), '19'); assert.equal(params.get('n'), 'Amy');
+    });
+    const flush = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); };
+    await t.test('successful replay survives invalid actions and Undo, and win shows both boards', async () => {
+        act({ type: 'start', game: 'water', level: 'easy' }); await loadLatest(); await flush();
+        act({ type: 'empty', jug: 0 });
+        act({ type: 'select', jug: 0 }); act({ type: 'fill', jug: 0 }); stage.current!.complete();
+        act({ type: 'undo' });
+        for (const action of registry.water.logic.solution('easy')) {
+            act(action); if (stage.current!.busy) stage.current!.complete();
+        }
+        await flush();
+        const finished = apiCalls.filter(c => c.path.endsWith('/finish')).at(-1)!;
+        assert.ok(finished); assert.equal(finished.headers.get('authorization'), 'Bearer ' + 'a'.repeat(32));
+        let replay = registry.water.logic.initial('easy');
+        for (const action of finished.body.moves) { const result = registry.water.logic.apply(replay, action); assert.equal(result.ok, true); if (result.ok) replay = result.state; }
+        assert.equal(registry.water.logic.isWin(replay), true); assert.equal(registry.water.logic.score(replay), 6);
+        assert.ok(app.html.includes('Local top 5')); assert.ok(app.html.includes('Upload to global leaderboard'));
+        button('global-tab').click(); await flush(); assert.ok(app.html.includes('LittleBear'));
+    });
+    await t.test('global leaderboard renders descending server order and unverified labels without sorting scores ascending', async () => {
+        descendingBoard = true;
+        try {
+            button('global-tab').click(); await flush();
+            const high = app.html.indexOf('1. HighScore'), low = app.html.indexOf('2. LowScore');
+            assert.ok(high >= 0 && low > high);
+            assert.match(app.html, /80 steps/); assert.match(app.html, /50 steps/);
+            assert.equal((app.html.match(/ · Unverified/g) ?? []).length, 2);
+        } finally {
+            descendingBoard = false;
+            button('global-tab').click(); await flush();
+        }
+    });
+    await t.test('upload redirects in the same top-level tab and nickname errors appear inline before rank', async () => {
+        claimMode = 'login'; button('upload-global').click(); await flush();
+        assert.match(window.top!.location.href, /^\/login\?callbackUrl=/);
+        claimMode = 'nickname'; button('upload-global').click(); await flush();
+        assert.ok(app.html.includes("Don't use your real name."));
+        const input = app.querySelector('#global-nickname')!; input.value = 'LittleBear'; input.dispatchEvent(new Event('input'));
+        nicknameTaken = true; button('save-global-name').click(); await flush(); assert.ok(app.html.includes('That nickname is taken.'));
+        nicknameTaken = false; button('save-global-name').click(); await flush(); assert.ok(app.html.includes('Global rank: #2'));
+    });
+    await t.test('login callback automatically claims using the matching session token and restores its puzzle', async () => {
+        const saved = [...savedSessions.entries()].at(-1)!;
+        const credentials = JSON.parse(saved[1]); claimMode = 'rank';
+        const previous = apiCalls.filter(c => c.path.endsWith('/claim')).length;
+        globalThis.location = new URL(`https://puzzle.test/?claim=${credentials.runId}&locale=en`) as any;
+        await import(new URL('../src/main.ts?login-return', import.meta.url).href); await flush();
+        assert.equal(apiCalls.filter(c => c.path.endsWith('/claim')).length, previous + 1);
+        assert.equal(window.__puzzleTest.state().game, 'water'); assert.ok(app.html.includes('Global rank: #2'));
+        assert.equal(new URL(location.href).searchParams.has('claim'), false);
+        while (loads.length) await loadLatest();
     });
 });
