@@ -39,6 +39,7 @@ interface Props {
   identity?: IframeToolIdentity | null;
   sessionInUrl?: boolean;
   frameTitle?: string;
+  variant?: "tool" | "game";
 }
 
 const DEFAULT_HEIGHT = 600;
@@ -53,6 +54,7 @@ export function IframeToolSection({
   fullscreenHref,
   sessionInUrl = true,
   frameTitle,
+  variant = "tool",
   identity = null, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [height, setHeight] = useState<number | null>(data.aspectRatio ? null :
@@ -63,7 +65,7 @@ export function IframeToolSection({
   const check = data.src ? checkIframeToolUrl(data.src) : { ok: false, reason: "Missing src" };
   const trustedOrigin = check.ok && check.url ? check.url.origin : null;
 
-  const sessionToken = useIframeToolSession(iframeRef, trustedOrigin, identity);
+  const sessionToken = useIframeToolSession(iframeRef, trustedOrigin, variant === "game" ? null : identity);
 
   useEffect(() => {
     if (!trustedOrigin) return;
@@ -91,7 +93,7 @@ export function IframeToolSection({
     : null;
 
   return (
-    <section className="py-12 md:py-16 px-4 sm:px-6">
+    <section className={variant === "game" ? "min-w-0" : "py-12 md:py-16 px-4 sm:px-6"}>
       <div className="max-w-5xl mx-auto">
         {(data.heading || data.subheading || data.description) && (
           <div className="text-center mb-8 md:mb-10">
@@ -148,8 +150,8 @@ export function IframeToolSection({
               src={finalSrc}
               title={frameTitle || data.heading || "Embedded tool"}
               loading="lazy"
-              allow={data.allowFullscreen === false ? "clipboard-write; gamepad; accelerometer; gyroscope" : "fullscreen; clipboard-write; gamepad; accelerometer; gyroscope"}
-              sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-popups allow-popups-to-escape-sandbox"
+              allow={variant === "game" ? "fullscreen 'none'; gamepad; accelerometer; gyroscope" : data.allowFullscreen === false ? "clipboard-write; gamepad; accelerometer; gyroscope" : "fullscreen; clipboard-write; gamepad; accelerometer; gyroscope"}
+              sandbox={variant === "game" ? "allow-scripts allow-same-origin" : "allow-scripts allow-same-origin allow-forms allow-downloads allow-popups allow-popups-to-escape-sandbox"}
               referrerPolicy="strict-origin-when-cross-origin"
               style={{ width: "100%", height: data.viewportHeight ? "calc(100dvh - 160px)" : height === null ? undefined : `${height}px`, aspectRatio: data.aspectRatio?.replace(":", "/"), border: 0, display: "block" }}
               onLoad={() => {

@@ -24,7 +24,7 @@ logo-line, logo-threads, logo-whatsapp, people-outline, time-outline, calendar-o
 
 ## Section Reference
 
-Browser games use the [`game` section](https://appai.info/spec/games#game), available on every template; `GAME` supplies a page H1.
+Browser games use the [`game` section](https://appai.info/spec/games#game), available on every template; `GAME` supplies a page H1. Games have a narrower iframe permission set and currently receive no AppAI session, including with `identity: true`; see the game contract.
 
 JSON schemas for page sections below; the eight interactive section schemas are on [/spec/tools](https://appai.info/spec/tools). Also available via `GET /api/v1/sections` and `GET /api/v1/sections?format=jsonschema`.
 

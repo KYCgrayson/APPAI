@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { createIframeSessionRenewal } from "./iframe-session-renewal";
 
 /**
  * Keeps an embedded tool's `appai_session` alive.
  *
- * Game sections receive the first grant by postMessage on load. For tools,
- * the first token rides on the iframe URL, so the tool has an identity in its
+ * The first token rides on the iframe URL, so the tool has an identity in its
  * very first request. Every later one arrives by `postMessage`: changing `src`
  * would reload the frame and throw away whatever the visitor was in the middle
  * of, which for a tool that runs long jobs is the whole reason it needed an
@@ -29,7 +29,7 @@ export interface IframeToolIdentity {
 
 /** Leave this much of the token's life unspent when reissuing. */
 const REFRESH_SLACK_MS = 30_000;
-const MIN_REFRESH_DELAY_MS = 15_000;
+const MIN_REFRESH_DELAY_MS = 30_000;
 
 export function useIframeToolSession(
   iframeRef: RefObject<HTMLIFrameElement | null>,
@@ -75,12 +75,19 @@ export function useIframeToolSession(
     return () => window.removeEventListener("message", handleMessage);
   }, [trustedOrigin, postSession, iframeRef]);
 
-  // Returning from sign-in renews the viewer context without reloading the game.
+  // Focus, visibility and expiry all share one renewal queue for this frame.
   useEffect(() => {
     if (!pageId || section === null || !trustedOrigin) return;
     let cancelled = false;
-    const renew = async () => {
-      if (document.visibilityState === "hidden") return;
+    let timer: ReturnType<typeof setTimeout>;
+    const schedule = () => {
+      const remaining = new Date(grantRef.current?.expiresAt ?? "").getTime() - Date.now();
+      if (!Number.isFinite(remaining)) return;
+      clearTimeout(timer);
+      timer = setTimeout(onReturn, Math.max(MIN_REFRESH_DELAY_MS, Math.min(remaining - REFRESH_SLACK_MS, remaining * 0.8)));
+    };
+    const renew = createIframeSessionRenewal(async () => {
+      if (cancelled) return;
       try {
         const response = await fetch("/api/v1/tools/sessions/issue", {
           method: "POST", headers: { "content-type": "application/json" },
@@ -94,55 +101,34 @@ export function useIframeToolSession(
         setGrant(updated);
         postSession(updated);
       } catch { /* Retry on the next renewal or return to the page. */ }
+      finally { if (!cancelled) schedule(); }
+    });
+    function onReturn() {
+      if (document.visibilityState !== "hidden") void renew();
+      else schedule();
+    }
+    const channel = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel("next-auth");
+    const onAuth = (event: MessageEvent) => {
+      if (event.data?.event === "session") void renew(true);
     };
+    channel?.addEventListener("message", onAuth);
     const onLoad = () => { if (grantRef.current) postSession(grantRef.current); };
     const frame = iframeRef.current;
     frame?.addEventListener("load", onLoad);
-    window.addEventListener("focus", renew);
-    window.addEventListener("pageshow", renew);
-    document.addEventListener("visibilitychange", renew);
+    window.addEventListener("focus", onReturn);
+    window.addEventListener("pageshow", onReturn);
+    document.addEventListener("visibilitychange", onReturn);
+    schedule();
     return () => {
       cancelled = true;
       frame?.removeEventListener("load", onLoad);
-      window.removeEventListener("focus", renew);
-      window.removeEventListener("pageshow", renew);
-      document.removeEventListener("visibilitychange", renew);
+      clearTimeout(timer);
+      channel?.close();
+      window.removeEventListener("focus", onReturn);
+      window.removeEventListener("pageshow", onReturn);
+      document.removeEventListener("visibilitychange", onReturn);
     };
   }, [pageId, section, trustedOrigin, iframeRef, postSession]);
-
-  // Renew before the token runs out. Failure is silent and harmless: the tool
-  // keeps the token it already has until that one expires.
-  useEffect(() => {
-    if (!pageId || section === null || !grant) return;
-    const remaining = new Date(grant.expiresAt).getTime() - Date.now();
-    if (!Number.isFinite(remaining)) return;
-
-    const delay = Math.max(
-      MIN_REFRESH_DELAY_MS,
-      Math.min(remaining - REFRESH_SLACK_MS, remaining * 0.8),
-    );
-    let cancelled = false;
-    const timer = setTimeout(async () => {
-      try {
-        const response = await fetch("/api/v1/tools/sessions/issue", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ pageId, section }),
-        });
-        if (!response.ok) return;
-        const next = (await response.json()) as { token?: string; expiresAt?: string };
-        if (cancelled || !next.token || !next.expiresAt) return;
-        setGrant({ token: next.token, expiresAt: next.expiresAt });
-        postSession({ token: next.token, expiresAt: next.expiresAt });
-      } catch {
-        /* offline or signed out; the current token stands until it expires */
-      }
-    }, delay);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [pageId, section, grant, postSession]);
 
   return initialToken;
 }

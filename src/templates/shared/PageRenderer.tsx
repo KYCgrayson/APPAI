@@ -33,7 +33,7 @@ import {
 } from "./section-components";
 import { Suspense } from "react";
 import { SectionErrorBoundary } from "./SectionErrorBoundary";
-import { normalizeHostedContent } from "@/lib/hosted-content";
+import { normalizeHostedContent, orderedHostedSections } from "@/lib/hosted-content";
 import { usesEditorialScreenshots } from "@/lib/screenshot-layout";
 import { LoginGate } from "./LoginGate";
 import { issueIframeToolSession } from "@/lib/iframe-tool-session";
@@ -117,7 +117,8 @@ function iframeToolIdentity(
   sectionOrder: number,
   viewer: PageViewer,
 ) {
-  const src = section.type === "game" ? section.data?.gameUrl : section.data?.src;
+  if (section.type !== "iframe-tool") return null;
+  const src = section.data?.src;
   if (!page.id || typeof src !== "string" || !sectionWantsIdentity(section.data)) return null;
   const grant = issueIframeToolSession({
     src,
@@ -349,10 +350,7 @@ export function PageRenderer({
   const darkMode = page.darkMode ?? false;
   const fontFamily = page.fontFamily || undefined;
   const pageContent = asPageContent(page.content);
-  const sections = pageContent.sections || [];
-  const sortedSections = [...sections].sort(
-    (a, b) => (a.order || 0) - (b.order || 0)
-  );
+  const sortedSections: PageSection[] = orderedHostedSections(page.content);
 
   // Legacy content uses the same guarded path as explicit sections.
   if (sortedSections.length === 0 && page.template !== "GAME") {

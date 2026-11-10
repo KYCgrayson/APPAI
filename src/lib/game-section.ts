@@ -64,6 +64,7 @@ export function gamePageWarnings(page: { template?: unknown; title?: unknown; ta
   if (page.template === "GAME" && !games.length) warnings.push({ path: "content.sections", message: "GAME pages need a game section." });
   for (const { index, data } of games) {
     const path = `sections[${index}](game)`;
+    if (data.identity === true) warnings.push({ path: `${path}.identity`, message: "identity is not available for games until they are approved" });
     if (typeof data.gameUrl !== "string" || !checkIframeToolUrl(data.gameUrl).ok) warnings.push({ path: `${path}.gameUrl`, message: "gameUrl must use HTTPS on an iframe-tool supported host." });
     if (!Array.isArray(data.howToPlay) || !data.howToPlay.length) warnings.push({ path: `${path}.howToPlay`, message: "Add howToPlay: 1–10 clear steps." });
     if (typeof data.description !== "string" || !data.description.trim()) warnings.push({ path: `${path}.description`, message: "Add a specific game description; iframe content is not visible to search engines." });

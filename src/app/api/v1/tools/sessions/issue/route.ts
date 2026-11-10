@@ -1,4 +1,4 @@
-import { normalizeHostedContent } from "@/lib/hosted-content";
+import { orderedHostedSections } from "@/lib/hosted-content";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -46,9 +46,8 @@ export async function POST(request: NextRequest) {
   });
   if (!page) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404, headers: noStore });
 
-  const sections = [...normalizeHostedContent(page.content).sections].sort((a, b) => (a.order || 0) - (b.order || 0));
-  const section = sections.find((s, index) => (typeof s.order === "number" ? s.order : index) === parsed.data.section);
-  if (!section || !["iframe-tool", "game"].includes(section.type || "") || !sectionWantsIdentity(section.data)) {
+  const section = orderedHostedSections(page.content).find(s => s.order === parsed.data.section);
+  if (!section || section.type !== "iframe-tool" || !sectionWantsIdentity(section.data)) {
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404, headers: noStore });
   }
 
@@ -58,7 +57,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403, headers: noStore });
   }
 
-  const source = section.type === "game" ? section.data?.gameUrl : section.data?.src;
+  const source = section.data?.src;
   const src = typeof source === "string" ? source : null;
   const grant = src
     ? issueIframeToolSession({ src, slug: page.slug, section: parsed.data.section, userId })

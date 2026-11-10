@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
 import { sanitizeContent, sanitizePageContent, type SanitizeWarning } from "@/lib/sanitize";
 import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
+import { hostedPageApprovalUpdate } from "@/lib/hosted-page-approval";
 
 /**
  * PATCH /api/v1/pages/:slug/sections/:order
@@ -114,6 +115,13 @@ export async function PATCH(
     where: { id: page.id },
     data: { content: savedContent as Prisma.InputJsonValue },
   });
+
+  if (!page.parentSlug && page.template === "GAME") {
+    await db.app.updateMany({
+      where: { hostedPageSlug: slug, organizationId: authResult.organizationId },
+      data: hostedPageApprovalUpdate(page.template, page),
+    });
+  }
 
   revalidateSeoIndexes(updated.slug);
   return NextResponse.json({

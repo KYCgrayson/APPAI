@@ -131,7 +131,9 @@ export function parseDryRun(value: string | null): boolean | "invalid" {
 function demoValueWarnings(value: unknown, path: string, warnings: SanitizeWarning[]) {
   if (value === "https://color-bench-demo.pages.dev") warnings.push({ path, message: "Replace demo value: replace with your deployed tool URL." });
   if (typeof value === "string" && /^(?:[hH][tT][tT][pP][sS]?:\/\/[^/]+)?\/spec\/examples\/placeholder-logo\.png(?:[?#].*)?$/.test(value)) warnings.push({ path, message: "Replace demo logo: supply the user’s logo, or create a square 512×512 PNG with its own background; upload local files with POST /api/v1/upload and replace this value with the returned url before publishing." });
-  if (typeof value === "string" && /(?:^|\/)placeholder-screen[^/?#]*\.(?:svg|png|webp|jpg)(?:[?#].*)?$/i.test(value)) warnings.push({ path, message: "Replace demo screenshot: upload a real screenshot of the user’s app and replace this URL before publishing." });
+  if (typeof value === "string" && /(?:^|\/)placeholder-screen[^/?#]*\.(?:svg|png|webp|jpg)(?:[?#].*)?$/i.test(value)) warnings.push({ path, message: path.includes("(game).data.cover.")
+    ? "Replace demo cover: upload an image of your game or original game artwork and replace this URL before publishing."
+    : "Replace demo screenshot: upload a real screenshot of the user’s app and replace this URL before publishing." });
   if (Array.isArray(value)) value.forEach((child, index) => {
     const type = path === "content.sections" && child && typeof child === "object" ? child.type : undefined;
     demoValueWarnings(child, `${path}[${index}]${type ? `(${type})` : ""}`, warnings);

@@ -177,7 +177,7 @@ export async function PUT(
 
     const approvalUpdate = hostedPageApprovalUpdate(updated.template, page, hadPersonRoot);
 
-    // Sync default-locale metadata; review the first PERSON root in any locale.
+    // Sync default-locale metadata and apply template approval rules.
     if (!page.parentSlug && ((page.isDefault && (data.title || data.tagline || category || data.content || data.headerLogo)) || approvalUpdate.isApproved === false)) {
       const app = await db.app.findFirst({ where: { hostedPageSlug: slug, organizationId: authResult.organizationId } });
       if (app) {
@@ -273,7 +273,7 @@ export async function PATCH(
 
     const approvalUpdate = hostedPageApprovalUpdate(updated.template, page, hadPersonRoot);
 
-    // Sync default-locale metadata; review the first PERSON root in any locale.
+    // Sync default-locale metadata and apply template approval rules.
     if (!page.parentSlug && ((page.isDefault && (updateData.title || updateData.tagline || category || updateData.content || updateData.headerLogo)) || approvalUpdate.isApproved === false)) {
       const app = await db.app.findFirst({ where: { hostedPageSlug: slug, organizationId: authResult.organizationId } });
       if (app) {

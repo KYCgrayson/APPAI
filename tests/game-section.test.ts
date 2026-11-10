@@ -121,3 +121,56 @@ test("spec-only GAME body passes dry-run and the new topic route serves it", asy
     assert.equal(await response.text(), doc);
   } finally { hooks.deregister(); }
 });
+
+
+test("game identity remains boolean-validated but true warns without blocking preview", () => {
+  for (const identity of [true, false]) {
+    const result = checkPagePreview(pageWith({ identity }));
+    assert.equal(result.valid, true);
+    assert.equal((result.sanitizedContent?.sections as { data: { identity?: boolean } }[])[0].data.identity, identity);
+    assert.equal(result.warnings.some(w => w.message === "identity is not available for games until they are approved"), identity);
+  }
+  assert.equal(checkPagePreview(pageWith({ identity: "true" })).valid, false);
+});
+
+test("demo game covers ask for game images while tool screenshots keep their guidance", () => {
+  const warnings = checkPagePreview(example).warnings;
+  const cover = warnings.find(w => w.path.endsWith("(game).data.cover.url"));
+  assert.ok(cover);
+  assert.match(cover.message, /Replace demo cover.*game artwork/);
+  assert.doesNotMatch(cover.message, /user’s app/);
+  const app = checkPagePreview({ ...example, template: "APP_LANDING", content: { ...example.content, sections: [{ type: "screenshots", data: { images: [data.cover.url] } }] } });
+  assert.ok(app.warnings.some(w => /real screenshot of the user’s app/.test(w.message)));
+});
+
+test("game spec describes current identity, permission, compliance and host contracts", () => {
+  const doc = readFileSync(new URL("../docs/spec/games.md", import.meta.url), "utf8");
+  assert.match(doc, /leaderboards declarations are stored only.*warning may remain/);
+  assert.match(doc, /Login or payment forms/);
+  assert.match(doc, /Asking users to paste or execute commands/);
+  assert.match(doc, /Only approved origins can call the room API from a browser/);
+  assert.match(doc, /must start and end with a letter or digit/);
+  assert.match(doc, /supply translated `privacyPolicy` and `termsOfService`/);
+  assert.match(doc, /optional in API validation.*does not automatically write or provide/);
+  assert.match(doc, /Loaded directly from this image host; visitors’ IP addresses are visible/);
+  assert.match(doc, /currently receive no AppAI identity or session token/);
+  assert.doesNotMatch(doc, /Identity exposes|same identity semantics|identity opt-in only|existing iframe-tool sandbox/);
+  for (const path of ["../skills/appai-publish/SKILL.md", "../src/app/llms.txt/route.ts"]) {
+    const guidance = readFileSync(new URL(path, import.meta.url), "utf8");
+    assert.match(guidance, /Only approved origins can call.*from a browser/);
+    assert.match(guidance, /games currently receive no AppAI session|currently receive no AppAI identity or session/);
+    assert.doesNotMatch(guidance, /Only approved games|game session is sent|opts in to iframe-tool sessions delivered over postMessage/);
+  }
+  const tools = readFileSync(new URL("../docs/spec/tools.md", import.meta.url), "utf8");
+  assert.match(tools, /Only approved origins can call this API from a browser/);
+  assert.match(tools, /must start and end with a letter or digit/);
+});
+
+test("GAME privacy and terms are optional fields and never automatically populated", () => {
+  const parsed = createPageSchema.parse(example);
+  assert.equal(parsed.privacyPolicy, undefined);
+  assert.equal(parsed.termsOfService, undefined);
+  const supplied = createPageSchema.parse({ ...example, privacyPolicy: "Privacy copy", termsOfService: "Terms copy" });
+  assert.equal(supplied.privacyPolicy, "Privacy copy");
+  assert.equal(supplied.termsOfService, "Terms copy");
+});

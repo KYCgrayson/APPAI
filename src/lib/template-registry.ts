@@ -203,7 +203,7 @@ export const SECTION_DEFS: SectionDef[] = [
       "name": "identity",
       "type": "boolean",
       "required": false,
-      "description": "Default false. Opt in to the existing iframe-tool session contract; send tokens to your backend in X-AppAI-Session."
+      "description": "Boolean, default false. Identity is unavailable for games until approval; the contract will be defined in the spec when available."
     },
     {
       "name": "access",

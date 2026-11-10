@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Sync default-locale metadata; reset approval for the first PERSON root in any locale.
+      // Sync default-locale metadata and apply template approval rules.
       const approvalUpdate = hostedPageApprovalUpdate(updated.template, existing, hadPersonRoot);
       if (!existing.parentSlug && (existing.isDefault || approvalUpdate.isApproved === false)) {
         const app = await db.app.findFirst({ where: { hostedPageSlug: data.slug, organizationId: authResult.organizationId } });
@@ -265,7 +265,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!parentSlug && page.template === "PERSON" && !hadPersonRoot) {
+    if (!parentSlug && (page.template === "GAME" || (page.template === "PERSON" && !hadPersonRoot))) {
       await db.app.updateMany({
         where: { hostedPageSlug: page.slug, organizationId: authResult.organizationId, isApproved: true },
         data: { isApproved: false },

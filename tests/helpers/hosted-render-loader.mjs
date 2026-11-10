@@ -157,3 +157,21 @@ export function registerHostedRenderLoader() {
     },
   });
 }
+
+
+export function registerGameRenderState() {
+  return registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (specifier === 'react' && context.parentURL?.endsWith('/GameSection.tsx')) return { url: 'fixture:game-state', shortCircuit: true };
+      return nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      if (url === 'fixture:game-state') return { format: 'module', shortCircuit: true, source: `
+        export * from "react";
+        import { useState as realUseState } from "react";
+        export function useState(initial) { return realUseState(globalThis[Symbol.for("appai.test.game-render")].expanded || initial); }
+      ` };
+      return nextLoad(url, context);
+    },
+  });
+}

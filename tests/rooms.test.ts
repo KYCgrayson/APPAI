@@ -89,7 +89,7 @@ test("create returns a code, seat 0 token and public room without token hashes",
 test("create validates game, seats, turn and state size", async () => {
   const t = setup();
   const bad = [
-    {}, { game: "" }, { game: "Bad Name" }, { game: "a".repeat(41) }, { game: "x", seats: 1 }, { game: "x", seats: 5 },
+    {}, { game: "" }, { game: "-game" }, { game: "game-" }, { game: "-" }, { game: "Bad Name" }, { game: "a".repeat(41) }, { game: "x", seats: 1 }, { game: "x", seats: 5 },
     { game: "x", turn: 2 }, { game: "x", state: "string" }, { game: "x", state: null },
   ];
   for (const body of bad) assert.equal((await createRoom(req("/api/rooms", { body }), t.deps)).status, 400, JSON.stringify(body));

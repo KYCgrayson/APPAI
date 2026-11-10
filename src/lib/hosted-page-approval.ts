@@ -4,6 +4,7 @@ export function hostedPageApprovalUpdate(
   previous?: { template: string; isDefault: boolean; parentSlug: string | null },
   hadPersonRoot = false,
 ): { isApproved?: boolean } {
+  if (template === "GAME" && !previous?.parentSlug) return { isApproved: false };
   if (!previous) return { isApproved: template !== "PERSON" };
   return !hadPersonRoot && !previous.parentSlug
     && previous.template !== "PERSON" && template === "PERSON"

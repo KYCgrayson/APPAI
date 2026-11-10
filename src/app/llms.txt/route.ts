@@ -213,12 +213,16 @@ section, SEO shell, fullscreen play, how-to-play and FAQ. A game section works o
 any template. Use /p/{slug} today; future /games/{slug} URLs will redirect from
 /p/{slug}. listInGames is an application only, gamesListing: "requested" means
 pending, and publishing does not add a game to ${baseUrl}/games.
-Only approved games may call the existing room-code API: POST /api/rooms,
+Only approved origins can call the room-code API from a browser: POST /api/rooms,
 POST /api/rooms/{code}/join, GET /api/rooms/{code}?since={version},
 POST /api/rooms/{code}/start, POST /api/rooms/{code}/moves; 2–4 players,
 state <= 8 KB, one move <= 1 KB. Room creation currently needs AppAI sign-in
-and a same-origin cookie; external games wait for supported access. A game
-session is sent to its own backend in X-AppAI-Session; it is not a room token.
+and a same-origin cookie; external games wait for supported access. Games
+currently receive no AppAI identity or session, even with identity: true. Identity
+will become available only after approval under the spec published at that time.
+Supply privacyPolicy and termsOfService per root locale; AppAI does not
+automatically provide game-specific policies. Cover images load from their
+image host, which can see visitors’ IP addresses.
 See /spec/games for complete fields, messages, rules and a copyable JSON body.
 
 ## What you can build
