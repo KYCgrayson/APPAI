@@ -2,12 +2,13 @@ import type { MetadataRoute } from "next";
 import { hostedAlternates, hostedPageUrl, hasExternalCanonical, type HostedUrlPage } from "./hosted-page-urls.ts";
 import { platformAlternates, platformUrl } from "./platform-seo.ts";
 import { PLATFORM_ORIGIN } from "./platform-identity.ts";
+import { GAMES, TABLETOP_COLLECTION, gamePageHref, isPlayableGame } from "./games-catalog.ts";
 
 export const SITEMAP_URL_LIMIT = 45_000;
 // Leave room below Next's 2 MB serialized data-cache limit, even with hreflangs.
 export const SITEMAP_CACHE_BYTE_LIMIT = 1_800_000;
 // Update when public platform content changes; never use the generation time.
-export const PLATFORM_CONTENT_MODIFIED = "2026-11-09T00:00:00.000Z";
+export const PLATFORM_CONTENT_MODIFIED = "2026-11-10T00:00:00.000Z";
 export interface SitemapPage extends HostedUrlPage { updatedAt: Date | string }
 export interface SitemapApp { id: string; updatedAt: Date | string; hostedPageSlug: string | null }
 
@@ -61,6 +62,15 @@ export function buildSitemapEntries(pages: readonly SitemapPage[], apps: readonl
     changeFrequency: "weekly", priority: 0.7,
     alternates: { languages: platformAlternates("/games", origin) },
   });
+  for (const game of [...GAMES.filter(isPlayableGame), TABLETOP_COLLECTION]) {
+    const path = gamePageHref(game);
+    entries.push({
+      url: platformUrl(path, "en", origin),
+      lastModified: PLATFORM_CONTENT_MODIFIED,
+      changeFrequency: "weekly", priority: 0.7,
+      alternates: { languages: platformAlternates(path, origin) },
+    });
+  }
   const roots = new Map<string, SitemapPage[]>();
   const groups = new Map<string, SitemapPage[]>();
   const key = (page: SitemapPage) => `${page.organizationId}/${page.parentSlug || ""}/${page.slug}`;

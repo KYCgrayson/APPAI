@@ -111,7 +111,8 @@ test("spec-only GAME body passes dry-run and the new topic route serves it", asy
   const result = checkPagePreview(body);
   assert.equal(result.valid, true);
   assert.ok(result.warnings.every(w => /Replace demo/.test(w.message)), JSON.stringify(result.warnings));
-  assert.match(doc, /## Leaderboards\n\nComing soon\n/);
+  assert.match(doc, /Implemented for AppAI's own puzzle build/);
+  assert.match(doc, /External leaderboard integration is \*\*planned, not implemented\*\*/);
   const { registerHostedRenderLoader } = await import("./helpers/hosted-render-loader.mjs");
   const hooks = registerHostedRenderLoader();
   try {
@@ -119,6 +120,15 @@ test("spec-only GAME body passes dry-run and the new topic route serves it", asy
     const response = await GET(new Request("https://appai.info/spec/games"), { params: Promise.resolve({ topic: "games" }) });
     assert.equal(response.status, 200);
     assert.equal(await response.text(), doc);
+    const { GET: getExample } = await import("../src/app/spec/examples/[name]/route.ts");
+    const worked = JSON.parse(readFileSync(new URL("../docs/examples/guess-duel.example.json", import.meta.url), "utf8"));
+    assert.deepEqual(body, worked, "inline walkthrough and downloadable payload agree");
+    const exampleResponse = await getExample(new Request("https://appai.info/spec/examples/guess-duel.example.json"), { params: Promise.resolve({ name: "guess-duel.example.json" }) });
+    assert.equal(exampleResponse.status, 200);
+    assert.deepEqual(await exampleResponse.json(), worked);
+    const ready = structuredClone(worked);
+    ready.content.logo = "https://assets.example.org/real-game-logo.png";
+    assert.deepEqual(checkPagePreview(ready).warnings, []);
   } finally { hooks.deregister(); }
 });
 

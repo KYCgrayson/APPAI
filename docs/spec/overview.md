@@ -84,7 +84,7 @@ Copy this complete request body into both the dry-run and publish POSTs. Change 
 | Multi-language & multi-page | https://appai.info/spec/i18n | Languages, child pages and navigation |
 | Tools | https://appai.info/spec/tools | Wrapped tool, Connected tool, identity, interactive schemas and room-code multiplayer |
 | Universal App | https://appai.info/spec/apps | Universal App manifests, releases, review and runtime |
-| Games | https://appai.info/spec/games | Original externally hosted games, GAME template, /games applications and room-code API |
+| Games | https://appai.info/spec/games | Static game technical guide, sandbox and limits, Guess Duel build-to-publish example, rooms and current review/leaderboard status |
 
 ## Document Guide
 

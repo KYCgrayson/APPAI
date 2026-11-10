@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "@/i18n/routing";
-import { STATIC_GAME_PATH_SEGMENTS } from "@/lib/games-catalog";
+import { isStaticGamePath } from "@/lib/games-catalog";
+import { gamePlayServerRedirect } from "@/lib/game-play-compat";
 import { corsHeaders, roomRateBucket, leaderboardRateBucket, roomOriginAllowed } from "@/lib/rooms-cors";
 
 // ---------------------------------------------------------------------------
@@ -193,14 +194,19 @@ export function middleware(request: NextRequest) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
-  // Own static game builds and covers under public/games/ are locale-free files;
-  // the /games hub and other game slugs go through next-intl.
-  if (
-    pathname.startsWith("/games/") &&
-    STATIC_GAME_PATH_SEGMENTS.includes(pathname.split("/")[2])
-  ) {
+  // Own-game play/runtime, static builds and covers are locale-free.
+  // Hub/detail pages (including the page-only collection) use next-intl.
+  if (isStaticGamePath(pathname)) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
+
+  // Decide here so statically generated game pages never read request queries.
+  // Shared room/challenge/claim links must reach play before locale routing;
+  // the helper carries a route locale into the game's own language parameter.
+  // A browser inherits any original fragment across this 307; hash-only links
+  // are handled on the description page by GamePlayCompatibility.
+  const playRedirect = gamePlayServerRedirect(pathname, request.nextUrl.search);
+  if (playRedirect) return NextResponse.redirect(new URL(playRedirect, request.url), 307);
 
   // Skip i18n for non-public routes
   if (

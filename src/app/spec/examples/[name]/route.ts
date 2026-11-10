@@ -8,6 +8,7 @@ const examples: Record<string, string> = {
   "placeholder-logo.png": "image/png",
   "publish-person-site.mjs": "text/javascript",
   "person-site.example.json": "application/json",
+  "guess-duel.example.json": "application/json",
   "placeholder.svg": "image/svg+xml",
   "placeholder-screen.svg": "image/svg+xml",
 };

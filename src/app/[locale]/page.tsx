@@ -16,12 +16,14 @@ import { PlatformHeader } from "@/components/PlatformHeader";
 import { PlatformFooter } from "@/components/PlatformFooter";
 import { groupByKey, pickByLocale } from "@/lib/locale-match";
 import { getDirectoryCopy } from "@/lib/directory-copy";
+import { GAMES, gamePageHref, getGamesCopy, isPlayableGame } from "@/lib/games-catalog";
 
 export default async function HomePage() {
   const t = await getTranslations("home");
   const tc = await getTranslations("common");
   const locale = await getLocale();
   const directoryCopy = getDirectoryCopy(locale);
+  const gamesCopy = getGamesCopy(locale);
 
   const [featuredApps, recentApps, totalPages] = await Promise.all([
     db.app.findMany({
@@ -282,6 +284,33 @@ export default async function HomePage() {
           >
             {t("getStarted")}
           </NextLink>
+        </div>
+      </section>
+
+      <section aria-labelledby="home-games" className="border-t border-gray-800 px-6 py-10">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="home-games" className="text-xl font-semibold text-white">{t("gamesTitle")}</h2>
+            <Link href="/games" className="text-sm text-emerald-300 hover:underline">{t("gamesViewAll")} →</Link>
+          </div>
+          <p className="mt-2 text-sm text-gray-400">{t("gamesDescription")}</p>
+          <ul className="mt-5 grid gap-4 md:grid-cols-3">
+            {GAMES.filter(isPlayableGame).map((game) => {
+              const copy = gamesCopy.games[game.slug];
+              return (
+                <li key={game.slug}>
+                  <Link href={gamePageHref(game)} className="flex h-full items-start gap-3 rounded-xl border border-gray-800 bg-gray-900/50 p-3 hover:border-emerald-700">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- Same-origin SVG cover; no optimisation needed. */}
+                    <img src={game.cover} alt="" width={96} height={54} loading="lazy" className="aspect-video w-24 shrink-0 rounded-lg object-cover" />
+                    <div>
+                      <h3 className="font-semibold text-white">{copy.name}</h3>
+                      <p className="mt-1 text-sm leading-relaxed text-gray-400">{copy.tagline}</p>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       </section>
 

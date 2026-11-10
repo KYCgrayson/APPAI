@@ -69,7 +69,10 @@
     "agentAppFlow": "Universal App: add appai.app.json at the app root. POST /api/v1/apps/your-app/release-packages for a private upload intent, upload the package, then POST /api/v1/apps/your-app/releases with the source package. Keep the PENDING receipt and releaseId. Poll GET /api/v1/apps/your-app/releases/releaseId; AppAI reviews, builds and provisions approved capabilities before launch at appai.info/app/your-app.",
     "agentAppSafety": "Universal App submissions are declarative. Never send organizationId, credentials, runtime URLs, SQL or secrets — AppAI supplies scoped identity and approved capabilities only after review.",
     "agentReadCommands": "curl -s https://appai.info/spec\ncurl -s https://appai.info/llms-full.txt",
-    "agentSkillCommands": "/plugin marketplace add KYCgrayson/appai-skill\n/plugin install appai-publish@appai-skill"
+    "agentSkillCommands": "/plugin marketplace add KYCgrayson/appai-skill\n/plugin install appai-publish@appai-skill",
+    "gamesTitle": "Play games made on AppAI",
+    "gamesDescription": "Try our own browser games, hosted on AppAI. Free to play, with nothing to install.",
+    "gamesViewAll": "All games"
   },
   "apps": {
     "title": "Browse Apps",

@@ -82,6 +82,9 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
   const directoryApps = apps.filter((app) => {
     if (personalOnly) return false;
     const variants = app.hostedPageSlug ? variantsBySlug.get(app.hostedPageSlug) ?? [] : [];
+    // Games have their own catalog and /games/{slug} routes. A legacy tool/app
+    // tag or download section must never put one back in these directories.
+    if (app.tags.includes("appai:kind:game") || variants.some((page) => page.template === "GAME")) return false;
     if ((variants.find((page) => page.isDefault) ?? variants[0])?.template === "PERSON") return false;
     if (!kind) return true;
     const page = app.hostedPageSlug

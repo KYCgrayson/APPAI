@@ -69,7 +69,10 @@
     "agentAppFlow": "Universal App：在应用根目录添加 appai.app.json。先 POST /api/v1/apps/your-app/release-packages 获取私有上传授权，上传软件包，再 POST /api/v1/apps/your-app/releases 并附上源代码包。保留 PENDING 回执和 releaseId，轮询 GET /api/v1/apps/your-app/releases/releaseId；AppAI 完成审核、构建和获批功能的配置后，才会在 appai.info/app/your-app 上线。",
     "agentAppSafety": "Universal App 采用声明式提交。切勿发送 organizationId、凭据、运行环境 URL、SQL 或秘密信息。AppAI 仅在审核后提供限定范围的身份信息和已批准的能力。",
     "agentReadCommands": "curl -s https://appai.info/spec\ncurl -s https://appai.info/llms-full.txt",
-    "agentSkillCommands": "/plugin marketplace add KYCgrayson/appai-skill\n/plugin install appai-publish@appai-skill"
+    "agentSkillCommands": "/plugin marketplace add KYCgrayson/appai-skill\n/plugin install appai-publish@appai-skill",
+    "gamesTitle": "玩玩 AppAI 自己做的游戏",
+    "gamesDescription": "由 AppAI 托管的原创浏览器小游戏，免费玩，不用安装。",
+    "gamesViewAll": "所有游戏"
   },
   "apps": {
     "title": "浏览应用",

@@ -210,20 +210,30 @@ of these values in a public environment variable.
 Read ${baseUrl}/spec/games. Deploy original game files to your own GitHub Pages,
 Cloudflare Pages, Vercel or Netlify host; AppAI supplies a GAME page with a game
 section, SEO shell, fullscreen play, how-to-play and FAQ. A game section works on
-any template. Use /p/{slug} today; future /games/{slug} URLs will redirect from
-/p/{slug}. listInGames is an application only, gamesListing: "requested" means
+any template. Developer-published games use /p/{slug} today; future /games/{slug}
+URLs and redirects from /p/{slug} are planned, not implemented. AppAI's own games have descriptions at
+/games/{slug} and playable builds at /games/{slug}/play.
+listInGames is an application only, gamesListing: "requested" means
 pending, and publishing does not add a game to ${baseUrl}/games.
+New external GAME listings are unapproved and excluded from homepage App listings.
+Package C game review/listing management and external room creation/access are
+planned, not built; there is no game review API to call today.
 Only approved origins can call the room-code API from a browser: POST /api/rooms,
 POST /api/rooms/{code}/join, GET /api/rooms/{code}?since={version},
 POST /api/rooms/{code}/start, POST /api/rooms/{code}/moves; 2–4 players,
 state <= 8 KB, one move <= 1 KB. Room creation currently needs AppAI sign-in
 and a same-origin cookie; external games wait for supported access. Games
 currently receive no AppAI identity or session, even with identity: true. Identity
-will become available only after approval under the spec published at that time.
+is planned to be approval-gated, but is not implemented even for approved games.
+Own puzzle leaderboards exist under river-crossing; external leaderboard declarations
+are stored only and do not provision boards or score validation.
 Supply privacyPolicy and termsOfService per root locale; AppAI does not
 automatically provide game-specific policies. Cover images load from their
 image host, which can see visitors’ IP addresses.
-See /spec/games for complete fields, messages, rules and a copyable JSON body.
+Read ${baseUrl}/spec/games#technical-guide for static exports, mobile, sandbox and
+enforced versus recommended size budgets. Follow ${baseUrl}/spec/games#worked-example-guess-duel
+for the real repo layout, build, full payload, upload, dry-run, publish and checklist.
+Copyable payload: ${baseUrl}/spec/examples/guess-duel.example.json.
 
 ## What you can build
 
@@ -282,7 +292,7 @@ ${baseUrl}/llms-full.txt — the complete specification when a single file is ne
 - Multi-language & multi-page: ${baseUrl}/spec/i18n — languages, child pages and navigation
 - Tools: ${baseUrl}/spec/tools — Wrapped tool, Connected tool, identity and access
 - Universal App: ${baseUrl}/spec/apps — manifests, releases, review and runtime
-- Games: ${baseUrl}/spec/games — externally hosted games, /games applications, GAME template and rooms API
+- Games: ${baseUrl}/spec/games — technical guide, Guess Duel worked example, room API, current listing/identity/leaderboard status
 ${hostedPagesSection}
 ## Links
 

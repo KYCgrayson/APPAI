@@ -69,7 +69,10 @@
     "agentAppFlow": "Universal App: ऐप की रूट डायरेक्टरी में appai.app.json जोड़ें। पहले निजी अपलोड अनुमति के लिए POST /api/v1/apps/your-app/release-packages करें, पैकेज अपलोड करें, फिर स्रोत पैकेज के साथ POST /api/v1/apps/your-app/releases करें। PENDING रसीद और releaseId रखें। GET /api/v1/apps/your-app/releases/releaseId से स्थिति जाँचें; appai.info/app/your-app पर लॉन्च से पहले AppAI समीक्षा, बिल्ड और स्वीकृत सुविधाओं की व्यवस्था करता है।",
     "agentAppSafety": "Universal App में घोषणात्मक जानकारी भेजी जाती है। organizationId, क्रेडेंशियल, रनटाइम URL, SQL या गोपनीय जानकारी कभी न भेजें। AppAI समीक्षा के बाद ही सीमित दायरे की पहचान और स्वीकृत क्षमताएं देता है।",
     "agentReadCommands": "curl -s https://appai.info/spec\ncurl -s https://appai.info/llms-full.txt",
-    "agentSkillCommands": "/plugin marketplace add KYCgrayson/appai-skill\n/plugin install appai-publish@appai-skill"
+    "agentSkillCommands": "/plugin marketplace add KYCgrayson/appai-skill\n/plugin install appai-publish@appai-skill",
+    "gamesTitle": "AppAI के बनाए खेल खेलें",
+    "gamesDescription": "AppAI पर होस्ट किए गए हमारे मौलिक ब्राउज़र खेल आज़माएँ। मुफ़्त खेलें, कुछ इंस्टॉल न करें।",
+    "gamesViewAll": "सभी खेल"
   },
   "apps": {
     "title": "ऐप्स ब्राउज़ करें",

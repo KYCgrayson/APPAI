@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buildSitemapEntries, splitSitemapEntries, sitemapXml, PLATFORM_CONTENT_MODIFIED, SITEMAP_URL_LIMIT, SITEMAP_CACHE_BYTE_LIMIT } from "../src/lib/sitemap-entries.ts";
+import { GAMES, TABLETOP_COLLECTION, gamePageHref, isPlayableGame } from "../src/lib/games-catalog.ts";
+import { platformAlternates, platformUrl } from "../src/lib/platform-seo.ts";
+import { locales } from "../src/i18n/routing.ts";
 
 const updatedAt = new Date("2025-04-01T12:00:00Z");
 const root = { slug: "site", parentSlug: null, organizationId: "fixture", locale: "en", isDefault: true, updatedAt };
@@ -10,12 +13,39 @@ test("sitemap uses stable static dates, true update times and excludes login and
     { ...root, privacyPolicy: "Privacy" },
     { ...root, slug: "external", canonicalUrl: "https://example.org/official", privacyPolicy: "Privacy" },
   ], [{ id: "demo", updatedAt, hostedPageSlug: null }]);
-  assert.equal(entries.length, 8); // 4 directories + /games + 3 hosted entries
+  assert.equal(entries.length, 14); // 4 directories + /games + 5 games + collection + 3 hosted/app entries
   assert.ok(!entries.some(entry => /login|external/.test(entry.url)));
   assert.equal(entries.find(entry => entry.url === "https://appai.info/")?.lastModified, PLATFORM_CONTENT_MODIFIED);
   assert.equal(entries.find(entry => entry.url.endsWith("/p/site"))?.lastModified, updatedAt);
   assert.equal(entries.find(entry => entry.url.endsWith("/apps/demo"))?.lastModified, updatedAt);
   assert.deepEqual(entries, buildSitemapEntries([{ ...root, privacyPolicy: "Privacy" }], [{ id: "demo", updatedAt, hostedPageSlug: null }]));
+});
+
+test("sitemap includes live and Beta own-game pages with alternates, without play URLs or soon entries", () => {
+  const origin = "https://example.com";
+  const assertGames = () => {
+    const entries = buildSitemapEntries([], [], origin);
+    const games = entries.filter((entry) => entry.url.startsWith(`${origin}/games/`));
+    assert.equal(games.length, GAMES.filter(isPlayableGame).length + 1);
+    const collection = games.find((entry) => entry.url === platformUrl(gamePageHref(TABLETOP_COLLECTION), "en", origin));
+    assert.ok(collection);
+    assert.deepEqual(collection.alternates?.languages, platformAlternates(gamePageHref(TABLETOP_COLLECTION), origin));
+    for (const entry of [...games, entries.find((entry) => entry.url === `${origin}/games`)!]) {
+      assert.deepEqual(Object.keys(entry.alternates!.languages!).sort(), [...locales, "x-default"].sort());
+    }
+    for (const game of GAMES) {
+      const entry = games.find((item) => item.url === platformUrl(gamePageHref(game), "en", origin));
+      if (!isPlayableGame(game)) { assert.equal(entry, undefined); continue; }
+      assert.ok(entry, game.slug);
+      assert.equal(entry.lastModified, PLATFORM_CONTENT_MODIFIED);
+      assert.deepEqual(entry.alternates?.languages, platformAlternates(gamePageHref(game), origin));
+    }
+    assert.ok(entries.every((entry) => !entry.url.includes("/play") && !entry.url.includes("?")));
+  };
+  assertGames();
+  const original = GAMES[0].status;
+  try { GAMES[0].status = "soon"; assertGames(); }
+  finally { GAMES[0].status = original; }
 });
 
 test("sitemap child and policy alternates only reference reachable published variants", () => {
