@@ -157,30 +157,48 @@ the 80 Node tests, TypeScript/Vite build and Prettier checks passed.
 ### Backlog #72 (2026-11-10)
 
 Loading text occupies a reserved `min-height: 2em` row in the room lobby/closed screen.
-The waiting countdown has a reserved row and tabular numerals; the one-second tick changes
+The waiting countdown has a reserved row and tabular numerals; display updates change
 only its text node. Countdown/loading rows are outside the secret/play screens, so they do
 not change keypad coordinates. Existing keypad dimensions, scrolling containers and responsive
 breakpoints are unchanged: four 64px rows plus three 6px gaps (274px); other buttons remain
 at least 48px, history/note controls at least 44px. These are CSS dimension checks, not fresh
 browser measurements.
 
-The countdown uses the API's `expiresAt` without a two-minute cap. HTTP Date calibration
-uses the request midpoint plus 500 ms for the header's whole-second truncation. Each readable
-Date sample replaces the estimate when its RTT is strictly smaller than the previous minimum,
-even for a correction under 1.5 seconds. Equal/slower responses and missing/invalid Date headers
-retain the last calibration (or use local time before the first readable Date).
-The display ceil-clamps expiry at the header's precision and starts a fresh 120-second room
-at 2:00 across the tested header phases. It advances on whole elapsed seconds, preserving its
-tick phase, without waiting for a corrected target to catch up. A better RTT estimate may
-increase the display by at most one second once per expiry; other reads cannot increase or
-skip displayed seconds. Elapsed hidden-tab time still counts, and a new expiry can resync it.
-Expiry confirmation keeps the full precision of the API timestamp.
+The countdown uses every millisecond of the API's `expiresAt` without a two-minute cap.
+Each readable HTTP Date sample bounds the server offset by
+`[Date - receivedAt, Date + 1000 - sentAt)`. Calibration intersects these bounds, including
+equal/slower RTT samples, and uses their midpoint. Disjoint bounds restart calibration;
+missing/invalid Date headers retain it (local time is used before the first readable Date).
+The display computes `max(0, ceil((localDeadline - now) / 1000))` on every read and never
+increases for the same expiry. A changed API expiry resyncs it. A 20 ms text-only timer
+follows fractional second boundaries, writes only changed text, and never polls. Returning
+to a visible tab updates the text immediately. The existing one-second expiry-check timer
+and API polling cadence are unchanged.
 
-Deterministic three-second-create fixtures cover seven fractional header phases and client
-clocks one hour ahead, one hour behind and aligned. A 40 ms first poll converges to within
-one displayed second of the true expiry, with progressively faster polls afterward. During
-the following ten seconds no display pause exceeds 1.2 seconds. A controller regression also
-checks the 1:58 → 1:59 recovery and every subsequent one-second tick without screen replacement.
+Deterministic fake-clock/Date-header tests cover RTTs of 0/300/800 ms, clocks ten minutes
+ahead/behind/aligned, interval narrowing/reset, fractional expiry, never-increase, hidden-tab
+catch-up and zero timing. Centered Date fixtures match truth on every 20 ms sample in the
+first/last ten seconds, start at 2:00, show subsequent seconds for 1 s ± 250 ms and never
+skip. Across six arbitrary header phases, the fixed-estimate fixtures remain within one
+second and reach zero within one display tick of their calibrated deadline. An 800 ms create
+followed by Date samples at opposite second boundaries narrows the offset error to 0.5 ms.
+Controller checks verify fractional text updates without screen replacement, immediate
+visibility catch-up, and no API polling from the display timer, including at zero.
+
+Whole-second Date headers cannot universally guarantee the requested 95% agreement,
+first value of 2:00, or 1 s ± 250 ms transitions during calibration. For example, a zero-RTT
+create at server phase .999 with a 120 s TTL yields an initial midpoint estimate 499 ms
+behind truth, so ceil displays 2:01. Repeated 800 ms requests can also produce identical Date
+headers for two server offsets 800 ms apart; a regression fixture records this ambiguity.
+Intersection improves precision only when subsequent response bounds actually narrow it.
+Universal guarantees require a more precise server timestamp or an additional timing
+contract; no API changes or synthetic TTL assumptions were added in this display-only fix.
+
+The old min-RTT-only calibration test and five countdown fixtures were replaced because
+they encoded expiry truncation, elapsed-read ticking or a permitted upward correction
+(including the old 1:58 → 1:59 controller assertion). The existing expiry-resync fixture now
+advances its fake Date header with its fake clock instead of relying on equal-RTT samples
+being ignored. All closure/confirmation regressions are retained.
 
 At zero, the host requests a fresh full snapshot (`since=-1`) and keeps its room credentials
 while awaiting confirmation. Returning to a visible tab also requests an immediate snapshot.
@@ -198,6 +216,5 @@ unavailable lookup preserves the unconfirmed room's token and URL if creation fa
 The existing browser matrix was attempted again with the installed Playwright and Chrome,
 but Chrome exited during launch with SIGABRT/EPERM in the sandbox. No fresh viewport or
 real-device pass is claimed. Rounds 2 and 3 used the controller/event facade and deterministic
-transport/clock tests; the browser matrix was not rerun. All 109 Node tests, the TypeScript/Vite
-build, served rebuild, served-string/base checks and Prettier checks pass. No live rooms
-service was contacted.
+transport/clock tests; the browser matrix was not rerun. Round 4's display-only fix passes all
+116 Node tests and the TypeScript/Vite build. No live rooms service was contacted.

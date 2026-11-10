@@ -878,13 +878,7 @@ function countdown() {
   if (!session) return '';
   return t.roomCloses.replace(
     '{time}',
-    formatRemaining(
-      roomCountdown.remaining(
-        session.room.expiresAt,
-        session.client.serverNow(),
-        session.client.clockRoundTrip,
-      ),
-    ),
+    formatRemaining(roomCountdown.remaining(session.room.expiresAt, session.client.serverNow())),
   );
 }
 async function refreshRoom() {
@@ -905,10 +899,22 @@ async function refreshRoom() {
     if (refreshingRoom === current) refreshingRoom = undefined;
   }
 }
-setInterval(() => {
+function updateCountdown() {
   if (!session) return;
   const el = document.querySelector('[data-countdown]');
-  if (el) el.textContent = countdown();
+  if (el) {
+    const text = countdown();
+    if (el.textContent !== text) el.textContent = text;
+  }
+}
+// Read near second boundaries without changing the one-second expiry-check cadence.
+setInterval(updateCountdown, 20);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) updateCountdown();
+});
+setInterval(() => {
+  if (!session) return;
+  updateCountdown();
   if (
     session.room.status === 'waiting' &&
     (roomCountdown.expired ||

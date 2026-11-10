@@ -1,10 +1,30 @@
 import type { Room } from './rooms.ts';
 
-/** Date is truncated to whole seconds; use its midpoint and the request midpoint.
- * Prefer the minimum-RTT sample to limit error from server processing time. */
-export function serverClockOffset(date: string | null, sentAt: number, receivedAt: number) {
+export type ClockBounds = { lower: number; upper: number };
+
+/** Date names a whole server second at some instant during the request. */
+export function serverClockBounds(
+  date: string | null,
+  sentAt: number,
+  receivedAt: number,
+  previous?: ClockBounds,
+): ClockBounds | undefined {
   const serverTime = date === null ? NaN : Date.parse(date);
-  return Number.isFinite(serverTime) ? serverTime + 500 - (sentAt + receivedAt) / 2 : undefined;
+  if (!Number.isFinite(serverTime)) return previous;
+  const sample = { lower: serverTime - receivedAt, upper: serverTime + 1000 - sentAt };
+  if (!previous) return sample;
+  const intersection = {
+    lower: Math.max(previous.lower, sample.lower),
+    upper: Math.min(previous.upper, sample.upper),
+  };
+  // Disjoint bounds indicate a clock change; start calibration again.
+  return intersection.lower < intersection.upper ? intersection : sample;
+}
+
+/** Midpoint of one Date sample, including its truncation and request duration. */
+export function serverClockOffset(date: string | null, sentAt: number, receivedAt: number) {
+  const bounds = serverClockBounds(date, sentAt, receivedAt);
+  return bounds && (bounds.lower + bounds.upper) / 2;
 }
 
 export function remainingSeconds(expiresAt: string, serverNow: number) {
@@ -20,10 +40,6 @@ export function formatRemaining(seconds: number) {
 export class RoomCountdown {
   private expiresAt?: string;
   private seconds = 0;
-  private sampledAt = 0;
-  private observedAt = 0;
-  private roundTrip = Infinity;
-  private corrected = false;
   private now: () => number;
 
   constructor(now: () => number = Date.now) {
@@ -34,34 +50,15 @@ export class RoomCountdown {
     return this.seconds === 0;
   }
 
-  remaining(expiresAt: string, serverNow: number, roundTrip = Infinity) {
-    // Match the Date header's precision so fractional expiry cannot add a second.
-    // The full-precision expiry remains authoritative for closing the room.
-    const expiry = Math.floor(Date.parse(expiresAt) / 1000) * 1000;
-    const remaining = Number.isFinite(expiry)
-      ? Math.max(0, Math.ceil((expiry - serverNow) / 1000))
-      : 0;
+  remaining(expiresAt: string, serverNow: number) {
     const now = this.now();
-    if (this.expiresAt !== expiresAt) {
-      this.seconds = remaining;
-      this.sampledAt = now;
-      this.corrected = false;
-    } else {
-      const elapsed = Math.max(0, Math.floor((now - this.sampledAt) / 1000));
-      // Frequent reads cannot skip a displayed second; a hidden tab still catches up.
-      const ticks = now - this.observedAt < 2000 ? Math.min(1, elapsed) : elapsed;
-      if (roundTrip < this.roundTrip && !this.corrected && remaining > this.seconds) {
-        // A better estimate may recover one second once, without a long catch-up pause.
-        this.seconds++;
-        this.corrected = true;
-      } else this.seconds = Math.max(0, this.seconds - ticks);
-      // Keep ticking from elapsed time: waiting for a corrected target would freeze it.
-      // Preserve the fractional tick phase, including elapsed time in a hidden tab.
-      this.sampledAt += ticks * 1000;
-    }
+    // Keep all expiry milliseconds and follow the calibrated local deadline.
+    const deadline = Date.parse(expiresAt) - (serverNow - now);
+    const remaining = Number.isFinite(deadline)
+      ? Math.max(0, Math.ceil((deadline - now) / 1000))
+      : 0;
+    this.seconds = this.expiresAt === expiresAt ? Math.min(this.seconds, remaining) : remaining;
     this.expiresAt = expiresAt;
-    this.observedAt = now;
-    this.roundTrip = roundTrip;
     return this.seconds;
   }
 }

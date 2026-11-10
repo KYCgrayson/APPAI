@@ -1,6 +1,6 @@
 import { validateGame, type Game, type Move, type Seat } from '../logic/game.ts';
 import type { StorageLike } from '../ui/storage.ts';
-import { serverClockOffset } from './lifecycle.ts';
+import { serverClockBounds, type ClockBounds } from './lifecycle.ts';
 export type Room = {
   code: string;
   game: string;
@@ -39,7 +39,7 @@ export class RoomsClient {
   private fetcher: typeof fetch;
   private storage?: StorageLike;
   private sleep: (ms: number) => Promise<void>;
-  private clockOffset?: number;
+  private clockBounds?: ClockBounds;
   private clockRTT = Infinity;
   private now: () => number;
   constructor(
@@ -76,13 +76,10 @@ export class RoomsClient {
     }
     const receivedAt = this.now();
     const rtt = Math.max(0, receivedAt - sentAt);
-    const offset = serverClockOffset(response.headers.get('Date'), sentAt, receivedAt);
-    // Slow handlers can stamp Date near the response rather than the request midpoint.
-    // The fastest response gives the tightest bound, even for a small correction.
-    if (offset !== undefined && rtt < this.clockRTT) {
-      this.clockOffset = offset;
-      this.clockRTT = rtt;
-    }
+    const date = response.headers.get('Date');
+    this.clockBounds = serverClockBounds(date, sentAt, receivedAt, this.clockBounds);
+    if (date !== null && Number.isFinite(Date.parse(date)))
+      this.clockRTT = Math.min(this.clockRTT, rtt);
     if (response.status === 429 && retry) {
       const raw = response.headers.get('Retry-After') ?? '1';
       const seconds = Number(raw);
@@ -150,7 +147,8 @@ export class RoomsClient {
     return 'room:' + this.base + '/' + code;
   }
   serverNow() {
-    return this.now() + (this.clockOffset ?? 0);
+    const offset = this.clockBounds ? (this.clockBounds.lower + this.clockBounds.upper) / 2 : 0;
+    return this.now() + offset;
   }
   get clockRoundTrip() {
     return this.clockRTT;

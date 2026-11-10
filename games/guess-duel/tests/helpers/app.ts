@@ -22,9 +22,9 @@ export function loadApp(
     removeItem: (key: string) => values.delete(key),
   };
   const events = new Map<string, (event: any) => void>();
-  const documentEvents = new Map<string, (event: any) => void>();
+  const documentEvents = new Map<string, ((event: any) => void)[]>();
   const windowEvents = new Map<string, (event: any) => void>();
-  const intervals: (() => void)[] = [];
+  const intervals: { fn: () => void; ms: number }[] = [];
   const elements = new Map<string, { innerHTML: string; textContent: string }>();
   let html = '',
     renders = 0,
@@ -73,7 +73,9 @@ export function loadApp(
           ? (elements.get('countdown') ?? null)
           : null,
     getElementById: (id: string) => elements.get(id) ?? null,
-    addEventListener: (name: string, fn: (event: any) => void) => documentEvents.set(name, fn),
+    addEventListener(name: string, fn: (event: any) => void) {
+      documentEvents.set(name, [...(documentEvents.get(name) ?? []), fn]);
+    },
   };
   const window: any = {
     localStorage: storage,
@@ -139,7 +141,7 @@ export function loadApp(
       { language: 'en' },
       history,
       () => true,
-      (fn: () => void) => intervals.push(fn),
+      (fn: () => void, ms: number) => intervals.push({ fn, ms }),
       class extends Date {
         static now() {
           return now();
@@ -189,10 +191,13 @@ export function loadApp(
     get url() {
       return location.href;
     },
-    tick: () => intervals.forEach((fn) => fn()),
+    tick: (ms?: number) =>
+      intervals.forEach((timer) => {
+        if (ms === undefined || ms === timer.ms) timer.fn();
+      }),
     setHidden(hidden: boolean) {
       document.hidden = hidden;
-      documentEvents.get('visibilitychange')?.({});
+      documentEvents.get('visibilitychange')?.forEach((fn) => fn({}));
     },
     get html() {
       return html;

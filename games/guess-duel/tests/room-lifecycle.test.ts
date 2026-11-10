@@ -5,8 +5,10 @@ import {
   formatRemaining,
   remainingSeconds,
   RoomCountdown,
+  serverClockBounds,
   serverClockOffset,
   waitingRoomState,
+  type ClockBounds,
 } from '../src/net/lifecycle.ts';
 import { RoomsClient, type Room } from '../src/net/rooms.ts';
 import { strings } from '../src/ui/i18n.ts';
@@ -100,40 +102,36 @@ test('client samples Date on create and polls and retains calibration without an
   assert.equal(client.serverNow(), serverTime + 10600);
 });
 
-test('clock calibration replaces every faster sample, including small corrections, and ignores slower or equal RTTs', async () => {
-  for (const skew of [-3600000, 0, 3600000]) {
-    let now = serverTime + skew;
+test('clock calibration intersects equal and slower RTT samples instead of keeping only the fastest', async () => {
+  for (const skew of [-600000, 0, 600000]) {
+    let now = serverTime + 100;
     const samples = [
-      { rtt: 3000, date: serverTime + 3000 },
-      { rtt: 1000, date: serverTime + 4000 },
-      { rtt: 1500, date: serverTime + 100000 },
-      { rtt: 1000, date: serverTime + 100000 },
-      { rtt: 100, date: serverTime + 5000 },
+      { advance: 0, rtt: 0, date: serverTime, error: 400 },
+      { advance: 400, rtt: 0, date: serverTime, error: 200 },
+      { advance: 490, rtt: 100, date: serverTime + 1000, error: 205 },
+      { advance: 100, rtt: 200, date: serverTime + 1000, error: 205 },
+      { advance: 600, rtt: 0, date: serverTime + 1000, error: -40 },
     ];
-    let expectedOffset = 0;
-    let bestRTT = Infinity;
     const client = new RoomsClient(
       undefined,
       async () => {
-        const sample = samples.shift()!;
-        const sentAt = now;
+        const sample = samples[0];
         now += sample.rtt;
-        if (sample.rtt < bestRTT) {
-          expectedOffset = serverClockOffset(new Date(sample.date).toUTCString(), sentAt, now)!;
-          bestRTT = sample.rtt;
-        }
         return response({ code: 'ABC234', ...joined(waiting()), changed: false }, 200, sample.date);
       },
       undefined,
       undefined,
-      () => now,
+      () => now + skew,
     );
     await client.create(createGame());
-    assert.equal(client.serverNow(), now + expectedOffset);
+    assert.equal(client.serverNow(), now + samples.shift()!.error);
     while (samples.length) {
+      const sample = samples[0];
+      now += sample.advance;
       await client.poll('ABC234', 'token', 0);
-      assert.equal(client.serverNow(), now + expectedOffset);
-      assert.equal(client.clockRoundTrip, bestRTT);
+      assert.equal(client.serverNow(), now + sample.error);
+      assert.equal(client.clockRoundTrip, 0, 'RTT remains a diagnostic, not the sample selector');
+      samples.shift();
     }
   }
 });
@@ -321,7 +319,11 @@ test('countdown ticks without replacing the screen and resyncs on a new expiry b
   let latest = waiting();
   const view = loadApp(
     async (url) =>
-      response(String(url).endsWith('/join') ? joined(latest) : { changed: true, room: latest }),
+      response(
+        String(url).endsWith('/join') ? joined(latest) : { changed: true, room: latest },
+        200,
+        now - 3600000,
+      ),
     'https://appai.info/games/guess-duel/?room=ABC234',
     () => now,
   );
@@ -737,103 +739,110 @@ test('reopening a gone room uses one closed-screen recreate button and clears st
   }
 });
 
-test('a 120-second room starts at 2:00 at every Date-header phase and polls do not skip seconds', async () => {
-  for (const phase of [0, 100, 499, 500, 999]) {
-    let now = serverTime + phase + 3600000;
-    const expiresAt = iso(serverTime + phase + 120000);
-    const snapshot = waiting({ expiresAt });
-    const client = new RoomsClient(
-      undefined,
-      async () =>
-        response({ code: snapshot.code, ...joined(snapshot), changed: true }, 200, now - 3600000),
-      undefined,
-      undefined,
-      () => now,
+test('Date intervals narrow across fractional phases, retain missing samples and reset disjoint bounds', () => {
+  for (const skew of [-600000, 0, 600000]) {
+    let bounds = serverClockBounds(
+      new Date(serverTime).toUTCString(),
+      serverTime + skew + 10,
+      serverTime + skew + 10,
+    )!;
+    assert.deepEqual(bounds, { lower: -skew - 10, upper: -skew + 990 });
+    bounds = serverClockBounds(
+      new Date(serverTime).toUTCString(),
+      serverTime + skew + 990,
+      serverTime + skew + 990,
+      bounds,
+    )!;
+    assert.deepEqual(bounds, { lower: -skew - 10, upper: -skew + 10 });
+    assert.equal(serverClockBounds(null, 0, 0, bounds), bounds);
+    assert.equal(serverClockBounds('invalid', 0, 0, bounds), bounds);
+    const reset = serverClockBounds(
+      new Date(serverTime + 10000).toUTCString(),
+      serverTime + skew + 1000,
+      serverTime + skew + 1300,
+      bounds,
     );
-    await client.create(snapshot.state);
-    const countdown = new RoomCountdown(() => now);
-    assert.equal(formatRemaining(countdown.remaining(expiresAt, client.serverNow())), '2:00');
-    let previous = 120;
-    for (let second = 1; second <= 120; second++) {
-      // Cross whole-second header boundaries with a different fractional sample each poll.
-      now += second % 2 ? 999 : 1001;
-      await client.poll(snapshot.code, 'token', 0);
-      const displayed = countdown.remaining(expiresAt, client.serverNow());
-      assert.ok(
-        previous - displayed === 0 || previous - displayed === 1,
-        'polls cannot skip or add seconds',
-      );
-      assert.ok(Math.abs(displayed - remainingSeconds(expiresAt, now - 3600000)) <= 1);
-      previous = displayed;
+    assert.deepEqual(reset, { lower: -skew + 8700, upper: -skew + 10000 });
+  }
+  // A touching upper bound is excluded by Date's [D, D + 1000) interval.
+  assert.deepEqual(
+    serverClockBounds(new Date(serverTime).toUTCString(), serverTime + 1000, serverTime + 1000, {
+      lower: 0,
+      upper: 1000,
+    }),
+    { lower: -1000, upper: 0 },
+  );
+});
+
+test('Date offset bounds include request and response timestamps at RTT 0, 300 and 800 ms', () => {
+  for (const skew of [-600000, 0, 600000]) {
+    for (const rtt of [0, 300, 800]) {
+      for (const phase of [0, 100, 499, 500, 999]) {
+        const sentAt = serverTime + phase + skew;
+        for (const stampAt of [sentAt - skew, sentAt - skew + rtt]) {
+          const bounds = serverClockBounds(new Date(stampAt).toUTCString(), sentAt, sentAt + rtt)!;
+          assert.ok(bounds.lower <= -skew && -skew < bounds.upper);
+          assert.equal(bounds.upper - bounds.lower, 1000 + rtt);
+        }
+      }
     }
-    now += 1000;
-    assert.equal(countdown.remaining(expiresAt, client.serverNow()), 0);
   }
 });
 
-test('clock corrections without a better sample cannot increase, skip or freeze displayed seconds; a new expiry can resync', () => {
-  let now = 0;
-  const countdown = new RoomCountdown(() => now);
-  const expiresAt = iso(serverTime + 120000);
-  assert.equal(countdown.remaining(expiresAt, serverTime + 500), 120);
-  now += 1000;
-  assert.equal(countdown.remaining(expiresAt, serverTime + 1500), 119);
-  now += 1000;
-  assert.equal(countdown.remaining(expiresAt, serverTime - 10000), 118);
-  now += 1000;
-  assert.equal(countdown.remaining(expiresAt, serverTime + 10000), 117);
-  assert.equal(countdown.remaining(iso(serverTime + 180000), serverTime + 10500), 170);
+test('interval intersections converge to millisecond precision even after an 800 ms create', async () => {
+  for (const skew of [-600000, 0, 600000]) {
+    let now = serverTime;
+    let rtt = 800;
+    const client = new RoomsClient(
+      undefined,
+      async () => {
+        now += rtt;
+        return response({ code: 'ABC234', ...joined(waiting()), changed: false }, 200, now);
+      },
+      undefined,
+      undefined,
+      () => now + skew,
+    );
+    await client.create(createGame());
+    assert.equal(client.serverNow() - now, 100);
+    now = serverTime + 999;
+    rtt = 0;
+    await client.poll('ABC234', 'token', 0);
+    assert.equal(client.serverNow() - now, -399.5);
+    now = serverTime + 1000;
+    await client.poll('ABC234', 'token', 0);
+    assert.equal(client.serverNow() - now, 0.5);
+    now = serverTime + 1999;
+    await client.poll('ABC234', 'token', 0);
+    assert.equal(client.serverNow() - now, 0.5);
+  }
 });
 
-test('a faster clock estimate may increase the display by at most one second once per expiry', () => {
-  let now = 0;
+test('a fractional expiry keeps 2:00 with 119.7 seconds left and uses the actual first boundary', () => {
+  let now = serverTime + 1200;
+  const expiresAt = iso(serverTime + 120900);
   const countdown = new RoomCountdown(() => now);
-  const expiresAt = iso(serverTime + 120000);
-  assert.equal(countdown.remaining(expiresAt, serverTime + 2500, 3000), 118);
-  now += 40;
-  assert.equal(countdown.remaining(expiresAt, serverTime + 500, 40), 119);
-  assert.equal(
-    countdown.remaining(expiresAt, serverTime - 10000, 40),
-    119,
-    'same sample cannot increase it again',
-  );
+  assert.equal(formatRemaining(countdown.remaining(expiresAt, now)), '2:00');
+  now = serverTime + 1899;
+  assert.equal(countdown.remaining(expiresAt, now), 120);
+  now++;
+  assert.equal(countdown.remaining(expiresAt, now), 119);
   now += 1000;
-  assert.equal(
-    countdown.remaining(expiresAt, serverTime - 9000, 30),
-    118,
-    'a second better sample cannot increase it again',
-  );
-  now += 1000;
-  assert.equal(
-    countdown.remaining(expiresAt, serverTime + 10000, 20),
-    117,
-    'forward corrections cannot skip a tick',
-  );
-  const newExpiry = iso(serverTime + 180000);
-  assert.equal(countdown.remaining(newExpiry, serverTime + 10500, 20), 170);
-  assert.equal(
-    countdown.remaining(newExpiry, serverTime + 500, 10),
-    171,
-    'a new expiry allows one correction',
-  );
+  assert.equal(countdown.remaining(expiresAt, now), 118);
 });
 
-test('slow creates converge after one fast poll within one second of truth and never freeze beyond 1.2 seconds', async () => {
-  for (const skew of [-3600000, 0, 3600000]) {
-    for (const phase of [0, 100, 499, 500, 950, 970, 999]) {
-      let now = serverTime + phase;
-      let rtt = 3000;
-      let expiresAt = '';
+test('20 ms reads match truth in the first and last ten seconds for centered Date samples, all RTTs and skews', async () => {
+  for (const skew of [-600000, 0, 600000]) {
+    for (const rtt of [0, 300, 800]) {
+      // The Date interval's midpoint is the real offset for this header phase.
+      let now = serverTime + 500 - rtt / 2;
+      const expiresAt = iso(now + 120000);
+      const expiry = Date.parse(expiresAt);
       const client = new RoomsClient(
         undefined,
         async () => {
           now += rtt;
-          expiresAt ||= iso(now + 120000);
-          return response(
-            { code: 'ABC234', ...joined(waiting({ expiresAt })), changed: false },
-            200,
-            now,
-          );
+          return response({ code: 'ABC234', ...joined(waiting({ expiresAt })) }, 200, now);
         },
         undefined,
         undefined,
@@ -841,56 +850,158 @@ test('slow creates converge after one fast poll within one second of truth and n
       );
       await client.create(createGame());
       const countdown = new RoomCountdown(() => now + skew);
-      const read = () => countdown.remaining(expiresAt, client.serverNow(), client.clockRoundTrip);
-      let displayed = read();
-      let lastChange = now;
-      let increases = 0;
-      const check = () => {
-        const next = read();
-        assert.ok(
-          Math.abs(next - remainingSeconds(expiresAt, now)) <= 1,
-          `phase ${phase}: ${next} vs truth ${remainingSeconds(expiresAt, now)}`,
+      const startedAt = now;
+      let previous = countdown.remaining(expiresAt, client.serverNow());
+      assert.equal(formatRemaining(previous), '2:00');
+      let changedAt = now;
+      let changes = 0;
+      const matches = [0, 0];
+      const samples = [0, 0];
+      for (; now <= expiry + 1000; now += 20) {
+        const displayed = countdown.remaining(expiresAt, client.serverNow());
+        const truth = remainingSeconds(expiresAt, now);
+        assert.equal(displayed, truth);
+        assert.ok(displayed <= previous);
+        if (displayed !== previous) {
+          assert.equal(previous - displayed, 1, 'visible reads never skip a second');
+          const duration = now - changedAt;
+          if (changes) assert.ok(duration >= 750 && duration <= 1250, `duration ${duration}`);
+          else assert.ok(duration <= 1250, 'the first second may be shorter');
+          changes++;
+          changedAt = now;
+        }
+        for (const window of [0, 1]) {
+          if (window === 0 ? now - startedAt < 10000 : now >= expiry - 10000 && now < expiry) {
+            samples[window]++;
+            if (displayed === truth) matches[window]++;
+          }
+        }
+        previous = displayed;
+      }
+      assert.equal(changes, 120);
+      for (const window of [0, 1]) assert.ok(matches[window] / samples[window] >= 0.95);
+    }
+  }
+});
+
+test('full precision preserves partial seconds beyond two minutes without a cap', () => {
+  let now = serverTime;
+  const expiresAt = iso(now + 300137);
+  const countdown = new RoomCountdown(() => now);
+  assert.equal(countdown.remaining(expiresAt, now), 301);
+  now += 136;
+  assert.equal(countdown.remaining(expiresAt, now), 301);
+  now++;
+  assert.equal(countdown.remaining(expiresAt, now), 300);
+});
+
+test('no clock correction can increase the display, including faster estimates and reads after zero', () => {
+  let now = serverTime;
+  const countdown = new RoomCountdown(() => now);
+  const expiresAt = iso(now + 120000);
+  assert.equal(countdown.remaining(expiresAt, now + 500), 120);
+  now += 500;
+  assert.equal(countdown.remaining(expiresAt, now + 500), 119);
+  assert.equal(countdown.remaining(expiresAt, now - 500), 119);
+  now += 1000;
+  assert.equal(countdown.remaining(expiresAt, now), 119);
+  now += 500;
+  assert.equal(countdown.remaining(expiresAt, now), 118);
+  now += 118000;
+  assert.equal(countdown.remaining(expiresAt, now), 0);
+  assert.equal(countdown.remaining(expiresAt, now - 10000), 0);
+  assert.equal(countdown.remaining(iso(now + 180000), now), 180, 'a changed API expiry resyncs');
+});
+
+test('hidden-tab elapsed time catches up immediately rather than decrementing once per read', () => {
+  let now = serverTime + 333;
+  const expiresAt = iso(now + 120000);
+  const countdown = new RoomCountdown(() => now);
+  assert.equal(countdown.remaining(expiresAt, now), 120);
+  now += 18260;
+  assert.equal(countdown.remaining(expiresAt, now), 102);
+  now += 104000;
+  assert.equal(countdown.remaining(expiresAt, now), 0);
+});
+
+test('zero follows the full-precision deadline within the Date offset error and one display tick', async () => {
+  for (const phase of [0, 100, 499, 500, 900, 999]) {
+    for (const skew of [-600000, 0, 600000]) {
+      for (const rtt of [0, 300, 800]) {
+        let now = serverTime + phase;
+        const expiresAt = iso(now + 120000);
+        const expiry = Date.parse(expiresAt);
+        const client = new RoomsClient(
+          undefined,
+          async () => {
+            now += rtt;
+            return response({ code: 'ABC234', ...joined(waiting({ expiresAt })) }, 200, now);
+          },
+          undefined,
+          undefined,
+          () => now + skew,
         );
-        if (next !== displayed) {
-          assert.ok(now - lastChange <= 1200, `display froze for ${now - lastChange} ms`);
-          assert.ok(
-            Math.abs(next - displayed) <= 1,
-            'no skipped seconds or large upward correction',
-          );
-          if (next > displayed) increases++;
-          lastChange = now;
+        await client.create(createGame());
+        const error = client.serverNow() - now;
+        const countdown = new RoomCountdown(() => now + skew);
+        let previous = countdown.remaining(expiresAt, client.serverNow());
+        assert.ok(Math.abs(previous - remainingSeconds(expiresAt, now)) <= 1);
+        let zeroAt: number | undefined;
+        for (; now <= expiry + 1000; now += 20) {
+          const displayed = countdown.remaining(expiresAt, client.serverNow());
+          assert.ok(Math.abs(displayed - remainingSeconds(expiresAt, now)) <= 1);
+          assert.ok(displayed <= previous && previous - displayed <= 1);
+          if (!displayed && zeroAt === undefined) zeroAt = now;
+          previous = displayed;
         }
-        assert.ok(now - lastChange <= 1200, 'display keeps ticking');
-        assert.ok(increases <= 1, 'at most one upward correction');
-        displayed = next;
-      };
-      rtt = 40;
-      await client.poll('ABC234', 'token', 0);
-      check();
-      for (let step = 1; step <= 100; step++) {
-        now += 100;
-        if (step % 12 === 0) {
-          rtt = Math.max(10, rtt - 5);
-          await client.poll('ABC234', 'token', 0);
-        }
-        check();
+        assert.ok(zeroAt !== undefined);
+        assert.ok(zeroAt >= expiry - error, 'never zero before the calibrated deadline');
+        assert.ok(zeroAt < expiry - error + 20, 'zero on the next display tick');
+        assert.ok(zeroAt <= expiry + 1000);
       }
     }
   }
 });
 
-test('the controller recovers a slow create on its first fast poll and keeps ticking without replacing the screen', async (t) => {
-  let now = serverTime;
+test('whole-second Date samples alone cannot guarantee 95% accuracy for arbitrary server phases', () => {
+  // Both offsets can produce these same headers with 800 ms RTT: Date can be
+  // stamped at request receipt or response send. More identical samples add no precision.
+  let bounds: ClockBounds | undefined;
+  for (let sentAt = 0; sentAt <= 20000; sentAt += 2000) {
+    bounds = serverClockBounds(
+      new Date(serverTime + sentAt + 900).toUTCString(),
+      sentAt,
+      sentAt + 800,
+      bounds,
+    );
+  }
+  assert.ok(bounds!.lower <= serverTime + 100 && serverTime + 900 < bounds!.upper);
+  const expiresAt = iso(serverTime + 120900);
+  let disagreements = 0;
+  for (let elapsed = 0; elapsed < 10000; elapsed += 20) {
+    if (
+      remainingSeconds(expiresAt, serverTime + 900 + elapsed) !==
+      remainingSeconds(expiresAt, serverTime + 1700 + elapsed)
+    )
+      disagreements++;
+  }
+  assert.ok(disagreements / 500 > 0.1, 'one display cannot be 95% correct for both clocks');
+});
+
+test('the controller follows fractional boundaries at 20 ms without screen replacement or extra polling', async (t) => {
+  let now = serverTime + 350;
   let snapshot: Room;
-  let release!: (r: Response) => void;
+  let polls = 0;
   const view = loadApp(
     async (url) => {
       if (String(url).endsWith('/api/rooms')) {
-        now += 3000;
-        snapshot = waiting({ expiresAt: iso(now + 120000) });
+        const createdAt = now;
+        now += 300;
+        snapshot = waiting({ expiresAt: iso(createdAt + 120000) });
         return response({ code: snapshot.code, ...joined(snapshot) }, 200, now);
       }
-      return new Promise<Response>((resolve) => (release = resolve));
+      polls++;
+      return new Promise<Response>(() => {});
     },
     undefined,
     () => now,
@@ -899,19 +1010,46 @@ test('the controller recovers a slow create on its first fast poll and keeps tic
   await view.act({ type: 'mode', mode: 'online' });
   view.click('createRoom');
   await until(() => view.app.connecting === undefined);
-  assert.equal(view.text('countdown'), 'Room closes in 1:58');
-  now += 40;
-  release(response({ changed: false }, 200, now));
-  await until(() => view.app.session.client.clockRoundTrip === 40);
+  assert.equal(view.text('countdown'), 'Room closes in 2:00');
   const renders = view.renders;
-  view.tick();
-  assert.equal(view.text('countdown'), 'Room closes in 1:59');
-  for (let second = 1; second <= 10; second++) {
-    now += 1000;
-    view.tick();
-    assert.equal(view.text('countdown'), `Room closes in ${formatRemaining(119 - second)}`);
-    assert.ok(Math.abs(119 - second - remainingSeconds(snapshot!.expiresAt, now)) <= 1);
+  const before = polls;
+  const startedAt = now;
+  for (; now - startedAt < 10000; now += 20) {
+    view.tick(20);
+    assert.equal(
+      view.text('countdown'),
+      `Room closes in ${formatRemaining(remainingSeconds(snapshot!.expiresAt, now))}`,
+    );
     assert.equal(view.renders, renders);
-    assert.equal(view.app.screen, 'waiting');
+    assert.equal(polls, before, 'display updates do not poll');
   }
+  now = Date.parse(snapshot!.expiresAt);
+  view.tick(20);
+  assert.equal(view.text('countdown'), 'Room closes in 0:00');
+  assert.equal(polls, before, 'expiry checks retain their one-second cadence');
+  view.tick(1000);
+  assert.equal(polls, before + 1, 'the existing zero check still requests confirmation');
+  assert.equal(view.app.screen, 'waiting');
+});
+
+test('returning to a visible tab updates its text immediately while its confirming poll is pending', async (t) => {
+  let now = serverTime + 500;
+  const snapshot = waiting({ expiresAt: iso(now + 120000) });
+  const view = loadApp(
+    async (url) =>
+      String(url).endsWith('/api/rooms')
+        ? response({ code: snapshot.code, ...joined(snapshot) }, 200, now)
+        : new Promise<Response>(() => {}),
+    undefined,
+    () => now,
+  );
+  t.after(view.stop);
+  await view.act({ type: 'mode', mode: 'online' });
+  view.click('createRoom');
+  await until(() => view.app.connecting === undefined);
+  view.setHidden(true);
+  now += 18260;
+  view.setHidden(false);
+  assert.equal(view.text('countdown'), 'Room closes in 1:42');
+  assert.equal(view.app.screen, 'waiting');
 });
