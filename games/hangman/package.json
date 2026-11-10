@@ -1,0 +1,10 @@
+{
+  "name": "hangman",
+  "private": true,
+  "type": "module",
+  "description": "A gentle balloon word game in nine languages. No build or dependencies.",
+  "scripts": {
+    "dev": "python3 -m http.server 5183",
+    "test": "node --test tests/*.test.mjs"
+  }
+}
