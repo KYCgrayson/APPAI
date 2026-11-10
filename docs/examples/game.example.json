@@ -1,0 +1,60 @@
+{
+  "slug": "little-pattern-trail",
+  "template": "GAME",
+  "locale": "en",
+  "title": "Little Pattern Trail",
+  "tagline": "A free pattern puzzle for parents and kids while waiting for food.",
+  "metaDescription": "Play a short original pattern puzzle together at a restaurant, in a waiting room, or while waiting in line. Tap the next shape to finish each trail.",
+  "themeColor": "#A5B4FC",
+  "themeColorSecondary": "#67E8F9",
+  "fontFamily": "Space Grotesk",
+  "darkMode": true,
+  "isPublished": true,
+  "content": {
+    "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+    "sections": [
+      {
+        "type": "game",
+        "order": 0,
+        "data": {
+          "gameUrl": "https://little-pattern-trail.pages.dev/",
+          "description": "Spot the repeating shapes and tap the next one. Each short trail is designed for a parent and child sharing a phone while waiting for food.",
+          "genre": "Puzzle",
+          "orientation": "portrait",
+          "aspectRatio": "9:16",
+          "players": {
+            "min": 1,
+            "max": 2
+          },
+          "controls": [
+            "touch"
+          ],
+          "howToPlay": [
+            "Look at the repeating shapes in the trail.",
+            "Tap the shape that comes next.",
+            "Take turns explaining the pattern, or pause whenever you need."
+          ],
+          "ageRating": "all",
+          "cover": {
+            "url": "https://appai.info/spec/examples/placeholder-screen.svg",
+            "alt": "A trail of colorful shapes",
+            "width": 1200,
+            "height": 630
+          },
+          "listInGames": true,
+          "faq": [
+            {
+              "question": "What games can we play while waiting for food at a restaurant?",
+              "answer": "Little Pattern Trail offers short touch puzzles on one phone. Pause between trails when your food arrives."
+            },
+            {
+              "question": "Is this a free online game for kids to play while waiting in line?",
+              "answer": "Yes. Play in your browser with a parent; no download is needed."
+            }
+          ],
+          "backgroundColor": "#0F172A"
+        }
+      }
+    ]
+  }
+}

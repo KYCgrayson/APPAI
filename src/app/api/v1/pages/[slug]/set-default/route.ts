@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
 import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
+import { hostedPageApprovalUpdate } from "@/lib/hosted-page-approval";
 
 // POST /api/v1/pages/:slug/set-default?locale=ja
 // Sets the specified locale as the default for this slug.
@@ -54,6 +55,7 @@ export async function POST(
       data: {
         name: updated.title,
         tagline: updated.tagline || updated.title,
+        ...(updated.template === "GAME" ? hostedPageApprovalUpdate(updated.template, updated) : {}),
       },
     });
   }

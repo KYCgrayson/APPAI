@@ -34,8 +34,11 @@ test('device ordering keeps both stores with deterministic SSR defaults', () => 
 });
 test('pricing and FAQ accept custom headings while preserving old titles', () => {
   assert.ok(SECTION_DEFS.find(s => s.type === 'pricing')!.fields.some(field => field.name === 'subheading'));
-  for (const [component, items, fallback] of [[PricingSection, [{ name: 'Free', price: '0', features: [] }], 'Pricing'], [FaqSection, [{ question: 'Why?', answer: 'Because.' }], 'FAQ']] as const) {
-    const render = (extra = {}) => renderToStaticMarkup(createElement(component as any, { renderVersion: 2, themeColor: '#123456', data: { items, ...extra } }));
+  const cases = [
+    { fallback: 'Pricing', render: (extra = {}) => renderToStaticMarkup(createElement(PricingSection, { themeColor: '#123456', data: { items: [{ name: 'Free', price: '0', features: [] }], ...extra } })) },
+    { fallback: 'FAQ', render: (extra = {}) => renderToStaticMarkup(createElement(FaqSection, { themeColor: '#123456', data: { items: [{ question: 'Why?', answer: 'Because.' }], ...extra } })) },
+  ];
+  for (const { render, fallback } of cases) {
     assert.match(render(), new RegExp('>' + fallback + '</h2>'));
     const custom = render({ heading: 'Custom title', subheading: 'Custom subtitle' });
     assert.match(custom, /Custom title/); assert.match(custom, /Custom subtitle/);
@@ -52,8 +55,8 @@ test('iframe permissions preserve downloads and clipboard with fullscreen disabl
 });
 test('app preset example matches declared sections and warns on screenshots', () => {
   const preset = PRESET_DEFS.find(p => p.id === 'app-landing')!;
-  const body = preset.example as any;
-  assert.deepEqual(body.content.sections.map((s: any) => s.type), preset.sections);
+  const body = preset.example as { content: { sections: { type: string }[] } };
+  assert.deepEqual(body.content.sections.map(s => s.type), preset.sections);
   const preview = checkPagePreview(body);
   assert.ok(preview.warnings.some(w => w.message.startsWith('Replace demo screenshot')));
 });

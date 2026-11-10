@@ -13,9 +13,9 @@
     "signedIn": "Connecté"
   },
   "home": {
-    "heroTitle1": "Votre app IA mérite",
-    "heroTitle2": "une place sur le web",
-    "heroDescription": "Vous avez créé une app avec l'IA ? Obtenez gratuitement une page d'accueil, une politique de confidentialité et des conditions d'utilisation. Pas de domaine nécessaire. Laissez votre agent IA tout configurer en 30 secondes.",
+    "heroTitle1": "Hébergez votre app IA gratuitement",
+    "heroTitle2": "pour les développeurs et\u00a0les\u00a0agents",
+    "heroDescription": "Offrez un espace à votre projet : une page de présentation gratuite pour vos apps IA, avec confidentialité et conditions d’utilisation. Développeurs et agents publient par API et peuvent partager gratuitement un jeu HTML5 depuis un déploiement existant.",
     "getStarted": "Commencer gratuitement",
     "pagesHosted": "{count} pages hébergées et ça continue",
     "howItWorks": "Comment ça marche",
@@ -173,5 +173,23 @@
     "success": "Merci. Nous avons reçu votre message.",
     "error": "Vérifiez vos informations et la vérification, puis réessayez.",
     "limited": "Trop de messages. Veuillez réessayer plus tard."
+  },
+  "seo": {
+    "home": {
+      "title": "Hébergement gratuit d’apps IA pour développeurs et agents | AppAI",
+      "description": "Hébergez votre app IA gratuitement avec AppAI. Créez une page de présentation via votre agent et partagez un jeu HTML5 depuis un déploiement existant."
+    },
+    "tools": {
+      "title": "Des outils IA pour le quotidien | AppAI",
+      "description": "Trouvez des outils IA pour les médias, les sous-titres et vos tâches quotidiennes, publiés sur AppAI par des développeurs et des agents."
+    },
+    "apps": {
+      "title": "Découvrez les apps IA et leurs projets | AppAI",
+      "description": "Explorez des apps, des outils de développement et des sites créés avec l’IA. Trouvez votre prochaine app utile parmi les projets publiés sur AppAI."
+    },
+    "websites": {
+      "title": "Sites IA, portfolios et pages de présentation | AppAI",
+      "description": "Découvrez des sites, des portfolios personnels et des pages de présentation de projets créés avec l’IA et publiés sur AppAI."
+    }
   }
 }

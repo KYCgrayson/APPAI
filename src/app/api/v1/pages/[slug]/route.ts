@@ -1,3 +1,4 @@
+import { gameContentIssues, gameSlugReserved, gamesListingResponse, gamePageWarnings } from "@/lib/game-section";
 import { storeTypography, typographyWarnings } from "@/lib/typography";
 import { pageLogoUpdate, pageLogoWarnings } from "@/lib/page-logo";
 import { Prisma } from "@prisma/client";
@@ -111,7 +112,7 @@ export async function GET(
       where: { slug, organizationId: authResult.organizationId },
       orderBy: { locale: "asc" },
     });
-    return NextResponse.json(variants);
+    return NextResponse.json(variants.map(page => ({ ...page, ...gamesListingResponse(page.content) })));
   }
 
   const page = await db.hostedPage.findFirst({
@@ -122,7 +123,7 @@ export async function GET(
     return errorResponse(`Page "${slug}" (locale: ${locale}) not found in your organization`, 404);
   }
 
-  return NextResponse.json(page);
+  return NextResponse.json({ ...page, ...gamesListingResponse(page.content) });
 }
 
 // PUT /api/v1/pages/:slug - Full replace
@@ -159,6 +160,11 @@ export async function PUT(
     const putWarnings: SanitizeWarning[] = [];
     data.content = sanitizePageContent(data.content ?? page.content, undefined, putWarnings);
 
+    const effective = { ...page, ...data };
+    const gameIssues = gameContentIssues(effective.content);
+    if (gameIssues.length) throw new z.ZodError(gameIssues);
+    if (gameSlugReserved(effective)) return errorResponse("This game slug is reserved; choose a distinct slug.", 400);
+
     const hadPersonRoot = !!await db.hostedPage.findFirst({
       where: { slug, organizationId: authResult.organizationId, parentSlug: null, template: "PERSON" },
       select: { id: true },
@@ -171,7 +177,7 @@ export async function PUT(
 
     const approvalUpdate = hostedPageApprovalUpdate(updated.template, page, hadPersonRoot);
 
-    // Sync default-locale metadata; review the first PERSON root in any locale.
+    // Sync default-locale metadata and apply template approval rules.
     if (!page.parentSlug && ((page.isDefault && (data.title || data.tagline || category || data.content || data.headerLogo)) || approvalUpdate.isApproved === false)) {
       const app = await db.app.findFirst({ where: { hostedPageSlug: slug, organizationId: authResult.organizationId } });
       if (app) {
@@ -188,9 +194,9 @@ export async function PUT(
       }
     }
 
-    putWarnings.push(...pageLogoWarnings(updated), ...typographyWarnings(updated));
+    putWarnings.push(...pageLogoWarnings(updated), ...typographyWarnings(updated), ...gamePageWarnings(updated));
     revalidateSeoIndexes(updated.slug);
-    return NextResponse.json({ ...updated, ...(putWarnings.length > 0 ? { warnings: putWarnings } : {}) });
+    return NextResponse.json({ ...updated, ...gamesListingResponse(updated.content), ...(putWarnings.length > 0 ? { warnings: putWarnings } : {}) });
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return errorResponse("Validation failed", 400, error.issues);
@@ -250,6 +256,11 @@ export async function PATCH(
       patchWarnings,
     );
 
+    const effective = { ...page, ...updateData };
+    const gameIssues = gameContentIssues(effective.content);
+    if (gameIssues.length) throw new z.ZodError(gameIssues);
+    if (gameSlugReserved(effective)) return errorResponse("This game slug is reserved; choose a distinct slug.", 400);
+
     const hadPersonRoot = !!await db.hostedPage.findFirst({
       where: { slug, organizationId: authResult.organizationId, parentSlug: null, template: "PERSON" },
       select: { id: true },
@@ -262,7 +273,7 @@ export async function PATCH(
 
     const approvalUpdate = hostedPageApprovalUpdate(updated.template, page, hadPersonRoot);
 
-    // Sync default-locale metadata; review the first PERSON root in any locale.
+    // Sync default-locale metadata and apply template approval rules.
     if (!page.parentSlug && ((page.isDefault && (updateData.title || updateData.tagline || category || updateData.content || updateData.headerLogo)) || approvalUpdate.isApproved === false)) {
       const app = await db.app.findFirst({ where: { hostedPageSlug: slug, organizationId: authResult.organizationId } });
       if (app) {
@@ -279,9 +290,9 @@ export async function PATCH(
       }
     }
 
-    patchWarnings.push(...pageLogoWarnings(updated), ...typographyWarnings(updated));
+    patchWarnings.push(...pageLogoWarnings(updated), ...typographyWarnings(updated), ...gamePageWarnings(updated));
     revalidateSeoIndexes(updated.slug);
-    return NextResponse.json({ ...updated, ...(patchWarnings.length > 0 ? { warnings: patchWarnings } : {}) });
+    return NextResponse.json({ ...updated, ...gamesListingResponse(updated.content), ...(patchWarnings.length > 0 ? { warnings: patchWarnings } : {}) });
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return errorResponse("Validation failed", 400, error.issues);

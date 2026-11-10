@@ -246,7 +246,7 @@ The iframe receives `?locale=` with the current hosted-page locale, normally `en
 Set canonicalUrl only for an app's own primary marketing site (e.g. a custom domain homepage), never the *.vercel.app tool URL embedded in iframe-tool.
 
 ### Room-code multiplayer (rooms API)
-Turn-based games for 2–4 players, each on their own device. One device creates a room and shows a 6-character code, and the others type it in. Creating a room needs the creator to be signed in to AppAI (Google sign-in, same-site cookie, so the game page must be served from appai.info). Joining and playing need no login and no API key. The server keeps only **public** game state. Secrets such as a hidden answer or a hand of cards stay on the device that owns them and never go in `state` or `move`. The server does not check game rules, so every client must validate the moves it receives.
+Only approved origins can call this API from a browser; publishing a game page or requesting inclusion does not grant browser access. For the game publishing contract, see [Games](https://appai.info/spec/games). Turn-based games for 2–4 players, each on their own device. One device creates a room and shows a 6-character code, and the others type it in. Creating a room needs the creator to be signed in to AppAI (Google sign-in, same-site cookie, so the game page must be served from appai.info). Joining and playing need no login and no API key. The server keeps only **public** game state. Secrets such as a hidden answer or a hand of cards stay on the device that owns them and never go in `state` or `move`. The server does not check game rules, so every client must validate the moves it receives.
 
 | Call | Request | Response |
 |---|---|---|
@@ -261,7 +261,7 @@ Turn-based games for 2–4 players, each on their own device. One device creates
 | Rule | Value |
 |---|---|
 | Code | 6 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789`; input is case-insensitive, and spaces and `-` are ignored |
-| `game` | 1–40 characters of `a-z`, `0-9`, `-` |
+| `game` | 1–40 characters of `a-z`, `0-9`, `-`; must start and end with a letter or digit |
 | Players | `seats` 2–4 (default 2). Seats fill in join order (0, 1, 2, 3). The game starts when every seat is taken or when seat 0 calls Start. `turn` is a seat index, or `null` for no turn order (default 0); if Start removes the seat holding `turn`, it becomes 0 |
 | Size | `state` ≤ 8 KB of JSON (object or array), `move` ≤ 1 KB, nesting ≤ 64 levels, no NUL characters |
 | Moves | Compare-and-swap: `version` must equal the room's current version, and success increments it. Only the seat whose `turn` it is may move. Omit `nextTurn` to keep the turn; `end: true` finishes the room. Moves start once every seat has joined. `moves` holds the last 20, so read every entry with `version > since`, not just `lastMove` |
@@ -287,4 +287,4 @@ Errors are `{ "error": code, "message": text }`:
 
 Hidden-information pattern (e.g. guess-the-number): the guesser sends `move: { "guess": "1234" }, "nextTurn": 1`. The owner's device scores the guess locally and replies with `move: { "reply": "1A2B" }, "nextTurn": 0`. To prove the answer was fixed in advance, put `sha256(answer + salt)` in the initial `state` and reveal `salt` with `end: true`.
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)

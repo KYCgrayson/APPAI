@@ -121,7 +121,9 @@ export function buildNav(
   const homeLabel = HOME_LABELS[locale] || HOME_LABELS.en;
   return [
     { label: homeLabel, target: rootHref },
-    ...siblings.map((s) => ({ label: s.title, target: s.slug })),
+    // Resolve child slugs against the current URL locale, including Chinese
+    // conversion routes whose requested locale differs from the stored row.
+    ...siblings.map(s => ({ label: s.title, target: s.slug })),
   ];
 }
 

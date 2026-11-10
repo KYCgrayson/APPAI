@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json().catch(() => ({}));
-    const name = (body as any).name || "Default API Key";
+    const name = body.name || "Default API Key";
 
     const { key, hash, prefix } = generateApiKey();
 

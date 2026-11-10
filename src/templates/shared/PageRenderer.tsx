@@ -1,3 +1,4 @@
+import { GameSection } from "../sections/GameSection";
 import { typographyFactors, typographyCss, hasTypography, ROLES, typographySettings } from "@/lib/typography";
 import {
   ProfileHeaderSection,
@@ -32,7 +33,7 @@ import {
 } from "./section-components";
 import { Suspense } from "react";
 import { SectionErrorBoundary } from "./SectionErrorBoundary";
-import { normalizeHostedContent } from "@/lib/hosted-content";
+import { normalizeHostedContent, orderedHostedSections } from "@/lib/hosted-content";
 import { usesEditorialScreenshots } from "@/lib/screenshot-layout";
 import { LoginGate } from "./LoginGate";
 import { issueIframeToolSession } from "@/lib/iframe-tool-session";
@@ -116,6 +117,7 @@ function iframeToolIdentity(
   sectionOrder: number,
   viewer: PageViewer,
 ) {
+  if (section.type !== "iframe-tool") return null;
   const src = section.data?.src;
   if (!page.id || typeof src !== "string" || !sectionWantsIdentity(section.data)) return null;
   const grant = issueIframeToolSession({
@@ -255,6 +257,11 @@ function renderSection(
       );
       break;
     }
+    case "game": {
+      const sectionOrder = typeof section.order === "number" ? section.order : index;
+      content = <GameSection title={page.title} data={data as never} themeColor={themeColor} darkMode={darkMode} locale={page.locale ?? "en"} typographyActive={props.typographyActive} identity={iframeToolIdentity(page, section, sectionOrder, viewer)} />;
+      break;
+    }
     case "form":
       content = (
         <FormSection
@@ -343,13 +350,10 @@ export function PageRenderer({
   const darkMode = page.darkMode ?? false;
   const fontFamily = page.fontFamily || undefined;
   const pageContent = asPageContent(page.content);
-  const sections = pageContent.sections || [];
-  const sortedSections = [...sections].sort(
-    (a, b) => (a.order || 0) - (b.order || 0)
-  );
+  const sortedSections: PageSection[] = orderedHostedSections(page.content);
 
   // Legacy content uses the same guarded path as explicit sections.
-  if (sortedSections.length === 0) {
+  if (sortedSections.length === 0 && page.template !== "GAME") {
     sortedSections.push({ type: "hero", data: { headline: page.title, subheadline: page.tagline || "", logo: pageContent.logo, backgroundImage: page.heroImage || undefined } });
     if (Array.isArray(pageContent.features)) sortedSections.push({ type: "features", data: { items: pageContent.features } });
     if (pageContent.appStoreUrl || pageContent.playStoreUrl) sortedSections.push({ type: "download", data: { appStoreUrl: pageContent.appStoreUrl, playStoreUrl: pageContent.playStoreUrl } });
@@ -374,6 +378,7 @@ export function PageRenderer({
     <div style={wrapperStyle} data-typography={activeTypography ? "active" : undefined}>
       {activeTypography && <style>{typographyCss(settings)}</style>}
       {fontUrl && <link rel="stylesheet" href={fontUrl} />}
+      {page.template === "GAME" && <header className="mx-auto max-w-5xl px-4 sm:px-6 pt-10 break-words"><h1 className="text-3xl sm:text-5xl font-bold mb-4" data-typography-role={activeTypography ? "display" : undefined}>{page.title}</h1>{page.tagline && <p className="text-lg">{page.tagline}</p>}</header>}
       {sortedSections.map((section, index) => {
         // Gating primitive: a section may declare data.access="login" or
         // "admin". Either way the section keeps its place on the page and a

@@ -20,7 +20,7 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const { appId, action } = patchSchema.parse(body);
 
-    const updates: Record<string, any> = {
+    const updates = {
       approve: { isApproved: true },
       unapprove: { isApproved: false, isFeatured: false },
       feature: { isFeatured: true, isApproved: true },

@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
-export const specTopics = ['api', 'style', 'theme', 'typography', 'pages', 'sections', 'i18n', 'tools', 'apps'];
+export const specTopics = ['api', 'style', 'theme', 'typography', 'pages', 'sections', 'i18n', 'tools', 'apps', 'games'];
 
 function headingSlug(heading) {
   return heading.toLowerCase().replace(/[^\p{L}\p{N}_\s-]/gu, '').replace(/ /g, '-');
@@ -13,6 +13,7 @@ export function buildAgentInstructions() {
   }));
   // Only headings from the pre-split spec belong in the legacy map.
   const legacyHeadings = new Set(JSON.parse(readFileSync(new URL('../docs/spec/legacy-headings.json', import.meta.url), 'utf8')));
+  const headingAliases = { "30 Section Types": "29 Section Types" };
   // Later occurrences replace compatibility stubs (Icons / Section Reference).
   const mapping = new Map();
   for (const { name, text } of docs) {
@@ -27,8 +28,9 @@ export function buildAgentInstructions() {
       const slug = headingSlug(heading);
       const count = slugs.get(slug) ?? 0;
       slugs.set(slug, count + 1);
-      if (level.length === 1 || !legacyHeadings.has(heading)) continue;
-      mapping.set(heading, `https://appai.info/spec${name === 'overview' ? '' : '/' + name}#${slug}${count ? '-' + count : ''}`);
+      const legacyHeading = headingAliases[heading] || heading;
+      if (level.length === 1 || !legacyHeadings.has(legacyHeading)) continue;
+      mapping.set(legacyHeading, `https://appai.info/spec${name === 'overview' ? '' : '/' + name}#${slug}${count ? '-' + count : ''}`);
     }
   }
   const table = '## Legacy anchors\n\n| Legacy heading | New URL |\n|---|---|\n' +

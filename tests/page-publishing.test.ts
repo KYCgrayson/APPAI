@@ -50,7 +50,7 @@ test('shared dry-run validates, sanitizes, and warns without mutating input', ()
   assert.deepEqual(checkPagePreview({ slug: 'demo', title: 'Demo', parentSlug: 'root', themeColor: '#047857', fontFamily: 'Lato' }).warnings, []);
 });
 test('each preset is a copyable, clean full POST body matching its served file', () => {
-  assert.equal(PRESET_DEFS.length, 10);
+  assert.equal(PRESET_DEFS.length, 11);
   for (const preset of PRESET_DEFS) {
     const file = JSON.parse(readFileSync(new URL(`../docs/examples/${preset.exampleFile}`, import.meta.url), 'utf8'));
     assert.deepEqual(file, preset.example);
@@ -58,13 +58,13 @@ test('each preset is a copyable, clean full POST body matching its served file',
     const data = createPageSchema.parse(file);
     assert.ok(data.isPublished);
     if (['profile', 'link-in-bio', 'portfolio', 'iframe-tool'].includes(preset.id)) assert.ok(!data.content.sections.some((section: { type: string }) => section.type === 'cta'));
-    assert.ok(data.content.sections.length >= 2 && data.content.sections.length <= (preset.id === "app-landing" ? 8 : 6));
+    assert.ok(data.content.sections.length >= (preset.id === "game" ? 1 : 2) && data.content.sections.length <= (preset.id === "app-landing" ? 8 : 6));
     for (const section of data.content.sections) assert.ok(SECTION_DEFS.some(def => def.type === section.type));
     assert.deepEqual(pageLogoWarnings(data), []);
     const warnings: Parameters<typeof sanitizeContent>[2] = [];
     sanitizeContent(data.content, undefined, warnings);
     assert.deepEqual(warnings, []);
-    assert.deepEqual(checkPagePreview(file).warnings.filter(w => !w.message.startsWith('Replace demo screenshot')).map(w => w.message), Array.from({ length: JSON.stringify(file).split('placeholder-logo.png').length - 1 }, () => 'Replace demo logo: supply the user’s logo, or create a square 512×512 PNG with its own background; upload local files with POST /api/v1/upload and replace this value with the returned url before publishing.').concat(...(preset.id === 'iframe-tool' ? ['Replace demo value: replace with your deployed tool URL.'] : [])), preset.id);
+    assert.deepEqual(checkPagePreview(file).warnings.filter(w => !/^Replace demo (screenshot|cover):/.test(w.message)).map(w => w.message), Array.from({ length: JSON.stringify(file).split('placeholder-logo.png').length - 1 }, () => 'Replace demo logo: supply the user’s logo, or create a square 512×512 PNG with its own background; upload local files with POST /api/v1/upload and replace this value with the returned url before publishing.').concat(...(preset.id === 'iframe-tool' ? ['Replace demo value: replace with your deployed tool URL.'] : [])), preset.id);
   }
 });
 test('bundled logo is a small 512 square PNG; alias delegates before publishing', () => {
@@ -115,7 +115,9 @@ test('features and contact accept custom heading and subheading', () => {
     { type: 'features', data: { heading: 'Services', subheading: 'How we help', items: [{ title: 'Design', description: 'Accessible websites.' }] } },
     { type: 'contact', data: { heading: 'Visit us', subheading: 'Say hello', email: 'hello@example.com' } },
   ] } });
-  assert.deepEqual(result.warnings, []);
+  assert.equal(result.valid, true);
+  assert.equal(result.warnings.length, 1);
+  assert.match(result.warnings[0].message, /renders 0 H1/);
 });
 
 test('examples match named style kits and explicitly select English', () => {

@@ -94,5 +94,5 @@ test('section PATCH also opts the page into render version 2', async () => {
   state.page = { id: 'section-page', updatedAt: new Date(), content: { renderVersion: 999, sections: [{ type: 'pricing', order: 0, data: { items: [] } }] } };
   const result = await patchSection(req('PATCH', { data: { heading: 'Updated heading' } }), { params: Promise.resolve({ slug: 'typography-example', order: '0' }) });
   assert.equal(result.status, 200);
-  assert.equal((state.page.content as any).renderVersion, 2);
+  assert.equal((state.page.content as { renderVersion: number }).renderVersion, 2);
 });

@@ -11,9 +11,13 @@ const EST_COST_USD: Record<string, number> = {
   "job.render": 0,
 };
 
+function usagePeriodStart(hours: number) {
+  return new Date(Date.now() - hours * 3600 * 1000);
+}
+
 export default async function UsagePage() {
-  const since7d = new Date(Date.now() - 7 * 24 * 3600 * 1000);
-  const since24h = new Date(Date.now() - 24 * 3600 * 1000);
+  const since7d = usagePeriodStart(7 * 24);
+  const since24h = usagePeriodStart(24);
 
   const [rows, users, total7d, total24h] = await Promise.all([
     db.usageEvent.groupBy({

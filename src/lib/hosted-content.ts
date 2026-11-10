@@ -18,6 +18,13 @@ export function normalizeHostedContent(value: unknown): Record<string, unknown> 
   }) : [];
   return { ...content, sections };
 }
+
+/** Render order and fallback section numbers shared by rendering and session renewal. */
+export function orderedHostedSections(value: unknown): (HostedSection & { order: number })[] {
+  return [...normalizeHostedContent(value).sections]
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map((section, index) => ({ ...section, order: section.order ?? index }));
+}
 /** Repair only known crash-prone lists and numeric text; never validate publication rules here. */
 function normalizeFields(data: Record<string, unknown>, fields: SectionFieldDef[]): Record<string, unknown> {
   let result = data;

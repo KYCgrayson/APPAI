@@ -30,3 +30,17 @@ test("repair lists and numeric text without rejecting harmless field types", () 
   assert.deepEqual(section.data.heading, {});
   assert.equal(contentString({}), undefined);
 });
+
+
+test("rendering and session lookup share normalized sorted section numbers", async () => {
+  const { orderedHostedSections } = await import("../src/lib/hosted-content.ts");
+  const result = orderedHostedSections({ sections: [
+    null, "broken", { type: "about", order: 10, data: null },
+    { type: "iframe-tool", order: "2", data: { src: "https://tool.pages.dev" } },
+    { type: "game", data: { howToPlay: [123] } },
+    { type: "about", order: -1, data: {} },
+  ] });
+  assert.deepEqual(result.map(s => [s.type, s.order]), [["about", -1], ["game", 1], ["iframe-tool", 2], ["about", 10]]);
+  assert.deepEqual(result[1].data.howToPlay, ["123"]);
+  assert.deepEqual(result[3].data, {});
+});

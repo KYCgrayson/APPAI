@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
 import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
+import { hostedPageApprovalUpdate } from "@/lib/hosted-page-approval";
 
 export async function POST(
   request: NextRequest,
@@ -25,6 +26,13 @@ export async function POST(
     where: { id: page.id },
     data: { isPublished: true },
   });
+
+  if (!page.parentSlug && page.template === "GAME") {
+    await db.app.updateMany({
+      where: { hostedPageSlug: slug, organizationId: authResult.organizationId },
+      data: hostedPageApprovalUpdate(page.template, page),
+    });
+  }
 
   revalidateSeoIndexes(updated.slug);
   return NextResponse.json(updated);

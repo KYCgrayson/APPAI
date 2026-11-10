@@ -124,7 +124,16 @@ function assert(value, message) { if (!value) throw new Error(message); }
     }
     const response = await context.request.get(`${base}/sitemap.xml`);
     assert(response.ok(), 'Sitemap unavailable');
-    const xml = await response.text();
+    const index = await response.text();
+    const shardUrls = [...index.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => new URL(match[1]));
+    assert(shardUrls.length, 'Sitemap index has no shards');
+    const shards = [];
+    for (const url of shardUrls) {
+      const shard = await context.request.get(`${base}${url.pathname}`);
+      assert(shard.ok(), `Sitemap shard unavailable: ${url.pathname}`);
+      shards.push(await shard.text());
+    }
+    const xml = shards.join('\n');
     assert(xml.includes('/p/qa-person'), 'Published profile absent from sitemap');
     assert(!xml.includes('/p/no-such-person-qa'), 'Unknown profile present in sitemap');
   });

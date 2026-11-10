@@ -205,9 +205,29 @@ a strict matching appId, clears the app's local HttpOnly runtime-session cookie,
 then routes to AppAI /logout?callbackUrl=/ for platform signout. Do not put any
 of these values in a public environment variable.
 
+## Games
+
+Read ${baseUrl}/spec/games. Deploy original game files to your own GitHub Pages,
+Cloudflare Pages, Vercel or Netlify host; AppAI supplies a GAME page with a game
+section, SEO shell, fullscreen play, how-to-play and FAQ. A game section works on
+any template. Use /p/{slug} today; future /games/{slug} URLs will redirect from
+/p/{slug}. listInGames is an application only, gamesListing: "requested" means
+pending, and publishing does not add a game to ${baseUrl}/games.
+Only approved origins can call the room-code API from a browser: POST /api/rooms,
+POST /api/rooms/{code}/join, GET /api/rooms/{code}?since={version},
+POST /api/rooms/{code}/start, POST /api/rooms/{code}/moves; 2–4 players,
+state <= 8 KB, one move <= 1 KB. Room creation currently needs AppAI sign-in
+and a same-origin cookie; external games wait for supported access. Games
+currently receive no AppAI identity or session, even with identity: true. Identity
+will become available only after approval under the spec published at that time.
+Supply privacyPolicy and termsOfService per root locale; AppAI does not
+automatically provide game-specific policies. Cover images load from their
+image host, which can see visitors’ IP addresses.
+See /spec/games for complete fields, messages, rules and a copyable JSON body.
+
 ## What you can build
 
-- 29 section types: profile-header, project-cards, entries, hero, features, pricing, faq, download, testimonials, gallery, team, video, screenshots, stats, contact, cta, links, about, schedule, sponsors, action, form, media-downloader, video-subtitle, tool, pdf-viewer, embed (TikTok/Loom/X/YouTube/Vimeo/Spotify/CodePen/Figma), simple-order
+- 30 section types: profile-header, project-cards, entries, hero, features, pricing, faq, download, testimonials, gallery, team, video, screenshots, stats, contact, cta, links, about, schedule, sponsors, action, form, media-downloader, video-subtitle, tool, pdf-viewer, embed (TikTok/Loom/X/YouTube/Vimeo/Spotify/CodePen/Figma), simple-order, iframe-tool, game
 - Multi-page sites with automatic header navigation (root page + child pages like /p/my-app/my-app-faq, /p/my-app/my-app-contact, /p/my-app/my-app-delete-account; prefix child slugs with the root slug because (slug, locale) is globally unique; privacy/terms use privacyPolicy/termsOfService fields)
 - Contact and account-deletion forms that work on any device
 - Markdown-formatted long text (bold, italic, links, lists)
@@ -215,7 +235,7 @@ of these values in a public environment variable.
 - Multi-language pages with locale variants
 - Section-level anchor IDs for in-page navigation
 - Preview/dry-run API to validate content before publishing
-- 10 presets with full example POST bodies and 7 named style kits: app-landing, saas-landing, profile, link-in-bio, portfolio, event, company-service, product, hiring, iframe-tool
+- 11 presets with full example POST bodies and 7 named style kits: app-landing, saas-landing, profile, link-in-bio, portfolio, event, company-service, product, hiring, iframe-tool, game
 
 ## API Base URL
 
@@ -225,7 +245,7 @@ ${baseUrl} (always use this, never use www.appai.info)
 
 - POST /api/v1/auth/device — Start authentication
 - POST /api/v1/auth/token — Poll for API key
-- GET /api/v1/sections — All 29 section schemas (add ?format=jsonschema for JSON Schema)
+- GET /api/v1/sections — All 30 section schemas (add ?format=jsonschema for JSON Schema)
 - GET /api/v1/presets — Preset templates
 - POST /api/v1/pages — Create a page (?upsert=true to overwrite)
 - PATCH /api/v1/pages/:slug — Partial update with deep section merge
@@ -262,6 +282,7 @@ ${baseUrl}/llms-full.txt — the complete specification when a single file is ne
 - Multi-language & multi-page: ${baseUrl}/spec/i18n — languages, child pages and navigation
 - Tools: ${baseUrl}/spec/tools — Wrapped tool, Connected tool, identity and access
 - Universal App: ${baseUrl}/spec/apps — manifests, releases, review and runtime
+- Games: ${baseUrl}/spec/games — externally hosted games, /games applications, GAME template and rooms API
 ${hostedPagesSection}
 ## Links
 

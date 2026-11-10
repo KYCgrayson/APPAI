@@ -1,3 +1,4 @@
+import { orderedHostedSections } from "@/lib/hosted-content";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -29,8 +30,6 @@ const issueSchema = z.object({
 
 const noStore = { "Cache-Control": "no-store" };
 
-type Section = { type?: string; order?: number; data?: Record<string, unknown> };
-
 export async function POST(request: NextRequest) {
   const parsed = issueSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
@@ -47,8 +46,7 @@ export async function POST(request: NextRequest) {
   });
   if (!page) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404, headers: noStore });
 
-  const sections = ((page.content as { sections?: Section[] } | null)?.sections) ?? [];
-  const section = sections.find((s) => s.order === parsed.data.section);
+  const section = orderedHostedSections(page.content).find(s => s.order === parsed.data.section);
   if (!section || section.type !== "iframe-tool" || !sectionWantsIdentity(section.data)) {
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404, headers: noStore });
   }
@@ -59,7 +57,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403, headers: noStore });
   }
 
-  const src = typeof section.data?.src === "string" ? section.data.src : null;
+  const source = section.data?.src;
+  const src = typeof source === "string" ? source : null;
   const grant = src
     ? issueIframeToolSession({ src, slug: page.slug, section: parsed.data.section, userId })
     : null;

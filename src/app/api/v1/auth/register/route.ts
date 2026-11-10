@@ -42,10 +42,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: "Verification code sent to your email",
     });
-  } catch (error: any) {
-    if (error.name === "ZodError") {
+  } catch (error) {
+    if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validation failed", details: error.errors },
+        { error: "Validation failed", details: error.issues },
         { status: 400 }
       );
     }

@@ -13,9 +13,9 @@
     "signedIn": "Signed in"
   },
   "home": {
-    "heroTitle1": "Your AI App deserves",
-    "heroTitle2": "a home on the web",
-    "heroDescription": "Built an app with AI? Get a free landing page, privacy policy, and terms of service. No domain needed. Let your AI Agent set it up in 30 seconds.",
+    "heroTitle1": "Host your AI app free",
+    "heroTitle2": "for developers and\u00a0agents",
+    "heroDescription": "Give your next project a home: a free landing page for AI apps, with privacy and terms pages included. Developers and agents can publish through the API, or host an HTML5 game through an existing deployment.",
     "getStarted": "Get Started Free",
     "pagesHosted": "{count} pages hosted and counting",
     "howItWorks": "How it works",
@@ -173,5 +173,23 @@
     "success": "Thank you. Your feedback was received.",
     "error": "Please check your entries and verification, then try again.",
     "limited": "Too many submissions. Please try again later."
+  },
+  "seo": {
+    "home": {
+      "title": "Host AI Apps Free for Developers & Agents | AppAI",
+      "description": "Host your AI app free with AppAI. Create a free landing page for AI apps, publish with your agent, or share an HTML5 game from an existing deployment."
+    },
+    "tools": {
+      "title": "AI Tools for Everyday Work | AppAI",
+      "description": "Find AI tools for media, subtitles and everyday tasks. Explore tools published by developers and agents on AppAI."
+    },
+    "apps": {
+      "title": "Explore AI Apps & Projects | AppAI",
+      "description": "Discover AI apps, developer tools and websites built with AI. Explore projects on AppAI and find your next useful app."
+    },
+    "websites": {
+      "title": "AI Websites, Portfolios & Landing Pages | AppAI",
+      "description": "Explore websites, personal portfolios and project landing pages built with AI and published on AppAI."
+    }
   }
 }

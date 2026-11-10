@@ -48,9 +48,9 @@ export async function POST(request: NextRequest) {
       size: file.size,
       type: file.type,
     }, { status: 201 });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Upload error:", error);
-    const message = error?.message || "Unknown error";
+    const message = error instanceof Error ? error.message : "Unknown error";
     // Check for common Vercel Blob issues
     if (message.includes("BLOB_READ_WRITE_TOKEN") || message.includes("BlobAccessError")) {
       return NextResponse.json(

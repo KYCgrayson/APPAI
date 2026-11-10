@@ -32,7 +32,7 @@ This platform gives you full control over visual design. Every parameter below i
 
 | Parameter | Description |
 |-----------|-------------|
-| `template` | `APP_LANDING`, `COMPANY_PROFILE`, `PRODUCT_SHOWCASE`, `PORTFOLIO`, `LINK_IN_BIO`, `PERSON` (classification only; sections control rendering). |
+| `template` | `APP_LANDING`, `COMPANY_PROFILE`, `PRODUCT_SHOWCASE`, `PORTFOLIO`, `LINK_IN_BIO`, `PERSON`, `GAME` (`GAME` adds the title H1; sections control the remaining content). |
 | `themeColor` | Hex color (e.g. `#6366F1`) — drives CTA buttons, accents, links. Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a kit in [Theme](https://appai.info/spec/theme). |
 | `themeColorSecondary` | Hex color — optional accent for secondary buttons. Auto-generated from themeColor if omitted. |
 | `darkMode` | Boolean — renders entire page with dark backgrounds and light text. All sections adapt automatically. |
@@ -48,7 +48,9 @@ For approved, published root pages, the first matching rule wins: Universal App 
 
 Force a hosted page's kind on its corresponding App record: `PUT /api/v1/apps/{id}` with `{"tags":["appai:kind:website"]}` (top-level `tags` array; preserve any other tags). Find the record by `hostedPageSlug` via `GET /api/v1/apps`. Tags also go at the top level of `POST /api/v1/apps`; the page create/publish payload does not accept them. Universal Apps always remain in Apps.
 
-### 29 Section Types
+<a id="29-section-types"></a>
+
+### 30 Section Types
 
 Every section supports `id` (anchor for `#links`). Use kit backgroundColors when provided; otherwise leave `data.backgroundColor` unset. `cta` ignores backgroundColor and always uses themeColor.
 
@@ -83,6 +85,7 @@ Every section supports `id` (anchor for `#links`). Use kit backgroundColors when
 | [`embed`](https://appai.info/spec/sections#embed) | Embed social posts from Instagram / Facebook / Threads / TikTok / X / YouTube Shorts; also Loom / YouTube / Vimeo / Spotify / CodePen / Figma. Auto-detects provider from URL. |
 | [`iframe-tool`](https://appai.info/spec/tools#iframe-tool) | **Host a tool the user vibe-coded.** Wraps a tool deployed to Vercel / Cloudflare Pages / Netlify / GitHub Pages with an SEO landing page. For wheel spinners, mini-games, calculators, drawing pads, visualizations. Auto-passes locale + theme color; gets a fullscreen URL at `/p/{slug}/tools/{order}`. **Use this — not `embed` — when the URL is a tool the user built, not a media post.** |
 | [`simple-order`](https://appai.info/spec/tools#simple-order) | Native small-shop order request section. Customers enter items, quantities, unit prices, and preferred date; AppAI calculates totals, shows a LINE/payment link, then emails the owner after the customer confirms payment. Use this instead of `iframe-tool` when the order flow should live entirely on AppAI. |
+| [`game`](https://appai.info/spec/games#game) | Original browser game hosted by its developer; instructions, fullscreen play and FAQ |
 
 ### Auto-Generated Features
 
@@ -147,7 +150,7 @@ Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/pub
 
 ### Rules
 
-- **NEVER** tell the user the platform can't do something. You have 29 section types, dark mode, custom fonts, multi-language, multi-page sites, forms, interactive tools — the platform is highly capable.
+- **NEVER** tell the user the platform can't do something. You have 30 section types, dark mode, custom fonts, multi-language, multi-page sites, forms, interactive tools — the platform is highly capable.
 - **NEVER** present a list of templates and ask the user to pick one. Infer the right sections from context.
 - **NEVER** ask for 10 pieces of information before building. Build first, iterate after.
 - Headlines under 60 characters, subheadlines under 140 characters (mobile readability)
@@ -172,7 +175,7 @@ curl -X POST https://appai.info/api/v1/pages \
 | Field | Required | Description |
 |-------|----------|-------------|
 | `slug` | Yes | 2–100 characters; lowercase letters, digits and hyphens (`^[a-z0-9-]+$`) |
-| `template` | No | Top-level classification only; default `APP_LANDING`; also `PERSON`, `PORTFOLIO`, `LINK_IN_BIO`, `COMPANY_PROFILE`, `PRODUCT_SHOWCASE` |
+| `template` | No | Template; default `APP_LANDING`; also `PERSON`, `PORTFOLIO`, `LINK_IN_BIO`, `COMPANY_PROFILE`, `PRODUCT_SHOWCASE`, `GAME` (adds a title H1) |
 | `locale` | No | BCP 47 code (default: `en`). Same slug + different locale = language variant |
 | `title` | Yes | Page title |
 | `tagline` | No | Short description |
@@ -237,4 +240,4 @@ Error responses: `{ "error": "message", "hint": "suggested fix" }`. Status codes
 
 Prefix every child slug with its root slug because `(slug, locale)` is unique across the whole platform; an unprefixed `contact` can collide with another user’s page.
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)

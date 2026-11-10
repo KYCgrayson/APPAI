@@ -1,8 +1,11 @@
+import { gameContentIssues, gameSlugReserved, gamesListingResponse, gamePageWarnings } from "@/lib/game-section";
+import type { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
 import { sanitizeContent, sanitizePageContent, type SanitizeWarning } from "@/lib/sanitize";
 import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
+import { hostedPageApprovalUpdate } from "@/lib/hosted-page-approval";
 
 /**
  * PATCH /api/v1/pages/:slug/sections/:order
@@ -102,14 +105,28 @@ export async function PATCH(
   // Replace section data in-place
   sections[idx] = { ...sections[idx], data: sanitized };
 
+  const savedContent = sanitizePageContent({ ...content, sections });
+  const gameIssues = gameContentIssues(savedContent);
+  if (gameIssues.length) return NextResponse.json({ error: "Validation failed", details: gameIssues }, { status: 400 });
+  if (gameSlugReserved({ ...page, content: savedContent })) return NextResponse.json({ error: "This game slug is reserved; choose a distinct slug." }, { status: 400 });
+  warnings.push(...gamePageWarnings({ ...page, content: savedContent }));
+
   const updated = await db.hostedPage.update({
     where: { id: page.id },
-    data: { content: sanitizePageContent({ ...content, sections }) as any },
+    data: { content: savedContent as Prisma.InputJsonValue },
   });
+
+  if (!page.parentSlug && page.template === "GAME") {
+    await db.app.updateMany({
+      where: { hostedPageSlug: slug, organizationId: authResult.organizationId },
+      data: hostedPageApprovalUpdate(page.template, page),
+    });
+  }
 
   revalidateSeoIndexes(updated.slug);
   return NextResponse.json({
     section: sections[idx],
+    ...gamesListingResponse(updated.content),
     etag: `"${updated.updatedAt.toISOString()}"`,
     ...(warnings.length > 0 ? { warnings } : {}),
   });

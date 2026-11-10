@@ -1,3 +1,9 @@
+import { platformMetadata } from "@/lib/platform-metadata";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  return platformMetadata(params, "home");
+}
+
 export const dynamic = "force-dynamic";
 
 import { serializeJsonLd } from "@/lib/json-ld";
@@ -56,10 +62,11 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-b from-cyan-950/40 via-gray-950 to-gray-950" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-cyan-500/10 rounded-full blur-3xl" />
         <div className="relative z-10 max-w-3xl mx-auto">
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight text-white">
-            {t("heroTitle1")}
+          <h1 className={`text-4xl sm:text-5xl md:text-6xl font-bold mb-6 tracking-tight text-white text-balance ${["ja", "ko", "zh-CN", "zh-TW"].includes(locale) ? "[word-break:keep-all]" : "[overflow-wrap:anywhere]"}`}>
+            {t.rich("heroTitle1", { wbr: () => <wbr /> })}
+            {" "}
             <br />
-            <span className="text-cyan-400">{t("heroTitle2")}</span>
+            <span className="text-cyan-400">{t.rich("heroTitle2", { wbr: () => <wbr /> })}</span>
           </h1>
           <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
             {t("heroDescription")}
