@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 // Paths that are regenerated from the HostedPage table. Whenever an agent
 // creates, updates, publishes, unpublishes, or deletes a page, every one of
@@ -7,6 +7,11 @@ import { revalidatePath } from "next/cache";
 const SEO_PATHS = ["/sitemap.xml", "/llms.txt", "/llms-full.txt"];
 
 export function revalidateSeoIndexes(slug?: string) {
+  try {
+    revalidateTag("seo-sitemap", "max");
+  } catch {
+    // Cache refresh is best-effort.
+  }
   for (const path of SEO_PATHS) {
     try {
       revalidatePath(path);

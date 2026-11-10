@@ -1,4 +1,20 @@
 import { COMMON_SECTION_FIELDS, getSectionDef } from "./template-registry.ts";
+import { normalizeHostedContent } from "./hosted-content.ts";
+
+/** Match the public renderer: empty sections get a legacy hero; prose demotes H1s. */
+export function pageHeadingWarnings(content: unknown) {
+  const { sections } = normalizeHostedContent(content);
+  const count = sections.length === 0 ? 1 : sections.filter(section => {
+    if (section.data.access === "login" || section.data.access === "admin") return false;
+    return section.type === "hero" || (section.type === "profile-header"
+      && typeof section.data.name === "string" && Boolean(section.data.name.trim()));
+  }).length;
+  return count === 1 ? [] : [{
+    path: "content.sections",
+    message: `The public page renders ${count} H1 headings; aim for exactly one. ${count === 0 ? "Add a hero or a named profile-header section." : "Keep one hero or named profile-header and use section headings for the rest."}`,
+  }];
+}
+
 /** Informational only: publisher extensions must never block publishing. */
 export function sectionFieldWarnings(sections: { type: string; data?: Record<string, unknown> }[]) {
   return sections.flatMap((section, index) => {

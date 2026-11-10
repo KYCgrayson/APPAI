@@ -21,7 +21,7 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const { pageId, action } = patchSchema.parse(body);
 
-    const updates: Record<string, any> = {
+    const updates = {
       publish: { isPublished: true },
       unpublish: { isPublished: false },
     };

@@ -1,6 +1,9 @@
 import { normalizeHostedContent, contentString } from "@/lib/hosted-content";
 import { serializeJsonLd } from "@/lib/json-ld";
 import { resolvePage, resolveChildPage } from "@/lib/hosted-page-resolver";
+import { hostedPageUrl, hostedAlternates, hasExternalCanonical } from "@/lib/hosted-page-urls";
+import { hostedLegalCopy } from "@/lib/hosted-legal-copy";
+import { PLATFORM_ORIGIN } from "@/lib/platform-identity";
 import { buildJsonLd, hostedOgImage } from "@/lib/hosted-page-seo";
 import { notFound, redirect } from "next/navigation";
 import { headers } from "next/headers";
@@ -60,11 +63,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { segments } = await params;
   const parsed = parsePageSegments(segments);
   if (!parsed) return {};
-  if (parsed.subpage) {
-    const page = await resolvePage(parsed.slug, parsed.locale);
-    // Legal subpages contain derived script text too; keep them out of the index.
-    return page?.autoConverted ? { robots: { index: false, follow: true } } : {};
-  }
 
   // Tool fullscreen: minimal metadata, noindex (the parent page is the canonical SEO target).
   if (parsed.toolOrder !== null) {
@@ -83,11 +81,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  const { slug, locale: explicitLocale, childSlug } = parsed;
+  const { slug, locale: explicitLocale, childSlug, subpage } = parsed;
   const rootPage = await resolvePage(slug, explicitLocale);
   if (!rootPage) return {};
-  // For child pages, return metadata for the child while still using the
-  // root's locale variants for hreflang alternates.
   const page = childSlug
     ? await resolveChildPage(slug, childSlug, explicitLocale, rootPage.organizationId)
     : rootPage;
@@ -96,45 +92,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
   const { headerLogo: logoUrl } = extractLogos(page);
 
-  // Build hreflang alternates against the correct variant set:
-  //   - root page: all root variants with this slug
-  //   - child page: all child variants with (parentSlug=slug, slug=childSlug)
-  //     in the same organization
-  const variants = childSlug
-    ? await db.hostedPage.findMany({
-        where: {
-          organizationId: rootPage.organizationId,
-          parentSlug: slug,
-          slug: childSlug,
-          isPublished: true,
-        },
-        select: { locale: true, isDefault: true },
-      })
-    : await db.hostedPage.findMany({
-        where: { slug, isPublished: true, parentSlug: null },
-        select: { locale: true, isDefault: true },
-      });
-
-  const languages: Record<string, string> = {};
-  for (const v of variants) {
-    languages[v.locale] = childSlug
-      ? `${baseUrl}${buildPagePath(slug, v.locale, null, v.isDefault)}/${childSlug}`
-      : `${baseUrl}${buildPagePath(slug, v.locale, null, v.isDefault)}`;
-  }
-  const defaultVariant = variants.find((v) => v.isDefault) || variants[0];
-  if (defaultVariant) {
-    languages["x-default"] = childSlug
-      ? `${baseUrl}${buildPagePath(slug, defaultVariant.locale, null, true)}/${childSlug}`
-      : `${baseUrl}${buildPagePath(slug, defaultVariant.locale, null, true)}`;
-  }
-
-  const title = page.metaTitle || page.title;
-  const description = page.metaDescription || page.tagline || undefined;
+  const roots = await db.hostedPage.findMany({
+    where: { slug, organizationId: rootPage.organizationId, isPublished: true, parentSlug: null },
+  });
+  const variants = childSlug ? await db.hostedPage.findMany({
+    where: { organizationId: rootPage.organizationId, parentSlug: slug, slug: childSlug, isPublished: true },
+  }) : roots;
+  const legal = subpage ? hostedLegalCopy(page.locale, subpage, page.title) : null;
+  const title = legal?.title || page.metaTitle || page.title;
+  const description = legal?.description || page.metaDescription || page.tagline || undefined;
   const image = hostedOgImage(page);
-  const defaultCanonical = childSlug
-    ? `${baseUrl}${buildPagePath(slug, page.locale, null, page.isDefault)}/${childSlug}`
-    : `${baseUrl}${buildPagePath(slug, page.locale, null, page.isDefault)}`;
-  const canonicalUrl = page.canonicalUrl || defaultCanonical;
+  // A locale-free child route can resolve a first published child even when
+  // its locale has no parent variant. Preserve that reachable fallback URL.
+  const defaultCanonical = hostedPageUrl(page, [rootPage, ...roots], baseUrl, subpage)
+    || (childSlug ? `${baseUrl}${buildPagePath(slug, explicitLocale || rootPage.locale, childSlug, !explicitLocale)}` : null);
+  // Policy documents have their own identity, independent of the marketing URL.
+  const canonicalUrl = (!subpage && page.canonicalUrl) || defaultCanonical || undefined;
+  const languages = !subpage && hasExternalCanonical(page, baseUrl)
+    ? undefined : hostedAlternates(variants, roots, baseUrl, subpage);
   return {
     title,
     description,
@@ -301,19 +276,21 @@ export default async function HostedPage({ params }: Props) {
   if (!page) notFound();
 
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
-  const rootUrl = `${baseUrl}${buildPagePath(slug, rootPage.locale, null, rootPage.isDefault)}`;
-  const pageUrl = childSlug
-    ? `${rootUrl}/${childSlug}`
-    : subpage
-      ? `${baseUrl}${buildPagePath(slug, page.locale, subpage, page.isDefault)}`
-      : `${baseUrl}${buildPagePath(slug, page.locale, null, page.isDefault)}`;
+  const roots = [rootPage, ...await db.hostedPage.findMany({
+    where: { slug, organizationId: rootPage.organizationId, isPublished: true, parentSlug: null },
+  })];
+  const rootUrl = hostedPageUrl(rootPage, roots, baseUrl)!;
+  const pageUrl = (!subpage && page.canonicalUrl) || hostedPageUrl(page, roots, baseUrl, subpage)
+    || (childSlug ? `${baseUrl}${buildPagePath(slug, explicitLocale || rootPage.locale, childSlug, !explicitLocale)}` : null);
+  if (!pageUrl) notFound();
+  const legal = subpage ? hostedLegalCopy(page.locale, subpage, page.title) : null;
 
   // Privacy subpage
   if (subpage === "privacy") {
     if (!page.privacyPolicy) notFound();
     const privacyBreadcrumb = buildBreadcrumbList(baseUrl, [
       { name: rootPage.title, url: rootUrl },
-      { name: "Privacy Policy", url: pageUrl },
+      { name: legal!.heading, url: pageUrl },
     ]);
     const privacyLd = {
       "@context": "https://schema.org",
@@ -321,13 +298,13 @@ export default async function HostedPage({ params }: Props) {
         {
           "@type": "WebPage",
           "@id": `${pageUrl}#page`,
-          name: `Privacy Policy — ${rootPage.title}`,
+          name: legal!.title,
           url: pageUrl,
           inLanguage: page.locale,
           datePublished: page.createdAt ? new Date(page.createdAt).toISOString() : undefined,
           dateModified: page.updatedAt ? new Date(page.updatedAt).toISOString() : undefined,
-          isPartOf: { "@id": `${baseUrl}/#website` },
-          publisher: { "@id": `${baseUrl}/#org` },
+          isPartOf: { "@id": `${PLATFORM_ORIGIN}/#website` },
+          publisher: { "@id": `${PLATFORM_ORIGIN}/#org` },
         },
         privacyBreadcrumb,
       ].filter(Boolean),
@@ -342,9 +319,9 @@ export default async function HostedPage({ params }: Props) {
           <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6 md:mb-8 flex-wrap">
             <a href={buildPagePath(slug, page.locale, null, page.isDefault)} className="hover:text-gray-900 truncate max-w-[60%]">{page.title}</a>
             <span className="text-gray-300">/</span>
-            <span className="text-gray-900">Privacy Policy</span>
+            <span className="text-gray-900">{legal!.heading}</span>
           </nav>
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 break-words">Privacy Policy</h1>
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 break-words">{legal!.heading}</h1>
           <p className="text-gray-500 mb-6 md:mb-8 break-words">{page.title}</p>
           <div className="prose prose-base md:prose-lg max-w-none whitespace-pre-wrap break-words text-gray-700">
             {page.privacyPolicy}
@@ -359,7 +336,7 @@ export default async function HostedPage({ params }: Props) {
     if (!page.termsOfService) notFound();
     const termsBreadcrumb = buildBreadcrumbList(baseUrl, [
       { name: rootPage.title, url: rootUrl },
-      { name: "Terms of Service", url: pageUrl },
+      { name: legal!.heading, url: pageUrl },
     ]);
     const termsLd = {
       "@context": "https://schema.org",
@@ -367,13 +344,13 @@ export default async function HostedPage({ params }: Props) {
         {
           "@type": "WebPage",
           "@id": `${pageUrl}#page`,
-          name: `Terms of Service — ${rootPage.title}`,
+          name: legal!.title,
           url: pageUrl,
           inLanguage: page.locale,
           datePublished: page.createdAt ? new Date(page.createdAt).toISOString() : undefined,
           dateModified: page.updatedAt ? new Date(page.updatedAt).toISOString() : undefined,
-          isPartOf: { "@id": `${baseUrl}/#website` },
-          publisher: { "@id": `${baseUrl}/#org` },
+          isPartOf: { "@id": `${PLATFORM_ORIGIN}/#website` },
+          publisher: { "@id": `${PLATFORM_ORIGIN}/#org` },
         },
         termsBreadcrumb,
       ].filter(Boolean),
@@ -388,9 +365,9 @@ export default async function HostedPage({ params }: Props) {
           <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6 md:mb-8 flex-wrap">
             <a href={buildPagePath(slug, page.locale, null, page.isDefault)} className="hover:text-gray-900 truncate max-w-[60%]">{page.title}</a>
             <span className="text-gray-300">/</span>
-            <span className="text-gray-900">Terms of Service</span>
+            <span className="text-gray-900">{legal!.heading}</span>
           </nav>
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 break-words">Terms of Service</h1>
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 break-words">{legal!.heading}</h1>
           <p className="text-gray-500 mb-6 md:mb-8 break-words">{page.title}</p>
           <div className="prose prose-base md:prose-lg max-w-none whitespace-pre-wrap break-words text-gray-700">
             {page.termsOfService}

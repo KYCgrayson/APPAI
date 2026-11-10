@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default async function PagesListPage() {
   const session = await auth();
-  const orgId = (session as any)?.organizationId;
+  const orgId = session?.organizationId;
 
   const pages = orgId
     ? await db.hostedPage.findMany({

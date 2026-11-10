@@ -1,3 +1,4 @@
+import { hostedPagePath } from "@/lib/hosted-page-urls";
 import { normalizeHostedContent, contentString } from "@/lib/hosted-content";
 import { resolvePage, resolveChildPage } from "@/lib/hosted-page-resolver";
 import { withChineseLocales, chineseScript } from "@/lib/zh-convert";
@@ -41,21 +42,20 @@ export default async function HostedPageLayout({ params, children }: Props) {
   const autoConverted = (childPage ?? page).autoConverted;
   const locale = childPage?.locale ?? page.locale;
   const labels = hostedChromeLabels(locale);
-  const childVariants = withChineseLocales(parsed.childSlug ? await db.hostedPage.findMany({
-    where: { organizationId: page.organizationId, parentSlug: slug, slug: parsed.childSlug, isPublished: true },
-    select: { locale: true, isDefault: true },
-  }) : []);
-  const variantHref = (variant: { locale: string; isDefault: boolean }) => {
-    const child = childVariants.find(child => child.locale === variant.locale);
-    return buildPagePath(slug, variant.locale, child ? parsed.childSlug : null, child ? child.isDefault : variant.isDefault);
-  };
-
-  // Find all locale variants for the language switcher
-  const variants = withChineseLocales(await db.hostedPage.findMany({
-    where: { slug, isPublished: true, parentSlug: null },
-    select: { locale: true, isDefault: true },
+  const rootVariants = await db.hostedPage.findMany({
+    where: { slug, organizationId: page.organizationId, isPublished: true, parentSlug: null },
     orderBy: [{ isDefault: "desc" }, { locale: "asc" }],
-  }));
+  });
+  const childVariants = parsed.childSlug ? await db.hostedPage.findMany({
+    where: { organizationId: page.organizationId, parentSlug: slug, slug: parsed.childSlug, isPublished: true },
+  }) : [];
+  const variants = parsed.childSlug
+    ? childVariants.filter(variant => hostedPagePath(variant, rootVariants))
+    : parsed.subpage
+      ? rootVariants.filter(variant => hostedPagePath(variant, rootVariants, parsed.subpage))
+      : withChineseLocales(rootVariants).map(variant => ({ ...page, ...variant }));
+  const variantHref = (variant: typeof variants[number]) =>
+    hostedPagePath(variant, rootVariants, parsed.subpage)!;
 
   const themeColor = page.themeColor || "#000000";
   const content = normalizeHostedContent(page.content);
@@ -111,13 +111,13 @@ export default async function HostedPageLayout({ params, children }: Props) {
   if (page.privacyPolicy) {
     mobileUtilityLinks.push({
       label: labels.privacy,
-      href: buildPagePath(slug, locale, "privacy", page.isDefault),
+      href: hostedPagePath(page, rootVariants, "privacy")!,
     });
   }
   if (page.termsOfService) {
     mobileUtilityLinks.push({
       label: labels.terms,
-      href: buildPagePath(slug, locale, "terms", page.isDefault),
+      href: hostedPagePath(page, rootVariants, "terms")!,
     });
   }
   // The drawer is the only chrome left on narrow screens, so the account
@@ -170,7 +170,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b">
         <AdaptiveChrome>
           <a
-            href={buildPagePath(slug, locale, null, page.isDefault)}
+            href={hostedPagePath(page, rootVariants)!}
             className="flex items-center gap-3 min-w-0 shrink md:shrink-0 group-data-[cramped=true]/chrome:!shrink"
           >
             {logo && (<>
@@ -226,12 +226,12 @@ export default async function HostedPageLayout({ params, children }: Props) {
               </a>
             )}
             {page.privacyPolicy && (
-              <a href={buildPagePath(slug, locale, "privacy", page.isDefault)} className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline whitespace-nowrap group-data-[cramped=true]/chrome:!hidden">
+              <a href={hostedPagePath(page, rootVariants, "privacy")!} className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline whitespace-nowrap group-data-[cramped=true]/chrome:!hidden">
                 {labels.privacy}
               </a>
             )}
             {page.termsOfService && (
-              <a href={buildPagePath(slug, locale, "terms", page.isDefault)} className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline whitespace-nowrap group-data-[cramped=true]/chrome:!hidden">
+              <a href={hostedPagePath(page, rootVariants, "terms")!} className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline whitespace-nowrap group-data-[cramped=true]/chrome:!hidden">
                 {labels.terms}
               </a>
             )}
@@ -300,12 +300,12 @@ export default async function HostedPageLayout({ params, children }: Props) {
         {(page.privacyPolicy || page.termsOfService) && (
           <div className="flex justify-center gap-6 mb-4 text-sm text-gray-500">
             {page.privacyPolicy && (
-              <a href={buildPagePath(slug, locale, "privacy", page.isDefault)} className="hover:text-gray-800">
+              <a href={hostedPagePath(page, rootVariants, "privacy")!} className="hover:text-gray-800">
                 {labels.privacyPolicy}
               </a>
             )}
             {page.termsOfService && (
-              <a href={buildPagePath(slug, locale, "terms", page.isDefault)} className="hover:text-gray-800">
+              <a href={hostedPagePath(page, rootVariants, "terms")!} className="hover:text-gray-800">
                 {labels.termsOfService}
               </a>
             )}

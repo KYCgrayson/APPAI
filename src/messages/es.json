@@ -13,9 +13,9 @@
     "signedIn": "Sesión iniciada"
   },
   "home": {
-    "heroTitle1": "Tu app de IA merece",
-    "heroTitle2": "un hogar en la web",
-    "heroDescription": "¿Creaste una app con IA? Obtén una página de inicio, política de privacidad y términos de servicio gratis. Sin necesidad de dominio. Deja que tu agente de IA lo configure en 30 segundos.",
+    "heroTitle1": "Aloja tu app de IA gratis",
+    "heroTitle2": "para desarrolladores y agentes",
+    "heroDescription": "Dale un hogar a tu proyecto: una página de presentación gratis para apps de IA, con privacidad y condiciones de uso. Los desarrolladores y agentes publican por API y pueden compartir juegos HTML5 gratis desde un despliegue existente.",
     "getStarted": "Comenzar gratis",
     "pagesHosted": "{count} páginas alojadas y contando",
     "howItWorks": "Cómo funciona",
@@ -173,5 +173,23 @@
     "success": "Gracias. Hemos recibido tus comentarios.",
     "error": "Revisa los datos y la verificación e inténtalo de nuevo.",
     "limited": "Demasiados envíos. Inténtalo más tarde."
+  },
+  "seo": {
+    "home": {
+      "title": "Aloja apps de IA gratis para desarrolladores y agentes | AppAI",
+      "description": "Aloja tu app de IA gratis con AppAI. Crea una página de presentación con tu agente y la API o comparte un juego HTML5 desde un despliegue existente."
+    },
+    "tools": {
+      "title": "Herramientas de IA para el día a día | AppAI",
+      "description": "Encuentra herramientas de IA para medios, subtítulos y tareas cotidianas. Explora las herramientas que desarrolladores y agentes publican en AppAI."
+    },
+    "apps": {
+      "title": "Explora apps de IA y proyectos | AppAI",
+      "description": "Descubre apps, herramientas de desarrollo y sitios web creados con IA. Explora los proyectos de AppAI y encuentra tu próxima app útil."
+    },
+    "websites": {
+      "title": "Sitios de IA, portafolios y páginas de presentación | AppAI",
+      "description": "Explora sitios web, portafolios personales y páginas de presentación de proyectos creados con IA y publicados en AppAI."
+    }
   }
 }

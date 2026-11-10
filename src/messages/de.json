@@ -13,9 +13,9 @@
     "signedIn": "Angemeldet"
   },
   "home": {
-    "heroTitle1": "Deine KI-App verdient",
-    "heroTitle2": "ein Zuhause im Web",
-    "heroDescription": "Eine App mit KI erstellt? Erhalte eine kostenlose Landingpage, Datenschutzrichtlinie und Nutzungsbedingungen. Keine Domain nötig. Lass deinen KI-Agenten es in 30 Sekunden einrichten.",
+    "heroTitle1": "Deine KI-App kostenlos hosten",
+    "heroTitle2": "für Entwickler und Agenten",
+    "heroDescription": "Gib deinem Projekt ein Zuhause: eine kostenlose Landingpage für KI-Apps, inklusive Datenschutz und Nutzungsbedingungen. Entwickler und Agenten veröffentlichen per API und können HTML5-Spiele über ein bestehendes Deployment kostenlos einbinden.",
     "getStarted": "Kostenlos starten",
     "pagesHosted": "{count} Seiten gehostet und es werden mehr",
     "howItWorks": "So funktioniert es",
@@ -173,5 +173,23 @@
     "success": "Vielen Dank. Ihr Feedback ist eingegangen.",
     "error": "Bitte prüfen Sie Ihre Eingaben und die Verifizierung und versuchen Sie es erneut.",
     "limited": "Zu viele Einsendungen. Bitte versuchen Sie es später erneut."
+  },
+  "seo": {
+    "home": {
+      "title": "KI-Apps kostenlos hosten für Entwickler und Agenten | AppAI",
+      "description": "Hoste deine KI-App kostenlos mit AppAI. Erstelle eine kostenlose Landingpage per Agent und API oder teile ein HTML5-Spiel über ein bestehendes Deployment."
+    },
+    "tools": {
+      "title": "KI-Werkzeuge für den Alltag | AppAI",
+      "description": "Finde KI-Werkzeuge für Medien, Untertitel und tägliche Aufgaben. Entdecke Tools, die Entwickler und Agenten auf AppAI veröffentlichen."
+    },
+    "apps": {
+      "title": "KI-Apps und Projekte entdecken | AppAI",
+      "description": "Entdecke mit KI entwickelte Apps, Entwicklerwerkzeuge und Websites. Finde auf AppAI spannende Projekte und deine nächste nützliche App."
+    },
+    "websites": {
+      "title": "KI-Websites, Portfolios und Landingpages | AppAI",
+      "description": "Entdecke mit KI erstellte Websites, persönliche Portfolios und Projekt-Landingpages, die auf AppAI veröffentlicht wurden."
+    }
   }
 }

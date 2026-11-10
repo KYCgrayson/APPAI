@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
@@ -53,9 +54,9 @@ export async function PUT(
     });
 
     return NextResponse.json(updated);
-  } catch (error: any) {
-    if (error.name === "ZodError") {
-      return NextResponse.json({ error: "Validation failed", details: error.errors }, { status: 400 });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Validation failed", details: error.issues }, { status: 400 });
     }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

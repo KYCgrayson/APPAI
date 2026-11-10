@@ -14,10 +14,15 @@ export const fixtureDb = {
   organizations: [],
   organizationQueries: 0,
   locale: "en",
-  app: { async findMany(query) { return fixtureDb.apps.filter(row => Object.entries(query.where).every(([key, value]) => row[key] === value)); } },
+  hostedPath: "",
+  app: {
+    async findUnique(query) { return fixtureDb.apps.find(row => row.id === query.where.id) ?? null; },
+    async findMany(query) { return fixtureDb.apps.filter(row => Object.entries(query.where).every(([key, value]) => row[key] === value)); },
+  },
   appRelease: { async findMany() { return []; } },
   organization: { async findMany() { fixtureDb.organizationQueries++; return fixtureDb.organizations; } },
   hostedPage: {
+    async count(query) { return (await fixtureDb.hostedPage.findMany(query)).length; },
     async findFirst(query) {
       fixtureDb.queries.push(query);
       const rows = fixtureDb.rows.filter(row => Object.entries(query.where).every(([key, value]) => row[key] === value));
@@ -31,7 +36,53 @@ export const fixtureDb = {
   },
 };
 globalThis[Symbol.for('appai.test.db')] = fixtureDb;
-export function registerDirectoryFixtures() {
+
+export const fixtureSitemapCache = {
+  entries: new Map(),
+  /** @type {Array<{ keys: string[], args: string[], options: { revalidate: number, tags: string[] }, bytes: number }>} */
+  writes: [],
+};
+globalThis[Symbol.for('appai.test.sitemap-cache')] = fixtureSitemapCache;
+
+export function registerSitemapFixtures() {
+  return registerHooks({
+    resolve(specifier, context, nextResolve) {
+      return specifier === 'next/cache' ? { url: 'fixture:sitemap-cache', shortCircuit: true } : nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      if (url !== 'fixture:sitemap-cache') return nextLoad(url, context);
+      return { format: 'module', shortCircuit: true, source: `
+        const { entries, writes } = globalThis[Symbol.for('appai.test.sitemap-cache')];
+        export function unstable_cache(fn, keys, options) {
+          return async (...args) => {
+            const key = JSON.stringify([keys, args]);
+            if (entries.has(key)) return entries.get(key);
+            const json = JSON.stringify(await fn(...args));
+            writes.push({ keys, args, options, bytes: Buffer.byteLength(json) });
+            // Mimic Next's JSON round-trip (Date values become strings).
+            entries.set(key, JSON.parse(json));
+            return entries.get(key);
+          };
+        }
+      ` };
+    },
+  });
+}
+
+export function registerHostedHeaders() {
+  return registerHooks({
+    resolve(specifier, context, nextResolve) {
+      return specifier === 'next/headers' ? { url: 'fixture:hosted-headers', shortCircuit: true } : nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      return url === 'fixture:hosted-headers' ? { format: 'module', shortCircuit: true, source: `
+        export async function headers() { return new Headers({ 'x-appai-hosted-path': globalThis[Symbol.for('appai.test.db')].hostedPath }); }
+        export async function cookies() { return { get() { return undefined; } }; }
+      ` } : nextLoad(url, context);
+    },
+  });
+}
+export function registerDirectoryFixtures({ translated = false } = {}) {
   return registerHooks({
     resolve(specifier, context, nextResolve) {
       if (specifier === 'next-intl/server') return { url: 'fixture:intl-server', shortCircuit: true };
@@ -41,8 +92,24 @@ export function registerDirectoryFixtures() {
     },
     load(url, context, nextLoad) {
       if (url === 'fixture:intl-server') return { format: 'module', source: `
+        import { readFileSync } from 'node:fs';
+        import { createTranslator } from 'use-intl/core';
         export async function getLocale() { return globalThis[Symbol.for('appai.test.db')].locale; }
-        export async function getTranslations() { const t = key => key; t.has = () => true; return t; }
+        export async function getTranslations(input) {
+          if (!${translated}) { const t = key => key; t.has = () => true; return t; }
+          const locale = typeof input === 'object' && input.locale || await getLocale();
+          const namespace = typeof input === 'string' ? input : input?.namespace;
+          const messages = JSON.parse(readFileSync(${JSON.stringify(sourceRoot)} + 'messages/' + locale + '.json', 'utf8'));
+          const lookup = key => [...(namespace ? namespace.split('.') : []), ...key.split('.')].reduce((value, part) => value?.[part], messages);
+          const t = (key, values = {}) => {
+            const value = lookup(key);
+            if (typeof value !== 'string') throw new Error('Missing translation: ' + locale + '/' + namespace + '/' + key);
+            return value.replace(/\{(\w+)\}/g, (match, field) => values[field] ?? match);
+          };
+          t.has = key => lookup(key) !== undefined;
+          t.rich = createTranslator({ locale, namespace, messages }).rich;
+          return t;
+        }
       `, shortCircuit: true };
       if (url === 'fixture:intl-client') return { format: 'module', source: `export function useLocale() { return globalThis[Symbol.for('appai.test.db')].locale; }`, shortCircuit: true };
       if (url === 'fixture:navigation') return { format: 'module', source: `

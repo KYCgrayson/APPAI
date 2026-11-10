@@ -1,5 +1,6 @@
 "use client";
 
+import type { PDFDocumentProxy } from "pdfjs-dist";
 import { useState, useRef, useEffect, useCallback } from "react";
 
 interface Props {
@@ -26,7 +27,7 @@ export function PdfViewerSection({ data, themeColor, typographyActive = false }:
   const [file, setFile] = useState<File | null>(null);
   const [needsPassword, setNeedsPassword] = useState(false);
   const [password, setPassword] = useState("");
-  const [pdfDoc, setPdfDoc] = useState<any>(null);
+  const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [scale, setScale] = useState(1.5);
@@ -38,7 +39,7 @@ export function PdfViewerSection({ data, themeColor, typographyActive = false }:
 
   // Render a page to canvas
   const renderPage = useCallback(
-    async (doc: any, pageNum: number) => {
+    async (doc: PDFDocumentProxy, pageNum: number) => {
       if (!canvasRef.current || !doc) return;
       try {
         const page = await doc.getPage(pageNum);
@@ -50,7 +51,7 @@ export function PdfViewerSection({ data, themeColor, typographyActive = false }:
         canvas.height = viewport.height;
         canvas.width = viewport.width;
 
-        await page.render({ canvasContext: ctx, viewport }).promise;
+        await page.render({ canvas, canvasContext: ctx, viewport }).promise;
       } catch (e) {
         console.error("Failed to render page:", e);
       }
@@ -82,8 +83,8 @@ export function PdfViewerSection({ data, themeColor, typographyActive = false }:
       setCurrentPage(1);
       setNeedsPassword(false);
       setStatus("viewing");
-    } catch (e: any) {
-      if (e?.name === "PasswordException") {
+    } catch (e) {
+      if (e instanceof Error && e.name === "PasswordException" && "code" in e) {
         if (e.code === 1) {
           // Needs password
           setNeedsPassword(true);
@@ -95,7 +96,7 @@ export function PdfViewerSection({ data, themeColor, typographyActive = false }:
           setStatus("idle");
         }
       } else {
-        setError(e?.message || "Failed to open PDF");
+        setError(e instanceof Error ? e.message : "Failed to open PDF");
         setStatus("error");
       }
     }
@@ -154,6 +155,7 @@ export function PdfViewerSection({ data, themeColor, typographyActive = false }:
         renderCtx.fillRect(0, 0, viewport.width, viewport.height);
 
         await page.render({
+          canvas: renderCanvas,
           canvasContext: renderCtx,
           viewport,
         }).promise;
@@ -185,8 +187,8 @@ export function PdfViewerSection({ data, themeColor, typographyActive = false }:
       link.download = `${baseName}_unlocked.pdf`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 5000);
-    } catch (e: any) {
-      setError(e?.message || "Failed to save PDF");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to save PDF");
     } finally {
       setSaving(false);
     }

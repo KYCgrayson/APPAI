@@ -76,19 +76,6 @@ export default async function RootLayout({
                   publisher: { "@id": `${PLATFORM_ORIGIN}/#org` },
                   inLanguage: ["en", "ja", "ko", "zh-CN", "zh-TW", "de", "fr", "es", "hi"],
                 },
-                {
-                  "@type": "WebApplication",
-                  "@id": "https://appai.info/#app",
-                  name: "AppAI",
-                  url: "https://appai.info",
-                  description:
-                    "AI agents publish multi-language hosted pages or submit full applications for isolated runtime review and managed capabilities.",
-                  applicationCategory: "DeveloperApplication",
-                  operatingSystem: "Web",
-                  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-                  publisher: { "@id": `${PLATFORM_ORIGIN}/#org` },
-                  isPartOf: { "@id": `${PLATFORM_ORIGIN}/#website` },
-                },
               ],
             }),
           }}

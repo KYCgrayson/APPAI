@@ -4,7 +4,7 @@ interface Props {
   title: string;
   tagline?: string;
   heroImage?: string;
-  content: any;
+  content: { about?: string; team?: { name?: string; role?: string; photo?: string; bio?: string }[]; contactEmail?: string; socialLinks?: Record<string, string> };
   themeColor: string;
 }
 
@@ -37,7 +37,7 @@ export function CompanyProfilePage({ title, tagline, content, themeColor }: Prop
           <div className="max-w-6xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-16" style={{ color: themeColor }}>Team</h2>
             <div className="grid md:grid-cols-3 gap-8">
-              {content.team.map((member: any, i: number) => (
+              {content.team.map((member, i) => (
                 <div key={i} className="bg-white rounded-2xl p-8 text-center shadow-sm">
                   {member.photo ? (
                     <img

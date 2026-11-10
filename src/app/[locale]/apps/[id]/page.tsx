@@ -1,3 +1,4 @@
+import { platformUrl, platformAlternates, platformOpenGraphLocale, DEFAULT_SHARE_IMAGE } from "@/lib/platform-seo";
 import { serializeJsonLd } from "@/lib/json-ld";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -28,13 +29,13 @@ async function loadLocalizedCopy(hostedPageSlug: string | null, locale: string) 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, locale } = await params;
   const app = await db.app.findUnique({ where: { id } });
-  if (!app) return {};
+  if (!app || !app.isApproved) return { robots: { index: false } };
 
   const localized = await loadLocalizedCopy(app.hostedPageSlug, locale);
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
   const title = `${localized?.title || app.name} - AppAI`;
   const description = localized?.metaDescription || localized?.tagline || app.tagline || undefined;
-  const image = app.logoUrl || undefined;
+  const image = app.logoUrl || DEFAULT_SHARE_IMAGE;
 
   return {
     title,
@@ -44,7 +45,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       images: image ? [image] : undefined,
       type: "website",
-      url: `${baseUrl}/${locale}/apps/${id}`,
+      url: platformUrl(`/apps/${id}`, locale, baseUrl),
+      locale: platformOpenGraphLocale(locale),
     },
     twitter: {
       card: image ? "summary_large_image" : "summary",
@@ -53,7 +55,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: image ? [image] : undefined,
     },
     alternates: {
-      canonical: `${baseUrl}/apps/${id}`,
+      canonical: platformUrl(`/apps/${id}`, locale, baseUrl),
+      languages: platformAlternates(`/apps/${id}`, baseUrl),
     },
   };
 }
@@ -98,7 +101,7 @@ export default async function AppDetailPage({ params }: Props) {
     "@type": "SoftwareApplication",
     name,
     description: localized?.metaDescription || tagline || app.description || undefined,
-    url: `${baseUrl}/${id}`,
+    url: platformUrl(`/apps/${id}`, locale, baseUrl),
     image: app.logoUrl || undefined,
     applicationCategory: app.category || "Application",
     ...(app.iosUrl || app.androidUrl

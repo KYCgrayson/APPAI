@@ -13,9 +13,9 @@
     "signedIn": "已登录"
   },
   "home": {
-    "heroTitle1": "您的 AI 应用值得",
-    "heroTitle2": "拥有一个网络之家",
-    "heroDescription": "用 AI 构建了应用？免费获取落地页、隐私政策和服务条款，无需域名。让您的 AI Agent 在 30 秒内完成设置。",
+    "heroTitle1": "免费托管 AI app",
+    "heroTitle2": "为开发者<wbr></wbr>与 agent<wbr></wbr>打造",
+    "heroDescription": "给作品一个家：为 AI app 创建免费介绍页，附带隐私政策与服务条款。开发者与 agent 可通过 API 发布，也能连接已有部署，完成 HTML5 免费小游戏托管与分享。",
     "getStarted": "免费开始",
     "pagesHosted": "已托管 {count} 个页面，持续增长中",
     "howItWorks": "使用方法",
@@ -173,5 +173,23 @@
     "success": "谢谢，我们已收到您的反馈。",
     "error": "请检查填写内容及验证后重试。",
     "limited": "提交次数过多，请稍后再试。"
+  },
+  "seo": {
+    "home": {
+      "title": "免费托管 AI app — 为开发者与 agent 打造 | AppAI",
+      "description": "在 AppAI 免费托管 AI app，创建免费介绍页，附带隐私政策与服务条款。让 agent 通过 API 发布，或连接已有部署分享 HTML5 小游戏。"
+    },
+    "tools": {
+      "title": "适合日常工作的 AI 工具 | AppAI",
+      "description": "寻找适用于影音、字幕与日常工作的 AI 工具。探索开发者与 agent 在 AppAI 发布的实用工具。"
+    },
+    "apps": {
+      "title": "探索 AI 应用与项目 | AppAI",
+      "description": "探索用 AI 打造的应用、开发工具与网站。在 AppAI 发现开发者与 agent 发布的项目，找到下一个实用 app。"
+    },
+    "websites": {
+      "title": "AI 网站、作品集与介绍页 | AppAI",
+      "description": "探索用 AI 打造并发布于 AppAI 的网站、个人作品集与项目介绍页，为你的下一个作品寻找灵感。"
+    }
   }
 }

@@ -29,7 +29,7 @@ test("social links render supplied text or platform names and omit unsafe URLs",
 test("social sanitizer enforces HTTPS including nested contact content", () => {
   for (const url of ["javascript:alert(1)", "data:text/html,bad", "http://example.com", "line://example", "//example.com", "/path"]) {
     assert.equal(sanitizeSocialUrl(url), "#");
-    const content = sanitizeContent({ sections: [{ type: "contact", data: { socials: [{ platform: "line", url }] } }] }) as any;
+    const content = sanitizeContent({ sections: [{ type: "contact", data: { socials: [{ platform: "line", url }] } }] }) as { sections: { data: { socials: { url: string }[] } }[] };
     assert.equal(content.sections[0].data.socials[0].url, "#");
   }
   assert.equal(sanitizeSocialUrl("https://line.me/ti/p/~example"), "https://line.me/ti/p/~example");

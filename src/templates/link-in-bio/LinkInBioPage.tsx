@@ -4,7 +4,7 @@ interface Props {
   title: string;
   tagline?: string;
   heroImage?: string;
-  content: any;
+  content: { links?: { url: string; title: string; icon?: string; style?: string }[] };
   themeColor: string;
 }
 
@@ -35,7 +35,7 @@ export function LinkInBioPage({ title, tagline, heroImage, content, themeColor }
 
         {/* Links */}
         <div className="space-y-3">
-          {links.map((link: any, i: number) => (
+          {links.map((link, i) => (
             <a
               key={i}
               href={sanitizeUrl(link.url)}

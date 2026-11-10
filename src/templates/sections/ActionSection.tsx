@@ -14,7 +14,7 @@ interface ActionItem {
   url: string;
   method?: string;
   headers?: Record<string, string>;
-  body?: any;
+  body?: unknown;
   confirmText?: string;
   style?: "primary" | "secondary" | "danger";
 }
@@ -73,9 +73,9 @@ function ActionButton({ item, themeColor }: { item: ActionItem; themeColor: stri
 
       setState(res.ok ? "success" : "error");
       setResult(`${res.status} ${res.statusText}\n${display}`);
-    } catch (err: any) {
+    } catch (err) {
       setState("error");
-      setResult(err.message);
+      setResult(err instanceof Error ? err.message : "Request failed");
     }
   }
 

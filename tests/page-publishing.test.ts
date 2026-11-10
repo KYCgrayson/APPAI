@@ -115,7 +115,9 @@ test('features and contact accept custom heading and subheading', () => {
     { type: 'features', data: { heading: 'Services', subheading: 'How we help', items: [{ title: 'Design', description: 'Accessible websites.' }] } },
     { type: 'contact', data: { heading: 'Visit us', subheading: 'Say hello', email: 'hello@example.com' } },
   ] } });
-  assert.deepEqual(result.warnings, []);
+  assert.equal(result.valid, true);
+  assert.equal(result.warnings.length, 1);
+  assert.match(result.warnings[0].message, /renders 0 H1/);
 });
 
 test('examples match named style kits and explicitly select English', () => {

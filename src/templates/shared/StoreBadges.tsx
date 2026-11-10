@@ -1,10 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { sanitizeUrl } from "@/lib/sanitize";
 import { preferredStore } from "@/lib/store-order";
+const subscribeToStore = () => () => {};
+const clientStore = () => preferredStore(navigator.userAgent);
+const serverStore = () => null;
 export function StoreBadges({ appStoreUrl, playStoreUrl, typographyActive = false, firstStore = "app" }: { firstStore?: "app" | "play"; appStoreUrl?: string; playStoreUrl?: string; typographyActive?: boolean }) {
-  const [preferred, setPreferred] = useState<"app" | "play">(firstStore);
-  useEffect(() => { setPreferred(preferredStore(navigator.userAgent) ?? firstStore); }, [firstStore]);
+  const preferred = useSyncExternalStore(subscribeToStore, clientStore, serverStore) ?? firstStore;
   if (!appStoreUrl && !playStoreUrl) return null;
   return <div className="flex flex-wrap gap-4 justify-center">
           {appStoreUrl && (

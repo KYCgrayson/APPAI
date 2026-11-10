@@ -54,16 +54,21 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [keyName, setKeyName] = useState("Default API Key");
 
-  useEffect(() => {
-    fetchKeys();
-  }, []);
-
   async function fetchKeys() {
     const res = await fetch("/api/v1/keys");
     if (res.ok) {
       setKeys(await res.json());
     }
   }
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch("/api/v1/keys", { signal: controller.signal })
+      .then(response => response.ok ? response.json() : null)
+      .then(data => { if (data && !controller.signal.aborted) setKeys(data); })
+      .catch(() => { /* The list stays empty when the request is unavailable. */ });
+    return () => controller.abort();
+  }, []);
 
   async function createKey() {
     setLoading(true);

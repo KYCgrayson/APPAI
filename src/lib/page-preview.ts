@@ -2,7 +2,7 @@ import { computeTypography, storeTypography, typographySettings } from "./typogr
 import { buildPagePath } from "./parse-page-segments.ts";
 import { createPageSchema } from "./validations/page.ts";
 import { sanitizePageContent, type SanitizeWarning } from "./sanitize.ts";
-import { sectionFieldWarnings } from "./section-field-warnings.ts";
+import { sectionFieldWarnings, pageHeadingWarnings } from "./section-field-warnings.ts";
 import { pageLogoWarnings } from "./page-logo.ts";
 import { SECTION_DEFS, type SectionFieldDef } from "./template-registry.ts";
 
@@ -19,6 +19,7 @@ export function checkPagePreview(body: unknown, iconNames: readonly string[] = [
   const computedTypography = computeTypography(typographySettings(sanitizedContent));
   warnings.push(...computedTypography.warnings);
   warnings.push(...pageLogoWarnings({ ...parsed.data, content: sanitizedContent }));
+  warnings.push(...pageHeadingWarnings(sanitizedContent));
   // Step 3: Extra content-level checks (non-blocking, informational)
   const rawSections = sanitizedContent.sections;
   const sections = Array.isArray(rawSections) ? rawSections.filter(section => section && typeof section === "object" && !Array.isArray(section)) as Array<{ type: string; data: Record<string, unknown> }> : [];

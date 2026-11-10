@@ -1,5 +1,18 @@
 # TODO — AppAI Project Roadmap
 
+## Platform SEO (#67, package A)
+
+- [x] Localized metadata and developer/agent homepage copy in nine languages; canonical, HTML language alternates and social previews on home/tools/apps/websites.
+- [x] Scope AppAI WebApplication/free Offer JSON-LD to the platform locale layout, excluding hosted `/p/*` root/child/policy pages; share reachable hosted URLs across metadata, navigation, JSON-LD and sitemap.
+- [x] Policy metadata, localized app-detail URLs, internal/error noindex, stable sitemap dates, external canonical exclusions and 45,000-URL shards.
+- [x] Filter policy: `kind`, `category` and `type` query variants canonicalize to the corresponding locale's unfiltered directory page.
+- [x] Non-blocking H1-count warnings in dry-run; metadata, URL, sitemap and renderer regression coverage. Clear pre-existing lint errors without changing lint configuration.
+- [x] Package A round 1: runtime sitemap shard routes and bounded per-shard caches, sitemap-index QA, zh-TW copy and phrase-aware H1 wrapping, locale-preserving sibling navigation, hosted fallback/JSON-LD regressions, and dashboard footer prefetch disabled.
+- [x] Package A round 2: Chinese phrase breaks and Chinese/Korean keep-all H1 classes, shorter English copy and non-breaking English/French endings, nine-language SSR heading assertions, `/spec` footer prefetch disabled, and consistent Open Graph locale/alternate formats.
+- [ ] Add the games discovery link to llms.txt after `/spec/games` exists (package D).
+- [x] Default Turbopack production build passed locally (confirmed before round 2); Webpack production build also passed.
+- [ ] Independent verifier: check actual homepage H1 wrapping in all nine languages at 375px and 1280px; SSR assertions do not verify browser line layout.
+
 - [x] App promotion headings/store badges, screenshot demo warnings, preset consistency, and wrapped-tool publishing guidance.
 
 ## Feedback channel

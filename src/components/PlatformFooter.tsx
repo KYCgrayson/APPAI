@@ -1,3 +1,4 @@
+import NextLink from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 
@@ -15,18 +16,18 @@ export async function PlatformFooter() {
           <Link href="/apps" className="hover:text-gray-300 transition-colors">
             {t("browse")}
           </Link>
-          <a href="/spec" className="hover:text-gray-300 transition-colors">
+          <NextLink href="/spec" prefetch={false} className="hover:text-gray-300 transition-colors">
             {t("agentSpec")}
-          </a>
+          </NextLink>
           <a href="https://github.com/KYCgrayson/APPAI" target="_blank" className="hover:text-gray-300 transition-colors">
             {t("github")}
           </a>
           <Link href="/feedback" className="hover:text-gray-300 transition-colors">
             {t("feedback")}
           </Link>
-          <a href="/dashboard" className="hover:text-gray-300 transition-colors">
+          <NextLink href="/dashboard" prefetch={false} className="hover:text-gray-300 transition-colors">
             {t("dashboard")}
-          </a>
+          </NextLink>
           <span className="text-gray-300 font-mono text-xs" title={`Build: ${commitSha}`}>
             v{commitSha}
           </span>
