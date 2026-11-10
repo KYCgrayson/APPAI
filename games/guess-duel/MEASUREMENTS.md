@@ -5,14 +5,52 @@ Gzip uses Node `zlib.gzipSync`, default settings.
 
 | File                           | Raw bytes | Gzip bytes |
 | ------------------------------ | --------: | ---------: |
-| dist/index.html                |       490 |        351 |
-| dist/assets/index-SW1paRGv.css |     10801 |       3148 |
-| dist/assets/index-Dzi_RZGe.js  |     63404 |      23852 |
-| **Total**                      | **74695** |  **27351** |
+| dist/index.html                |       490 |        349 |
+| dist/assets/index-w8gp1_q1.css |     10909 |       3197 |
+| dist/assets/index-D2vbT0ks.js  |     66699 |      24864 |
+| **Total**                      | **78098** |  **28410** |
+
+Served output rebuilt inside `games/guess-duel` with
+`npx --offline vite build --base=/games/guess-duel/ --outDir ../../public/games/guess-duel --emptyOutDir`:
+
+| File                                              | Raw bytes | Gzip bytes |
+| ------------------------------------------------- | --------: | ---------: |
+| public/games/guess-duel/index.html                |       522 |        359 |
+| public/games/guess-duel/assets/index-w8gp1_q1.css |     10909 |       3197 |
+| public/games/guess-duel/assets/index-D2vbT0ks.js  |     66699 |      24864 |
+| **Total**                                         | **78130** |  **28420** |
+
+Both tables were measured from the actual output on 2026-11-10 with Node 24.22.2
+`zlib.gzipSync`. All twelve English/zh-TW loading, countdown, closed-room, recreation and missing-room
+strings are present in the served JavaScript. Served HTML uses `/games/guess-duel/assets/`.
 
 ## Tests
 
-80 tests pass with Node's built-in test runner. Round 5 adds fourteen regression tests covering
+109 tests pass with Node's built-in test runner, including the 102 tests from the previous round;
+only expectations encoding the old clock, local expiry and missing-room behavior were updated.
+Backlog #72 adds fourteen tests for skew in either direction and request latency, uncapped
+remaining time, m:ss formatting, waiting-only expiry, Date-header calibration and resampling,
+missing/invalid Date headers, localized loading and disabled controls, duplicate create/join
+prevention, specific errors and retries, countdown ticks without screen replacement, poll expiry
+resets, hiding the countdown on start, cleanup and recreation with the same names/digits/first
+player, API 404/expired, failed recreation, already-expired responses, full unstarted rooms,
+and stale poll failures after recreation. TypeScript/Vite and Prettier checks pass.
+
+Round 2 adds eight regressions for zero countdowns while the server is already playing
+(including hidden tabs), server-confirmed 404 closure with coalesced refreshes, immediate
+refresh on returning to a visible tab, failed expiry checks, failed creation after an
+unavailable lookup, expired links with and without saved credentials in both languages,
+120-second starts across Date-header fractional phases and stable poll ticks, and guarded
+display changes after clock corrections or a new expiry.
+
+Backlog #72 round 3 adds seven regressions for typed missing-room codes in both languages
+and corrected-code retries, gone saved seats, closure of the host's own waiting room,
+strict minimum-RTT calibration including corrections under 1.5 seconds, a single upward
+display correction per expiry, slow-create convergence and steady ticks, and the controller's
+slow-create recovery without replacing the screen. The existing round 4 typed-join regression
+again includes 404. Clock expectations that encoded frozen or premature ticks were updated.
+
+Round 5 adds fourteen regression tests covering
 automatic history selection for either seat, manual selection until the next event, batched
 events and relay loads, named/counting segments, empty hints and newest-first history,
 same-device handover and online guest auto-replies, stable note/history pointer presses,
@@ -109,9 +147,57 @@ anchored at the bottom. Wider layouts continue showing both history cards.
 including empty/populated lists, the newest row inside the visible phone deduction area,
 unchanged keypad coordinates, target sizes, and horizontal overflow. It serves the actual
 production files through Playwright routes without a listener or external network requests.
-This script is optional and is separate from the 80 Node tests.
+This script is optional and is separate from the Node tests.
 
 The browser script could not execute here: Chrome exited during launch in the sandbox.
 The Vite listener also failed with EPERM, and the installed Playwright has no WebKit executable.
 No fresh browser or real-device pass is claimed. The script passed Node syntax checking;
 the 80 Node tests, TypeScript/Vite build and Prettier checks passed.
+
+### Backlog #72 (2026-11-10)
+
+Loading text occupies a reserved `min-height: 2em` row in the room lobby/closed screen.
+The waiting countdown has a reserved row and tabular numerals; the one-second tick changes
+only its text node. Countdown/loading rows are outside the secret/play screens, so they do
+not change keypad coordinates. Existing keypad dimensions, scrolling containers and responsive
+breakpoints are unchanged: four 64px rows plus three 6px gaps (274px); other buttons remain
+at least 48px, history/note controls at least 44px. These are CSS dimension checks, not fresh
+browser measurements.
+
+The countdown uses the API's `expiresAt` without a two-minute cap. HTTP Date calibration
+uses the request midpoint plus 500 ms for the header's whole-second truncation. Each readable
+Date sample replaces the estimate when its RTT is strictly smaller than the previous minimum,
+even for a correction under 1.5 seconds. Equal/slower responses and missing/invalid Date headers
+retain the last calibration (or use local time before the first readable Date).
+The display ceil-clamps expiry at the header's precision and starts a fresh 120-second room
+at 2:00 across the tested header phases. It advances on whole elapsed seconds, preserving its
+tick phase, without waiting for a corrected target to catch up. A better RTT estimate may
+increase the display by at most one second once per expiry; other reads cannot increase or
+skip displayed seconds. Elapsed hidden-tab time still counts, and a new expiry can resync it.
+Expiry confirmation keeps the full precision of the API timestamp.
+
+Deterministic three-second-create fixtures cover seven fractional header phases and client
+clocks one hour ahead, one hour behind and aligned. A 40 ms first poll converges to within
+one displayed second of the true expiry, with progressively faster polls afterward. During
+the following ten seconds no display pause exceeds 1.2 seconds. A controller regression also
+checks the 1:58 → 1:59 recovery and every subsequent one-second tick without screen replacement.
+
+At zero, the host requests a fresh full snapshot (`since=-1`) and keeps its room credentials
+while awaiting confirmation. Returning to a visible tab also requests an immediate snapshot.
+Only API 404/expired errors or a fresh snapshot that is still waiting past its server-time
+expiry close the room. A playing snapshot continues into the game. Failed checks retain the
+token and URL and retry; concurrent refreshes are coalesced and stale-session results ignored.
+Gone links or saved-seat lookups use the same closed screen with exactly one recreate button.
+A 404 from a typed join retains the online panel and all six entered characters, restores
+the controls, and shows “Room not found — check the code” / “找不到這個房間，請確認房號”.
+Confirmed closure
+stops polling, clears the old scoped/legacy token, private room data and `?room=`, and preserves
+settings for one-tap creation of a new game and room code. Attempting creation after an
+unavailable lookup preserves the unconfirmed room's token and URL if creation fails.
+
+The existing browser matrix was attempted again with the installed Playwright and Chrome,
+but Chrome exited during launch with SIGABRT/EPERM in the sandbox. No fresh viewport or
+real-device pass is claimed. Rounds 2 and 3 used the controller/event facade and deterministic
+transport/clock tests; the browser matrix was not rerun. All 109 Node tests, the TypeScript/Vite
+build, served rebuild, served-string/base checks and Prettier checks pass. No live rooms
+service was contacted.

@@ -4,9 +4,14 @@ import ts from 'typescript';
 import { RoomsClient } from '../../src/net/rooms.ts';
 
 /** Run the real controller and views with an event/storage facade, without a browser DOM. */
-export function loadApp(fetcher: typeof fetch, url = 'https://appai.info/games/guess-duel/') {
+export function loadApp(
+  fetcher: typeof fetch,
+  url = 'https://appai.info/games/guess-duel/',
+  now: () => number = Date.now,
+  saved: Record<string, string> = {},
+) {
   const location = new URL(url);
-  const values = new Map<string, string>();
+  const values = new Map<string, string>(Object.entries(saved));
   const storage = {
     get length() {
       return values.size;
@@ -19,6 +24,7 @@ export function loadApp(fetcher: typeof fetch, url = 'https://appai.info/games/g
   const events = new Map<string, (event: any) => void>();
   const documentEvents = new Map<string, (event: any) => void>();
   const windowEvents = new Map<string, (event: any) => void>();
+  const intervals: (() => void)[] = [];
   const elements = new Map<string, { innerHTML: string; textContent: string }>();
   let html = '',
     renders = 0,
@@ -38,6 +44,8 @@ export function loadApp(fetcher: typeof fetch, url = 'https://appai.info/games/g
       }));
       notes = value.includes('notes-disclosure') ? { open: false } : undefined;
       elements.clear();
+      const countdown = value.match(/<p[^>]*data-countdown[^>]*>([^<]*)<\/p>/);
+      if (countdown) elements.set('countdown', { innerHTML: '', textContent: countdown[1] });
       for (const match of value.matchAll(/<([\w-]+)[^>]*id="([^"]+)"[^>]*>([\s\S]*?)<\/\1>/g)) {
         elements.set(match[2], {
           innerHTML: match[3],
@@ -56,8 +64,14 @@ export function loadApp(fetcher: typeof fetch, url = 'https://appai.info/games/g
     setPointerCapture: (id: number) => (captured = id),
   };
   const document = {
+    hidden: false,
     documentElement: { lang: '', dataset: {}, style: { setProperty() {} } },
-    querySelector: (selector: string) => (selector === '#app' ? root : null),
+    querySelector: (selector: string) =>
+      selector === '#app'
+        ? root
+        : selector === '[data-countdown]'
+          ? (elements.get('countdown') ?? null)
+          : null,
     getElementById: (id: string) => elements.get(id) ?? null,
     addEventListener: (name: string, fn: (event: any) => void) => documentEvents.set(name, fn),
   };
@@ -96,7 +110,7 @@ export function loadApp(fetcher: typeof fetch, url = 'https://appai.info/games/g
           ...require(path),
           RoomsClient: class extends RoomsClient {
             constructor(base: string, _fetcher: unknown, store: any) {
-              super(base, fetcher, store);
+              super(base, fetcher, store, undefined, now);
             }
           },
         };
@@ -113,6 +127,7 @@ export function loadApp(fetcher: typeof fetch, url = 'https://appai.info/games/g
       'history',
       'confirm',
       'setInterval',
+      'Date',
       compiled,
     )(
       injectedRequire,
@@ -124,7 +139,12 @@ export function loadApp(fetcher: typeof fetch, url = 'https://appai.info/games/g
       { language: 'en' },
       history,
       () => true,
-      () => 0,
+      (fn: () => void) => intervals.push(fn),
+      class extends Date {
+        static now() {
+          return now();
+        }
+      },
     );
     return module.exports;
   }
@@ -166,6 +186,14 @@ export function loadApp(fetcher: typeof fetch, url = 'https://appai.info/games/g
     app,
     act: window.__duelTest.act,
     storage,
+    get url() {
+      return location.href;
+    },
+    tick: () => intervals.forEach((fn) => fn()),
+    setHidden(hidden: boolean) {
+      document.hidden = hidden;
+      documentEvents.get('visibilitychange')?.({});
+    },
     get html() {
       return html;
     },

@@ -1,5 +1,6 @@
 import { validateGame, type Game, type Move, type Seat } from '../logic/game.ts';
 import type { StorageLike } from '../ui/storage.ts';
+import { serverClockOffset } from './lifecycle.ts';
 export type Room = {
   code: string;
   game: string;
@@ -38,22 +39,28 @@ export class RoomsClient {
   private fetcher: typeof fetch;
   private storage?: StorageLike;
   private sleep: (ms: number) => Promise<void>;
+  private clockOffset?: number;
+  private clockRTT = Infinity;
+  private now: () => number;
   constructor(
     base = 'https://appai.info',
     fetcher: typeof fetch = (...args) => fetch(...args),
     storage?: StorageLike,
     sleep: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
+    now: () => number = Date.now,
   ) {
     this.base = base;
     this.fetcher = (...args) => Reflect.apply(fetcher, undefined, args);
     this.storage = storage;
     this.sleep = sleep;
+    this.now = now;
     const u = new URL(base);
     if (!['http:', 'https:'].includes(u.protocol)) throw Error('Invalid API origin');
     this.base = u.origin;
   }
   private async request(path: string, body?: unknown, token?: string, retry = true): Promise<any> {
     let response: Response;
+    const sentAt = this.now();
     try {
       response = await this.fetcher(this.base + '/api/rooms' + path, {
         method: body === undefined ? 'GET' : 'POST',
@@ -66,6 +73,15 @@ export class RoomsClient {
       });
     } catch {
       throw new RoomError(503, 'unavailable');
+    }
+    const receivedAt = this.now();
+    const rtt = Math.max(0, receivedAt - sentAt);
+    const offset = serverClockOffset(response.headers.get('Date'), sentAt, receivedAt);
+    // Slow handlers can stamp Date near the response rather than the request midpoint.
+    // The fastest response gives the tightest bound, even for a small correction.
+    if (offset !== undefined && rtt < this.clockRTT) {
+      this.clockOffset = offset;
+      this.clockRTT = rtt;
     }
     if (response.status === 429 && retry) {
       const raw = response.headers.get('Retry-After') ?? '1';
@@ -132,6 +148,12 @@ export class RoomsClient {
    * never be replayed against a different server. */
   tokenKey(code: string) {
     return 'room:' + this.base + '/' + code;
+  }
+  serverNow() {
+    return this.now() + (this.clockOffset ?? 0);
+  }
+  get clockRoundTrip() {
+    return this.clockRTT;
   }
   private save(d: any) {
     try {

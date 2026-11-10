@@ -2,6 +2,7 @@ import { button, esc } from './html.ts';
 import type { strings } from './i18n.ts';
 import { other, type Game, type Seat } from '../logic/game.ts';
 import type { Room } from '../net/rooms.ts';
+import type { RoomAction } from '../net/lifecycle.ts';
 type Text = typeof strings.en | (typeof strings)['zh-TW'];
 export function rulesScreen(t: typeof strings.en | (typeof strings)['zh-TW'], english: boolean) {
   return `<section class="panel rules-card">
@@ -30,10 +31,25 @@ export function waitingSecretScreen(room: Room, seat: Seat, template: string, sa
   return `<section class="panel share-card"><p role="status">${esc(text)}</p></section>`;
 }
 
-export function onlineLobbyScreen(t: Text, english: boolean, code: string[]) {
-  return `<section class="panel">
+export function roomProgress(t: Text, connecting: RoomAction) {
+  return `<p class="room-progress" role="status">${connecting === 'creating' ? t.creatingRoom : connecting === 'joining' ? t.joiningRoom : ''}</p>`;
+}
+
+export function closedRoomScreen(t: Text, connecting: RoomAction) {
+  return `<section class="panel share-card" aria-busy="${Boolean(connecting)}">
+  <h1>${t.roomClosed}</h1>${button(t.recreateRoom, 'createRoom', 'primary', Boolean(connecting))}${roomProgress(t, connecting)}</section>`;
+}
+
+export function onlineLobbyScreen(
+  t: Text,
+  english: boolean,
+  code: string[],
+  connecting: RoomAction = undefined,
+) {
+  const disabled = Boolean(connecting);
+  return `<section class="panel" aria-busy="${disabled}">
   <h1>${t.online}</h1>
-  <p>${english ? 'Create a room or enter a six-character room code.' : '建立房間或輸入六位房號。'}</p>${button(t.create, 'createRoom', 'primary')}<div class="room-boxes">${Array.from({ length: 6 }, (_, i) => `<input data-room-digit="${i}" maxlength="1" aria-label="${english ? 'Room code' : '房號'} ${i + 1}" autocapitalize="characters" value="${esc(code[i] ?? '')}">`).join('')}</div>${button(t.join, 'joinRoom')}</section>`;
+  <p>${english ? 'Create a room or enter a six-character room code.' : '建立房間或輸入六位房號。'}</p>${button(t.create, 'createRoom', 'primary', disabled)}${roomProgress(t, connecting)}<div class="room-boxes">${Array.from({ length: 6 }, (_, i) => `<input data-room-digit="${i}" maxlength="1" aria-label="${english ? 'Room code' : '房號'} ${i + 1}" autocapitalize="characters"${disabled ? ' disabled' : ''} value="${esc(code[i] ?? '')}">`).join('')}</div>${button(t.join, 'joinRoom', '', disabled)}</section>`;
 }
 
 /** History always belongs to the guesser, regardless of which device supplied the reply. */

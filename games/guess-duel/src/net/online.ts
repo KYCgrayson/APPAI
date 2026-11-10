@@ -104,12 +104,12 @@ export class OnlineSession {
     this.room = room;
     if (changed) this.changed(room);
   }
-  async poll() {
+  async poll(full = false) {
     if (this.busy) {
       this.pollPending = true;
       return;
     }
-    const d = await this.client.poll(this.code, this.token, this.room.version);
+    const d = await this.client.poll(this.code, this.token, full ? -1 : this.room.version);
     // A poll started before a send must never roll back that send's version/history.
     if (this.stopped) return;
     if (this.busy) {
@@ -120,6 +120,7 @@ export class OnlineSession {
       if (d.room.version < this.room.version) return;
       const processed = processMoves(this.room.state, d.room.moves, this.room.version);
       this.update({ ...d.room, state: processed.state });
+      return this.room;
     } else if (d.seats && d.version >= this.room.version) {
       this.update({ ...this.room, seats: d.seats });
     }

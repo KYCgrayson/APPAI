@@ -9,6 +9,7 @@ import {
   waitingSecretScreen,
   historiesScreen,
   onlineLobbyScreen,
+  closedRoomScreen,
 } from './screens.ts';
 import {
   lang,
@@ -34,6 +35,7 @@ import {
   labelName,
   countdown,
   storage,
+  connecting,
 } from './app.ts';
 type Mode = 'same' | 'ai' | 'relay' | 'online';
 function scoreboard() {
@@ -64,8 +66,8 @@ function scoreboard() {
 }
 export function header() {
   return `<header>
-  <a href="#" data-action="home" class="brand">◆ <span>${t.title}</span> ●</a>
-  <div>${button('?', 'rules', 'quiet')}${screen !== 'home' ? button(t.home, 'home', 'quiet') : ''}</div>
+  <a href="#" data-action="home" class="brand" aria-disabled="${Boolean(connecting)}">◆ <span>${t.title}</span> ●</a>
+  <div>${button('?', 'rules', 'quiet', Boolean(connecting))}${screen !== 'home' ? button(t.home, 'home', 'quiet', Boolean(connecting)) : ''}</div>
   </header>`;
 }
 export function content(): string {
@@ -122,7 +124,8 @@ export function content(): string {
   if (screen === 'rules') return rulesScreen(t, lang === 'en');
   if (screen === 'handover')
     return handoverScreen(labelName(seat), seat === 0 ? '◆' : '●', t.pass, t.ready);
-  if (screen === 'onlineLobby') return onlineLobbyScreen(t, lang === 'en', roomDigits);
+  if (screen === 'onlineLobby') return onlineLobbyScreen(t, lang === 'en', roomDigits, connecting);
+  if (screen === 'roomClosed') return closedRoomScreen(t, connecting);
   if (screen === 'share' || screen === 'waiting') return shareView();
   if (screen === 'reply') {
     const e = game!.history[seat].at(-1)!;
@@ -181,7 +184,7 @@ function shareView() {
   if (!game) return '';
   if (session) {
     const waiting = waitingSecretScreen(session.room, seat, t.waitingSecret, t.savingSecret);
-    if (waiting) return waiting;
+    if (waiting) return waiting.replace('</section>', `${roomCountdown()}</section>`);
   }
   const url = shareURL(),
     q = qr(0, 'L');
@@ -190,7 +193,12 @@ function shareView() {
   return `<section class="panel share-card">
   <h1>${esc(session ? session.code : t.share)}</h1>
   <div class="qr">${q.createSvgTag({ cellSize: 4, margin: 16, scalable: true })}</div>
-  <p>${t.scan}</p>${session && session.room.status === 'waiting' ? `<p data-countdown>${countdown()}</p>` : ''}${button(t.share, 'share', 'primary')}<input class="share-url" readonly aria-label="${t.share}" value="${esc(url)}"></section>`;
+  <p>${t.scan}</p>${roomCountdown()}${button(t.share, 'share', 'primary')}<input class="share-url" readonly aria-label="${t.share}" value="${esc(url)}"></section>`;
+}
+function roomCountdown() {
+  return session?.room.status === 'waiting'
+    ? `<p class="room-countdown" data-countdown>${esc(countdown())}</p>`
+    : '';
 }
 export function shareURL() {
   const u = new URL(location.href);
