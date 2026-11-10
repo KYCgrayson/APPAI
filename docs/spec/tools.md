@@ -1,5 +1,5 @@
 # AppAI — Tools
-Covers Wrapped tool and Connected tool configuration, connectors, identity, access and interactive section schemas.
+Covers Wrapped tool and Connected tool configuration, connectors, identity, access and interactive section schemas, and the rooms API for room-code multiplayer games.
 Previous: [Multi-language & multi-page](https://appai.info/spec/i18n) · Next: [Universal App](https://appai.info/spec/apps)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
@@ -244,5 +244,47 @@ Sandbox: `allow-scripts allow-same-origin allow-forms allow-downloads allow-popu
 
 The iframe receives `?locale=` with the current hosted-page locale, normally `en`, `zh-TW`, `zh-CN`, `es` (any supplied BCP 47 locale is passed unchanged), plus `color` and `theme=dark` only in dark mode. If the tool isn't translated, ignore it; the AppAI page around it is still published in four locales.
 Set canonicalUrl only for an app's own primary marketing site (e.g. a custom domain homepage), never the *.vercel.app tool URL embedded in iframe-tool.
+
+### Room-code multiplayer (rooms API)
+Turn-based games for 2–4 players, each on their own device. One device creates a room and shows a 6-character code, and the others type it in. Creating a room needs the creator to be signed in to AppAI (Google sign-in, same-site cookie, so the game page must be served from appai.info). Joining and playing need no login and no API key. The server keeps only **public** game state. Secrets such as a hidden answer or a hand of cards stay on the device that owns them and never go in `state` or `move`. The server does not check game rules, so every client must validate the moves it receives.
+
+| Call | Request | Response |
+|---|---|---|
+| Create | `POST /api/rooms` `{ "game": "my-game", "seats": 2, "state": {}, "turn": 0 }` (signed in) | `201 { code, seat: 0, token, room }` · `401 login_required` |
+| Join | `POST /api/rooms/{code}/join` `{}` | `200 { seat, token, room }` · `409 room_full` |
+| Poll | `GET /api/rooms/{code}?since={version}` + `Authorization: Bearer {token}` | `200 { changed: true, seat, room }` or `{ changed: false, version, seats }` |
+| Start | `POST /api/rooms/{code}/start` + `Authorization: Bearer {token}` (seat 0 only) | `200 { room }` — starts with the players present (at least 2); empty seats are removed |
+| Move | `POST /api/rooms/{code}/moves` + `Authorization: Bearer {token}` `{ "version": 3, "move": {}, "state": {}, "nextTurn": 1, "end": false }` | `200 { room }` |
+
+`room` = `{ code, game, version, state, turn, seats: [{ seat, joined, online, idleSeconds }], moves: [{ version, seat, move, skipped? }], lastMove, status: "waiting" | "playing" | "finished", expiresAt }`.
+
+| Rule | Value |
+|---|---|
+| Code | 6 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789`; input is case-insensitive, and spaces and `-` are ignored |
+| `game` | 1–40 characters of `a-z`, `0-9`, `-` |
+| Players | `seats` 2–4 (default 2). Seats fill in join order (0, 1, 2, 3). The game starts when every seat is taken or when seat 0 calls Start. `turn` is a seat index, or `null` for no turn order (default 0); if Start removes the seat holding `turn`, it becomes 0 |
+| Size | `state` ≤ 8 KB of JSON (object or array), `move` ≤ 1 KB, nesting ≤ 64 levels, no NUL characters |
+| Moves | Compare-and-swap: `version` must equal the room's current version, and success increments it. Only the seat whose `turn` it is may move. Omit `nextTurn` to keep the turn; `end: true` finishes the room. Moves start once every seat has joined. `moves` holds the last 20, so read every entry with `version > since`, not just `lastMove` |
+| Presence | Each poll marks your seat as seen. `online` means seen in the last 30 s; `idleSeconds` is the time since that seat was last seen |
+| Timeout | When the seat whose turn it is has been idle for ≥ 120 s, any other seat may send `{ "version": v, "skip": true }` (optionally with a `move` note). The turn passes to the next seat, and the entry records `skipped`. A skip cannot carry `state`, `nextTurn` or `end`. A player who returns keeps their seat |
+| Lifetime | A room that has not started closes 2 minutes after it was created or after the latest join. A full room closes after 15 minutes with no polls or moves, a finished one 15 minutes after its last move, and any room 24 hours after creation. Afterwards it is `404 room_not_found` |
+| Polling | Every 1–1.5 s while the page is visible; every 15 s while it is hidden, so the player is not marked idle. A closed app counts as idle. On `429`, wait for `Retry-After` |
+| Token | Store it per room (e.g. `localStorage["room:{code}"]`) so a reload keeps the seat. Never put it in a URL. A wrong token gets the same `404` as a missing room |
+| Origins | Browser calls are accepted from `https://appai.info`, `https://www.appai.info` and `https://kycgrayson.github.io`; other origins get `403 origin_not_allowed`. Only pages on `https://appai.info` itself can create rooms (the sign-in cookie is not sent cross-site); the other listed origins can join and play. Ask the owner to add a game's origin |
+
+Errors are `{ "error": code, "message": text }`:
+
+| Status | Codes |
+|---|---|
+| 400 | `invalid_request` |
+| 401 | `login_required` |
+| 403 | `origin_not_allowed`, `not_host` |
+| 404 | `room_not_found` |
+| 409 | `room_full`, `room_not_ready`, `room_finished`, `already_started`, `version_conflict`, `not_your_turn` (the last two include the latest `room`) |
+| 413 | `state_too_large` |
+| 429 | `rate_limited` |
+| 503 | `unavailable` |
+
+Hidden-information pattern (e.g. guess-the-number): the guesser sends `move: { "guess": "1234" }, "nextTurn": 1`. The owner's device scores the guess locally and replies with `move: { "reply": "1A2B" }, "nextTurn": 0`. To prove the answer was fixed in advance, put `sha256(answer + salt)` in the initial `state` and reveal `salt` with `end: true`.
 
 All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)

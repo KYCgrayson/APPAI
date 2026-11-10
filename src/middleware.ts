@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "@/i18n/routing";
+import { STATIC_GAME_PATH_SEGMENTS } from "@/lib/games-catalog";
+import { corsHeaders, roomRateBucket } from "@/lib/rooms-cors";
 
 // ---------------------------------------------------------------------------
 // next-intl middleware for locale detection + redirect
@@ -83,6 +85,13 @@ const rules: RateLimitRule[] = [
     windowMs: 60_000,
   },
   {
+    // Room polling runs about once a second per device, and up to four devices can share one home IP.
+    // Room keys are per IP and action (see roomRateBucket), not per room code.
+    match: (p, m) => m === "GET" && p.startsWith("/api/rooms/"),
+    limit: 600,
+    windowMs: 60_000,
+  },
+  {
     // Catch-all for any other API route
     match: (p) => p.startsWith("/api/"),
     limit: 60,
@@ -103,6 +112,9 @@ function handleRateLimit(request: NextRequest): NextResponse | null {
   const { pathname } = request.nextUrl;
   const method = request.method;
 
+  // Room preflights do no database work, and a 429 on a preflight would surface as an opaque CORS error.
+  if (method === "OPTIONS" && pathname.startsWith("/api/rooms")) return null;
+
   const rule = resolveRule(pathname, method);
   if (!rule) return null;
 
@@ -111,7 +123,7 @@ function handleRateLimit(request: NextRequest): NextResponse | null {
     request.headers.get("x-real-ip") ??
     "unknown";
 
-  const key = `${ip}:${pathname}`;
+  const key = `${ip}:${roomRateBucket(pathname, method) ?? pathname}`;
   const now = Date.now();
   const entry = rateLimitMap.get(key);
 
@@ -127,6 +139,8 @@ function handleRateLimit(request: NextRequest): NextResponse | null {
       {
         status: 429,
         headers: {
+          // Browser games on other origins must be able to read this 429 to back off.
+          ...(pathname.startsWith("/api/rooms") ? corsHeaders(request, process.env) : {}),
           "Retry-After": String(retryAfterSeconds),
         },
       }
@@ -167,6 +181,15 @@ export function middleware(request: NextRequest) {
     const requestHeaders = new Headers(request.headers);
     // Always overwrite visitor-supplied headers; hosted locales are independent of next-intl.
     requestHeaders.set("x-appai-hosted-path", pathname);
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
+  // Own static game builds and covers under public/games/ are locale-free files;
+  // the /games hub and other game slugs go through next-intl.
+  if (
+    pathname.startsWith("/games/") &&
+    STATIC_GAME_PATH_SEGMENTS.includes(pathname.split("/")[2])
+  ) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 

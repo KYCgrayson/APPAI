@@ -694,3 +694,29 @@ model Feedback {
   @@index([apiKeyId, createdAt])
   @@index([createdAt])
 }
+
+// Room-code rooms for turn-based games (#59). Public game state only, plus the creator's internal user id (never returned).
+model GameRoom {
+  code       String   @id
+  game       String
+  creatorId  String
+  state      Json
+  version    Int
+  turn       Int?
+  seatTokens String[]
+  seatSeenAt DateTime[]
+  moves      Json
+  status     String
+  moveCount  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  expiresAt  DateTime
+
+  @@index([expiresAt])
+}
+
+model GameRoomRateLimit {
+  key         String   @id
+  windowStart DateTime
+  count       Int
+}

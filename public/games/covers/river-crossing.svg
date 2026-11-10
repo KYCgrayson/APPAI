@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360" role="img" aria-label="River Crossing">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9f2e6"/><stop offset="1" stop-color="#b9e4d0"/></linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3fa9c9"/><stop offset="1" stop-color="#1f7fa3"/></linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#sky)"/>
+  <circle cx="540" cy="70" r="34" fill="#fde68a"/>
+  <path d="M0 200 Q120 170 210 196 L210 360 L0 360Z" fill="#6cc08b"/>
+  <path d="M430 196 Q530 168 640 192 L640 360 L430 360Z" fill="#6cc08b"/>
+  <rect x="190" y="200" width="260" height="160" fill="url(#water)"/>
+  <path d="M200 240 q15 -8 30 0 t30 0 M300 290 q15 -8 30 0 t30 0 M360 230 q15 -8 30 0 t30 0 M230 320 q15 -8 30 0 t30 0" stroke="#bfe9f5" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <g transform="translate(250 228)">
+    <path d="M0 0 H130 L112 34 H18Z" fill="#a0522d"/>
+    <rect x="0" y="-6" width="130" height="8" rx="3" fill="#c97a45"/>
+    <rect x="60" y="-70" width="5" height="66" fill="#7c4a2a"/>
+    <path d="M66 -68 L104 -18 H66Z" fill="#fff7ed"/>
+    <circle cx="30" cy="-20" r="12" fill="#f4c7a1"/><rect x="20" y="-10" width="20" height="10" rx="4" fill="#2563eb"/>
+    <path d="M18 -26 h24 l-4 -10 h-16z" fill="#facc15"/>
+    <ellipse cx="96" cy="-14" rx="14" ry="10" fill="#f8fafc"/><circle cx="108" cy="-22" r="6" fill="#f8fafc"/>
+  </g>
+  <g transform="translate(70 170)">
+    <path d="M0 20 l10 -18 l8 12 l10 -6 l4 14 q-14 10 -32 -2z" fill="#9ca3af"/>
+    <circle cx="10" cy="8" r="2" fill="#111827"/>
+  </g>
+  <g transform="translate(520 168)">
+    <circle cx="0" cy="10" r="14" fill="#fb923c"/><circle cx="18" cy="6" r="10" fill="#22c55e"/><circle cx="-14" cy="4" r="9" fill="#16a34a"/>
+  </g>
+</svg>
