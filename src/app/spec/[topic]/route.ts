@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { readFileSync } from "fs";
 import { join } from "path";
 
-const topics = ["api", "style", "theme", "typography", "pages", "sections", "i18n", "tools", "apps"];
+const topics = ["api", "style", "theme", "typography", "pages", "sections", "i18n", "tools", "apps", "games"];
 
 export async function GET(_request: Request, context: { params: Promise<{ topic: string }> }) {
   const { topic } = await context.params;

@@ -24,6 +24,8 @@ interface Props {
     description?: string;
     features?: string[];
     src?: string;
+    aspectRatio?: string;
+    viewportHeight?: boolean;
     initialHeight?: number;
     allowFullscreen?: boolean;
     /** Opt in to `appai_session`. Absent or false: the tool learns nothing. */
@@ -35,6 +37,8 @@ interface Props {
   /** Optional standalone URL to surface as a "Open fullscreen" affordance. */
   fullscreenHref?: string;
   identity?: IframeToolIdentity | null;
+  sessionInUrl?: boolean;
+  frameTitle?: string;
 }
 
 const DEFAULT_HEIGHT = 600;
@@ -47,9 +51,11 @@ export function IframeToolSection({
   darkMode = false,
   locale = "en",
   fullscreenHref,
+  sessionInUrl = true,
+  frameTitle,
   identity = null, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [height, setHeight] = useState<number>(
+  const [height, setHeight] = useState<number | null>(data.aspectRatio ? null :
     Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, data.initialHeight ?? DEFAULT_HEIGHT)),
   );
   const [loaded, setLoaded] = useState(false);
@@ -63,14 +69,14 @@ export function IframeToolSection({
     if (!trustedOrigin) return;
 
     function handleMessage(event: MessageEvent) {
-      if (event.origin !== trustedOrigin) return;
+      if (event.origin !== trustedOrigin || event.source !== iframeRef.current?.contentWindow) return;
       if (!event.data || typeof event.data !== "object") return;
       const msg = event.data as { type?: string; height?: number };
       if (msg.type === "ready") {
         setLoaded(true);
         return;
       }
-      if (msg.type === "resize" && typeof msg.height === "number") {
+      if (msg.type === "resize" && typeof msg.height === "number" && Number.isFinite(msg.height)) {
         const clamped = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, Math.round(msg.height)));
         setHeight(clamped);
       }
@@ -81,7 +87,7 @@ export function IframeToolSection({
   }, [trustedOrigin]);
 
   const finalSrc = check.ok && check.url
-    ? buildIframeToolSrc(data.src!, { locale, themeColor, darkMode, sessionToken })
+    ? buildIframeToolSrc(data.src!, { locale, themeColor, darkMode, sessionToken: sessionInUrl ? sessionToken : null })
     : null;
 
   return (
@@ -140,12 +146,12 @@ export function IframeToolSection({
             <iframe
               ref={iframeRef}
               src={finalSrc}
-              title={data.heading || "Embedded tool"}
+              title={frameTitle || data.heading || "Embedded tool"}
               loading="lazy"
               allow={data.allowFullscreen === false ? "clipboard-write; gamepad; accelerometer; gyroscope" : "fullscreen; clipboard-write; gamepad; accelerometer; gyroscope"}
               sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-popups allow-popups-to-escape-sandbox"
               referrerPolicy="strict-origin-when-cross-origin"
-              style={{ width: "100%", height: `${height}px`, border: 0, display: "block" }}
+              style={{ width: "100%", height: data.viewportHeight ? "calc(100dvh - 160px)" : height === null ? undefined : `${height}px`, aspectRatio: data.aspectRatio?.replace(":", "/"), border: 0, display: "block" }}
               onLoad={() => {
                 setTimeout(() => setLoaded(true), 1500);
               }}

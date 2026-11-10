@@ -50,7 +50,7 @@ test('shared dry-run validates, sanitizes, and warns without mutating input', ()
   assert.deepEqual(checkPagePreview({ slug: 'demo', title: 'Demo', parentSlug: 'root', themeColor: '#047857', fontFamily: 'Lato' }).warnings, []);
 });
 test('each preset is a copyable, clean full POST body matching its served file', () => {
-  assert.equal(PRESET_DEFS.length, 10);
+  assert.equal(PRESET_DEFS.length, 11);
   for (const preset of PRESET_DEFS) {
     const file = JSON.parse(readFileSync(new URL(`../docs/examples/${preset.exampleFile}`, import.meta.url), 'utf8'));
     assert.deepEqual(file, preset.example);
@@ -58,7 +58,7 @@ test('each preset is a copyable, clean full POST body matching its served file',
     const data = createPageSchema.parse(file);
     assert.ok(data.isPublished);
     if (['profile', 'link-in-bio', 'portfolio', 'iframe-tool'].includes(preset.id)) assert.ok(!data.content.sections.some((section: { type: string }) => section.type === 'cta'));
-    assert.ok(data.content.sections.length >= 2 && data.content.sections.length <= (preset.id === "app-landing" ? 8 : 6));
+    assert.ok(data.content.sections.length >= (preset.id === "game" ? 1 : 2) && data.content.sections.length <= (preset.id === "app-landing" ? 8 : 6));
     for (const section of data.content.sections) assert.ok(SECTION_DEFS.some(def => def.type === section.type));
     assert.deepEqual(pageLogoWarnings(data), []);
     const warnings: Parameters<typeof sanitizeContent>[2] = [];

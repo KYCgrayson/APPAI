@@ -10,6 +10,8 @@ import example7 from "../../docs/examples/product.example.json" with { type: "js
 import example8 from "../../docs/examples/hiring.example.json" with { type: "json" };
 import example9 from "../../docs/examples/iframe-tool.example.json" with { type: "json" };
 
+import gameExample from "../../docs/examples/game.example.json" with { type: "json" };
+
 // ============================================================
 // AppAI Template Registry
 // Defines all available sections (building blocks) and presets
@@ -69,6 +71,208 @@ export interface PresetDef {
 // --- All Available Sections ---
 
 export const SECTION_DEFS: SectionDef[] = [
+{
+  "type": "game",
+  "name": "Game",
+  "description": "An externally hosted original browser game with play controls, instructions and FAQ. AppAI hosts the page and SEO shell; game files stay on the publisher’s host.",
+  "fields": [
+    {
+      "name": "gameUrl",
+      "type": "url",
+      "required": true,
+      "description": "HTTPS URL (max 2048) on *.vercel.app, *.pages.dev, *.netlify.app or *.github.io."
+    },
+    {
+      "name": "heading",
+      "type": "string",
+      "required": false,
+      "description": "Section H2, max 200 characters; GAME supplies the page H1 from title."
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "required": false,
+      "description": "Specific game description, 1–2000 characters. Required when applying for /games."
+    },
+    {
+      "name": "genre",
+      "type": "string",
+      "required": false,
+      "description": "Genre, 1–100 characters. Required when applying for /games."
+    },
+    {
+      "name": "orientation",
+      "type": "string",
+      "required": false,
+      "description": "Preferred orientation; default any.",
+      "enum": [
+        "portrait",
+        "landscape",
+        "any"
+      ]
+    },
+    {
+      "name": "aspectRatio",
+      "type": "string",
+      "required": false,
+      "description": "width:height, each 1–99; default 9:16 for portrait, otherwise 16:9.",
+      "pattern": "^[1-9]\\d?:[1-9]\\d?$"
+    },
+    {
+      "name": "players",
+      "type": "object",
+      "required": false,
+      "description": "1–16 players, min <= max. Rooms support 2–4.",
+      "fields": [
+        {
+          "name": "min",
+          "type": "number",
+          "required": true,
+          "description": "Minimum players, integer 1–16."
+        },
+        {
+          "name": "max",
+          "type": "number",
+          "required": true,
+          "description": "Maximum players, integer 1–16."
+        }
+      ]
+    },
+    {
+      "name": "controls",
+      "type": "array",
+      "required": false,
+      "description": "1–3 unique strings: touch, keyboard, gamepad."
+    },
+    {
+      "name": "howToPlay",
+      "type": "array",
+      "required": true,
+      "description": "1–10 non-empty strings, each max 500 characters."
+    },
+    {
+      "name": "ageRating",
+      "type": "string",
+      "required": false,
+      "description": "Age suitability.",
+      "enum": [
+        "all",
+        "7+",
+        "12+"
+      ]
+    },
+    {
+      "name": "cover",
+      "type": "object",
+      "required": false,
+      "description": "HTTPS cover image. Recommended 1200×630.",
+      "fields": [
+        {
+          "name": "url",
+          "type": "url",
+          "required": true,
+          "description": "HTTPS URL, max 2048 characters."
+        },
+        {
+          "name": "alt",
+          "type": "string",
+          "required": true,
+          "description": "1–200 character image description."
+        },
+        {
+          "name": "width",
+          "type": "number",
+          "required": false,
+          "description": "Integer 1–10000 px."
+        },
+        {
+          "name": "height",
+          "type": "number",
+          "required": false,
+          "description": "Integer 1–10000 px."
+        }
+      ]
+    },
+    {
+      "name": "listInGames",
+      "type": "boolean",
+      "required": false,
+      "description": "Apply for inclusion in /games. Default false; true means requested (pending)."
+    },
+    {
+      "name": "identity",
+      "type": "boolean",
+      "required": false,
+      "description": "Default false. Opt in to the existing iframe-tool session contract; send tokens to your backend in X-AppAI-Session."
+    },
+    {
+      "name": "access",
+      "type": "string",
+      "required": false,
+      "description": "Optional section access.",
+      "enum": [
+        "login",
+        "admin"
+      ]
+    },
+    {
+      "name": "leaderboards",
+      "type": "array",
+      "required": false,
+      "description": "Format-only declaration, max 10 unique ids; does not create boards.",
+      "items": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "1–40 lowercase letters, digits or hyphens."
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true,
+          "description": "1–100 characters."
+        },
+        {
+          "name": "sortOrder",
+          "type": "string",
+          "required": true,
+          "description": "Score order.",
+          "enum": [
+            "asc",
+            "desc"
+          ]
+        },
+        {
+          "name": "unit",
+          "type": "string",
+          "required": false,
+          "description": "1–40 characters."
+        }
+      ]
+    },
+    {
+      "name": "faq",
+      "type": "array",
+      "required": false,
+      "description": "Up to 20 Q&A pairs; reuses FAQPage rendering.",
+      "items": [
+        {
+          "name": "question",
+          "type": "string",
+          "required": true,
+          "description": "1–300 characters."
+        },
+        {
+          "name": "answer",
+          "type": "markdown",
+          "required": true,
+          "description": "1–2000 characters."
+        }
+      ]
+    }
+  ]
+},
   {
     type: "profile-header",
     name: "Profile Header",
@@ -624,6 +828,7 @@ export const SECTION_DEFS: SectionDef[] = [
 // --- Presets (template shortcuts) ---
 
 export const PRESET_DEFS: PresetDef[] = [
+  { id: "game", template: "GAME", name: "Game", description: "Original browser game on your own host, with a hosted title, description, fullscreen play, instructions and FAQ.", sections: ["game"], example: gameExample, exampleFile: "game.example.json" },
   {
     id: "app-landing",
     example: example0,

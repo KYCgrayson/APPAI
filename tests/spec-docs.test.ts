@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { createTranslator } from 'next-intl';
 
 const read = (path: string) => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
-const topics = ['api', 'style', 'theme', 'typography', 'pages', 'sections', 'i18n', 'tools', 'apps'];
+const topics = ['api', 'style', 'theme', 'typography', 'pages', 'sections', 'i18n', 'tools', 'apps', 'games'];
 const docs = new Map(['overview', ...topics].map(topic => [topic, read('docs/spec/' + topic + '.md')]));
 const locales = ['en', 'ja', 'ko', 'zh-CN', 'zh-TW', 'de', 'fr', 'es', 'hi'];
 const names = ['Hosted Page', 'Wrapped tool', 'Connected tool', 'Universal App'];
@@ -69,6 +69,8 @@ test('generated full spec stays in sync and ends with the derived legacy mapping
   assert.equal(read('AGENT_INSTRUCTIONS.md'), generated);
   assert.doesNotMatch(overview, /Old section.*new page|\| Old section \|/);
   const appendix = generated.slice(positionOf(generated, '## Legacy anchors\n'));
+  assert.ok(appendix.includes('| Publish in one minute | https://appai.info/spec#publish-in-one-minute |'));
+  assert.ok(docs.get('pages')!.includes('<a id="29-section-types"></a>'));
   assert.match(appendix, /^## Legacy anchors\n\n\| Legacy heading \| New URL \|/);
   assert.ok(appendix.trimEnd().split('\n').slice(2).every(line => line.startsWith('|')));
   for (const anchor of ['icons', 'section-reference', 'profile-header', 'hero', 'link-rel-seo']) {
@@ -83,7 +85,7 @@ test('generated full spec stays in sync and ends with the derived legacy mapping
   for (const match of appendix.matchAll(/https:\/\/appai\.info\/spec[^\s|]*/g)) checkLink(match[0], 'legacy map');
 });
 
-test('overview is short, has nine topic rows, and ends with the single-file fallback', () => {
+test('overview is short, has ten topic rows, and ends with the single-file fallback', () => {
   assert.ok(overview.trimEnd().split('\n').length <= 200);
   assert.match(overview, /MUST READ/);
   for (const signal of ['No running software', '*.vercel.app', '*.pages.dev', '*.netlify.app', '*.github.io', 'A server, a secret, login or rate limits', 'own schema', 'business rules (inventory, orders, settlement)', 'private assets', 'full UI + API']) assert.ok(overview.includes(signal), signal);
@@ -117,7 +119,7 @@ test('topic headers have purpose then Previous/Next with a consistent happy path
     assert.equal(nav(chain[i]).previous, url(chain[i - 1]));
     if (i < chain.length - 1) assert.equal(nav(chain[i]).next, url(chain[i + 1]));
   }
-  assert.equal(nav('apps').next, undefined);
+  assert.equal(nav('games').next, undefined);
   assert.ok(docs.get('sections')!.includes('https://appai.info/spec#publish-in-one-minute'));
   const steps = overview.split('## Publish in one minute')[1].split('| Type |')[0];
   let position = -1;
@@ -203,7 +205,7 @@ test('entry points lead with the overview and agent authorization rather than pa
   assert.doesNotMatch(agentSection, />[A-Za-z][^<{]*</, 'all visible copy uses home messages');
 });
 
-test('topic route whitelists nine files, preserves examples and includes section tracing', () => {
+test('topic route whitelists ten files, preserves examples and includes section tracing', () => {
   const route = read('src/app/spec/[topic]/route.ts');
   assert.ok(route.includes('if (!topics.includes(topic))'));
   assert.match(route, /status: 404/);
@@ -247,7 +249,7 @@ test('layout metadata starts at the overview and lists four use-cases', () => {
 });
 
 test('every topic ends with compact absolute All-topics navigation', () => {
-  const labels = ['Overview', 'Authorization & API', 'Style & logo', 'Theme', 'Typography', 'Pages', 'Sections', 'Multi-language & multi-page', 'Tools', 'Universal App'];
+  const labels = ['Overview', 'Authorization & API', 'Style & logo', 'Theme', 'Typography', 'Pages', 'Sections', 'Multi-language & multi-page', 'Tools', 'Universal App', 'Games'];
   const expected = 'All topics: ' + ['overview', ...topics].map((topic, i) => `[${labels[i]}](https://appai.info/spec${topic === 'overview' ? '' : '/' + topic})`).join(' · ');
   for (const topic of topics) assert.equal(docs.get(topic)!.trimEnd().split('\n').at(-1), expected, topic);
   assert.match(docs.get('i18n')!, /^# AppAI — Multi-language & multi-page\n/);
@@ -255,9 +257,9 @@ test('every topic ends with compact absolute All-topics navigation', () => {
 });
 
 test('section index links every type to its schema and dry-run ends with publication', () => {
-  const table = docs.get('pages')!.split('### 29 Section Types')[1].split('### Auto-Generated Features')[0];
-  const rows = [...table.matchAll(/^\| \[`([\w-]+)`\]\((https:\/\/appai\.info\/spec\/(sections|tools)#[\w-]+)\) \|/gm)];
-  assert.equal(rows.length, 29);
+  const table = docs.get('pages')!.split('### 30 Section Types')[1].split('### Auto-Generated Features')[0];
+  const rows = [...table.matchAll(/^\| \[`([\w-]+)`\]\((https:\/\/appai\.info\/spec\/(sections|tools|games)#[\w-]+)\) \|/gm)];
+  assert.equal(rows.length, 30);
   for (const [, type, link] of rows) {
     assert.ok(link.endsWith('#' + type));
     checkLink(link, 'section index');

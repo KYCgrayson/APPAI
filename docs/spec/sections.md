@@ -1,5 +1,5 @@
 # AppAI — Sections
-Covers section schemas and icons; interactive section schemas remain on /spec/tools.
+Covers section schemas and icons; interactive tool schemas remain on /spec/tools and game schemas on /spec/games.
 Previous: [Pages](https://appai.info/spec/pages) · Next: [Multi-language & multi-page](https://appai.info/spec/i18n)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
@@ -23,6 +23,8 @@ logo-line, logo-threads, logo-whatsapp, people-outline, time-outline, calendar-o
 ---
 
 ## Section Reference
+
+Browser games use the [`game` section](https://appai.info/spec/games#game), available on every template; `GAME` supplies a page H1.
 
 JSON schemas for page sections below; the eight interactive section schemas are on [/spec/tools](https://appai.info/spec/tools). Also available via `GET /api/v1/sections` and `GET /api/v1/sections?format=jsonschema`.
 
@@ -279,4 +281,4 @@ Set canonicalUrl only for an app's own primary marketing site (e.g. a custom dom
 
 Older pages opt in when their content is saved again through the API (PUT, PATCH, PATCH section, or POST ?upsert=true).
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)

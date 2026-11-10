@@ -1,3 +1,4 @@
+import { gamePageWarnings, gamesListingResponse, gameContentIssues } from "./game-section.ts";
 import { computeTypography, storeTypography, typographySettings } from "./typography.ts";
 import { buildPagePath } from "./parse-page-segments.ts";
 import { createPageSchema } from "./validations/page.ts";
@@ -8,7 +9,7 @@ import { SECTION_DEFS, type SectionFieldDef } from "./template-registry.ts";
 
 export function checkPagePreview(body: unknown, iconNames: readonly string[] = [], context: { origin?: string; isDefault?: boolean; exists?: boolean } = {}) {
   const parsed = createPageSchema.safeParse(body);
-  if (!parsed.success) return { valid: false, errors: parsed.error.issues.map(e => ({ path: e.path.map(String).join("."), message: e.message })), warnings: [] as SanitizeWarning[], sanitizedContent: null, next: "Fix errors and dry-run again." };
+  if (!parsed.success) return { valid: false as const, errors: parsed.error.issues.map(e => ({ path: e.path.map(String).join("."), message: e.message })), warnings: [...gamePageWarnings((body || {}) as Record<string, unknown>), ...pageHeadingWarnings((body as { content?: unknown } | null)?.content, (body as { template?: string } | null)?.template)], sanitizedContent: null, typography: undefined, typographyMobile: undefined, gamesListing: undefined, next: "Fix errors and dry-run again." };
   const warnings: SanitizeWarning[] = [];
   const rawBody = body as Record<string, unknown>;
   for (const field of ["themeColor", "fontFamily"]) {
@@ -19,7 +20,8 @@ export function checkPagePreview(body: unknown, iconNames: readonly string[] = [
   const computedTypography = computeTypography(typographySettings(sanitizedContent));
   warnings.push(...computedTypography.warnings);
   warnings.push(...pageLogoWarnings({ ...parsed.data, content: sanitizedContent }));
-  warnings.push(...pageHeadingWarnings(sanitizedContent));
+  warnings.push(...pageHeadingWarnings(sanitizedContent, parsed.data.template));
+  warnings.push(...gamePageWarnings({ ...parsed.data, content: sanitizedContent }));
   // Step 3: Extra content-level checks (non-blocking, informational)
   const rawSections = sanitizedContent.sections;
   const sections = Array.isArray(rawSections) ? rawSections.filter(section => section && typeof section === "object" && !Array.isArray(section)) as Array<{ type: string; data: Record<string, unknown> }> : [];
@@ -59,7 +61,8 @@ export function checkPagePreview(body: unknown, iconNames: readonly string[] = [
     const section = Array.isArray(rawSections) ? rawSections[Number(index)] : null;
     return section && typeof section === "object" && "type" in section ? `${match}(${section.type})` : match;
   });
-  return { valid: true, errors: [], warnings, sanitizedContent, typography: computedTypography.desktop, typographyMobile: computedTypography.mobile, next: pagePreviewNext(parsed.data, context) };
+  const errors = gameContentIssues(sanitizedContent).map(e => ({ path: ["content", ...e.path].map(String).join("."), message: e.message }));
+  return { valid: errors.length === 0, errors, warnings, ...gamesListingResponse(sanitizedContent), sanitizedContent, typography: computedTypography.desktop, typographyMobile: computedTypography.mobile, next: errors.length ? "Fix errors and dry-run again." : pagePreviewNext(parsed.data, context) };
 }
 
 /** Recursively find fields named "icon" and return their paths + values. */

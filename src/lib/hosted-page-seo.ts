@@ -1,3 +1,4 @@
+import { gameSectionSchema } from "./game-section.ts";
 import { DAYS, isBusinessHours, type BusinessHours } from "./business-hours.ts";
 import { normalizeHostedContent } from "./hosted-content.ts";
 import { PLATFORM_ORIGIN } from "./platform-identity.ts";
@@ -23,9 +24,10 @@ export function hostedOgImage(page: any): string | undefined {
   const sections: any[] = normalizeHostedContent(page.content).sections;
   const profile = sections.find((s: any) => s.type === "profile-header")?.data;
   const project = sections.filter((s: any) => s.type === "project-cards").flatMap((s: any) => s.data?.items || []).find((item: any) => safeHttpUrl(item?.screenshot?.url) || safeHttpUrl(item?.icon?.url));
+  const game = sections.find((s: any) => s.type === "game")?.data;
   const screenshot = sections.find((s: any) => s.type === "screenshots")?.data?.images?.[0];
-  return [page.ogImage, page.heroImage, profile?.avatar?.url, project?.screenshot?.url, project?.icon?.url,
-    typeof screenshot === "string" ? screenshot : screenshot?.url].map(value => safeHttpUrl(value)).find(Boolean);
+  return [page.ogImage, page.heroImage, page.template === "GAME" ? game?.cover?.url : undefined, profile?.avatar?.url, project?.screenshot?.url, project?.icon?.url,
+    typeof screenshot === "string" ? screenshot : screenshot?.url, game?.cover?.url].map(value => safeHttpUrl(value)).find(Boolean);
 }
 
 export function buildJsonLd(
@@ -35,6 +37,7 @@ export function buildJsonLd(
   breadcrumb: Record<string, unknown> | null,
 ) {
   const content = normalizeHostedContent(page.content) as any;
+  const games = content.sections.filter((s: any) => s.type === "game").flatMap((s: any) => { const parsed = gameSectionSchema.safeParse(s.data); return parsed.success ? [parsed.data] : []; });
   const downloadSection = content?.sections?.find((s: any) => s.type === "download");
   const platforms: string[] = [];
   if (downloadSection?.data?.appStoreUrl) platforms.push("iOS");
@@ -67,13 +70,25 @@ export function buildJsonLd(
       ...(safeHttpUrl(profile.avatar?.url) ? { image: safeHttpUrl(profile.avatar.url) } : {}),
       ...(sameAs.length ? { sameAs } : {}),
     };
-  } else if (downloadSection) {
+  } else if (downloadSection && !games.length) {
     primary.applicationCategory = "Application";
     if (platforms.length > 0) primary.operatingSystem = platforms.join(", ");
     primary.offers = { "@type": "Offer", price: "0", priceCurrency: "USD" };
   }
 
   const graph: any[] = [primary];
+  games.forEach((game: any, index: number) => {
+    const videoGame = {
+      "@type": "VideoGame", "@id": `${url}#game-${index + 1}`,
+      name: game.heading || page.title, description: game.description || page.tagline || page.metaDescription || undefined,
+      genre: game.genre, gamePlatform: "Web browser",
+      playMode: game.players ? [...(game.players.min === 1 ? ["SinglePlayer"] : []), ...(game.players.max > 1 ? ["MultiPlayer"] : [])] : undefined,
+      numberOfPlayers: game.players ? { "@type": "QuantitativeValue", minValue: game.players.min, maxValue: game.players.max } : undefined,
+      audience: game.ageRating ? { "@type": "PeopleAudience", suggestedMinAge: game.ageRating === "all" ? 0 : parseInt(game.ageRating) } : undefined,
+      inLanguage: page.locale, url, image: safeHttpUrl(game.cover?.url),
+    };
+    graph.push(videoGame);
+  });
   // Inspect original values before display normalization can coerce numeric text.
   const contact = (Array.isArray(page.content?.sections) ? page.content.sections : []).find((s: any) => s?.type === "contact")?.data;
   if (contact && (page.template === "COMPANY_PROFILE" || page.preset === "company-service" || contact.hours !== undefined)) graph.push({

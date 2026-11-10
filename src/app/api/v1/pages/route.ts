@@ -1,3 +1,4 @@
+import { gameContentIssues, gamesListingResponse, gamePageWarnings } from "@/lib/game-section";
 import { storeTypography, typographyWarnings } from "@/lib/typography";
 import { parseDryRun } from "@/lib/page-preview";
 import { pageLogoUpdate, pageLogoWarnings } from "@/lib/page-logo";
@@ -22,6 +23,7 @@ function mapTemplateToCategory(template: string): string {
     PERSON: "OTHER",
     PORTFOLIO: "DESIGN",
     LINK_IN_BIO: "SOCIAL",
+    GAME: "GAMES",
   };
   return map[template] || "OTHER";
 }
@@ -122,6 +124,9 @@ export async function POST(request: NextRequest) {
 
       const upsertWarnings: SanitizeWarning[] = [];
       data.content = sanitizePageContent(data.content, undefined, upsertWarnings) as Record<string, unknown>;
+      const gameIssues = gameContentIssues(data.content);
+      if (gameIssues.length) throw new z.ZodError(gameIssues);
+
       // parentSlug is intentionally excluded from upsert mutations: reparenting
       // a page (root <-> child) is destructive and must go through delete+create.
       const { category: appCategory, ...pageData } = data;
@@ -163,10 +168,10 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      upsertWarnings.push(...pageLogoWarnings(updated), ...typographyWarnings(updated));
+      upsertWarnings.push(...pageLogoWarnings(updated), ...typographyWarnings(updated), ...gamePageWarnings(updated));
       revalidateSeoIndexes(updated.slug);
       return NextResponse.json(
-        { ...updated, ...(upsertWarnings.length > 0 ? { warnings: upsertWarnings } : {}) },
+        { ...updated, ...gamesListingResponse(updated.content), ...(upsertWarnings.length > 0 ? { warnings: upsertWarnings } : {}) },
         { status: 200 },
       );
     }
@@ -199,6 +204,9 @@ export async function POST(request: NextRequest) {
     // Sanitize content before saving: strip HTML tags and validate URLs
     const contentWarnings: SanitizeWarning[] = [];
     data.content = sanitizePageContent(data.content, undefined, contentWarnings) as Record<string, unknown>;
+
+    const gameIssues = gameContentIssues(data.content);
+    if (gameIssues.length) throw new z.ZodError(gameIssues);
 
     // parentSlug is set explicitly below from the validated `parentSlug`
     // local, so it's stripped here from the spread to avoid double-set.
@@ -264,10 +272,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    contentWarnings.push(...pageLogoWarnings(page), ...typographyWarnings(page));
+    contentWarnings.push(...pageLogoWarnings(page), ...typographyWarnings(page), ...gamePageWarnings(page));
     revalidateSeoIndexes(page.slug);
     return NextResponse.json(
-      { ...page, ...(contentWarnings.length > 0 ? { warnings: contentWarnings } : {}) },
+      { ...page, ...gamesListingResponse(page.content), ...(contentWarnings.length > 0 ? { warnings: contentWarnings } : {}) },
       { status: 201 },
     );
   } catch (error: unknown) {
@@ -296,5 +304,5 @@ export async function GET(request: NextRequest) {
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json(pages);
+  return NextResponse.json(pages.map(page => ({ ...page, ...gamesListingResponse(page.content) })));
 }

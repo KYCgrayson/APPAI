@@ -128,6 +128,7 @@ export function registerDirectoryFixtures({ translated = false } = {}) {
 export function registerHostedRenderLoader() {
   return registerHooks({
     resolve(specifier, context, nextResolve) {
+      if (specifier === 'next/image') return { url: 'fixture:next-image', shortCircuit: true };
       if (specifier === '@/lib/iframe-tool-session') return { url: 'fixture:identity', shortCircuit: true };
       if (specifier === '@/lib/auth') return { url: 'fixture:auth', shortCircuit: true };
       if (specifier === '@/lib/db') return { url: 'fixture:db', shortCircuit: true };
@@ -142,6 +143,7 @@ export function registerHostedRenderLoader() {
       return nextResolve(specifier, context);
     },
     load(url, context, nextLoad) {
+      if (url === 'fixture:next-image') return { format: 'module', source: 'export { Image as default } from "next/dist/client/image-component.js";', shortCircuit: true };
       if (url === 'fixture:identity') return { format: 'module', source: 'export function issueIframeToolSession() { throw new Error("Unexpected identity issuance in render fixture"); }', shortCircuit: true };
       if (url === 'fixture:auth') return { format: 'module', source: 'export async function auth() { return null; } export function signIn() { throw new Error("Unexpected auth in render fixture"); }', shortCircuit: true };
       if (url === 'fixture:db') return { format: 'module', source: 'export const db = globalThis[Symbol.for("appai.test.db")];', shortCircuit: true };

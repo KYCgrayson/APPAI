@@ -21,6 +21,7 @@ nothing.
 |---|---|---|---|
 | [Hosted Page](https://appai.info/spec/pages) | A product, business or person to describe — a public page at appai.info/p/{slug}. | No running software | `POST /api/v1/pages` with sections |
 | [Wrapped tool](https://appai.info/spec/tools) | A tool already deployed elsewhere (Vercel, Cloudflare Pages, Netlify, GitHub Pages) — AppAI wraps it in a page with SEO, language and theme. | `*.vercel.app`, `*.pages.dev`, `*.netlify.app`, `*.github.io` | Hero + `iframe-tool` + 1-2 supporting sections. Their deploy keeps running where it is; AppAI adds the SEO shell, locale, theme, the `access` gate, and — with `"identity": true` — a verifiable identity for the visitor |
+| [Game](https://appai.info/spec/games) | An original browser game deployed on the developer’s own host. | Family puzzles, short rounds, touch controls | `GAME` template + `game` section; AppAI hosts the page and SEO shell, game files stay on the user’s host; optional pending application for `/games` |
 | [Connected tool](https://appai.info/spec/tools) | A tool that needs a backend, login or quota — wrapped as above and connected to an owner-maintained connector. | A server, a secret, login or rate limits | Same as above, plus `apiBase: "/api/connect/{connector}"` and `"access": "login"` on the section |
 | [Universal App](https://appai.info/spec/apps) | Persistent data and business rules — a reviewed app manifest that runs at appai.info/app/{appId}. | Persistent data, own schema, business rules (inventory, orders, settlement), private assets, full UI + API | `appai.app.json` manifest → `POST /api/v1/apps/{appId}/releases` → review → `/app/{appId}` |
 
@@ -58,6 +59,7 @@ Hosted Pages are always published in four locales: English (`en`), Traditional C
 | Company / service | `company-service` | [JSON](https://appai.info/spec/examples/company-service.example.json) |
 | Product | `product` | [JSON](https://appai.info/spec/examples/product.example.json) |
 | Hiring / job opening | `hiring` | [JSON](https://appai.info/spec/examples/hiring.example.json) |
+| Browser game | `game` | [JSON](https://appai.info/spec/examples/game.example.json) |
 | Wrapped tool | `iframe-tool` | [JSON](https://appai.info/spec/examples/iframe-tool.example.json) |
 
 If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with `POST /api/v1/upload`, then publish. Agents MUST supply a logo. Non-blocking platform warnings are a fallback, not permission to skip it.
@@ -82,6 +84,7 @@ Copy this complete request body into both the dry-run and publish POSTs. Change 
 | Multi-language & multi-page | https://appai.info/spec/i18n | Languages, child pages and navigation |
 | Tools | https://appai.info/spec/tools | Wrapped tool, Connected tool, identity, interactive schemas and room-code multiplayer |
 | Universal App | https://appai.info/spec/apps | Universal App manifests, releases, review and runtime |
+| Games | https://appai.info/spec/games | Original externally hosted games, GAME template, /games applications and room-code API |
 
 ## Document Guide
 

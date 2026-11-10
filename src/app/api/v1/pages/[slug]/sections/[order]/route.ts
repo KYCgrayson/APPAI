@@ -1,3 +1,4 @@
+import { gameContentIssues, gameSlugReserved, gamesListingResponse, gamePageWarnings } from "@/lib/game-section";
 import type { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -103,14 +104,21 @@ export async function PATCH(
   // Replace section data in-place
   sections[idx] = { ...sections[idx], data: sanitized };
 
+  const savedContent = sanitizePageContent({ ...content, sections });
+  const gameIssues = gameContentIssues(savedContent);
+  if (gameIssues.length) return NextResponse.json({ error: "Validation failed", details: gameIssues }, { status: 400 });
+  if (gameSlugReserved({ ...page, content: savedContent })) return NextResponse.json({ error: "This game slug is reserved; choose a distinct slug." }, { status: 400 });
+  warnings.push(...gamePageWarnings({ ...page, content: savedContent }));
+
   const updated = await db.hostedPage.update({
     where: { id: page.id },
-    data: { content: sanitizePageContent({ ...content, sections }) as Prisma.InputJsonValue },
+    data: { content: savedContent as Prisma.InputJsonValue },
   });
 
   revalidateSeoIndexes(updated.slug);
   return NextResponse.json({
     section: sections[idx],
+    ...gamesListingResponse(updated.content),
     etag: `"${updated.updatedAt.toISOString()}"`,
     ...(warnings.length > 0 ? { warnings } : {}),
   });

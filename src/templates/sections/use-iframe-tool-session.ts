@@ -5,7 +5,8 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
 /**
  * Keeps an embedded tool's `appai_session` alive.
  *
- * The first token rides on the iframe URL, so the tool has an identity in its
+ * Game sections receive the first grant by postMessage on load. For tools,
+ * the first token rides on the iframe URL, so the tool has an identity in its
  * very first request. Every later one arrives by `postMessage`: changing `src`
  * would reload the frame and throw away whatever the visitor was in the middle
  * of, which for a tool that runs long jobs is the whole reason it needed an
@@ -64,7 +65,7 @@ export function useIframeToolSession(
   useEffect(() => {
     if (!trustedOrigin) return;
     function handleMessage(event: MessageEvent) {
-      if (event.origin !== trustedOrigin) return;
+      if (event.origin !== trustedOrigin || event.source !== iframeRef.current?.contentWindow) return;
       const msg = event.data as { type?: string } | null;
       if (!msg || typeof msg !== "object" || msg.type !== "appai:session-request") return;
       const current = grantRef.current;
@@ -72,7 +73,42 @@ export function useIframeToolSession(
     }
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [trustedOrigin, postSession]);
+  }, [trustedOrigin, postSession, iframeRef]);
+
+  // Returning from sign-in renews the viewer context without reloading the game.
+  useEffect(() => {
+    if (!pageId || section === null || !trustedOrigin) return;
+    let cancelled = false;
+    const renew = async () => {
+      if (document.visibilityState === "hidden") return;
+      try {
+        const response = await fetch("/api/v1/tools/sessions/issue", {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ pageId, section }),
+        });
+        if (!response.ok) return;
+        const next = await response.json() as { token?: string; expiresAt?: string };
+        if (cancelled || !next.token || !next.expiresAt) return;
+        const updated = { token: next.token, expiresAt: next.expiresAt };
+        grantRef.current = updated;
+        setGrant(updated);
+        postSession(updated);
+      } catch { /* Retry on the next renewal or return to the page. */ }
+    };
+    const onLoad = () => { if (grantRef.current) postSession(grantRef.current); };
+    const frame = iframeRef.current;
+    frame?.addEventListener("load", onLoad);
+    window.addEventListener("focus", renew);
+    window.addEventListener("pageshow", renew);
+    document.addEventListener("visibilitychange", renew);
+    return () => {
+      cancelled = true;
+      frame?.removeEventListener("load", onLoad);
+      window.removeEventListener("focus", renew);
+      window.removeEventListener("pageshow", renew);
+      document.removeEventListener("visibilitychange", renew);
+    };
+  }, [pageId, section, trustedOrigin, iframeRef, postSession]);
 
   // Renew before the token runs out. Failure is silent and harmless: the tool
   // keeps the token it already has until that one expires.

@@ -9,11 +9,19 @@
 - [x] Non-blocking H1-count warnings in dry-run; metadata, URL, sitemap and renderer regression coverage. Clear pre-existing lint errors without changing lint configuration.
 - [x] Package A round 1: runtime sitemap shard routes and bounded per-shard caches, sitemap-index QA, zh-TW copy and phrase-aware H1 wrapping, locale-preserving sibling navigation, hosted fallback/JSON-LD regressions, and dashboard footer prefetch disabled.
 - [x] Package A round 2: Chinese phrase breaks and Chinese/Korean keep-all H1 classes, shorter English copy and non-breaking English/French endings, nine-language SSR heading assertions, `/spec` footer prefetch disabled, and consistent Open Graph locale/alternate formats.
-- [ ] Add the games discovery link to llms.txt after `/spec/games` exists (package D).
+- [x] Add the games discovery link to llms.txt after `/spec/games` exists (package D).
 - [x] Default Turbopack production build passed locally (confirmed before round 2); Webpack production build also passed.
 - [ ] Independent verifier: check actual homepage H1 wrapping in all nine languages at 375px and 1280px; SSR assertions do not verify browser line layout.
 
 - [x] App promotion headings/store badges, screenshot demo warnings, preset consistency, and wrapped-tool publishing guidance.
+
+## Game publishing (#67, packages B and D)
+
+- [x] Externally hosted `game` section and `GAME` preset, fullscreen play, instructions, FAQ and VideoGame structured data.
+- [x] Shared validation, dry-run guidance, reserved catalog slugs and pending `/games` application receipt in existing page JSON.
+- [x] `/spec/games`, copyable GAME JSON, overview/llms/skill discovery and regenerated full spec.
+- [ ] Browser QA: 375px game layout, fullscreen state preservation and session renewal after returning from sign-in.
+- [ ] Package C: game review/listing management, supported external room origins, and future `/games/{slug}` hosted URLs with redirects.
 
 ## Feedback channel
 

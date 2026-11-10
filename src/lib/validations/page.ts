@@ -1,3 +1,4 @@
+import { gameContentIssues, gameSlugReserved } from "../game-section.ts";
 import { isBusinessHours } from "../business-hours.ts";
 import { z } from "zod";
 
@@ -23,7 +24,8 @@ const typographyFields = {
   textContrast: z.enum(["low", "normal", "high"]).optional(),
   typography: z.object({ caption: textStep.optional(), card: textStep.optional(), body: textStep.optional(), heading: textStep.optional(), display: textStep.optional() }).strict().optional(),
 };
-const contentSchema = z.object(typographyFields).catchall(z.any()).superRefine((content, ctx) => {
+const makeContentSchema = (partial = false) => z.object(typographyFields).catchall(z.any()).superRefine((content, ctx) => {
+  for (const issue of gameContentIssues(content, partial)) ctx.addIssue(issue);
   if (!Array.isArray(content.sections)) return;
   content.sections.forEach((section, index) => {
     if (section?.type === "features" && Array.isArray(section.data?.items)) {
@@ -38,6 +40,8 @@ const contentSchema = z.object(typographyFields).catchall(z.any()).superRefine((
   });
 });
 
+const contentSchema = makeContentSchema();
+
 const pageSchema = z.object({
   slug: z
     .string()
@@ -50,7 +54,7 @@ const pageSchema = z.object({
     .default("en")
     .optional(),
   template: z
-    .enum(["APP_LANDING", "COMPANY_PROFILE", "PRODUCT_SHOWCASE", "PORTFOLIO", "LINK_IN_BIO", "PERSON"])
+    .enum(["APP_LANDING", "COMPANY_PROFILE", "PRODUCT_SHOWCASE", "PORTFOLIO", "LINK_IN_BIO", "PERSON", "GAME"])
     .default("APP_LANDING"),
   title: z.string().min(1).max(200),
   tagline: z.string().max(500).optional(),
@@ -112,13 +116,16 @@ const pageSchema = z.object({
 });
 
 export const createPageSchema = pageSchema.refine(
+  data => !gameSlugReserved(data),
+  { path: ["slug"], message: "This game slug is reserved; choose a distinct slug." },
+).refine(
   data => !data.parentSlug || (!isValidLocale(data.slug) && !["privacy", "terms", "tools"].includes(data.slug)),
   { path: ["slug"], message: "Child slug is reserved for hosted locales or privacy, terms, tools; choose a distinct project slug." },
 );
 export const updatePageSchema = pageSchema.extend({
   locale: pageSchema.shape.locale.unwrap().removeDefault().optional(),
   template: pageSchema.shape.template.removeDefault(),
-  content: pageSchema.shape.content.removeDefault(),
+  content: makeContentSchema(true),
   darkMode: pageSchema.shape.darkMode.removeDefault(),
   isPublished: pageSchema.shape.isPublished.removeDefault(),
 }).partial();

@@ -1,6 +1,6 @@
 # AppAI — Universal App
 Covers Universal App manifests, immutable releases, platform review and runtime contracts.
-Previous: [Tools](https://appai.info/spec/tools)
+Previous: [Tools](https://appai.info/spec/tools) · Next: [Games](https://appai.info/spec/games)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 Follow [Authorization & API](https://appai.info/spec/api) for the key, then return here for the release steps.
@@ -143,4 +143,4 @@ digests. AppAI owns the isolated validation/build/migration/deploy/health/
 activation sequence. Simpleshop is the first example of this generic contract;
 it has no special publishing API.
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)

@@ -2,16 +2,16 @@ import { COMMON_SECTION_FIELDS, getSectionDef } from "./template-registry.ts";
 import { normalizeHostedContent } from "./hosted-content.ts";
 
 /** Match the public renderer: empty sections get a legacy hero; prose demotes H1s. */
-export function pageHeadingWarnings(content: unknown) {
+export function pageHeadingWarnings(content: unknown, template?: string) {
   const { sections } = normalizeHostedContent(content);
-  const count = sections.length === 0 ? 1 : sections.filter(section => {
+  const count = (template === "GAME" ? 1 : 0) + (sections.length === 0 ? (template === "GAME" ? 0 : 1) : sections.filter(section => {
     if (section.data.access === "login" || section.data.access === "admin") return false;
     return section.type === "hero" || (section.type === "profile-header"
       && typeof section.data.name === "string" && Boolean(section.data.name.trim()));
-  }).length;
+  }).length);
   return count === 1 ? [] : [{
     path: "content.sections",
-    message: `The public page renders ${count} H1 headings; aim for exactly one. ${count === 0 ? "Add a hero or a named profile-header section." : "Keep one hero or named profile-header and use section headings for the rest."}`,
+    message: `The public page renders ${count} H1 headings; aim for exactly one. ${count === 0 ? "Add a hero or a named profile-header section." : template === "GAME" ? "GAME already supplies the title H1; use section headings instead of hero/profile-header H1s." : "Keep one hero or named profile-header and use section headings for the rest."}`,
   }];
 }
 

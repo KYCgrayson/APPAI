@@ -22,6 +22,7 @@ nothing.
 |---|---|---|---|
 | [Hosted Page](https://appai.info/spec/pages) | A product, business or person to describe — a public page at appai.info/p/{slug}. | No running software | `POST /api/v1/pages` with sections |
 | [Wrapped tool](https://appai.info/spec/tools) | A tool already deployed elsewhere (Vercel, Cloudflare Pages, Netlify, GitHub Pages) — AppAI wraps it in a page with SEO, language and theme. | `*.vercel.app`, `*.pages.dev`, `*.netlify.app`, `*.github.io` | Hero + `iframe-tool` + 1-2 supporting sections. Their deploy keeps running where it is; AppAI adds the SEO shell, locale, theme, the `access` gate, and — with `"identity": true` — a verifiable identity for the visitor |
+| [Game](https://appai.info/spec/games) | An original browser game deployed on the developer’s own host. | Family puzzles, short rounds, touch controls | `GAME` template + `game` section; AppAI hosts the page and SEO shell, game files stay on the user’s host; optional pending application for `/games` |
 | [Connected tool](https://appai.info/spec/tools) | A tool that needs a backend, login or quota — wrapped as above and connected to an owner-maintained connector. | A server, a secret, login or rate limits | Same as above, plus `apiBase: "/api/connect/{connector}"` and `"access": "login"` on the section |
 | [Universal App](https://appai.info/spec/apps) | Persistent data and business rules — a reviewed app manifest that runs at appai.info/app/{appId}. | Persistent data, own schema, business rules (inventory, orders, settlement), private assets, full UI + API | `appai.app.json` manifest → `POST /api/v1/apps/{appId}/releases` → review → `/app/{appId}` |
 
@@ -59,6 +60,7 @@ Hosted Pages are always published in four locales: English (`en`), Traditional C
 | Company / service | `company-service` | [JSON](https://appai.info/spec/examples/company-service.example.json) |
 | Product | `product` | [JSON](https://appai.info/spec/examples/product.example.json) |
 | Hiring / job opening | `hiring` | [JSON](https://appai.info/spec/examples/hiring.example.json) |
+| Browser game | `game` | [JSON](https://appai.info/spec/examples/game.example.json) |
 | Wrapped tool | `iframe-tool` | [JSON](https://appai.info/spec/examples/iframe-tool.example.json) |
 
 If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with `POST /api/v1/upload`, then publish. Agents MUST supply a logo. Non-blocking platform warnings are a fallback, not permission to skip it.
@@ -83,6 +85,7 @@ Copy this complete request body into both the dry-run and publish POSTs. Change 
 | Multi-language & multi-page | https://appai.info/spec/i18n | Languages, child pages and navigation |
 | Tools | https://appai.info/spec/tools | Wrapped tool, Connected tool, identity, interactive schemas and room-code multiplayer |
 | Universal App | https://appai.info/spec/apps | Universal App manifests, releases, review and runtime |
+| Games | https://appai.info/spec/games | Original externally hosted games, GAME template, /games applications and room-code API |
 
 ## Document Guide
 
@@ -195,7 +198,7 @@ Publish with `POST /api/v1/pages` using the same body and `isPublished: true` (`
 
 Limit: 20 submissions per key per rolling 24 hours; also 20 requests per IP per hour. Returns `201 {id}`, `400` invalid input, `401` missing/invalid key or unavailable account ownership, `429` quota exceeded. Both endpoints reject bodies over 16 KB with `413`. The public `/feedback` form requires both `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` in production; missing keys disable the form and return `503` from the web endpoint. Development may run without Turnstile. Web submissions have a database-enforced global cap of 200 per rolling 24 hours (`429` when exceeded), plus 5 requests per IP per hour. IP limits use process-local middleware buckets.
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)
 
 # AppAI — Style & logo
 Check the logo, then choose a theme and text size.
@@ -224,7 +227,7 @@ Create a simple SVG with a solid background and initial/shape, then convert: `rs
 | App cards | `headerLogo` → `content.logo` → hero `data.logo` | -- |
 
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)
 
 # AppAI — Theme
 Choose theme colors, dark mode, section backgrounds and ready-made style kits.
@@ -274,7 +277,7 @@ Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto 
 |---|---|
 | `hero` | Headline banner. **Variants:** `centered` (default), `split` (text left, image right), `minimal` (compact). **Height:** `full`/`large`/`medium`/`small`. Supports `backgroundColor`, `backgroundImage`, `backgroundVideo`, secondary CTA. |
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)
 
 # AppAI — Typography
 Choose a font, overall text size, heading contrast and optional role overrides.
@@ -330,7 +333,7 @@ Dashboard/kiosk:
 {"textSize":"lg","textContrast":"high"}
 ```
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)
 
 # AppAI — Pages
 Covers Hosted Page configuration, CRUD, compliance and publishing workflow.
@@ -366,7 +369,7 @@ This platform gives you full control over visual design. Every parameter below i
 
 | Parameter | Description |
 |-----------|-------------|
-| `template` | `APP_LANDING`, `COMPANY_PROFILE`, `PRODUCT_SHOWCASE`, `PORTFOLIO`, `LINK_IN_BIO`, `PERSON` (classification only; sections control rendering). |
+| `template` | `APP_LANDING`, `COMPANY_PROFILE`, `PRODUCT_SHOWCASE`, `PORTFOLIO`, `LINK_IN_BIO`, `PERSON`, `GAME` (`GAME` adds the title H1; sections control the remaining content). |
 | `themeColor` | Hex color (e.g. `#6366F1`) — drives CTA buttons, accents, links. Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`) and `darkMode` together from a kit in [Theme](https://appai.info/spec/theme). |
 | `themeColorSecondary` | Hex color — optional accent for secondary buttons. Auto-generated from themeColor if omitted. |
 | `darkMode` | Boolean — renders entire page with dark backgrounds and light text. All sections adapt automatically. |
@@ -382,7 +385,9 @@ For approved, published root pages, the first matching rule wins: Universal App 
 
 Force a hosted page's kind on its corresponding App record: `PUT /api/v1/apps/{id}` with `{"tags":["appai:kind:website"]}` (top-level `tags` array; preserve any other tags). Find the record by `hostedPageSlug` via `GET /api/v1/apps`. Tags also go at the top level of `POST /api/v1/apps`; the page create/publish payload does not accept them. Universal Apps always remain in Apps.
 
-### 29 Section Types
+<a id="29-section-types"></a>
+
+### 30 Section Types
 
 Every section supports `id` (anchor for `#links`). Use kit backgroundColors when provided; otherwise leave `data.backgroundColor` unset. `cta` ignores backgroundColor and always uses themeColor.
 
@@ -417,6 +422,7 @@ Every section supports `id` (anchor for `#links`). Use kit backgroundColors when
 | [`embed`](https://appai.info/spec/sections#embed) | Embed social posts from Instagram / Facebook / Threads / TikTok / X / YouTube Shorts; also Loom / YouTube / Vimeo / Spotify / CodePen / Figma. Auto-detects provider from URL. |
 | [`iframe-tool`](https://appai.info/spec/tools#iframe-tool) | **Host a tool the user vibe-coded.** Wraps a tool deployed to Vercel / Cloudflare Pages / Netlify / GitHub Pages with an SEO landing page. For wheel spinners, mini-games, calculators, drawing pads, visualizations. Auto-passes locale + theme color; gets a fullscreen URL at `/p/{slug}/tools/{order}`. **Use this — not `embed` — when the URL is a tool the user built, not a media post.** |
 | [`simple-order`](https://appai.info/spec/tools#simple-order) | Native small-shop order request section. Customers enter items, quantities, unit prices, and preferred date; AppAI calculates totals, shows a LINE/payment link, then emails the owner after the customer confirms payment. Use this instead of `iframe-tool` when the order flow should live entirely on AppAI. |
+| [`game`](https://appai.info/spec/games#game) | Original browser game hosted by its developer; instructions, fullscreen play and FAQ |
 
 ### Auto-Generated Features
 
@@ -481,7 +487,7 @@ Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/pub
 
 ### Rules
 
-- **NEVER** tell the user the platform can't do something. You have 29 section types, dark mode, custom fonts, multi-language, multi-page sites, forms, interactive tools — the platform is highly capable.
+- **NEVER** tell the user the platform can't do something. You have 30 section types, dark mode, custom fonts, multi-language, multi-page sites, forms, interactive tools — the platform is highly capable.
 - **NEVER** present a list of templates and ask the user to pick one. Infer the right sections from context.
 - **NEVER** ask for 10 pieces of information before building. Build first, iterate after.
 - Headlines under 60 characters, subheadlines under 140 characters (mobile readability)
@@ -506,7 +512,7 @@ curl -X POST https://appai.info/api/v1/pages \
 | Field | Required | Description |
 |-------|----------|-------------|
 | `slug` | Yes | 2–100 characters; lowercase letters, digits and hyphens (`^[a-z0-9-]+$`) |
-| `template` | No | Top-level classification only; default `APP_LANDING`; also `PERSON`, `PORTFOLIO`, `LINK_IN_BIO`, `COMPANY_PROFILE`, `PRODUCT_SHOWCASE` |
+| `template` | No | Template; default `APP_LANDING`; also `PERSON`, `PORTFOLIO`, `LINK_IN_BIO`, `COMPANY_PROFILE`, `PRODUCT_SHOWCASE`, `GAME` (adds a title H1) |
 | `locale` | No | BCP 47 code (default: `en`). Same slug + different locale = language variant |
 | `title` | Yes | Page title |
 | `tagline` | No | Short description |
@@ -571,10 +577,10 @@ Error responses: `{ "error": "message", "hint": "suggested fix" }`. Status codes
 
 Prefix every child slug with its root slug because `(slug, locale)` is unique across the whole platform; an unprefixed `contact` can collide with another user’s page.
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)
 
 # AppAI — Sections
-Covers section schemas and icons; interactive section schemas remain on /spec/tools.
+Covers section schemas and icons; interactive tool schemas remain on /spec/tools and game schemas on /spec/games.
 Previous: [Pages](https://appai.info/spec/pages) · Next: [Multi-language & multi-page](https://appai.info/spec/i18n)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
@@ -598,6 +604,8 @@ logo-line, logo-threads, logo-whatsapp, people-outline, time-outline, calendar-o
 ---
 
 ## Section Reference
+
+Browser games use the [`game` section](https://appai.info/spec/games#game), available on every template; `GAME` supplies a page H1.
 
 JSON schemas for page sections below; the eight interactive section schemas are on [/spec/tools](https://appai.info/spec/tools). Also available via `GET /api/v1/sections` and `GET /api/v1/sections?format=jsonschema`.
 
@@ -854,7 +862,7 @@ Set canonicalUrl only for an app's own primary marketing site (e.g. a custom dom
 
 Older pages opt in when their content is saved again through the API (PUT, PATCH, PATCH section, or POST ?upsert=true).
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)
 
 # AppAI — Multi-language & multi-page
 Covers multi-language variants, multi-page sites and automatic site navigation.
@@ -938,7 +946,7 @@ This keeps the nav clean (only Contact shows) while every compliance URL stays r
 
 Prefix every child slug with its root slug because `(slug, locale)` is unique across the whole platform; an unprefixed `contact` can collide with another user’s page.
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)
 
 # AppAI — Tools
 Covers Wrapped tool and Connected tool configuration, connectors, identity, access and interactive section schemas, and the rooms API for room-code multiplayer games.
@@ -1188,7 +1196,7 @@ The iframe receives `?locale=` with the current hosted-page locale, normally `en
 Set canonicalUrl only for an app's own primary marketing site (e.g. a custom domain homepage), never the *.vercel.app tool URL embedded in iframe-tool.
 
 ### Room-code multiplayer (rooms API)
-Turn-based games for 2–4 players, each on their own device. One device creates a room and shows a 6-character code, and the others type it in. Creating a room needs the creator to be signed in to AppAI (Google sign-in, same-site cookie, so the game page must be served from appai.info). Joining and playing need no login and no API key. The server keeps only **public** game state. Secrets such as a hidden answer or a hand of cards stay on the device that owns them and never go in `state` or `move`. The server does not check game rules, so every client must validate the moves it receives.
+Only approved games may call this API; publishing a game page or requesting inclusion does not grant room access. For the game publishing contract, see [Games](https://appai.info/spec/games). Turn-based games for 2–4 players, each on their own device. One device creates a room and shows a 6-character code, and the others type it in. Creating a room needs the creator to be signed in to AppAI (Google sign-in, same-site cookie, so the game page must be served from appai.info). Joining and playing need no login and no API key. The server keeps only **public** game state. Secrets such as a hidden answer or a hand of cards stay on the device that owns them and never go in `state` or `move`. The server does not check game rules, so every client must validate the moves it receives.
 
 | Call | Request | Response |
 |---|---|---|
@@ -1229,11 +1237,11 @@ Errors are `{ "error": code, "message": text }`:
 
 Hidden-information pattern (e.g. guess-the-number): the guesser sends `move: { "guess": "1234" }, "nextTurn": 1`. The owner's device scores the guess locally and replies with `move: { "reply": "1A2B" }, "nextTurn": 0`. To prove the answer was fixed in advance, put `sha256(answer + salt)` in the initial `state` and reveal `salt` with `end: true`.
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)
 
 # AppAI — Universal App
 Covers Universal App manifests, immutable releases, platform review and runtime contracts.
-Previous: [Tools](https://appai.info/spec/tools)
+Previous: [Tools](https://appai.info/spec/tools) · Next: [Games](https://appai.info/spec/games)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 Follow [Authorization & API](https://appai.info/spec/api) for the key, then return here for the release steps.
@@ -1376,7 +1384,183 @@ digests. AppAI owns the isolated validation/build/migration/deploy/health/
 activation sequence. Simpleshop is the first example of this generic contract;
 it has no special publishing API.
 
-All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps)
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)
+
+# AppAI — Games
+Publish an original browser game on your own host with an AppAI page, SEO shell and optional application for /games.
+Previous: [Universal App](https://appai.info/spec/apps)
+API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
+
+## Publish a game in one minute
+
+| Step | Action |
+|---|---|
+| 1. Host | Deploy the game yourself to GitHub Pages, Cloudflare Pages, Vercel or Netlify. AppAI does not host, build or upload game files. Allow embedding from `https://appai.info`; see [framing headers](https://appai.info/spec/tools#wrapped-tool-publishing-checks). |
+| 2. Authorize | Follow [device authorization](https://appai.info/spec/api#authentication) in the overview. Reuse your key; never put it in game files. |
+| 3. Compose | Use `template: "GAME"` and one `game` section. `GAME` renders `title` as the page H1 and `tagline` below it; do not add a hero. Other templates may also contain `game`, with a hero or named profile-header supplying their H1. |
+| 4. Preview | `POST /api/v1/pages?dryRun=true` with the complete body below, or start with the [GAME example](https://appai.info/spec/examples/game.example.json). Replace example URLs, logo and copy; inspect `valid`, `errors`, `warnings`, `sanitizedContent`. Fix errors and warnings, then preview again. |
+| 5. Publish | `POST /api/v1/pages` with the same body and `isPublished: true`. For an existing slug use `?dryRun=true&upsert=true`, then `?upsert=true`. Partial updates use `PATCH /api/v1/pages/{slug}?locale=en`. |
+| 6. Visit | Game page URLs currently use `/p/{slug}`; they will later move to `/games/{slug}` with redirects from `/p/{slug}`. No new game URL is required today. |
+
+Complete, valid request body (replace these demo assets and the game URL):
+
+```json
+{
+  "slug": "little-pattern-trail",
+  "template": "GAME",
+  "locale": "en",
+  "title": "Little Pattern Trail",
+  "tagline": "A short original pattern puzzle to play while waiting for food.",
+  "metaDescription": "Spot repeating shapes together on one phone at a restaurant or in a waiting room. Free browser play with no download.",
+  "themeColor": "#A5B4FC",
+  "themeColorSecondary": "#67E8F9",
+  "fontFamily": "Space Grotesk",
+  "darkMode": true,
+  "isPublished": true,
+  "content": {
+    "logo": "https://appai.info/spec/examples/placeholder-logo.png",
+    "sections": [{
+      "type": "game",
+      "order": 0,
+      "data": {
+        "gameUrl": "https://little-pattern-trail.pages.dev/",
+        "backgroundColor": "#0F172A",
+        "description": "Find the repeating shapes and tap the next one. Take turns explaining each pattern with your child while waiting for food.",
+        "genre": "Puzzle",
+        "orientation": "portrait",
+        "aspectRatio": "9:16",
+        "players": { "min": 1, "max": 2 },
+        "controls": ["touch"],
+        "howToPlay": ["Look at the repeating shapes.", "Tap the next shape.", "Take turns, or pause whenever you need."],
+        "ageRating": "all",
+        "cover": { "url": "https://appai.info/spec/examples/placeholder-screen.svg", "alt": "Colorful shape trail", "width": 1200, "height": 630 },
+        "listInGames": true,
+        "faq": [{ "question": "What games can we play while waiting for food?", "answer": "Try a short pattern trail together on one phone. Pause when your meal arrives." }]
+      }
+    }]
+  }
+}
+```
+
+Publish four variants with the same slug: `en` first (default), then `zh-TW`, `zh-CN`, `es`. Translate page copy, instructions, FAQ and metadata; pass each locale through dry-run. Use `Noto Sans TC` / `Noto Sans SC` for the Chinese pages. Choose optional additional languages only when the user requests them. See the [overview](https://appai.info/spec) for logo/style and privacy/terms guidance.
+
+## What you can build
+
+| Allowed | Not allowed |
+|---|---|
+| Original browser puzzles, educational games, party games and your own presentation of public-domain rules | Cloning existing games, names, artwork or distinctive presentation |
+| Local computation and assets you own or may redistribute | Calling paid AI services during play |
+| Anonymous play; optional AppAI identity | Collecting personal information |
+| A focused, playable experience | External tracking scripts or advertising scripts |
+| Family-friendly play | Real-money gambling, adult content or requiring an executable download |
+
+## game
+
+Each section is `{ "type": "game", "order": 0, "data": { ... } }`. Fields below belong in `data`. `gameUrl` and `howToPlay` are required for every game section. The listing column marks additional fields required when applying for `/games`; missing listing fields produce warnings. Text lengths are character limits; strings must be non-empty when supplied.
+
+| Field | Format / limit | Required for /games |
+|---|---|---|
+| `gameUrl` | Required; HTTPS URL, max 2048; host matches `*.github.io`, `*.pages.dev`, `*.vercel.app`, `*.netlify.app` | Yes |
+| `heading` | Optional H2, 1–200 characters; game name in JSON-LD defaults to page `title` | No |
+| `description` | 1–2000 characters; visible, specific summary | Yes |
+| `genre` | 1–100 characters, e.g. `Puzzle` | Yes |
+| `orientation` | `portrait`, `landscape`, `any`; default `any`; describes preferred orientation, does not lock the device | Yes |
+| `aspectRatio` | `width:height`, each integer 1–99, e.g. `9:16`; default `9:16` for portrait, otherwise `16:9`; resize messages may adjust height | Yes |
+| `players` | `{ "min": 1, "max": 2 }`; integers 1–16, min ≤ max; room-code play supports 2–4 | Yes |
+| `controls` | 1–3 unique strings from `touch`, `keyboard`, `gamepad` | Yes |
+| `howToPlay` | Required; array of 1–10 strings, each 1–500 characters | Yes |
+| `ageRating` | `all`, `7+`, `12+` | Yes |
+| `cover` | `{ "url": "https://...", "alt": "...", "width": 1200, "height": 630 }`; URL max 2048, alt 1–200; optional width/height integers 1–10000 | Yes |
+| `listInGames` | Boolean, default false; true = **apply for inclusion in /games**, pending review | — |
+| `identity` | Boolean, default false; only true requests an iframe-tool session | No |
+| `access` | Optional `login` or `admin`, same section gate as iframe-tool | No |
+| `faq` | Optional array, max 20 `{question, answer}` pairs; question 1–300, answer 1–2000 (Markdown supported) | No |
+| `leaderboards` | Optional array, max 10; unique `id` (1–40 lowercase letters/digits/hyphens), `name` (1–100), `sortOrder` (`asc` or `desc`), optional `unit` (1–40); no other keys. Format warnings only; stored declarations do not create boards | No |
+| `id`, `backgroundColor` | Shared section anchor/background fields | No |
+
+Invalid game URLs or field formats (including more than 10 steps) block publishing. Dry-run also returns warnings for an unsupported host, missing H1, missing how-to-play, missing description, incomplete listing application or malformed leaderboards; warnings may accompany `valid: false`. Leaderboard declaration errors alone do not block publishing. Slugs reserved by the existing games catalog are unavailable, including `river-crossing`, `guess-duel`, `werewolf`, `covers`, `profile`, `boards`.
+
+## Parameters and messages
+
+| Direction | Contract |
+|---|---|
+| AppAI → iframe URL | `locale` (current hosted-page BCP 47 code), `color` (theme hex), `theme=dark` only in dark mode. Ignore unsupported locales gracefully. |
+| Game → parent | `parent.postMessage({ type: "ready" }, "https://appai.info")` when ready |
+| Game → parent | `parent.postMessage({ type: "resize", height: 720 }, "https://appai.info")`; finite pixel heights clamp to 200–4000 |
+| Parent → game, identity opt-in only | `{ type: "appai:session", token, expiresAt }` via postMessage on load and renewal. After sign-in the parent reissues and resends the session; when the parent stays open, returning focus refreshes it without reloading the game. |
+| Game → parent, identity opt-in only | `parent.postMessage({ type: "appai:session-request" }, "https://appai.info")` requests the current session |
+| Game → its own backend | Send the token as `X-AppAI-Session: <token>`; never put it in game API URLs or public storage. `game` does not add the token to its iframe URL. |
+| Backend → AppAI | `POST /api/v1/tools/sessions/introspect` with JSON `{ "token": "<token>", "origin": "https://your-game.pages.dev" }`; same identity semantics as [iframe-tool](https://appai.info/spec/tools#identity-what-each-rung-can-learn-about-the-visitor). A game session is not a room-seat token. |
+
+Check both `event.origin === "https://appai.info"` and `event.source === parent` before accepting parent messages. Without `identity: true`, no session is issued. With opt-in, anonymous visitors can receive an active session with `user: null`. Identity exposes an opaque user id, organization and `isAdmin`, not name/email. The iframe keeps the existing iframe-tool sandbox and permissions. Fullscreen play expands the current game without changing its URL or resetting its state.
+
+## Room-code multiplayer
+
+**Only approved games may call the room API.** Publishing or applying for `/games` does not grant access. Use the existing rooms implementation; an externally hosted game must wait for its supported origin/access to be enabled. Room creation currently requires AppAI sign-in and a same-origin AppAI cookie; `X-AppAI-Session` does not replace that cookie. Approved external origins can join, poll, start and move using room-seat tokens. See [room behavior and errors](https://appai.info/spec/tools#room-code-multiplayer-rooms-api).
+
+| Endpoint | Request | Success |
+|---|---|---|
+| `POST /api/rooms` | Signed-in creator; `{ "game": "my-game", "seats": 2, "state": {}, "turn": 0 }` | `201 { code, seat: 0, token, room }` |
+| `POST /api/rooms/{code}/join` | `{}` | `200 { seat, token, room }` |
+| `GET /api/rooms/{code}?since={version}` | `Authorization: Bearer <room token>` | `{ changed: true, seat, room }` or `{ changed: false, version, seats }` |
+| `POST /api/rooms/{code}/start` | Host seat 0; `Authorization: Bearer <room token>`; at least 2 players present | `{ room }` |
+| `POST /api/rooms/{code}/moves` | `Authorization: Bearer <room token>`; `{ "version": 3, "move": {}, "state": {}, "nextTurn": 1, "end": false }` | `{ room }` |
+
+| Public rule | Value |
+|---|---|
+| Players | 2–4; `seats` defaults to 2; seat indices start at 0 |
+| Game id | 1–40 lowercase letters, digits or hyphens |
+| State | ≤ 8 KB JSON (8192 bytes), object or array; public information only |
+| One move | ≤ 1 KB JSON (1024 bytes); never send secret answers or private cards |
+| Turns | Use the latest room version; handle `version_conflict` by reading the returned room. Clients validate game rules. |
+| Poll | Every 1–1.5 seconds when visible, 15 seconds when hidden; obey `Retry-After` on 429 |
+| Credentials | Store each room-seat token per room, never in a URL; no publisher API key in the game |
+
+## Size and performance
+
+These are **recommended values**, not publishing validators.
+
+| Recommendation | Target |
+|---|---|
+| First load | ≤ 5 MB total |
+| Mobile layout | No horizontal scrolling at 375px |
+| Audio | Do not autoplay audible content |
+| Interruptions | Support pause so a family can stop when food arrives or their turn is called |
+
+## Review and listing
+
+| Action / state | Visible result |
+|---|---|
+| Publish with `isPublished: true` | Immediately live at `/p/{slug}`; absent from `/games` |
+| Set `listInGames: true` | Application is pending; API returns `gamesListing: "requested"`. The request is saved in page JSON; it does not change the games catalog. |
+| Review approved | Eligible for inclusion in `/games`; publishing alone never implies approval |
+| Review rejected | A reason is provided; revise the game and apply again |
+
+This publishing contract saves applications only. Review decisions, notifications and listing management are separate; there is no review workflow endpoint in this topic.
+
+## SEO writing
+
+| Element | Write it this way |
+|---|---|
+| H1 | One clear game name: `GAME` uses page `title`. Other templates need one hero or named profile-header. |
+| Description | Say what players do, device/players and the short play context. Include how-to-play in the page, outside the iframe. |
+| Cover | Recommended 1200×630 with meaningful alt text; also set `ogImage` if a different sharing image is needed |
+| Structured data | Automatic `VideoGame`: name, description, genre, Web browser platform, play mode, player range, age audience, language and hosted page URL. `faq` reuses the `FAQPage` mechanism. No platform free Offer is attached. |
+| FAQ | Answer real parent questions; use only phrases that describe the game accurately, without repeating keywords mechanically |
+
+Parent search contexts: **games to play while waiting in line**, **games to play at a restaurant**, **games to play at dinner table**, **games to play while waiting for food**, **waiting room games**, **free online games for kids**. Chinese intent: 等餐、排隊、看診時跟孩子玩的免費益智小遊戲.
+
+| Example FAQ question | Useful answer content |
+|---|---|
+| What games can we play at a restaurant while waiting for food? | Explain short rounds, one-phone controls and how to pause |
+| Is this a waiting room game for parents and kids? | Explain quiet play, age suitability and whether sound can be muted |
+| Is this a free online game for kids? | State the actual cost and browser/no-download behavior |
+
+## Leaderboards
+
+Coming soon
+
+All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)
 
 ## Legacy anchors
 
@@ -1392,7 +1576,7 @@ All topics: [Overview](https://appai.info/spec) · [Authorization & API](https:/
 | What You Can Build (read this first) | https://appai.info/spec/pages#what-you-can-build-read-this-first |
 | Page-Level Configuration | https://appai.info/spec/pages#page-level-configuration |
 | Directory classification | https://appai.info/spec/pages#directory-classification |
-| 29 Section Types | https://appai.info/spec/pages#29-section-types |
+| 29 Section Types | https://appai.info/spec/pages#30-section-types |
 | Auto-Generated Features | https://appai.info/spec/pages#auto-generated-features |
 | How to Work with the User | https://appai.info/spec/pages#how-to-work-with-the-user |
 | Your default workflow | https://appai.info/spec/pages#your-default-workflow |

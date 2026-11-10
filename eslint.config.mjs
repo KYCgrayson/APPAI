@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Standalone static games (own tests, no build step).
     "games/**",
+    // Generated static game bundles are checked in their source projects.
+    "public/games/**/assets/**",
   ]),
 ]);
 
