@@ -10,7 +10,8 @@
     "lint": "eslint",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "spec:build": "node scripts/build-agent-instructions.mjs"
+    "spec:build": "node scripts/build-agent-instructions.mjs",
+    "feature-map:check": "node scripts/check-feature-map.mjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",

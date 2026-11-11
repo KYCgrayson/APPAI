@@ -1,0 +1,128 @@
+# APPAI feature map
+
+Read this first to find a feature, then open its entry files in the order listed.
+Before changing code, read the relevant entry and its linked files. Update this
+file and [feature-map.json](feature-map.json) in the same commit when you add,
+move or remove files; refresh descriptions when behavior or entry points change.
+No separate approval is needed to maintain the map.
+
+Run `npm run feature-map:check` (or `node scripts/check-feature-map.mjs`). The
+checker uses `git ls-files`, so **stage new files before checking**. CI blocks
+stale feature globs, unmapped tracked files, and mismatched IDs/headings.
+Optional local enforcement: `git config core.hooksPath .githooks`; the hook blocks
+failures and warns/skips if Node is unavailable. Node 22 is sufficient; no install
+is needed for the check.
+
+JSON globs are repo-relative: `*` stays within a directory, `**` crosses directories
+(`**/` also matches zero directories); brackets and parentheses are literal.
+Subsystem globs cover files within an established feature; shared files may
+belong to multiple features. The check verifies coverage, not prose accuracy.
+Keep new locations specific; do not add catch-all source/test ignores. `ignore`
+is for repository housekeeping, generated copies, and static reference assets.
+
+### platform — Public directory, dashboard and shared shell
+
+Home, websites, tools and app directories help visitors discover published work; app details and the dashboard share the platform chrome and base UI. Shared persistence starts at the Prisma schema and database client. Legacy static support/policy pages live in `public/ishift/`.
+Entry files: [home](../src/app/[locale]/page.tsx), [PlatformDirectory.tsx](../src/components/PlatformDirectory.tsx), [app details](../src/app/[locale]/apps/[id]/page.tsx), [dashboard](../src/app/dashboard/page.tsx), [schema.prisma](../prisma/schema.prisma), [db.ts](../src/lib/db.ts).
+Watch out: directory classification uses published root-page content; a launch link also depends on the Universal App runtime's readiness predicate.
+
+### page-publishing — Hosted-page publish API
+
+Creates, validates, previews, updates and publishes hosted pages and their locale variants, plus public image uploads and section/preset discovery. The dashboard lists the publisher's pages.
+Entry files: [page API](../src/app/api/v1/pages/route.ts), [single-page API](../src/app/api/v1/pages/[slug]/route.ts), [validation](../src/lib/validations/page.ts), [template-registry.ts](../src/lib/template-registry.ts), [sanitize.ts](../src/lib/sanitize.ts), [upload](../src/app/api/v1/upload/route.ts).
+Watch out: root slugs belong to an Organization across locales; child pages do not create directory listings, and publishing does not imply listing approval.
+
+### hosted-pages — Hosted routes, templates and submissions
+
+Resolves `/p/` root, child, policy and fullscreen tool pages, with navigation, branding, section rendering, typography and store badges. Forms and simple orders validate submissions against their stored page section.
+Entry files: [hosted route](../src/app/p/[...segments]/page.tsx), [hosted layout](../src/app/p/[...segments]/layout.tsx), [PageRenderer.tsx](../src/templates/shared/PageRenderer.tsx), [section-components.tsx](../src/templates/shared/section-components.tsx), [form submission](../src/app/api/v1/form-submit/route.ts), [order submission](../src/app/api/v1/simple-order-submit/route.ts).
+Watch out: a section change can also require registry, validation and sanitization changes in `page-publishing`; check those alongside the renderer.
+
+### auth — Accounts, device authorization and API keys
+
+Google sign-in creates the user's Organization; browser sessions, API keys and device authorization support the dashboard and publishing clients. Shared Organization context and request guards also serve Universal Apps.
+Entry files: [auth.ts](../src/lib/auth.ts), [api-auth.ts](../src/lib/api-auth.ts), [device approval UI](../src/app/[locale]/auth/device/page.tsx), [device-approval.ts](../src/lib/device-approval.ts), [device initiation](../src/app/api/v1/auth/device/route.ts), [organization-context.ts](../src/lib/organization-context.ts).
+Watch out: browser sessions and Organization-scoped bearer keys are separate authentication paths; device approval is a human action.
+
+### i18n — Platform and hosted-content languages
+
+Platform routes use next-intl and nine message catalogs; hosted content resolves publisher-provided locale variants, including Chinese script conversion. Locale helpers bridge these sets and support locale-free app launch pages.
+Entry files: [routing.ts](../src/i18n/routing.ts), [messages](../src/messages/en.json), [middleware.ts](../src/middleware.ts), [locale-match.ts](../src/lib/locale-match.ts), [platform-locale.ts](../src/lib/platform-locale.ts), [hosted-page-resolver.ts](../src/lib/hosted-page-resolver.ts).
+Watch out: `/p/` has its own locale system and `/app/` skips next-intl routing; publisher copy belongs in hosted content rather than platform messages.
+
+### seo — Metadata, canonical URLs and discovery indexes
+
+Builds platform and hosted-page metadata, structured data, robots rules, and sharded sitemaps. Hosted URL helpers keep policy, child-page, alternate-language and canonical links consistent.
+Entry files: [platform-metadata.ts](../src/lib/platform-metadata.ts), [hosted-page-seo.ts](../src/lib/hosted-page-seo.ts), [hosted-page-urls.ts](../src/lib/hosted-page-urls.ts), [sitemap index](../src/app/sitemap.xml/route.ts), [sitemap-data.ts](../src/lib/sitemap-data.ts), [json-ld.ts](../src/lib/json-ld.ts).
+Watch out: hosted-page mutations must invalidate SEO indexes; external canonicals affect directory links and sitemap inclusion too.
+
+### game-platform — Game discovery, embedding, rooms and leaderboards
+
+Own-game hub/detail pages lead to static play through a runtime HTML shell; published external games use the `game` section. Shared APIs provide rooms, runs, scores, profiles and leaderboard reporting.
+Entry files: [games-catalog.ts](../src/lib/games-catalog.ts), [game details](../src/app/[locale]/games/[slug]/page.tsx), [runtime HTML](../src/app/games/[slug]/runtime/route.ts), [GameSection.tsx](../src/templates/sections/GameSection.tsx), [rooms.ts](../src/lib/rooms.ts), [leaderboard.ts](../src/lib/games/leaderboard.ts), [sync-games.sh](../scripts/sync-games.sh).
+Watch out: middleware and client compatibility redirects preserve game queries/fragments; static play stays on the same origin for browser sessions. Rebuild served copies with `scripts/sync-games.sh`.
+
+### guess-duel — Guess Duel deduction game
+
+Two-player digit guessing supports one-device play, AI, fragment-based relay and online rooms. Rules, secret commitments, transport and UI are kept in the standalone Vite game.
+Entry files: [main.ts](../games/guess-duel/src/main.ts), [game.ts](../games/guess-duel/src/logic/game.ts), [commit.ts](../games/guess-duel/src/logic/commit.ts), [online.ts](../games/guess-duel/src/net/online.ts), [relay codec](../games/guess-duel/src/relay/codec.ts), [UI](../games/guess-duel/src/ui/app.ts).
+Watch out: relay fragments and device-local secrets must survive navigation; the shared rooms service lives under `game-platform`.
+
+### puzzles — River Crossing, Night Bridge and Water Pouring
+
+Three procedural 3D puzzles share a collection UI, scene infrastructure, local progress, share cards and challenge routing. Each puzzle keeps its own rules and scene module.
+Entry files: [main.ts](../games/puzzle/src/main.ts), [registry.ts](../games/puzzle/src/puzzles/registry.ts), [river rules](../games/puzzle/src/puzzles/river/logic.ts), [bridge rules](../games/puzzle/src/puzzles/bridge/logic.ts), [water rules](../games/puzzle/src/puzzles/water/logic.ts), [routing.ts](../games/puzzle/src/routing.ts).
+Watch out: all three playable slugs use the `river-crossing` static build; the Tabletop Puzzles collection is a description page, not a fourth build.
+
+### werewolf — Pass-the-phone Werewolf
+
+A standalone, dependency-free party game handles role dealing, night actions, voting, narration and local saves with app or human hosting. English and Traditional Chinese copy lives with the game.
+Entry files: [app.js](../games/werewolf/src/app.js), [logic.js](../games/werewolf/src/logic.js), [i18n.js](../games/werewolf/src/i18n.js), [index.html](../games/werewolf/index.html).
+Watch out: reload/resume must preserve the privacy handoff before showing a player's private role or result.
+
+### tools — Wrapped tools, connector proxy and media tools
+
+Hosted tool sections wrap existing deployments, optionally supply scoped identity, and renew iframe sessions during use. Registered connectors provide the shared backend proxy; media download and PDF sections supply other tool UIs.
+Entry files: [IframeToolSection.tsx](../src/templates/sections/IframeToolSection.tsx), [iframe-tool-session.ts](../src/lib/iframe-tool-session.ts), [renewal hook](../src/templates/sections/use-iframe-tool-session.ts), [connector proxy](../src/app/api/connect/[connector]/[...path]/route.ts), [registry.ts](../src/lib/connectors/registry.ts), [MediaDownloaderSection.tsx](../src/templates/sections/MediaDownloaderSection.tsx).
+Watch out: iframe URL allowlists and CSP in `next.config.ts` must agree; connectors are owner-maintained, and iframe-tool sessions differ from Universal App runtime sessions.
+
+### video-subtitle — Subtitle Studio and async video jobs
+
+Transcribes/translates videos, edits subtitle text, timing, annotations and styling, then renders downloadable results. Shared job polling and video widgets implement progress, recovery and previews; the backend contract is documented here, while the backend implementation is outside this repo.
+Entry files: [VideoSubtitleSection.tsx](../src/templates/sections/VideoSubtitleSection.tsx), [use-async-job.ts](../src/templates/shared/jobs/use-async-job.ts), [SubtitleEditor.tsx](../src/templates/shared/video/SubtitleEditor.tsx), [video types](../src/templates/shared/video/types.ts), [API contract](video-subtitle/api-spec.yaml).
+Watch out: connector quota counts transcription rather than every render; subtitle language/script codes are separate from platform UI locales.
+
+### universal-apps — App releases, launcher and runtime capabilities
+
+App publishing accepts manifests and immutable source packages or pinned repositories; releases lead to the authenticated `/app/` launcher. Runtime sessions and private assets provide app/Organization-scoped capabilities; publisher UI exposes release submission and status.
+Entry files: [release submission](../src/app/api/v1/apps/[id]/releases/route.ts), [manifest.ts](../src/lib/universal-apps/manifest.ts), [release-package.ts](../src/lib/universal-apps/release-package.ts), [launcher.tsx](../src/lib/universal-apps/launcher.tsx), [runtime-session.ts](../src/lib/universal-apps/runtime-session.ts), [private asset API](../src/app/api/runtime/assets/route.ts).
+Watch out: a submitted or approved release is not necessarily runnable; directory cards and the launcher must share the active production deployment predicate.
+
+### managed-hosting — Managed deployment, sandbox and activation
+
+Runs the isolated validation/build/deploy pipeline for reviewed Universal App releases, including requested database provisioning, migrations, health checks and activation. Provider, orchestration and cutover logic have separate regression coverage.
+Entry files: [managed-orchestrator.ts](../src/lib/universal-apps/managed-orchestrator.ts), [vercel-sandbox-provider.ts](../src/lib/universal-apps/vercel-sandbox-provider.ts), [vercel-sandbox-worker.ts](../src/lib/universal-apps/vercel-sandbox-worker.ts), [database-provisioner.ts](../src/lib/universal-apps/database-provisioner.ts), [activation.ts](../src/lib/universal-apps/activation.ts), [cutover.ts](../src/lib/universal-apps/cutover.ts).
+Watch out: activation changes runtime availability and existing session/capability state; review launcher and runtime-session contracts alongside deployment changes.
+
+### mcp-server — MCP publishing client
+
+A standalone stdio MCP server exposes AppAI publishing tools and specification resources by calling the public API. Its source and package documentation live separately from the Next.js application.
+Entry files: [index.ts](../mcp-server/src/index.ts), [package.json](../mcp-server/package.json), [README.md](../mcp-server/README.md).
+Watch out: `mcp-server/dist/` is a tracked build copy; edit source and regenerate it with the package's build script.
+
+### publishing-guides — Agent spec, examples and appai-publish skill
+
+Serves the short `/spec`, topic documents, examples and full agent spec; the publishing skill adds reusable workflow guidance. Demo/QA scripts exercise published page designs.
+Entry files: [overview](spec/overview.md), [spec route](../src/app/spec/route.ts), [build-agent-instructions.mjs](../scripts/build-agent-instructions.mjs), [appai-publish skill](../skills/appai-publish/SKILL.md), [personal-site example publisher](examples/publish-person-site.mjs).
+Watch out: edit `docs/spec/`, then run `npm run spec:build`; the root `AGENT_INSTRUCTIONS.md` is generated.
+
+### admin — Administration and reporting
+
+Administration screens manage pages, apps and users, review Universal App releases, and display feedback, analytics and usage. This entry intentionally provides file locations only for the administrative API implementation.
+Entry files: [admin layout](../src/app/admin/layout.tsx), [pages UI](../src/app/admin/pages/page.tsx), [apps UI](../src/app/admin/apps/page.tsx), [Universal Apps UI](../src/app/admin/universal-apps/page.tsx), [admin components](../src/components/admin/ManagedReleaseDeploymentAction.tsx), [API files](../src/app/api/admin/).
+
+### feedback — Feedback intake and page-view telemetry
+
+The localized public form and agent feedback API accept product reports; page-view beacons record hosted-page visits for reporting. Connector usage events also feed the administration reports.
+Entry files: [feedback UI](../src/app/[locale]/feedback/page.tsx), [feedback.ts](../src/lib/feedback.ts), [feedback-server.ts](../src/lib/feedback-server.ts), [PageViewTracker.tsx](../src/components/PageViewTracker.tsx), [view tracking](../src/app/api/p/track/view/route.ts).
+Watch out: feedback intake uses both middleware limits and database-backed quotas; connector usage labels are defined in `src/lib/connectors/registry.ts`.
