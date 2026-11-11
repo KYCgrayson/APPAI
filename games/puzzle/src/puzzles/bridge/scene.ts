@@ -1,12 +1,13 @@
-import { Color, ConeGeometry, Group, Mesh, InstancedMesh, BoxGeometry, MeshStandardMaterial, MeshBasicMaterial, SphereGeometry, PointLight, RingGeometry, DoubleSide, Object3D, Vector3, MathUtils } from 'three';
+import { Color, ConeGeometry, Group, Mesh, InstancedMesh, BoxGeometry, MeshStandardMaterial, MeshBasicMaterial, SphereGeometry, PointLight, RingGeometry, DoubleSide, Object3D, Vector3, MathUtils, PlaneGeometry, ShaderMaterial } from 'three';
 import type { Stage } from '../../scene/stage.ts';
 import type { LevelId, PuzzleScene } from '../types.ts';
 import { initial, ids, isWin, levels, type State } from './logic.ts';
 import { part, bake, person, disposeRoot } from '../../scene/models.ts';
 import { badge, rod } from '../../scene/helpers.ts';
 import { registry } from '../registry.ts';
-import { crossingDuration, fireProgress, walkingMotion, walkingSpeed } from './presentation.ts';
+import { crossingDuration, fireProgress, fireTremble, syncFireUrgency, walkingMotion, walkingSpeed } from './presentation.ts';
 const sag = (x: number) => -.34 * (1 - (x / 2.25) ** 2);
+const rearFlames = 22, leftFlames = 10, wallFlames = rearFlames + leftFlames, approachFlames = 8, flameCount = (wallFlames + approachFlames) * 2;
 class BridgeScene implements PuzzleScene<State> {
     root = new Group();
     hit: Object3D[] = [];
@@ -27,6 +28,7 @@ class BridgeScene implements PuzzleScene<State> {
     private matrix = new Object3D();
     private motes: InstancedMesh;
     private fire: InstancedMesh;
+    private smoke: InstancedMesh<PlaneGeometry, ShaderMaterial>;
     private firelight: PointLight;
     private reduced = matchMedia('(prefers-reduced-motion: reduce)');
     private animation?: {
@@ -67,6 +69,20 @@ class BridgeScene implements PuzzleScene<State> {
             }
         bake(land);
         this.root.add(land);
+        // World scenery sits beyond the toy board, so fitting/snapshots keep the travelers large.
+        const forest = new Group();
+        forest.name = 'snapshot-hidden';
+        part(forest, 'box', '#49352f', [-4.7, -.12, -4.3], [5.4, .25, 2.4]);
+        part(forest, 'box', '#49352f', [-6.15, -.12, -.7], [1.5, .25, 5]);
+        for (let i = 0; i < 9; i++) {
+            const x = i < 6 ? -6.5 + i * .76 : -6.1, z = i < 6 ? -4.5 : -3.1 + (i - 6) * 1.3;
+            const h = 2.4 + (i % 3) * .45;
+            part(forest, 'cylinder', '#302827', [x, h / 2, z], [.09, h, .09]);
+            part(forest, 'cone', '#433731', [x, h * .68, z], [.45, h * .9, .45]);
+        }
+        bake(forest);
+        forest.children.forEach(o => { o.castShadow = false; });
+        this.root.add(forest);
         const water = part(this.root, 'box', '#263d4b', [0, -1.55, 0], [10.4, .16, 6.4]);
         water.receiveShadow = true;
         this.planks = new InstancedMesh(new BoxGeometry(.21, .10, 1.24), new MeshStandardMaterial({ color: '#a28d68', roughness: .9 }), 22);
@@ -110,15 +126,37 @@ class BridgeScene implements PuzzleScene<State> {
             this.rings.set(id, ring);
             this.root.add(ring);
         }
-        this.motes = new InstancedMesh(new SphereGeometry(.025, 5, 4), new MeshBasicMaterial({ color: '#ffdca0' }), 16);
+        this.motes = new InstancedMesh(new SphereGeometry(.025, 5, 4), new MeshBasicMaterial({ color: '#ffdca0' }), 32);
+        this.motes.name = 'bridge-embers';
         this.root.add(this.motes);
-        // One small instanced strip behind the start bank, with no shadow or particle system.
-        this.fire = new InstancedMesh(new ConeGeometry(1, 1, 7), new MeshBasicMaterial({ toneMapped: false }), 14);
+        // A broad burning treeline behind AND left of the bank; two colours in one draw.
+        this.fire = new InstancedMesh(new ConeGeometry(1, 1, 7), new MeshBasicMaterial({ toneMapped: false }), flameCount);
         this.fire.name = 'start-bank-fire';
-        for (let i = 0; i < 14; i++) this.fire.setColorAt(i, new Color(i % 2 ? '#ffd15c' : '#f35c21'));
-        this.root.add(this.fire);
+        this.fire.frustumCulled = false;
+        for (let i = 0; i < flameCount; i++) this.fire.setColorAt(i, new Color(i % 2 ? '#ffe38a' : i % 4 ? '#ff9a27' : '#f05218'));
+        forest.add(this.fire);
+        // Dark billowing plume, behind the flames, with analytic alpha and no texture/post pass.
+        this.smoke = new InstancedMesh(new PlaneGeometry(1, 1), new ShaderMaterial({
+            transparent: true, depthWrite: false, toneMapped: false,
+            uniforms: { opacity: { value: .48 }, tint: { value: new Color('#29252e') } },
+            vertexShader: `varying vec2 puffUV;
+                void main(){
+                    puffUV=uv*2.0-1.0;
+                    vec4 center=modelViewMatrix*instanceMatrix*vec4(0.0,0.0,0.0,1.0);
+                    center.xy+=position.xy*vec2(length(instanceMatrix[0].xyz),length(instanceMatrix[1].xyz));
+                    gl_Position=projectionMatrix*center;
+                }`,
+            fragmentShader: `varying vec2 puffUV; uniform float opacity; uniform vec3 tint;
+                void main(){
+                    float alpha=1.0-smoothstep(.05,1.0,dot(puffUV,puffUV));
+                    gl_FragColor=vec4(tint,alpha*alpha*opacity);
+                    #include <colorspace_fragment>
+                }`
+        }), 10);
+        this.smoke.name = 'start-bank-smoke'; this.smoke.frustumCulled = false;
+        forest.add(this.smoke);
         this.firelight = stage.lamps[1];
-        this.firelight.color.set('#ff6a29'); this.firelight.distance = 6; this.firelight.decay = 1.5;
+        this.firelight.color.set('#ff7629'); this.firelight.distance = 15; this.firelight.decay = 1.1;
         this.sync(this.state);
     }
     private setPlanks(walkerX?: number) { for (let i = 0; i < 22; i++) {
@@ -136,7 +174,7 @@ class BridgeScene implements PuzzleScene<State> {
         g.rotation.z = 0;
         for (const leg of g.userData.legs as Group[]) leg.rotation.x = 0;
         this.homes.set(id, pos);
-    } this.root.userData.fireProgress = fireProgress(s.minutes, levels[s.level].limit); this.lantern.position.set(s.lantern ? 2.25 : -2.25, 1.15, .64); this.lantern.rotation.z = 0; this.lamp.position.copy(this.lantern.position).y += .3; }
+    } this.lantern.position.set(s.lantern ? 2.25 : -2.25, 1.15, .64); this.lantern.rotation.z = 0; this.lamp.position.copy(this.lantern.position).y += .3; this.updateFire(0, s.minutes); }
     animate(from: State, to: State, done: () => void) { this.busy = true; this.animation = { from, to, start: performance.now(), duration: crossingDuration(to.minutes - from.minutes), done, origins: new Map([...this.actors].map(([id, g]) => [id, g.position.clone()])) }; }
     update(t: number, _dt: number, hover: string) {
         const a = this.animation;
@@ -202,31 +240,61 @@ class BridgeScene implements PuzzleScene<State> {
             ring.position.set(g.position.x, .18, g.position.z);
         }
         const danger = fireProgress(minutes, levels[this.state.level].limit);
-        this.root.userData.fireProgress = danger;
         const fuel = Math.max(.05, 1 - danger), flare = isWin(this.state) ? 1.6 : 1;
         const flicker = this.reduced.matches ? 1 : 1 + Math.sin(t * 13) * (danger > .75 ? .28 : .07);
         this.flame.scale.setScalar((this.state.failure ? .12 : .55 + fuel * .55) * flicker * flare);
         this.lamp.position.copy(this.lantern.position).y += .3;
         this.lamp.intensity = (this.state.failure ? .15 : 3 + fuel * 4) * flare * flicker;
-        this.fire.position.set(-4.85 + danger * .45, .18, -2.75 + danger * .5);
-        this.fire.visible = danger > .3;
-        const growth = MathUtils.smoothstep(danger, .3, 1), flameTime = this.reduced.matches ? 0 : t;
-        for (let i = 0; i < 14; i++) {
-            const height = (.3 + (i % 3) * .15 + Math.sin(flameTime * 6 + i) * .08) * growth;
-            this.matrix.position.set((i % 2) * .14, height / 2, (Math.floor(i / 2) - 3) * .12);
-            this.matrix.scale.set(.14 + growth * .12, height, .12 + growth * .04);
-            this.matrix.rotation.set(0, 0, Math.sin(flameTime * 4 + i) * .12);
-            this.matrix.updateMatrix(); this.fire.setMatrixAt(i, this.matrix.matrix);
+        this.lamp.color.set(isWin(this.state) ? '#ffe0a3' : '#ffbc64');
+        this.updateFire(t, minutes);
+    }
+    private updateFire(t: number, minutes: number) {
+        const danger = this.state.failure ? 1 : fireProgress(minutes, levels[this.state.level].limit), won = isWin(this.state);
+        this.root.userData.fireProgress = danger;
+        this.root.userData.fireRelaxed = won;
+        const tremble = fireTremble(danger, this.reduced.matches, won || !!this.state.failure, t);
+        this.root.position.x = tremble; this.root.rotation.z = tremble * .12;
+        if (document.body) syncFireUrgency(danger, won, document.body.classList);
+        const remaining = document.querySelector('[data-remaining]');
+        if (remaining) syncFireUrgency(danger, won, remaining.classList);
+        const growth = Math.pow(danger, .8), flameTime = this.reduced.matches ? 0 : t;
+        this.fire.position.set(danger * .08, .14, growth * .12);
+        for (let i = 0; i < flameCount / 2; i++) {
+            const approach = i >= wallFlames, n = approach ? i - wallFlames : i;
+            const advance = MathUtils.smoothstep(danger, .18 + n * .085, .38 + n * .085);
+            const height = approach ? .12 + advance * 1.25 : 2.5 + (n % 4) * .24 + growth * (5.8 + (n % 4) * .72);
+            const sway = this.reduced.matches ? 0 : Math.sin(flameTime * 6 + n * 2.4) * .07;
+            const left = !approach && n >= rearFlames;
+            // The tall wall stays on forest ground. Low tongues creep around the waiting slots
+            // and only reach the bridge-side bank edge at full progress/failure.
+            const x = approach ? (n < 4 ? -5.05 + n * .91 : -2.3) : left ? -5.95 - growth * .15 : -6.6 + n / (rearFlames - 1) * 3.9;
+            const z = approach ? (n < 4 ? -2.55 : -2.55 + (n - 3) * .44 * advance) : left ? -3.7 + (n - rearFlames) / (leftFlames - 1) * 4.2 : -4.05 + Math.sin(n * 2.4) * .16;
+            for (let core = 0; core < 2; core++) {
+                const h = height * (1 + sway) * (core ? .7 : 1), radius = (approach ? .10 + advance * .14 : .32 + growth * .43) * (core ? .58 : 1);
+                this.matrix.position.set(x, h / 2, z + core * .045);
+                this.matrix.scale.set(radius, h, radius * .85);
+                this.matrix.rotation.set(0, approach ? 0 : n * 2.4, sway * .35);
+                this.matrix.updateMatrix(); this.fire.setMatrixAt(i * 2 + core, this.matrix.matrix);
+            }
         }
         this.fire.instanceMatrix.needsUpdate = true;
-        this.firelight.position.copy(this.fire.position).y += .5;
-        this.firelight.intensity = MathUtils.smoothstep(danger, .1, 1) * 5;
-        (this.motes.material as MeshBasicMaterial).color.set(danger > .55 ? '#ff8b42' : '#ffdca0');
-        for (let i = 0; i < 16; i++) {
-            const moteTime = this.reduced.matches ? 0 : t;
-            if (danger > .55) this.matrix.position.set(this.fire.position.x + Math.sin(moteTime + i) * .25, .3 + ((moteTime * .4 + i * .17) % 1.5), this.fire.position.z + Math.cos(i * 2.4) * .45);
-            else this.matrix.position.set(Math.sin(moteTime * .3 + i * 2.4) * 4.8, .6 + (i % 4) * .3 + Math.sin(moteTime + i) * .15, Math.cos(moteTime * .2 + i) * 2.8);
-            this.matrix.scale.setScalar(.5 + .5 * Math.sin(moteTime * 2 + i) ** 2);
+        const flicker = this.reduced.matches ? 1 : 1 + Math.sin(t * 11) * .1 + Math.sin(t * 17.3) * .055;
+        this.firelight.position.set(-3.9 + growth * 1.4, 2.8, -2.4 + growth * 1.1);
+        this.firelight.intensity = (12 + growth * 70) * flicker * (won ? .3 : 1);
+        this.smoke.material.uniforms.opacity.value = (.48 + growth * .3) * (won ? .6 : 1);
+        for (let i = 0; i < this.smoke.count; i++) {
+            this.matrix.position.set(-6.4 + (i % 5) * .9 + Math.sin(flameTime * .25 + i) * .12, 3.5 + Math.floor(i / 5) * 1.7 + (i % 3) * .3 + growth * (4 + Math.floor(i / 5) * 1.2) + Math.sin(flameTime * .3 + i) * .12, -5.1 - Math.floor(i / 5) * .5);
+            this.matrix.scale.set(2 + growth * 1.7, 2.3 + growth * 2.2, 1);
+            this.matrix.rotation.set(0, 0, 0); this.matrix.updateMatrix();
+            this.smoke.setMatrixAt(i, this.matrix.matrix);
+        }
+        this.smoke.instanceMatrix.needsUpdate = true;
+        (this.motes.material as MeshBasicMaterial).color.set(danger >= .3 ? '#ffab50' : '#ffdca0');
+        this.motes.count = danger >= .3 ? Math.round(16 + growth * 16) : 16;
+        for (let i = 0; i < this.motes.count; i++) {
+            if (danger >= .3) this.matrix.position.set(-6.4 + (i % 11) * .36 + Math.sin(flameTime * .65 + i) * .15, 1.4 + ((flameTime * (.65 + i % 3 * .12) + i * .31) % (3.5 + growth * 5.5)), -3.7 + Math.cos(i * 2.4) * .25);
+            else this.matrix.position.set(Math.sin(flameTime * .3 + i * 2.4) * 4.8, .6 + (i % 4) * .3 + Math.sin(flameTime + i) * .15, Math.cos(flameTime * .2 + i) * 2.8);
+            this.matrix.scale.setScalar((danger >= .3 ? 1.7 : .5) + .5 * Math.sin(flameTime * 2 + i) ** 2);
             this.matrix.rotation.set(0, 0, 0);
             this.matrix.updateMatrix();
             this.motes.setMatrixAt(i, this.matrix.matrix);

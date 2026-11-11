@@ -1,4 +1,22 @@
-# Round 14 verification — 2026-11-09
+# Night Bridge fire Round 2 — 2026-11-11
+
+The burning forest now extends onto ground beyond the rear and left bank edges. The default board camera stays unchanged; lower flames creep around the waiting slots toward the bridge-side edge. Smoke opacity starts at 0.48 and rises to 0.78, and the urgent edge shadow pulses between effective alpha 0.525 and 0.7 (static at 0.7 for reduced motion). The fire uses 80 flame instances, 10 smoke puffs and up to 32 embers: 122 atmosphere instances, plus the existing 22 bridge planks. Decorative forest ground/trees are baked into one mesh, with no additional lights or post-processing passes.
+
+`tests/bridge-fire.test.ts` projects the actual flame triangles through the default **375×812** phone camera, using the existing unobstructed **y=217–584** gameplay band. It checks growing screen bounds, world height, minimum geometric coverage, bottom-control clearance and a growing dark plume.
+
+| Progress | Maximum flame height (world units) | Projected flame bounds | Geometric canvas coverage within gameplay band |
+| --- | ---: | ---: | ---: |
+| 0% | 3.22 | 123×144 px | 2.33% |
+| 60% | 8.51 | 174×288 px | 7.08% |
+| 90% | 10.54 | 201×360 px | 7.53% |
+
+These deterministic reduced-motion measurements are **projected geometry, not screenshot colour counts**: the silhouette calculation does not model fog, shading or occlusion. Pixel coverage and actual-phone FPS remain unverified: the local preview server returned EPERM and the computer-use inventory reported browser access unavailable.
+
+Puzzle tests: **142 passed**. Root tests: **557 passed, one database integration test skipped**. Both TypeScript checks, ESLint on changed TypeScript files, CSS parsing (zero warnings), `git diff --check`, `bash scripts/sync-games.sh river-crossing` and `ALLOW_LOCAL_HTTP_BACKEND=1 npm run build -- --webpack` pass. The existing conservative ≤160 submission check, waiting-slot checks, failure edge, undo/restart, victory relaxation and live reduced-motion checks pass. No commits or new dependencies.
+
+---
+
+# Historical Round 14 verification — 2026-11-09
 
 Targeted polish only: puff clouds and birds fade with camera pitch and are hidden at low orbits; sun/moon discs and halos fade against composed altitude. The transparent bird material uses a single pass, retaining the atmosphere's draw budget. Scene coverage now includes polar **1.15 and 1.30**, with cloud-clearance coverage extended to **6,912 camera configurations**.
 

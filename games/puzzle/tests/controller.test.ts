@@ -7,6 +7,12 @@ import { registry } from '../src/puzzles/registry.ts';
 // Drive main's actual actions/keyboard/DOM handlers with a GPU-free scene and minimal DOM.
 class Element extends EventTarget {
     dataset: Record<string, string> = {}; tagName = 'BUTTON'; id = ''; value = ''; style = { setProperty() {} };
+    classes = new Set<string>();
+    classList = {
+        add: (name: string) => { this.classes.add(name); },
+        toggle: (name: string, force = !this.classes.has(name)) => { if (force) this.classes.add(name); else this.classes.delete(name); return force; },
+        contains: (name: string) => this.classes.has(name)
+    };
     constructor(attributes = '') { super(); for (const [, key, value] of attributes.matchAll(/data-([\w-]+)="([^"]*)"/g)) this.dataset[key] = value; }
     setAttribute() {} matches() { return false; } focus() {} click() { this.dispatchEvent(new Event('click')); }
 }
@@ -54,7 +60,7 @@ const app = new App(), doc = new EventTarget(), win = new EventTarget();
 globalThis.HTMLElement = Element as any;
 globalThis.location = new URL('https://puzzle.test/?locale=en') as any;
 globalThis.document = Object.assign(doc, {
-    activeElement: null, documentElement: new Element(), body: { classList: { add() {} } },
+    activeElement: null, documentElement: new Element(), body: new Element(),
     querySelector: (s: string) => s === '#app' ? app : new Element()
 }) as any;
 globalThis.window = Object.assign(win, {
@@ -151,11 +157,17 @@ test('controller regressions: loading, keyboard, modal guards, restart, timeout,
         const cross = () => { act({ type: 'toggle', id: '10' }); act({ type: 'walk' }); now += 1000; stage.current!.complete(); };
         cross(); cross(); cross();
         assert.equal(state().failure.reason, 'timeout'); const elapsed = state().elapsedMs;
+        assert.ok(document.body.classList.contains('bridge-playing'));
+        assert.ok(document.body.classList.contains('fire-urgent'), 'timeout enables the screen-edge vignette');
         assert.ok(app.html.includes('<h2>The lantern only lasts 22 minutes; that trip ended at 30.</h2>'));
         assert.ok(app.html.includes('data-action="undo" class="primary"'), 'timeout keeps the Undo action');
         now += 9000; assert.equal(state().elapsedMs, elapsed);
         act({ type: 'undo' }); assert.equal(state().failure, undefined); assert.equal(state().elapsedMs, elapsed);
         now += 1000; assert.equal(state().elapsedMs, elapsed + 1000);
+        act({ type: 'undo' }); act({ type: 'undo' });
+        assert.ok(!document.body.classList.contains('fire-urgent'), 'undo below 75% removes the vignette');
+        act({ type: 'restart' });
+        assert.ok(!document.body.classList.contains('fire-urgent'), 'restart removes the vignette');
     });
     await t.test('popstate waits for animation completion rather than dropping its callback', async () => {
         act({ type: 'restart' }); act({ type: 'toggle', id: '1' }); act({ type: 'walk' });

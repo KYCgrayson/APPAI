@@ -54,11 +54,25 @@ test('walking speeds differ, crossing durations remain above the old minimum and
  }
  for(const minutes of [...times,100]){
   assert.ok(walkingSpeed(minutes)>=.4);
-  assert.ok(crossingDuration(minutes)>=1160&&crossingDuration(minutes)<=3500);
+  assert.ok(crossingDuration(minutes)>=1400&&crossingDuration(minutes)<=3500);
  }
  const pair=walkingSpeed(10),fast=walkingMotion(.2,1,pair),slow=walkingMotion(.2,pair,pair);
  assert.ok(fast.progress>slow.progress,'fast companion steps ahead');
  assert.equal(fast.moving,false,'fast companion waits for the slow traveler');
  assert.equal(slow.moving,true);
  assert.equal(walkingMotion(1,1,pair).progress,1,'both arrive at the same end of the crossing');
+});
+
+test('fire urgency toggles strictly above 75%, reverses, and clears on win', async () => {
+ const {fireProgress,syncFireUrgency,fireTremble}=await import('../src/puzzles/bridge/presentation.ts');
+ const active=new Set<string>();
+ const classes={toggle(name:string,force?:boolean){if(force)active.add(name);else active.delete(name);return !!force;}};
+ for(const [progress,won,expected] of [[0,false,false],[.75,false,false],[.751,false,true],[1,false,true],[.5,false,false],[.9,true,false],[0,false,false]] as const){
+  syncFireUrgency(progress,won,classes);assert.equal(active.has('fire-urgent'),expected);
+ }
+ assert.equal(fireProgress(-1,22),0);assert.equal(fireProgress(30,22),1);
+ assert.equal(fireTremble(.9,false,false,1),0);
+ assert.notEqual(fireTremble(.95,false,false,1),0);
+ assert.equal(fireTremble(1,true,false,1),0);
+ assert.equal(fireTremble(1,false,true,1),0);
 });
