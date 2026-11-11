@@ -3,7 +3,6 @@ import { hashToken, roomIpKey, jsonStorable } from '../rooms.ts';
 import { corsHeaders, roomOriginAllowed } from '../rooms-cors.ts';
 import { BOARDS, replay, type Board, type Tier, type ScoreDirection } from './boards.ts';
 import { normalizeNickname } from './nickname.ts';
-import { NICKNAME_COOLDOWN_MS } from '../rooms-rate-limit.ts';
 
 export const DAY = 86_400_000;
 export const MAX_BODY_BYTES = 8192;
@@ -21,8 +20,6 @@ export interface LeaderboardData {
   player(userId: string): Promise<Player | null>;
   nicknameOwner(key: string): Promise<Player | null>;
   putPlayer(player: Player): Promise<void>;
-  nicknameSetAt(key: string): Promise<Date | null>;
-  putNicknameCooldown(key: string, now: Date): Promise<void>;
   run(id: string): Promise<Run | null>;
   putRun(run: Run): Promise<void>;
   score(board: string, userId: string, tier: Tier): Promise<Score | null>;
@@ -190,7 +187,7 @@ export function claimRun(request: Request, game: string, id: string, deps: Leade
       if (personalBest) await data.putScore(candidate);
       await data.putRun({ ...run, status: 'claimed', userId });
       const view = await data.view(game, board.key, board.tier, 1, userId, board.direction);
-      return { body: { rank: view.me?.rank ?? null, personalBest, needsNickname: !player?.nickname, score: best.score } };
+      return { body: { rank: view.me?.rank ?? null, personalBest, needsNickname: !player?.nickname, nickname: player?.nickname ?? null, score: best.score } };
     });
   });
 }
@@ -211,9 +208,6 @@ export function profile(request: Request, deps: LeaderboardDeps) {
   return respond(request, deps, async () => {
     const userId = await signedIn(request, deps), now = clock(deps);
     if (request.method === 'DELETE') return deps.store.transaction(async data => {
-      // Preserve cooldowns for profiles created before the rate record existed.
-      const player = await data.player(userId), key = `lb:nick:${hashToken(userId)}`;
-      if (player && +(await data.nicknameSetAt(key) ?? 0) < +player.nicknameSetAt) await data.putNicknameCooldown(key, player.nicknameSetAt);
       await data.deletePlayer(userId);
       return { status: 204 };
     });
@@ -227,16 +221,11 @@ export function profile(request: Request, deps: LeaderboardDeps) {
     if ('error' in normalized) return fail(422, normalized.error);
     return deps.store.transaction(async data => {
       const player = await allowedPlayer(data, userId);
-      const cooldownKey = `lb:nick:${hashToken(userId)}`;
-      const lastSetAt = Math.max(+(await data.nicknameSetAt(cooldownKey) ?? 0), +(player?.nicknameSetAt ?? 0));
-      if (+now < lastSetAt + NICKNAME_COOLDOWN_MS) throw new ApiError(429, 'rate_limited', 'Nicknames can change once every 7 days', {}, Math.ceil((lastSetAt + NICKNAME_COOLDOWN_MS - +now) / 1000));
       const owner = await data.nicknameOwner(normalized.nicknameKey);
       if (owner && owner.userId !== userId) fail(409, 'nickname_taken');
       await data.putPlayer({ ...normalized, userId, nicknameSetAt: now, status: player?.status ?? 'active', createdAt: player?.createdAt ?? now });
-      // Same transaction as the nickname: failed/conflicting writes consume no cooldown.
-      // This hashed rate record survives profile deletion and stores no nickname.
-      await data.putNicknameCooldown(cooldownKey, now);
-      return { body: { nickname: normalized.nickname, nextChangeAt: new Date(+now + NICKNAME_COOLDOWN_MS) } };
+      // Keep the existing response field compatible: another change is allowed now.
+      return { body: { nickname: normalized.nickname, nextChangeAt: now } };
     });
   });
 }

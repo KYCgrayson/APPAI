@@ -81,11 +81,17 @@ export function disposeRoot(root:Group){
 
 /** Hand-carved toy friends, differentiated by clothing, silhouette and a tiny trade prop. */
 export function person(variant:number):Group{
- const g=new Group(),eyes=new Group(),skin=variant>=8?'#e4bb9a':'#f0c7a0';
+ const g=new Group(),eyes=new Group(),legs:Group[]=[],skin=variant>=8?'#e4bb9a':'#f0c7a0';
  const coat:Record<number,string>={1:'#e8ad58',2:'#6fa697',3:'#c887a4',4:'#7493b5',5:'#e5c8a0',6:'#7e9c64',8:'#7797a2',10:'#b88b9e',12:'#aa7957'};
  const h=variant===1?.86:1;
  part(g,'cylinder',coat[variant],[0,.43,0],[.40,.46,.31]);
- for(const x of [-.12,.12]){part(g,'sphere','#5a5146',[x,.10,.05],[.11,.12,.18]);part(g,'sphere',coat[variant],[x*2,.44,0],[.09,.19,.09]);}
+ for(const x of [-.12,.12]){
+  const leg=new Group();
+  part(leg,'cylinder',coat[variant],[0,-.08,0],[.12,.18,.13]);
+  part(leg,'sphere','#5a5146',[0,-.18,.05],[.11,.12,.18]);
+  bake(leg);leg.position.set(x,.28,0);legs.push(leg);
+  part(g,'sphere',coat[variant],[x*2,.44,0],[.09,.19,.09]);
+ }
  part(g,'sphere',skin,[0,.82,0],[.25,.25,.23]);
  part(g,'sphere',variant>=8?'#d9d5c5':'#634e40',[0,.97,-.035],[.25,.13,.23]);
  part(g,'sphere',skin,[0,.76,.225],[.045,.045,.05]);
@@ -98,5 +104,5 @@ export function person(variant:number):Group{
  if(variant===8){part(g,'cylinder','#74583f',[.36,.25,.10],[.035,.65,.035]);for(const x of [-.10,.10])part(g,'sphere','#bdc5bc',[x,.83,.213],[.09,.08,.025]);}
  if(variant===10){part(g,'sphere','#ca9a64',[.36,.27,.04],[.16,.19,.14]);part(g,'sphere','#d6bd81',[.36,.43,.04],[.14,.025,.13]);}
  if(variant===12)for(let i=0;i<3;i++){const log=part(g,'cylinder','#977047',[.33,.3+i*.1,0],[.08,.43,.08]);log.rotation.x=Math.PI/2;}
- bake(g);bake(eyes);eyes.position.set(0,.84,.211);g.add(eyes);g.userData.eyes=eyes;g.userData.height=h;g.scale.setScalar(h);return g;
+ bake(g);bake(eyes);eyes.position.set(0,.84,.211);g.add(eyes,...legs);g.userData.eyes=eyes;g.userData.legs=legs;g.userData.height=h;g.scale.setScalar(h);return g;
 }

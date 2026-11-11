@@ -472,6 +472,8 @@ For root variants, supply translated `privacyPolicy` and `termsOfService`. These
 
 **Implemented for AppAI's own puzzle build:** server code registers nine verified boards under the API game id `river-crossing`, with keys `river:easy|medium|hard`, `bridge:easy|medium|hard`, `water:easy|medium|hard`. The three public puzzle pages share these identities. A run starts at `POST /api/games/river-crossing/runs`, finishes with moves at `/runs/{runId}/finish`, and is claimed at `/runs/{runId}/claim` using its run bearer token. Finishing replays puzzle actions on the server and checks a minimum elapsed time; claiming also requires AppAI sign-in. Read results at `GET /api/games/river-crossing/leaderboard?board=river:easy`. Nickname/profile and reporting code also exists. Availability depends on deployment and database configuration; this documentation does not assert a live-service test.
 
+Players can choose or change their global nickname when uploading a score. Existing scores display the player’s current nickname. Renames have no multi-day cooldown; validation, nickname uniqueness and the per-account limit of 20 nickname requests per hour still apply.
+
 **External games:** `leaderboards` accepts/stores declarations and warns; it does not register a board, grant origin access or install a validator. An unknown board is rejected by the runtime API. There is no self-service external leaderboard provisioning or general score-validation contract yet. External leaderboard integration is **planned, not implemented**. Do not copy the own-game endpoints or replace their slug expecting a new leaderboard. Guess Duel has no board in the current registry.
 
 ## AppAI-owned pages and compatibility

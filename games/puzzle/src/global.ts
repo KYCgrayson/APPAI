@@ -3,7 +3,7 @@ export interface GlobalEntry { id: string; rank: number; nickname: string; score
 export interface GlobalBoard { board: string; tier: string; entries: GlobalEntry[]; total: number; me?: GlobalEntry | null }
 export interface Credentials { runId: string; token: string; board: string; expiresAt: string }
 export interface Finished { verified: boolean; score: number; timeMs: number; wouldRank: number }
-export interface Claimed { rank: number | null; personalBest: boolean; needsNickname: boolean }
+export interface Claimed { rank: number | null; personalBest: boolean; needsNickname: boolean; nickname: string | null }
 export interface Attempt { board: string; credentials: Promise<Credentials | null>; finished?: Promise<Finished | null> }
 export class GlobalError extends Error {
     code: string; loginUrl?: string;

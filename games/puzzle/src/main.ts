@@ -14,7 +14,7 @@ import { createGlobalClient, GlobalError, type Attempt, type GlobalBoard, type C
 import { globalStrings as g } from './ui/i18n.ts';
 import './ui/style.css';
 type Action = PuzzleAction | {
-    type: 'home' | 'menu' | 'undo' | 'restart' | 'share';
+    type: 'home' | 'menu' | 'undo' | 'restart' | 'share' | 'hint';
 } | {
     type: 'open';
     game: GameId;
@@ -70,19 +70,25 @@ async function fetchBoard(board: string, limit = 50) {
 function fetchFirsts() { for (const id of levelIds) void fetchBoard(`${game}:${id}`, 1); }
 async function upload(target = attempt) {
     if (!target || globalBusy) return;
-    if (claimResult?.needsNickname) { nicknameOpen = true; render(); return; }
+    const typedName = cleanName(nickname);
     globalBusy = true; globalError = ''; render();
     try {
-        const result = await globalClient.claim(target);
+        const result = claimResult ?? await globalClient.claim(target);
         if (attempt !== target) return;
         claimResult = result;
-        nicknameOpen = result.needsNickname;
-        nicknameDraft = nickname;
-        if (!nicknameOpen) void fetchBoard(target.board);
-        // Keep credentials for retry when a nickname is still needed.
+        nicknameDraft = typedName;
+        nicknameError = '';
+        // Claim once; a failed rename can be corrected without reclaiming the run.
         const url = new URL(location.href); url.searchParams.delete('claim');
         params.delete('claim');
         window.history.replaceState(null, '', url);
+        if (typedName && typedName !== result.nickname) {
+            try { await updateGlobalNickname(typedName); }
+            catch (error) { nicknameOpen = true; nicknameError = globalErrorText(error); }
+        } else {
+            nicknameOpen = result.needsNickname;
+            if (!nicknameOpen) await fetchBoard(target.board);
+        }
     } catch (error) {
         if (error instanceof GlobalError && error.code === 'login_required' && error.loginUrl) {
             const top = window.top ?? window;
@@ -90,18 +96,27 @@ async function upload(target = attempt) {
         } else globalError = globalErrorText(error);
     } finally { globalBusy = false; render(); }
 }
+async function updateGlobalNickname(name: string) {
+    const result = await globalClient.nickname(name);
+    nickname = result.nickname; nicknameOpen = false;
+    try { localStorage.setItem('puzzle-name', nickname); } catch { }
+    if (claimResult) claimResult = { ...claimResult, nickname, needsNickname: false };
+    // All scores join the current player nickname; discard cached old names.
+    globalBoards.clear();
+    if (attempt) {
+        try {
+            const board = await globalClient.leaderboard(attempt.board);
+            globalBoards.set(attempt.board, board);
+            if (claimResult) claimResult = { ...claimResult, rank: board.me?.rank ?? null };
+        } catch { globalError = g.unavailable; }
+    }
+}
 async function saveGlobalNickname() {
     if (globalBusy) return;
     globalBusy = true; nicknameError = ''; render();
     try {
-        const result = await globalClient.nickname(nicknameDraft);
-        nickname = result.nickname; nicknameOpen = false;
-        if (attempt) {
-            const board = await globalClient.leaderboard(attempt.board);
-            globalBoards.set(attempt.board, board);
-            if (claimResult) claimResult = { ...claimResult, rank: board.me?.rank ?? null, needsNickname: false };
-        }
-    } catch (error) { nicknameError = globalErrorText(error); }
+        await updateGlobalNickname(nicknameDraft);
+    } catch (error) { nicknameOpen = true; nicknameError = globalErrorText(error); }
     finally { globalBusy = false; render(); }
 }
 function boardHtml(board: string) {
@@ -231,9 +246,8 @@ function begin(level: LevelId) {
     toast = '';
     state = def.logic.initial(level);
     screen = 'game';
-    showHints = level === 'easy';
+    showHints = false;
     try {
-        showHints = showHints && localStorage.getItem(`${def.storagePrefix}-hints`) !== 'seen';
         localStorage.setItem('puzzle-last', game);
     }
     catch { }
@@ -332,6 +346,13 @@ function act(a: Action) {
         begin(state.level);
         return;
     }
+    if (a.type === 'hint') {
+        if (!def.logic.isWin(state) && !def.logic.failure(state) && currentHint()) {
+            showHints = !showHints;
+            render();
+        }
+        return;
+    }
     if (a.type === 'undo') {
         if (def.logic.isWin(state))
             return;
@@ -375,12 +396,6 @@ function act(a: Action) {
         hints = isMove ? 3 : Math.min(hints + 1, 2);
     }
     if (isMove) {
-        if (showHints && (game === 'river' || def.logic.score(r.state) >= 3)) {
-            try {
-                localStorage.setItem(`${def.storagePrefix}-hints`, 'seen');
-            }
-            catch { }
-        }
         stage.current!.animate(previous, r.state, () => {
             state = r.state;
             if (game === 'river')
@@ -446,6 +461,7 @@ async function shareResult() {
     }
 }
 const button = (action: string, label: string, primary = false, disabled = false) => `<button data-action="${action}" class="${primary ? 'primary' : ''}${action === 'music' || action === 'sound' ? ' sound' : ''}" ${disabled ? 'disabled' : ''}>${label}</button>`;
+const currentHint = () => game !== 'river' || hints < 3 ? def.logic.hint(state, state.level) : null;
 function modal(title: string, body: string, buttons: string, sheet = false) { return `<div class="scrim ${sheet ? 'sheet-scrim' : ''}"><section class="modal" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}"><div class="eyebrow">${def.strings.title}</div><h2>${title}</h2>${body}<div class="actions">${buttons}</div></section></div>`; }
 function render() {
     stage.menu = screen !== 'game';
@@ -462,13 +478,15 @@ function render() {
         if (game === 'river')
             hud += ` · ${state.aboard.length}/${riverLevels[state.level as LevelId].capacity} ${t.capacity}`;
         if (game === 'bridge')
-            hud = `<span data-minutes>${state.minutes}</span> ${unit()} · <span data-remaining>${s.remaining.replace('{n}', String(Math.max(0, l.limit! - state.minutes)))}</span> · ${t.optimal} ${l.optimal}<span class="lantern-gauge ${l.limit! - state.minutes < l.limit! * .25 ? 'low' : ''}"><i data-gauge style="width:${Math.max(0, 1 - state.minutes / l.limit!) * 100}%"></i></span>`;
+            hud = `<span data-minutes>${state.minutes}</span> ${unit()} · <span data-remaining class="${l.limit! - state.minutes < l.limit! * .25 ? 'low' : ''}">${s.remaining.replace('{n}', String(Math.max(0, l.limit! - state.minutes)))}</span> · ${t.optimal} ${l.optimal}<span class="lantern-gauge ${l.limit! - state.minutes < l.limit! * .25 ? 'low' : ''}"><i data-gauge style="width:${Math.max(0, 1 - state.minutes / l.limit!) * 100}%"></i></span>`;
         if (game === 'water')
             hud += `<span class="goal">${s[`${state.level}Goal`]}</span>`;
         html = `<header class="topbar"><div class="level-heading"><button class="home" data-action="menu" ${busy ? 'disabled' : ''}><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7M5 9v11h5v-6h4v6h5V9"/></svg><span>${t.home}</span></button><div class="identity"><h2>${s[state.level]}</h2><span>${hud}</span>${challenge && challenge.level === state.level ? `<div class="target-chip">${st.target} ${challenge.score} ${unit()} / ${formatTime(challenge.ms)}</div>` : ''}</div></div><nav class="toolbar">${button('undo', t.undo, false, !history.length || busy || def.logic.isWin(state))}${button('restart', t.restart, false, busy)}${button('rules', t.rules, false, busy)}</nav></header><div class="bottom">`;
-        const hint = showHints && (game !== 'river' || hints < 3) ? def.logic.hint(state, state.level) : null;
-        if (hint)
-            html += `<div class="hint">${s[hint]}</div>`;
+        const hint = !frozen ? currentHint() : null;
+        if (hint) {
+            html += `<button class="hint-toggle" data-action="hint" aria-expanded="${showHints}" aria-controls="puzzle-hint" aria-keyshortcuts="H" ${busy ? 'disabled' : ''}>${c.hint}</button>`;
+            if (showHints) html += `<div id="puzzle-hint" class="hint" role="status">${s[hint]}</div>`;
+        }
         html += '<div class="traveler-list">';
         if (game === 'river')
             html += riverLevels[state.level as LevelId].pieces.map(p => `<button data-piece="${p.id}" class="${state.aboard.includes(p.id) ? 'selected' : ''}" aria-pressed="${state.aboard.includes(p.id)}" ${busy || frozen || state.positions[p.id] !== state.boat ? 'disabled' : ''}>${s[p.kind]}${p.id.match(/\d+/) ? ' ' + p.id.match(/\d+/)![0] : ''}${state.aboard.includes(p.id) ? ' ↗' : ''}</button>`).join('');
@@ -483,7 +501,7 @@ function render() {
         }
         else
             html += `<button class="primary cross" data-action="go" ${busy || frozen ? 'disabled' : ''}>${game === 'river' ? t.cross : s.walk} <span aria-hidden="true">→</span></button>`;
-        html += `<p class="help">${s.help}</p></div>`;
+        html += `<p class="help">${s.help} · ${c.hintKey}</p></div>`;
         if (def.logic.failure(state))
             html += modal(game === 'river' ? t.failed : s.timeout.replace('{limit}', String(l.limit)).replace('{m}', String(state.minutes)), game === 'river' ? `<p>${s[state.failure.reason]}</p>` : '', button('undo', t.undo, true) + button('restart', t.restart) + button('menu', t.menu), true);
         else if (def.logic.isWin(state)) {
@@ -637,9 +655,9 @@ document.addEventListener('keydown', e => {
     }
     if (target.matches('input,textarea') || previewUrl || e.code === 'Space' && target.tagName === 'BUTTON')
         return;
-    if (['Space', 'KeyZ', 'KeyR'].includes(e.code)) {
+    if (['Space', 'KeyZ', 'KeyR', 'KeyH'].includes(e.code)) {
         e.preventDefault();
-        act({ type: e.code === 'Space' ? 'go' : e.code === 'KeyZ' ? 'undo' : 'restart' });
+        act({ type: e.code === 'Space' ? 'go' : e.code === 'KeyZ' ? 'undo' : e.code === 'KeyH' ? 'hint' : 'restart' });
     }
     else if (game !== 'river' && /^Digit[1-6]$/.test(e.code)) {
         e.preventDefault();

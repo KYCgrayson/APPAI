@@ -1,10 +1,11 @@
-import { Group, Mesh, InstancedMesh, BoxGeometry, MeshStandardMaterial, MeshBasicMaterial, SphereGeometry, PointLight, RingGeometry, DoubleSide, Object3D, Vector3, MathUtils } from 'three';
+import { Color, ConeGeometry, Group, Mesh, InstancedMesh, BoxGeometry, MeshStandardMaterial, MeshBasicMaterial, SphereGeometry, PointLight, RingGeometry, DoubleSide, Object3D, Vector3, MathUtils } from 'three';
 import type { Stage } from '../../scene/stage.ts';
 import type { LevelId, PuzzleScene } from '../types.ts';
 import { initial, ids, isWin, levels, type State } from './logic.ts';
 import { part, bake, person, disposeRoot } from '../../scene/models.ts';
 import { badge, rod } from '../../scene/helpers.ts';
 import { registry } from '../registry.ts';
+import { crossingDuration, fireProgress, walkingMotion, walkingSpeed } from './presentation.ts';
 const sag = (x: number) => -.34 * (1 - (x / 2.25) ** 2);
 class BridgeScene implements PuzzleScene<State> {
     root = new Group();
@@ -25,6 +26,9 @@ class BridgeScene implements PuzzleScene<State> {
     private planks: InstancedMesh;
     private matrix = new Object3D();
     private motes: InstancedMesh;
+    private fire: InstancedMesh;
+    private firelight: PointLight;
+    private reduced = matchMedia('(prefers-reduced-motion: reduce)');
     private animation?: {
         from: State;
         to: State;
@@ -108,6 +112,13 @@ class BridgeScene implements PuzzleScene<State> {
         }
         this.motes = new InstancedMesh(new SphereGeometry(.025, 5, 4), new MeshBasicMaterial({ color: '#ffdca0' }), 16);
         this.root.add(this.motes);
+        // One small instanced strip behind the start bank, with no shadow or particle system.
+        this.fire = new InstancedMesh(new ConeGeometry(1, 1, 7), new MeshBasicMaterial({ toneMapped: false }), 14);
+        this.fire.name = 'start-bank-fire';
+        for (let i = 0; i < 14; i++) this.fire.setColorAt(i, new Color(i % 2 ? '#ffd15c' : '#f35c21'));
+        this.root.add(this.fire);
+        this.firelight = stage.lamps[1];
+        this.firelight.color.set('#ff6a29'); this.firelight.distance = 6; this.firelight.decay = 1.5;
         this.sync(this.state);
     }
     private setPlanks(walkerX?: number) { for (let i = 0; i < 22; i++) {
@@ -122,40 +133,54 @@ class BridgeScene implements PuzzleScene<State> {
     sync(s: State) { this.state = s; for (const [id, g] of this.actors) {
         const pos = this.slot(id, s.side[id]);
         g.position.copy(pos);
+        g.rotation.z = 0;
+        for (const leg of g.userData.legs as Group[]) leg.rotation.x = 0;
         this.homes.set(id, pos);
-    } this.lantern.position.set(s.lantern ? 2.25 : -2.25, 1.15, .64); this.lantern.rotation.z = 0; this.lamp.position.copy(this.lantern.position).y += .3; }
-    animate(from: State, to: State, done: () => void) { this.busy = true; this.animation = { from, to, start: performance.now(), duration: Math.min(1800, 1100 + 60 * (to.minutes - from.minutes)), done, origins: new Map([...this.actors].map(([id, g]) => [id, g.position.clone()])) }; }
+    } this.root.userData.fireProgress = fireProgress(s.minutes, levels[s.level].limit); this.lantern.position.set(s.lantern ? 2.25 : -2.25, 1.15, .64); this.lantern.rotation.z = 0; this.lamp.position.copy(this.lantern.position).y += .3; }
+    animate(from: State, to: State, done: () => void) { this.busy = true; this.animation = { from, to, start: performance.now(), duration: crossingDuration(to.minutes - from.minutes), done, origins: new Map([...this.actors].map(([id, g]) => [id, g.position.clone()])) }; }
     update(t: number, _dt: number, hover: string) {
         const a = this.animation;
-        let progress = 0;
+        let progress = 0, minutes = this.state.minutes;
         if (a) {
             progress = Math.min(1, (t * 1000 - a.start) / a.duration);
             const ease = progress * progress * (3 - 2 * progress), dir = a.from.lantern ? -1 : 1;
             let x = 0;
+            const pairSpeed = walkingSpeed(a.to.minutes - a.from.minutes);
             a.from.selected.forEach((id, i) => {
                 const g = this.actors.get(id)!, start = a.origins.get(id)!, end = this.slot(id, a.to.side[id]);
+                const ownSpeed = walkingSpeed(Number(id));
+                const motion = walkingMotion((progress - .18) / .64, ownSpeed, pairSpeed);
+                const moving = progress < .18 || progress > .82 || motion.moving;
+                const stride = this.reduced.matches || !moving ? 0 : Math.sin((t * 1000 - a.start) / 1000 * 14 * ownSpeed);
                 if (progress < .18)
                     g.position.lerpVectors(start, new Vector3(-dir * 2.2, .14, i ? .25 : -.25), progress / .18);
                 else if (progress > .82)
                     g.position.lerpVectors(new Vector3(dir * 2.2, .14, i ? .25 : -.25), end, (progress - .82) / .18);
                 else {
-                    const p = (progress - .18) / .64;
+                    const p = motion.progress;
                     x = MathUtils.lerp(-dir * 2.2, dir * 2.2, p);
-                    g.position.set(x, .14 + sag(x) + Math.abs(Math.sin(progress * 30 + i)) * .07, i ? .25 : -.25);
+                    g.position.set(x, .14 + sag(x), i ? .25 : -.25);
                 }
-                g.rotation.z = Math.sin(progress * 30 + i) * .04;
+                g.position.y += Math.abs(stride) * .07;
+                g.rotation.z = stride * .04;
+                (g.userData.legs as Group[]).forEach((leg, n) => { leg.rotation.x = stride * (n ? -.45 : .45); });
             });
             const lead = this.actors.get(a.from.selected[0])!;
             this.lantern.position.copy(lead.position).add(new Vector3(dir * .3, .5, .45));
             this.lantern.rotation.z = Math.sin(progress * 20) * .16;
             this.setPlanks(x);
-            const minutes = a.from.minutes + Math.floor((a.to.minutes - a.from.minutes) * ease), node = document.querySelector('[data-minutes]'), remaining = document.querySelector('[data-remaining]'), gauge = document.querySelector<HTMLElement>('[data-gauge]');
+            minutes = a.from.minutes + (a.to.minutes - a.from.minutes) * ease;
+            const node = document.querySelector('[data-minutes]'), remaining = document.querySelector('[data-remaining]'), gauge = document.querySelector<HTMLElement>('[data-gauge]');
             if (node)
-                node.textContent = String(minutes);
-            if (remaining)
-                remaining.textContent = registry.bridge.strings.remaining.replace('{n}', String(Math.max(0, levels[a.to.level].limit - minutes)));
-            if (gauge)
+                node.textContent = String(Math.floor(minutes));
+            if (remaining) {
+                remaining.textContent = registry.bridge.strings.remaining.replace('{n}', String(Math.max(0, levels[a.to.level].limit - Math.floor(minutes))));
+                remaining.classList.toggle('low', minutes / levels[a.to.level].limit > .75);
+            }
+            if (gauge) {
                 gauge.style.width = `${Math.max(0, 1 - minutes / levels[a.to.level].limit) * 100}%`;
+                gauge.parentElement?.classList.toggle('low', minutes / levels[a.to.level].limit > .75);
+            }
             if (progress === 1) {
                 this.animation = undefined;
                 this.busy = false;
@@ -176,13 +201,32 @@ class BridgeScene implements PuzzleScene<State> {
             ring.visible = selected || hover === id;
             ring.position.set(g.position.x, .18, g.position.z);
         }
-        const fuel = Math.max(.05, 1 - this.state.minutes / levels[this.state.level].limit), flare = isWin(this.state) ? 1.6 : 1;
-        this.flame.scale.setScalar((this.state.failure ? .12 : .55 + fuel * .55) * (1 + Math.sin(t * 13) * .07) * flare);
+        const danger = fireProgress(minutes, levels[this.state.level].limit);
+        this.root.userData.fireProgress = danger;
+        const fuel = Math.max(.05, 1 - danger), flare = isWin(this.state) ? 1.6 : 1;
+        const flicker = this.reduced.matches ? 1 : 1 + Math.sin(t * 13) * (danger > .75 ? .28 : .07);
+        this.flame.scale.setScalar((this.state.failure ? .12 : .55 + fuel * .55) * flicker * flare);
         this.lamp.position.copy(this.lantern.position).y += .3;
-        this.lamp.intensity = (this.state.failure ? .15 : 3 + fuel * 4) * flare;
+        this.lamp.intensity = (this.state.failure ? .15 : 3 + fuel * 4) * flare * flicker;
+        this.fire.position.set(-4.85 + danger * .45, .18, -2.75 + danger * .5);
+        this.fire.visible = danger > .3;
+        const growth = MathUtils.smoothstep(danger, .3, 1), flameTime = this.reduced.matches ? 0 : t;
+        for (let i = 0; i < 14; i++) {
+            const height = (.3 + (i % 3) * .15 + Math.sin(flameTime * 6 + i) * .08) * growth;
+            this.matrix.position.set((i % 2) * .14, height / 2, (Math.floor(i / 2) - 3) * .12);
+            this.matrix.scale.set(.14 + growth * .12, height, .12 + growth * .04);
+            this.matrix.rotation.set(0, 0, Math.sin(flameTime * 4 + i) * .12);
+            this.matrix.updateMatrix(); this.fire.setMatrixAt(i, this.matrix.matrix);
+        }
+        this.fire.instanceMatrix.needsUpdate = true;
+        this.firelight.position.copy(this.fire.position).y += .5;
+        this.firelight.intensity = MathUtils.smoothstep(danger, .1, 1) * 5;
+        (this.motes.material as MeshBasicMaterial).color.set(danger > .55 ? '#ff8b42' : '#ffdca0');
         for (let i = 0; i < 16; i++) {
-            this.matrix.position.set(Math.sin(t * .3 + i * 2.4) * 4.8, .6 + (i % 4) * .3 + Math.sin(t + i) * .15, Math.cos(t * .2 + i) * 2.8);
-            this.matrix.scale.setScalar(.5 + .5 * Math.sin(t * 2 + i) ** 2);
+            const moteTime = this.reduced.matches ? 0 : t;
+            if (danger > .55) this.matrix.position.set(this.fire.position.x + Math.sin(moteTime + i) * .25, .3 + ((moteTime * .4 + i * .17) % 1.5), this.fire.position.z + Math.cos(i * 2.4) * .45);
+            else this.matrix.position.set(Math.sin(moteTime * .3 + i * 2.4) * 4.8, .6 + (i % 4) * .3 + Math.sin(moteTime + i) * .15, Math.cos(moteTime * .2 + i) * 2.8);
+            this.matrix.scale.setScalar(.5 + .5 * Math.sin(moteTime * 2 + i) ** 2);
             this.matrix.rotation.set(0, 0, 0);
             this.matrix.updateMatrix();
             this.motes.setMatrixAt(i, this.matrix.matrix);

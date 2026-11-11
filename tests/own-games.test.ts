@@ -215,3 +215,15 @@ test("collection metadata and structured data describe three pages, not a fourth
       GAMES.filter((game) => game.puzzle).map((game) => platformUrl(gamePageHref(game), locale)));
   }
 });
+
+
+test("Night Bridge tells the fire story in all nine locales without implying a real-time countdown", () => {
+  const fireWords: Record<string, RegExp> = { en: /fire/i, es: /fuego/i, "zh-TW": /火/, "zh-CN": /火/, ja: /火/, ko: /불/, de: /Feuer/, fr: /feu/i, hi: /आग/ };
+  for (const locale of GAME_PAGE_LOCALES) {
+    const copy = getGamePageCopy(locale, "night-bridge"), card = getGamesCopy(locale).games["night-bridge"], fire = fireWords[locale];
+    for (const field of ["intro", "background"] as const) assert.match(copy[field], fire, `${locale}.${field}`);
+    assert.match(card.tagline, fire, `${locale}.tagline`);
+    assert.ok(card.howToPlay.some(step => fire.test(step)), `${locale}.howToPlay`);
+    assert.ok(copy.faq.some(item => fire.test(item.answer)), `${locale}.faq`);
+  }
+});

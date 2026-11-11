@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- GPU-free scene fixtures inspect puzzle-specific objects and animation state. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Mesh,Sprite,Box3,Vector3,PointLight,PerspectiveCamera,ShaderMaterial,Spherical} from 'three';
@@ -17,12 +18,12 @@ function census(scene:any){
 }
 for(const def of Object.values(registry))for(const level of levelIds)test(`${def.id} ${level}: scene lifecycle, animation completion, conservative render census`,async()=>{
  const stage={night:def.id==='bridge',themeDark:false,lamps:[new PointLight(),new PointLight()],renderer:{toneMappingExposure:1}};
- const module=await def.loadScene(),scene=module.create(stage as any,level);let s=def.logic.initial(level);scene.sync(s);scene.update(performance.now()/1000,.016,'');
+ const sceneModule=await def.loadScene(),scene=sceneModule.create(stage as any,level);let s=def.logic.initial(level);scene.sync(s);scene.update(performance.now()/1000,.016,'');
  assert.ok(scene.hit.length>0);assert.ok(scene.root.children.length>0);
  const box=new Box3().setFromObject(scene.root);assert.ok(Number.isFinite(box.min.x));census(scene);
  for(const a of def.logic.solution(level)){
   const r=def.logic.apply(s,a);assert.ok(r.ok);if(!r.ok)continue;
-  if(def.logic.isMove(a)){let done=0;scene.animate(s,r.state,()=>{done++;});assert.equal(scene.busy,true);const now=performance.now()/1000;for(const offset of [.1,.4,.8,1.2,2.2]){scene.update(now+offset,.016,'');census(scene);}assert.equal(done,1);assert.equal(scene.busy,false);scene.update(now+2.5,.016,'');assert.equal(done,1);}
+  if(def.logic.isMove(a)){let done=0;scene.animate(s,r.state,()=>{done++;});assert.equal(scene.busy,true);const now=performance.now()/1000;for(const offset of [.1,.4,.8,1.2,2.2,3.6]){scene.update(now+offset,.016,'');census(scene);}assert.equal(done,1);assert.equal(scene.busy,false);scene.update(now+4,.016,'');assert.equal(done,1);}
   else {scene.sync(r.state);scene.update(performance.now()/1000,0,'');census(scene);}s=r.state;
  }
  assert.ok(def.logic.isWin(s));scene.dispose();assert.equal(scene.root.children.length,0);
@@ -32,10 +33,10 @@ test('bridge toy variants have independent blink eyes and distinct geometry',()=
 });
 
 test('night river failure and all selection rings stay within the draw budget',async()=>{
- const def=registry.river,module=await def.loadScene();
+ const def=registry.river,sceneModule=await def.loadScene();
  for(const level of levelIds){
-  const scene=module.create({night:true,themeDark:true,lamps:[new PointLight(),new PointLight()]} as any,level);
-  let s=def.logic.initial(level);const selected=def.logic.apply(s,{type:'toggle',id:level==='easy'?'farmer':'rabbit1'});assert.ok(selected.ok);if(!selected.ok)continue;
+  const scene=sceneModule.create({night:true,themeDark:true,lamps:[new PointLight(),new PointLight()]} as any,level);
+  const s=def.logic.initial(level);const selected=def.logic.apply(s,{type:'toggle',id:level==='easy'?'farmer':'rabbit1'});assert.ok(selected.ok);if(!selected.ok)continue;
   const failed=def.logic.apply(selected.state,{type:'cross'});assert.ok(failed.ok);if(!failed.ok)continue;
   assert.ok(def.logic.failure(failed.state));scene.sync(failed.state);scene.update(0,0,'');census(scene);scene.dispose();
  }
@@ -123,4 +124,37 @@ test('every puzzle and home sky composes the horizon and hides puffs/birds at lo
   atmosphere.traverse(o=>{if(o instanceof Mesh){o.geometry.dispose();const materials=Array.isArray(o.material)?o.material:[o.material];materials.forEach(m=>m.dispose());}});
   scene.dispose();
  }
+});
+
+test('bridge fire advances with crossing minutes and reverses on undo/restart; fast companions visibly wait',async t=>{
+ const {create}=await import('../src/puzzles/bridge/scene.ts');
+ const {crossingDuration}=await import('../src/puzzles/bridge/presentation.ts');
+ const lights=[new PointLight(),new PointLight()];
+ const scene=create({lamps:lights} as any,'easy');
+ let clock=1000;t.mock.method(performance,'now',()=>clock);
+ const from={...registry.bridge.logic.initial('easy'),selected:['1','10']};
+ const result=registry.bridge.logic.apply(from,{type:'walk'});assert.ok(result.ok);if(!result.ok)return;
+ scene.sync(from);scene.update(clock/1000,0,'');
+ const fire=scene.root.getObjectByName('start-bank-fire')!;
+ const calm=fire.position.clone();assert.equal(fire.visible,false);
+ let done=0;scene.animate(from,result.state,()=>done++);
+ clock+=crossingDuration(10)*(.18+.64*.2);scene.update(clock/1000,.016,'');
+ const fast=scene.hit.find(o=>o.userData.id==='1')!,slow=scene.hit.find(o=>o.userData.id==='10')!;
+ assert.ok(fast.position.x>slow.position.x);
+ assert.ok(fast.userData.legs.every((leg:any)=>leg.rotation.x===0));
+ assert.ok(slow.userData.legs.some((leg:any)=>leg.rotation.x!==0));
+ assert.equal(done,0);assert.ok(scene.root.userData.fireProgress>0);
+ clock+=3500;scene.update(clock/1000,.016,'');assert.equal(done,1);
+ assert.equal(scene.root.userData.fireProgress,10/22);assert.ok(fire.position.x>calm.x);
+ scene.sync({...result.state,minutes:20});scene.update(clock/1000,0,'');
+ assert.ok(fire.visible);assert.ok(lights[1].intensity>0);census(scene);
+ scene.root.updateMatrixWorld(true);
+ const fireBox=new Box3().setFromObject(fire);
+ assert.ok(fireBox.min.x>=-scene.bounds.x&&fireBox.max.x<=scene.bounds.x);
+ assert.ok(fireBox.min.z>=-scene.bounds.z&&fireBox.max.z<=scene.bounds.z);
+ assert.ok(fireBox.max.y<=scene.bounds.y[1],'growing flames stay within the fitted scene bounds');
+ scene.sync(registry.bridge.logic.initial('easy'));scene.update(clock/1000,0,'');
+ assert.equal(scene.root.userData.fireProgress,0);assert.equal(fire.visible,false);
+ assert.equal(lights[1].intensity,0);assert.deepEqual(fire.position,calm);
+ scene.dispose();
 });
