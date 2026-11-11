@@ -1,5 +1,13 @@
 # TODO — AppAI Project Roadmap
 
+## Game fixes (#78)
+
+- [x] Apply the win-modal name to the global profile after claiming, including login returns and inline rename retries. Remove the seven-day rename cooldown without a migration; keep validation, uniqueness and the 20/hour account quota. Existing scores use the current nickname.
+- [x] Start puzzle hints hidden; add a 44px Hint toggle and H shortcut, preserve river guidance cutoff and reset on restart. Guess Duel already defaults its hint checkbox off; Werewolf has no optional solution hints.
+- [x] Add Night Bridge's approaching fire story in both gameplay languages and all nine page locales. Drive the fire, sky, fog, warning label and lantern flicker from spent minutes; animate distinct traveler speeds and faster companions waiting. Crossings remain 1.4–3.5 seconds, above the unchanged 700ms replay floor.
+- [x] Rebuild `public/games/river-crossing` with `bash scripts/sync-games.sh river-crossing`; puzzle tests (138), root tests (557 passed, one database integration test skipped), both TypeScript checks and lint on changed TypeScript files pass. Production build passes with `ALLOW_LOCAL_HTTP_BACKEND=1 npm run build -- --webpack` using the existing local DB fallback.
+- [ ] Visual browser QA at 375px and live authenticated leaderboard verification. This sandbox blocks server port binding and Chromium launch; the browser tool is unavailable. Automated scene-fit/controller checks pass. Plain `npm run build` is blocked by Turbopack's local port requirement; Webpack without the local fallback lacks `DATABASE_URL` for `/llms.txt` prerendering.
+
 ## Own game pages (#73, stacked on #67)
 
 - [x] Canonical locale-aware pages for River Crossing, Night Bridge, Water Pouring, Guess Duel Beta and Werewolf Beta, plus the page-only Tabletop Puzzles collection, with parent FAQ, covers, instructions and structured data.

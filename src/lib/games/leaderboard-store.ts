@@ -10,11 +10,6 @@ function dataFor(tx: Prisma.TransactionClient): LeaderboardData {
     player: userId => tx.gamePlayer.findUnique({ where: { userId } }),
     nicknameOwner: nicknameKey => tx.gamePlayer.findUnique({ where: { nicknameKey } }),
     async putPlayer(player) { await tx.gamePlayer.upsert({ where: { userId: player.userId }, create: player, update: player }); },
-    async nicknameSetAt(key) { return (await tx.gameRoomRateLimit.findUnique({ where: { key } }))?.windowStart ?? null; },
-    async putNicknameCooldown(key, now) {
-      const row = { key, windowStart: now, count: 1 };
-      await tx.gameRoomRateLimit.upsert({ where: { key }, create: row, update: row });
-    },
     async run(id) { return await tx.gameRun.findUnique({ where: { id } }) as Run | null; },
     async putRun(run) {
       const row = { ...run, moves: run.moves === null ? Prisma.DbNull : run.moves as Prisma.InputJsonValue };

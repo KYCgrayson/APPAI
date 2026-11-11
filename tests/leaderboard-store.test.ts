@@ -4,12 +4,11 @@ import { readFileSync } from 'node:fs';
 import { Prisma, type PrismaClient } from '@prisma/client';
 import { createLeaderboardStore } from '../src/lib/games/leaderboard-store.ts';
 import { DAY } from '../src/lib/games/leaderboard.ts';
-import { expiredRateLimits, NICKNAME_COOLDOWN_MS } from '../src/lib/rooms-rate-limit.ts';
+import { expiredRateLimits } from '../src/lib/rooms-rate-limit.ts';
 
 const knownError = (code: string, meta?: Record<string, unknown>) => new Prisma.PrismaClientKnownRequestError('mock failure', { code, clientVersion: 'test', meta });
 function setupStore(failures: unknown[] = [], rawFailures: unknown[] = []) {
   const queries: Prisma.Sql[] = [], executions: Prisma.Sql[] = [], isolation: unknown[] = [];
-  const rateRows = new Map<string, { key: string; windowStart: Date; count: number }>();
   let attempts = 0;
   const tx = {
     async $queryRaw(sql: Prisma.Sql) {
@@ -17,12 +16,6 @@ function setupStore(failures: unknown[] = [], rawFailures: unknown[] = []) {
       const failure = rawFailures.shift();
       if (failure) throw failure;
       return sql.sql.includes('AS count FROM') ? [{ count: BigInt(2) }] : [];
-    },
-    gameRoomRateLimit: {
-      async findUnique({ where }: { where: { key: string } }) { return rateRows.get(where.key) ?? null; },
-      async upsert({ create, update }: { create: { key: string; windowStart: Date; count: number }; update: { key: string; windowStart: Date; count: number } }) {
-        rateRows.set(create.key, rateRows.has(create.key) ? update : create);
-      },
     },
   } as unknown as Prisma.TransactionClient;
   const db = {
@@ -36,7 +29,7 @@ function setupStore(failures: unknown[] = [], rawFailures: unknown[] = []) {
       executions.push(Prisma.sql(strings, ...values)); return 0;
     },
   } as unknown as Pick<PrismaClient, '$transaction' | '$executeRaw'>;
-  return { store: createLeaderboardStore(db, async () => 1), queries, executions, isolation, rateRows, attempts: () => attempts };
+  return { store: createLeaderboardStore(db, async () => 1), queries, executions, isolation, attempts: () => attempts };
 }
 
 for (const [code, sqlState] of [['P2034'], ['P2002'], ['P2010', '40001'], ['P2010', '40P01']] as const) {
@@ -85,22 +78,11 @@ for (const direction of ['asc', 'desc'] as const) test(`SQL ${direction} leaderb
   assert.match(sql, /SELECT \* FROM ranked WHERE rank <= \? OR "userId" = \? ORDER BY rank/);
   assert.deepEqual(query.values, ['game', 'board', 'unverified', 1, 'own-private-id']);
 });
-test('nickname cooldown persistence stores only a hashed key, timestamp and count and resets the window on successful change', async () => {
-  const t = setupStore(), key = 'lb:nick:' + 'a'.repeat(64), first = new Date('2026-11-01T00:00:00Z'), next = new Date(+first + NICKNAME_COOLDOWN_MS);
-  await t.store.transaction(async data => {
-    assert.equal(await data.nicknameSetAt(key), null);
-    await data.putNicknameCooldown(key, first);
-    assert.deepEqual(await data.nicknameSetAt(key), first);
-    await data.putNicknameCooldown(key, next);
-    assert.deepEqual(await data.nicknameSetAt(key), next);
-  });
-  assert.deepEqual(t.rateRows.get(key), { key, windowStart: next, count: 1 });
-});
-test('both shared rate cleanup paths retain nickname records for seven days and keep bounded deletion', async () => {
+test('both shared rate cleanup paths expire legacy nickname records normally and keep bounded deletion', async () => {
   const now = new Date('2026-11-09T00:00:00Z'), t = setupStore();
   const expiry = expiredRateLimits(now, DAY);
-  assert.match(expiry.sql.replace(/\s+/g, ' '), /"windowStart" <= \? AND \("key" NOT LIKE 'lb:nick:%' OR "windowStart" <= \?\)/);
-  assert.deepEqual(expiry.values, [new Date(+now - DAY), new Date(+now - NICKNAME_COOLDOWN_MS)]);
+  assert.match(expiry.sql.replace(/\s+/g, ' '), /^"windowStart" <= \?$/);
+  assert.deepEqual(expiry.values, [new Date(+now - DAY)]);
   await t.store.cleanup(now);
   const cleanup = t.executions.find(query => query.sql.includes('GameRoomRateLimit'))!;
   assert.ok(cleanup.sql.includes(expiry.sql)); assert.match(cleanup.sql, /LIMIT 1000/);

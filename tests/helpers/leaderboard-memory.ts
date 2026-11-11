@@ -1,6 +1,5 @@
 import { type LeaderboardData, type LeaderboardDeps, type Player, type Run, type Score, isBetter, DAY } from '../../src/lib/games/leaderboard.ts';
 import type { Board, Tier, ScoreDirection } from '../../src/lib/games/boards.ts';
-import { NICKNAME_COOLDOWN_MS } from '../../src/lib/rooms-rate-limit.ts';
 export function setup(boards?: readonly Board[]) {
   let now = new Date('2026-11-09T00:00:00Z'), user: string | null = null;
   const players = new Map<string, Player>(), runs = new Map<string, Run>(), scores = new Map<string, Score>();
@@ -11,8 +10,6 @@ export function setup(boards?: readonly Board[]) {
     async player(id) { return structuredClone(players.get(id) ?? null); },
     async nicknameOwner(key) { return structuredClone([...players.values()].find(p => p.nicknameKey === key) ?? null); },
     async putPlayer(p) { players.set(p.userId, structuredClone(p)); },
-    async nicknameSetAt(key) { const hit = rates.get(key); return hit ? new Date(hit.start) : null; },
-    async putNicknameCooldown(key, time) { rates.set(key, { start: +time, count: 1 }); },
     async run(id) { return structuredClone(runs.get(id) ?? null); },
     async putRun(r) { runs.set(r.id, structuredClone(r)); },
     async score(board, userId, tier) { return structuredClone([...scores.values()].find(s => s.board === board && s.userId === userId && s.tier === tier) ?? null); },
@@ -52,7 +49,7 @@ export function setup(boards?: readonly Board[]) {
     },
     async cleanup(time) {
       for (const r of runs.values()) { if (r.expiresAt <= time) r.status = 'expired'; if (r.finishedAt && +r.finishedAt <= +time - 7 * DAY) r.moves = null; }
-      for (const [key, hit] of rates) if (key.startsWith('lb:') && hit.start <= +time - (key.startsWith('lb:nick:') ? NICKNAME_COOLDOWN_MS : DAY)) rates.delete(key);
+      for (const [key, hit] of rates) if (key.startsWith('lb:') && hit.start <= +time - DAY) rates.delete(key);
     },
   } };
   return { deps, players, runs, scores, rates, signIn: (id: string | null) => { user = id; }, advance: (ms: number) => { now = new Date(+now + ms); } };

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {initial,apply,walk,toggle,isWin,levels,solve,solution,ids,type State} from '../src/puzzles/bridge/logic.ts';
-import {levelIds,starsFor,type LevelId} from '../src/puzzles/types.ts';
+import {levelIds,starsFor} from '../src/puzzles/types.ts';
 const deepFreeze=(s:State)=>{Object.freeze(s.side);Object.freeze(s.selected);return Object.freeze(s);};
 function trip(s:State,selected:string[]){const r=walk({...s,selected});assert.equal(r.ok,true);if(!r.ok)throw Error(r.reason);return r.state;}
 for(const [i,level]of levelIds.entries()){
@@ -42,4 +42,23 @@ test('easy two-star ceiling is a reachable winning score',()=>{
  }
  assert.deepEqual([...wins].sort((a,b)=>a-b),[17,19,20,21,22]);
  assert.equal(levels.easy.twoStar,19);assert.equal(starsFor(19,levels.easy),2);assert.equal(starsFor(20,levels.easy),1);
+});
+
+test('walking speeds differ, crossing durations remain above the old minimum and below 3.5 seconds', async () => {
+ const {walkingSpeed,crossingDuration,walkingMotion}=await import('../src/puzzles/bridge/presentation.ts');
+ const times=[1,2,3,4,5,6,8,10,12];
+ assert.equal(walkingSpeed(1),1);
+ for(let i=1;i<times.length;i++){
+  assert.ok(walkingSpeed(times[i])<walkingSpeed(times[i-1]));
+  assert.ok(crossingDuration(times[i])>crossingDuration(times[i-1]));
+ }
+ for(const minutes of [...times,100]){
+  assert.ok(walkingSpeed(minutes)>=.4);
+  assert.ok(crossingDuration(minutes)>=1160&&crossingDuration(minutes)<=3500);
+ }
+ const pair=walkingSpeed(10),fast=walkingMotion(.2,1,pair),slow=walkingMotion(.2,pair,pair);
+ assert.ok(fast.progress>slow.progress,'fast companion steps ahead');
+ assert.equal(fast.moving,false,'fast companion waits for the slow traveler');
+ assert.equal(slow.moving,true);
+ assert.equal(walkingMotion(1,1,pair).progress,1,'both arrive at the same end of the crossing');
 });

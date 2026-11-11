@@ -61,7 +61,8 @@ globalThis.window = Object.assign(win, {
     self: win, top: win, location: { href: '' }, history: { replaceState(_a: any, _b: any, url: URL) { globalThis.location = new URL(url) as any; } },
     setTimeout: () => 0
 }) as any;
-globalThis.localStorage = { getItem: () => null, setItem() {} } as any;
+const savedLocal = new Map<string, string>();
+globalThis.localStorage = { getItem: (key: string) => savedLocal.get(key) ?? null, setItem: (key: string, value: string) => savedLocal.set(key, value) } as any;
 globalThis.getComputedStyle = (() => ({ getPropertyValue: () => '#426b58' })) as any;
 // The controller's timer interval is irrelevant here; use an explicit test clock.
 globalThis.setInterval = (() => 0) as any;
@@ -70,18 +71,22 @@ const savedSessions = new Map<string, string>();
 globalThis.sessionStorage = { getItem: (key: string) => savedSessions.get(key) ?? null, setItem: (key: string, value: string) => savedSessions.set(key, value) } as any;
 const apiCalls: { path: string; body: any; headers: Headers }[] = [];
 let runSequence = 0, claimMode: 'login' | 'nickname' | 'rank' = 'rank', nicknameTaken = false;
-let descendingBoard = false;
+let descendingBoard = false, globalNickname: string | null = 'LittleBear';
 globalThis.fetch = (async (path: string, init?: RequestInit) => {
     apiCalls.push({ path, body: init?.body ? JSON.parse(String(init.body)) : null, headers: new Headers(init?.headers) });
     if (path.endsWith('/runs')) return Response.json({ runId: `run-${++runSequence}`, token: 'a'.repeat(32), expiresAt: new Date(Date.now() + 86_400_000).toISOString() });
     if (path.endsWith('/finish')) return Response.json({ verified: true, score: 6, timeMs: 10000, wouldRank: 2 });
-    if (path.endsWith('/claim')) return claimMode === 'login' ? Response.json({ error: 'login_required', loginUrl: '/login?callbackUrl=%2Fgames%2Friver-crossing%2F%3Fclaim%3Drun-1' }, { status: 401 }) : Response.json({ rank: claimMode === 'nickname' ? null : 2, needsNickname: claimMode === 'nickname', personalBest: true });
-    if (path.endsWith('/profile')) return nicknameTaken ? Response.json({ error: 'nickname_taken', message: 'taken' }, { status: 409 }) : Response.json({ nickname: 'LittleBear', nextChangeAt: new Date().toISOString() });
+    if (path.endsWith('/claim')) return claimMode === 'login' ? Response.json({ error: 'login_required', loginUrl: '/login?callbackUrl=%2Fgames%2Friver-crossing%2F%3Fclaim%3Drun-1' }, { status: 401 }) : Response.json({ rank: claimMode === 'nickname' ? null : 2, needsNickname: claimMode === 'nickname', personalBest: true, nickname: claimMode === 'nickname' ? null : globalNickname });
+    if (path.endsWith('/profile')) {
+        if (nicknameTaken) return Response.json({ error: 'nickname_taken', message: 'taken' }, { status: 409 });
+        globalNickname = JSON.parse(String(init?.body)).nickname;
+        return Response.json({ nickname: globalNickname, nextChangeAt: new Date().toISOString() });
+    }
     if (descendingBoard) return Response.json({ board: 'water:easy', tier: 'unverified', direction: 'desc', total: 2, entries: [
         { id: 'high', rank: 1, nickname: 'HighScore', score: 80, timeMs: 10000, tier: 'unverified' },
         { id: 'low', rank: 2, nickname: 'LowScore', score: 50, timeMs: 5000, tier: 'unverified' },
     ] });
-    const entry = { id: 'score-1', rank: 2, nickname: 'LittleBear', score: 6, timeMs: 10000, tier: 'verified' };
+    const entry = { id: 'score-1', rank: 2, nickname: globalNickname, score: 6, timeMs: 10000, tier: 'verified' };
     return Response.json({ board: new URL(path, 'https://appai.info').searchParams.get('board'), tier: 'verified', entries: [entry], total: 1, me: entry });
 }) as any;
 const loads: { game: string; resolve: (module: any) => void }[] = [];
@@ -102,8 +107,34 @@ test('controller regressions: loading, keyboard, modal guards, restart, timeout,
         while (loads.length) await loadLatest();
         assert.equal(stage.mounts, 1); assert.equal(state().game, 'water'); assert.equal(state().animating, false);
     });
+    await t.test('hints start hidden, toggle by tap or H, update across moves and reset on restart', async () => {
+        for (const game of ['river', 'bridge', 'water'] as const) {
+            act({ type: 'start', game, level: 'easy' }); await loadLatest();
+            assert.ok(!app.html.includes('class="hint"'));
+            assert.ok(app.html.includes('aria-expanded="false"'));
+            button('hint').click(); assert.ok(app.html.includes('class="hint"'));
+            assert.ok(app.html.includes('aria-expanded="true"'));
+            const initial = app.html.match(/class="hint" role="status">([^<]*)/)![1];
+            for (const action of registry[game].logic.solution('easy')) {
+                act(action); if (stage.current!.busy) { stage.current!.complete(); break; }
+            }
+            if (game === 'river') {
+                assert.ok(!app.html.includes('class="hint"'), 'river guidance stops after its guided steps');
+                assert.ok(!app.html.includes('data-action="hint"'));
+            } else {
+                assert.ok(app.html.includes('class="hint"'));
+                assert.notEqual(app.html.match(/class="hint" role="status">([^<]*)/)![1], initial);
+                key('KeyH'); assert.ok(!app.html.includes('class="hint"'));
+                key('KeyH'); assert.ok(app.html.includes('class="hint"'));
+            }
+            act({ type: 'restart' }); assert.ok(!app.html.includes('class="hint"'));
+        }
+        act({ type: 'start', game: 'water', level: 'medium' }); await loadLatest();
+        assert.ok(!app.html.includes('class="hint"'));
+        assert.equal(app.html.includes('data-action="hint"'), !!registry.water.logic.hint(state(), 'medium'));
+    });
     await t.test('keyboard digits select then pour, just like jug chips', async () => {
-        act({ type: 'start', level: 'medium' }); await loadLatest();
+        act({ type: 'start', level: 'medium' });
         key('Digit1'); key('Digit2'); assert.equal(state().animating, true);
         stage.current!.complete(); assert.deepEqual(state().jugs, [3, 5, 0]); assert.equal(state().steps, 1);
     });
@@ -181,13 +212,66 @@ test('controller regressions: loading, keyboard, modal guards, restart, timeout,
         nicknameTaken = true; button('save-global-name').click(); await flush(); assert.ok(app.html.includes('That nickname is taken.'));
         nicknameTaken = false; button('save-global-name').click(); await flush(); assert.ok(app.html.includes('Global rank: #2'));
     });
+    const winAgain = async () => {
+        act({ type: 'start', game: 'water', level: 'easy' }); await flush();
+        for (const action of registry.water.logic.solution('easy')) {
+            act(action); if (stage.current!.busy) stage.current!.complete();
+        }
+        await flush();
+    };
+    const typeName = (value: string) => {
+        const input = app.querySelector('#nickname')!; input.value = value; input.dispatchEvent(new Event('input'));
+    };
+    await t.test('upload claims first then renames an existing player to the cleaned win-modal name', async () => {
+        claimMode = 'rank'; globalNickname = 'miles'; await winAgain();
+        typeName('  grayson\u200b  ');
+        const before = apiCalls.length;
+        button('upload-global').click(); await flush();
+        const calls = apiCalls.slice(before), claim = calls.findIndex(c => c.path.endsWith('/claim')), rename = calls.findIndex(c => c.path.endsWith('/profile'));
+        assert.ok(claim >= 0 && rename > claim);
+        assert.equal(calls[rename].body.nickname, 'grayson');
+        assert.equal(globalNickname, 'grayson');
+        button('global-tab').click(); await flush(); assert.ok(app.html.includes('2. grayson'));
+        await winAgain(); typeName('Next Bear'); button('upload-global').click(); await flush();
+        assert.equal(globalNickname, 'Next Bear');
+    });
+    await t.test('taken typed name prefills the global dialog and retry saves without claiming twice', async () => {
+        await winAgain(); typeName('Taken Bear'); nicknameTaken = true;
+        const before = apiCalls.filter(c => c.path.endsWith('/claim')).length;
+        button('upload-global').click(); await flush();
+        assert.equal(app.querySelector('#global-nickname')!.value, 'Taken Bear');
+        assert.ok(app.html.includes('That nickname is taken.'));
+        nicknameTaken = false;
+        const input = app.querySelector('#global-nickname')!; input.value = 'Free Bear'; input.dispatchEvent(new Event('input'));
+        button('save-global-name').click(); await flush();
+        assert.equal(globalNickname, 'Free Bear');
+        assert.equal(apiCalls.filter(c => c.path.endsWith('/claim')).length, before + 1);
+    });
+    await t.test('first upload uses a nonempty typed nickname without an extra nickname dialog', async () => {
+        await winAgain(); claimMode = 'nickname'; globalNickname = null; typeName('New Player');
+        button('upload-global').click(); await flush();
+        assert.equal(globalNickname, 'New Player'); assert.equal(app.querySelector('#global-nickname'), null);
+        assert.equal(savedLocal.get('puzzle-name'), 'New Player');
+        claimMode = 'rank'; globalNickname = 'Free Bear';
+    });
+    await t.test('unchanged or empty names preserve an existing nickname without a rename request', async () => {
+        for (const value of ['Free Bear', '']) {
+            await winAgain(); typeName(value);
+            const before = apiCalls.filter(c => c.path.endsWith('/profile')).length;
+            button('upload-global').click(); await flush();
+            assert.equal(apiCalls.filter(c => c.path.endsWith('/profile')).length, before);
+            assert.equal(globalNickname, 'Free Bear'); assert.equal(app.querySelector('#global-nickname'), null);
+        }
+    });
     await t.test('login callback automatically claims using the matching session token and restores its puzzle', async () => {
         const saved = [...savedSessions.entries()].at(-1)!;
         const credentials = JSON.parse(saved[1]); claimMode = 'rank';
+        savedLocal.set('puzzle-name', 'Login Bear');
         const previous = apiCalls.filter(c => c.path.endsWith('/claim')).length;
         globalThis.location = new URL(`https://puzzle.test/?claim=${credentials.runId}&locale=en`) as any;
         await import(new URL('../src/main.ts?login-return', import.meta.url).href); await flush();
         assert.equal(apiCalls.filter(c => c.path.endsWith('/claim')).length, previous + 1);
+        assert.equal(globalNickname, 'Login Bear');
         assert.equal(window.__puzzleTest.state().game, 'water'); assert.ok(app.html.includes('Global rank: #2'));
         assert.equal(new URL(location.href).searchParams.has('claim'), false);
         while (loads.length) await loadLatest();

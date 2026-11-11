@@ -123,15 +123,16 @@ test('concurrent finish/claims award a run only once', async () => {
   const claims = await Promise.all([1, 2].map(() => claimRun(req({}, run.token), slug, run.runId, t.deps)));
   assert.deepEqual(claims.map(r => r.status).sort(), [200, 409]); assert.equal(t.scores.size, 1);
 });
-test('nickname safety, Unicode normalization/casefold, uniqueness and seven-day cooldown', async () => {
+test('nickname safety, Unicode normalization/casefold, uniqueness and consecutive renames', async () => {
   const t = setup(); t.signIn('u1');
   for (const value of ['admin', 'AdM1n', 'a@b', '1234567', 'sh1t', 's.h_1-t', '幹你', '他妈', '死ね', '😀bear', 'hello.com', 'wwwme', 'a  b', ' a', 'a ', 'a']) {
     const response = await nickname(t, value); assert.equal(response.status, 422, value);
   }
   assert.equal((await nickname(t, '小熊maker')).status, 200);
-  assert.equal((await nickname(t, 'Different')).status, 429);
   t.signIn('u2'); assert.equal((await nickname(t, '小熊MAKER')).status, 409);
-  t.advance(7 * DAY); t.signIn('u1'); assert.equal((await nickname(t, 'New Name')).status, 200);
+  t.signIn('u1'); t.advance(3_600_000); // Reset the hourly budget used by validation cases above.
+  assert.equal((await nickname(t, 'Different')).status, 200);
+  assert.equal((await nickname(t, 'New Name')).status, 200);
   t.signIn('u2'); assert.equal((await nickname(t, '小熊Maker')).status, 200);
   assert.deepEqual(normalizeNickname('Ａb\u200b\u202e'), { nickname: 'Ab', nicknameKey: 'ab' });
   assert.equal('error' in normalizeNickname('Sussex'), false);
@@ -243,42 +244,42 @@ test('nickname phone guard rejects separators and Unicode digits after NFKC whil
   for (const value of ['Bear_2024', 'Bear ２０２４', '猫１２３', 'Bear123456', 'AB12-CD34']) assert.equal('error' in normalizeNickname(value), false, value);
   assert.equal((await nickname(t, 'Bear_2024')).status, 200);
 });
-test('nickname cooldown survives deletion and daily cleanup without retaining the old nickname', async () => {
-  const t = setup(); t.signIn('private-account');
-  const saved = await (await nickname(t, 'Old Bear')).json(), key = `lb:nick:${hashToken('private-account')}`;
-  assert.equal((await profile(req(undefined, undefined, { method: 'DELETE' }), t.deps)).status, 204);
-  assert.equal(t.players.size, 0);
-  assert.deepEqual(t.rates.get(key), { start: Date.parse(saved.nextChangeAt) - 7 * DAY, count: 1 });
-  assert.doesNotMatch(JSON.stringify([...t.rates.entries()]), /Old Bear|old bear/);
-  const blocked = await nickname(t, 'New Bear'); assert.equal(blocked.status, 429);
-  assert.equal(blocked.headers.get('retry-after'), String(7 * DAY / 1000));
-  t.advance(DAY); await start(t);
-  assert.ok(t.rates.has(key)); assert.equal((await nickname(t, 'New Bear')).status, 429);
-  t.signIn('other'); assert.equal((await nickname(t, 'Old Bear')).status, 200);
-  t.signIn('private-account'); t.advance(6 * DAY - 1);
-  const almost = await nickname(t, 'New Bear'); assert.equal(almost.status, 429); assert.equal(almost.headers.get('retry-after'), '1');
-  t.advance(1); await start(t);
-  assert.equal(t.rates.has(key), false);
+test('renaming twice immediately updates existing scores without changing their identity', async () => {
+  const t = setup(); t.signIn('owner'); await nickname(t, 'miles');
+  const run = await completed(t); await claimRun(req({}, run.token), slug, run.runId, t.deps);
+  const scores = structuredClone([...t.scores.values()]);
+  for (const name of ['grayson', 'Next Bear']) {
+    const response = await nickname(t, name); assert.equal(response.status, 200);
+    const saved = await response.json(); assert.ok(Date.parse(saved.nextChangeAt) <= +t.deps.now!());
+    const board = await (await list(t)).json();
+    assert.equal(board.entries[0].nickname, name); assert.equal(board.me.nickname, name);
+    assert.deepEqual([...t.scores.values()], scores);
+  }
+});
+test('legacy cooldown rows and deletion do not block renames; daily cleanup removes stale rows', async () => {
+  const t = setup(); t.signIn('private-account'); await nickname(t, 'Old Bear');
+  const key = `lb:nick:${hashToken('private-account')}`;
+  t.rates.set(key, { start: +t.deps.now!(), count: 1 });
   assert.equal((await nickname(t, 'New Bear')).status, 200);
-  const renewed = await nickname(t, 'Next Bear'); assert.equal(renewed.status, 429);
-  assert.equal(renewed.headers.get('retry-after'), String(7 * DAY / 1000));
-});
-test('deleting a legacy profile preserves its original nickname cooldown without extending it', async () => {
-  const t = setup(); t.signIn('owner'); await nickname(t, 'Bear');
-  const key = `lb:nick:${hashToken('owner')}`, original = t.rates.get(key)!.start;
-  t.rates.delete(key); t.advance(2 * DAY);
   assert.equal((await profile(req(undefined, undefined, { method: 'DELETE' }), t.deps)).status, 204);
-  assert.equal(t.rates.get(key)!.start, original);
-  const blocked = await nickname(t, 'Hawk'); assert.equal(blocked.status, 429);
-  assert.equal(blocked.headers.get('retry-after'), String(5 * DAY / 1000));
-  t.advance(5 * DAY); assert.equal((await nickname(t, 'Hawk')).status, 200);
+  assert.equal((await nickname(t, 'Next Bear')).status, 200);
+  assert.doesNotMatch(JSON.stringify([...t.rates.entries()]), /Old Bear|New Bear|Next Bear/);
+  t.advance(DAY); await start(t); assert.equal(t.rates.has(key), false);
 });
-test('nickname conflicts and concurrent attempts do not consume or bypass the cooldown', async () => {
+test('nickname uniqueness still returns 409 and concurrent renames serialize successfully', async () => {
   const t = setup(); t.signIn('other'); await nickname(t, 'Bear');
-  t.signIn('owner'); assert.equal((await nickname(t, 'Bear')).status, 409);
-  assert.equal(t.rates.has(`lb:nick:${hashToken('owner')}`), false);
+  t.signIn('owner'); assert.equal((await nickname(t, 'BEAR')).status, 409);
   const responses = await Promise.all([nickname(t, 'Hawk'), nickname(t, 'Wolf')]);
-  assert.deepEqual(responses.map(r => r.status).sort(), [200, 429]);
+  assert.deepEqual(responses.map(r => r.status), [200, 200]);
+  assert.equal(t.players.get('owner')!.nickname, 'Wolf');
+});
+test('successful renames retain the 20-per-hour limit even after profile deletion', async () => {
+  const t = setup(); t.signIn('owner');
+  for (let i = 0; i < 20; i++) assert.equal((await nickname(t, `Bear${i}`)).status, 200);
+  await profile(req(undefined, undefined, { method: 'DELETE' }), t.deps);
+  const limited = await nickname(t, 'Hawk'); assert.equal(limited.status, 429);
+  assert.equal(limited.headers.get('retry-after'), '3600');
+  t.advance(3_600_000); assert.equal((await nickname(t, 'Hawk')).status, 200);
 });
 test('three distinct reporters hide scores, duplicates do not count, replacement stays hidden', async () => {
   const t = setup(); t.signIn('owner'); await nickname(t, 'Bear');

@@ -62,3 +62,8 @@ canvas{bottom:auto}
 @media(max-width:650px){.level-option{width:100%}.global-preview{min-height:44px}.global-entries{font-size:12px}.global-entries li{gap:8px}}
 /* Finished games give rankings more space while keeping Upload visible. */
 .sheet-scrim:has(.board-tabs) .modal{max-height:75dvh}.sheet-scrim:has(.board-tabs) .actions{position:sticky;bottom:0;background:var(--panel);padding-top:10px}.sheet-scrim:has(.board-tabs) .actions>.primary{width:100%}
+
+/* Hints stay in normal flow above the traveler controls and primary action. */
+.hint-toggle{min-width:44px;min-height:44px;font-size:12px;padding:8px 12px;margin-bottom:8px;background:var(--panel)}
+.identity [data-remaining].low{color:#aa3e20;font-weight:700}.dark .identity [data-remaining].low{color:#ffb095}
+@media(max-height:540px){.bottom .hint{display:block;max-height:15dvh;overflow:auto;padding:6px;margin-bottom:5px}.hint-toggle{margin-bottom:4px}}

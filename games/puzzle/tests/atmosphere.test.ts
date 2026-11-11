@@ -129,5 +129,19 @@ test('hybrid sky retains world rays including view offset and a varied top-down 
     const hash = sky.material.fragmentShader.split('float hash(vec2 p)')[1].split('float noise')[0];
     assert.ok(!hash.includes('sin('));
     const birds = atmosphere.getObjectByName('sky-birds') as Mesh;
-    assert.equal((birds.material as any).toneMapped, false); assert.equal((birds.material as any).side, DoubleSide);
+    assert.equal((birds.material as MeshBasicMaterial).toneMapped, false); assert.equal((birds.material as MeshBasicMaterial).side, DoubleSide);
+});
+
+test('bridge fire warms the horizon and fog tint, and clearing it restores the original night sky', () => {
+    const atmosphere = new Atmosphere(true);
+    const sky = atmosphere.getObjectByName('sky') as Mesh<import('three').PlaneGeometry, ShaderMaterial>;
+    const calm = atmosphere.horizonTint.clone();
+    atmosphere.setFireProgress(.85);
+    assert.equal(sky.material.uniforms.fire.value, .85);
+    assert.ok(atmosphere.horizonTint.r > calm.r);
+    assert.ok(atmosphere.horizonTint.b < calm.b);
+    assert.deepEqual(sky.material.uniforms.horizon.value, atmosphere.horizonTint);
+    atmosphere.setFireProgress(0);
+    assert.equal(sky.material.uniforms.fire.value, 0);
+    assert.deepEqual(atmosphere.horizonTint, calm);
 });

@@ -16,7 +16,7 @@ export class Stage {
     scene = new Scene();
     camera = new PerspectiveCamera(38, 1, .1, 360);
     controls: OrbitControls;
-    current?: PuzzleScene<any>;
+    current?: PuzzleScene<unknown>;
     night: boolean;
     readonly themeDark: boolean;
     menu = true;
@@ -139,7 +139,7 @@ export class Stage {
         // No WebGL render until a puzzle is mounted, even if rAF never fires.
         this.raf = requestAnimationFrame(this.loop);
     }
-    mount(scene: PuzzleScene<any>, night: boolean) {
+    mount(scene: PuzzleScene<unknown>, night: boolean) {
         if (this.current) {
             this.scene.remove(this.current.root);
             this.current.dispose();
@@ -277,6 +277,8 @@ export class Stage {
         if (!this.current) return;
         this.controls.update();
         this.camera.updateMatrixWorld();
+        this.atmosphere.setFireProgress(this.current.root.userData.fireProgress ?? 0);
+        (this.scene.fog as Fog).color.copy(this.atmosphere.horizonTint);
         this.atmosphere.update(this.camera, dt, innerWidth / innerHeight);
         this.renderer.render(this.scene, this.camera);
         if (!this.metrics.firstFrameMs) this.metrics.firstFrameMs = performance.now();
