@@ -277,8 +277,12 @@ export class Stage {
         if (!this.current) return;
         this.controls.update();
         this.camera.updateMatrixWorld();
-        this.atmosphere.setFireProgress(this.current.root.userData.fireProgress ?? 0);
-        (this.scene.fog as Fog).color.copy(this.atmosphere.horizonTint);
+        const fire = this.current.root.userData.fireProgress, activeFire = typeof fire === 'number';
+        this.atmosphere.setFireProgress(fire ?? 0, activeFire, !!this.current.root.userData.fireRelaxed);
+        const fog = this.scene.fog as Fog;
+        fog.color.copy(this.atmosphere.horizonTint);
+        fog.near = activeFire ? MathUtils.lerp(24, 8, this.atmosphere.fireStrength) : 70;
+        fog.far = activeFire ? MathUtils.lerp(85, 40, this.atmosphere.fireStrength) : 260;
         this.atmosphere.update(this.camera, dt, innerWidth / innerHeight);
         this.renderer.render(this.scene, this.camera);
         if (!this.metrics.firstFrameMs) this.metrics.firstFrameMs = performance.now();

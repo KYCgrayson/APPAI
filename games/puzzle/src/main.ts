@@ -6,6 +6,7 @@ import { registry } from './puzzles/registry.ts';
 import { levelIds, starsFor, type GameId, type LevelId, type PuzzleAction } from './puzzles/types.ts';
 import { levels as riverLevels } from './puzzles/river/logic.ts';
 import { people, ids as bridgeIds } from './puzzles/bridge/logic.ts';
+import { fireProgress, syncFireUrgency } from './puzzles/bridge/presentation.ts';
 import { resolveRoute } from './routing.ts';
 import { home } from './ui/home.ts';
 import { Stage, type Metrics } from './scene/stage.ts';
@@ -465,6 +466,8 @@ const currentHint = () => game !== 'river' || hints < 3 ? def.logic.hint(state, 
 function modal(title: string, body: string, buttons: string, sheet = false) { return `<div class="scrim ${sheet ? 'sheet-scrim' : ''}"><section class="modal" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}"><div class="eyebrow">${def.strings.title}</div><h2>${title}</h2>${body}<div class="actions">${buttons}</div></section></div>`; }
 function render() {
     stage.menu = screen !== 'game';
+    document.body.classList.toggle('bridge-playing', screen === 'game' && game === 'bridge');
+    syncFireUrgency(game === 'bridge' ? fireProgress(state.minutes, def.levels[state.level as LevelId].limit!) : 0, def.logic.isWin(state), document.body.classList);
     const l = def.levels[state.level as LevelId], s = def.strings, busy = loading || !!stage.current?.busy, frozen = !!def.logic.failure(state) || def.logic.isWin(state);
     let html = '';
     if (screen === 'home')
@@ -525,6 +528,8 @@ function render() {
     if (nicknameOpen) html += modal(g.nicknameTitle, `<label class="nickname">${g.nickname}<input id="global-nickname" value="${escapeHtml(nicknameDraft)}" autocomplete="off" aria-describedby="global-nickname-hint global-nickname-error"></label><p id="global-nickname-hint">${g.nicknameHint}</p><p id="global-nickname-error" role="alert">${escapeHtml(nicknameError)}</p>`, button('save-global-name', globalBusy ? g.uploading : g.save, true, globalBusy) + button('close-nickname', g.close));
     const active = document.activeElement instanceof HTMLElement ? { action: document.activeElement.dataset.action, piece: document.activeElement.dataset.piece, jug: document.activeElement.dataset.jug, id: document.activeElement.id } : {};
     app.innerHTML = html;
+    const remaining = app.querySelector('[data-remaining]');
+    if (remaining) syncFireUrgency(fireProgress(state.minutes, def.levels[state.level as LevelId].limit!), def.logic.isWin(state), remaining.classList);
     app.querySelector('[data-action="music"]')?.setAttribute('aria-pressed', String(audio.music));
     app.querySelector('[data-action="sound"]')?.setAttribute('aria-pressed', String(!audio.muted));
     app.querySelector<HTMLInputElement>('#nickname')?.addEventListener('input', e => { nickname = Array.from(cleanName((e.target as HTMLInputElement).value)).slice(0, 12).join(''); try {

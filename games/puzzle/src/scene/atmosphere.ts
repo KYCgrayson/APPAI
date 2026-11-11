@@ -25,8 +25,11 @@ export function clearsBoard(cloud: ScreenRect, board: ScreenRect) {
 /** A pitch-aware painted sky with separate distant clouds, kept clear of every puzzle board. */
 export class Atmosphere extends Group {
     readonly horizonTint: Color;
+    fireStrength = 0;
     private baseHorizon: Color;
-    private fireTint = new Color('#a94b35');
+    private baseZenith: Color;
+    private fireTint = new Color('#c45b38');
+    private fireZenith = new Color('#682c3e');
     private sky: Mesh<PlaneGeometry, ShaderMaterial>;
     private clouds: Mesh<BufferGeometry, MeshBasicMaterial>[] = [];
     private birds: InstancedMesh<BufferGeometry, MeshBasicMaterial>;
@@ -44,13 +47,14 @@ export class Atmosphere extends Group {
     constructor(dark: boolean) {
         super();
         this.baseHorizon = new Color(horizonColor(dark));
+        this.baseZenith = new Color(dark ? '#152744' : '#77b8df');
         this.horizonTint = this.baseHorizon.clone();
         this.name = 'procedural-atmosphere';
         this.sky = new Mesh(new PlaneGeometry(2, 2), new ShaderMaterial({
             depthTest: false, depthWrite: false, fog: false, toneMapped: false,
             uniforms: {
                 time: { value: 0 }, quality: { value: 1 }, night: { value: dark ? 1 : 0 },
-                fire: { value: 0 },
+                fire: { value: 0 }, fireStrength: { value: 0 },
                 inverseProjection: { value: new Matrix4() }, cameraWorld: { value: new Matrix4() },
                 skyBlend: { value: 1 }, skyHorizon: { value: .58 }, aspect: { value: 1 },
                 lightPosition: { value: new Vector2(.19, .70) }, lightRadius: { value: .026 },
@@ -68,7 +72,7 @@ export class Atmosphere extends Group {
             fragmentShader: `
                 varying vec3 worldRay;
                 varying vec2 screenUV;
-                uniform float time, quality, night, skyBlend, skyHorizon, aspect, lightRadius, fire;
+                uniform float time, quality, night, skyBlend, skyHorizon, aspect, lightRadius, fireStrength;
                 uniform vec2 lightPosition;
                 uniform vec3 zenith, horizon;
                 // Hoskins hash12: no large sin arguments on mobile GPUs.
@@ -138,8 +142,8 @@ export class Atmosphere extends Group {
                     color=mix(color,ground,(1.0-smoothstep(-.65,-.20,altitude))*.72);
                     // Fire follows the negative-X start bank as the camera orbits.
                     float startSide=pow(max(0.0,-direction.x),2.0);
-                    float fireGlow=exp(-abs(altitude+.03)*5.0)*startSide*smoothstep(.08,.85,fire);
-                    color=mix(color,vec3(.85,.22,.065),fireGlow*.65);
+                    float fireGlow=exp(-abs(altitude+.03)*3.5)*startSide*fireStrength;
+                    color=mix(color,vec3(1.0,.27,.055),fireGlow*.85);
                     gl_FragColor=vec4(color,1.0);
                     #include <colorspace_fragment>
                 }`
@@ -176,11 +180,14 @@ export class Atmosphere extends Group {
         this.add(this.birds);
         this.traverse(o => { o.castShadow = false; o.receiveShadow = false; o.raycast = () => {}; });
     }
-    setFireProgress(progress: number) {
+    setFireProgress(progress: number, active = true, relaxed = false) {
         const danger = MathUtils.clamp(progress, 0, 1);
+        this.fireStrength = active ? (.14 + .86 * Math.pow(danger, .7)) * (relaxed ? .45 : 1) : 0;
         this.sky.material.uniforms.fire.value = danger;
-        this.horizonTint.copy(this.baseHorizon).lerp(this.fireTint, MathUtils.smoothstep(danger, .25, 1) * .65);
+        this.sky.material.uniforms.fireStrength.value = this.fireStrength;
+        this.horizonTint.copy(this.baseHorizon).lerp(this.fireTint, this.fireStrength * .83);
         this.sky.material.uniforms.horizon.value.copy(this.horizonTint);
+        this.sky.material.uniforms.zenith.value.copy(this.baseZenith).lerp(this.fireZenith, this.fireStrength * .62);
     }
     lowerQuality() { this.lowQuality = true; }
     update(camera: PerspectiveCamera, dt: number, aspect: number) {

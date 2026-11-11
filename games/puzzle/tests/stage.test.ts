@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Minimal fixtures replace DOM, renderer and orbit controls. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
@@ -39,12 +40,13 @@ registerHooks({
         return next(url, context);
     }
 });
-let top = 220, bottom = 600;
+const top = 220;
+let bottom = 600;
 const classes = new Set<string>(), frames: FrameRequestCallback[] = [];
 const canvas = Object.assign(new EventTarget(), { style: {}, width: 0, height: 0 });
 globalThis.window = new EventTarget() as unknown as Window & typeof globalThis;
 globalThis.document = Object.assign(new EventTarget(), {
-    hidden: false, body: { classList: { toggle(c: string, on: boolean) { on ? classes.add(c) : classes.delete(c); } } },
+    hidden: false, body: { classList: { toggle(c: string, on: boolean) { if (on) classes.add(c); else classes.delete(c); } } },
     querySelector: (s: string) => s === '.topbar' ? { getBoundingClientRect: () => ({ bottom: top }) } : s === '.bottom' ? { getBoundingClientRect: () => ({ top: bottom }) } : null,
     createElement: () => ({ width: 0, height: 0, getContext: () => ({ drawImage() {} }) })
 }) as unknown as Document;
@@ -76,6 +78,26 @@ test('no empty first render; mount renders the board and night exactly once with
     assert.equal(renderer.renders.length, count + 1, 'a replacement scene renders once');
     assert.ok(!classes.has('night'));
     assert.deepEqual(stage.scene.children.filter(o => o instanceof PointLight), lights);
+});
+
+test('bridge fog strengthens early, relaxes on victory and resets for other puzzles', () => {
+    const stage = new Stage(canvas as any, false, () => {}), puzzle = makePuzzle();
+    puzzle.root.userData.fireProgress = 0;
+    stage.mount(puzzle, true);
+    const fog = stage.scene.fog as import('three').Fog;
+    const distant = { color: fog.color.clone(), near: fog.near, far: fog.far };
+    assert.ok(distant.near < 70 && distant.far < 260);
+    puzzle.root.userData.fireProgress = .3; stage.resetView();
+    assert.ok(fog.color.r > distant.color.r && fog.near < distant.near && fog.far < distant.far);
+    puzzle.root.userData.fireProgress = 1; stage.resetView();
+    const danger = { color: fog.color.clone(), near: fog.near, far: fog.far };
+    puzzle.root.userData.fireRelaxed = true; stage.resetView();
+    assert.ok(fog.color.r < danger.color.r && fog.near > danger.near && fog.far > danger.far);
+    puzzle.root.userData.fireProgress = 0; puzzle.root.userData.fireRelaxed = false; stage.resetView();
+    assert.deepEqual(fog.color, distant.color); assert.equal(fog.near, distant.near); assert.equal(fog.far, distant.far);
+    stage.mount(makePuzzle(), true);
+    const clean = stage.scene.fog as import('three').Fog;
+    assert.equal(clean.near, 70); assert.equal(clean.far, 260); assert.equal(clean.color.getHexString(), '686781');
 });
 
 test('unchanged viewport renders synchronously when the frame loop is paused', () => {
