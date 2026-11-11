@@ -141,6 +141,8 @@ test('bridge fire advances with crossing minutes and reverses on undo/restart; f
  const distantLight=lights[1].intensity;assert.ok(distantLight>0);
  scene.root.updateMatrixWorld(true);
  const distantBox=new Box3().setFromObject(fire),distantMatrices=Array.from((fire as InstancedMesh).instanceMatrix.array);
+ const approach=new Matrix4();(fire as InstancedMesh).getMatrixAt((fire as InstancedMesh).count-2,approach);
+ const distantApproach=new Vector3().setFromMatrixPosition(approach).add(fire.position);
  let done=0;scene.animate(from,result.state,()=>done++);
  clock+=crossingDuration(10)*(.18+.64*.2);scene.update(clock/1000,.016,'');
  const fast=scene.hit.find(o=>o.userData.id==='1')!,slow=scene.hit.find(o=>o.userData.id==='10')!;
@@ -156,11 +158,11 @@ test('bridge fire advances with crossing minutes and reverses on undo/restart; f
  (fire as InstancedMesh).computeBoundingBox();
  const fireBox=new Box3().setFromObject(fire);
  assert.ok(fireBox.max.y>distantBox.max.y*3,'flames grow taller');
- assert.ok(fireBox.max.z>distantBox.max.z+1,'fire advances beside the bridge approach');
+ (fire as InstancedMesh).getMatrixAt((fire as InstancedMesh).count-2,approach);
+ assert.ok(new Vector3().setFromMatrixPosition(approach).add(fire.position).z>distantApproach.z+1,'bank tongues advance beside the bridge approach');
  assert.ok(fireBox.getSize(new Vector3()).x>distantBox.getSize(new Vector3()).x,'wall widens');
- assert.ok(fireBox.min.x>=-scene.bounds.x&&fireBox.max.x<=scene.bounds.x);
- assert.ok(fireBox.min.z>=-scene.bounds.z&&fireBox.max.z<=scene.bounds.z);
- assert.ok(fireBox.max.y<=scene.bounds.y[1],'growing flames stay within the fitted scene bounds');
+ assert.ok(fireBox.min.x<-scene.bounds.x&&fireBox.min.z<-scene.bounds.z,'burning forest extends beyond the bank');
+ assert.equal(fire.parent?.name,'snapshot-hidden','world scenery does not shrink the fitted board or enter share cards');
  scene.sync(registry.bridge.logic.initial('easy'));scene.update(1,0,'');
  assert.equal(scene.root.userData.fireProgress,0);assert.equal(fire.visible,true);
  assert.equal(lights[1].intensity,distantLight);assert.deepEqual(fire.position,calm);
@@ -180,13 +182,13 @@ test('bridge fire respects waiting slots, instance budget, failure edge, victory
    scene.sync({...initial,minutes:36*danger});scene.update(1,0,'');
    assert.ok(fire.visible);assert.ok(!scene.hit.includes(fire)&&!scene.hit.includes(smoke));
    let instances=0;scene.root.traverse(o=>{if(o instanceof InstancedMesh)instances+=o.count;});
-   assert.ok(instances<120,`${instances} total instances including planks and ambient motes`);
+   assert.ok(instances<=144,`${instances} total instances including 22 planks; fire/smoke/embers stay below 150`);
    if(danger>=.3){assert.ok(embers.count>16);assert.equal((embers.material as any).color.getHexString(),'ffab50');}
    for(let i=0;i<fire.count;i++){
     fire.getMatrixAt(i,matrix);fire.geometry.computeBoundingBox();box.copy(fire.geometry.boundingBox!).applyMatrix4(matrix).translate(fire.position);
     for(const actor of scene.hit.filter(o=>Object.hasOwn(initial.side,o.userData.id))){
      // Conservative footprint includes the toy's shoulders; no flame enters any waiting slot.
-     assert.ok(box.max.x<actor.position.x-.4||box.min.x>actor.position.x+.4||box.max.z<actor.position.z-.4||box.min.z>actor.position.z+.4);
+     assert.ok(box.max.x<actor.position.x-.4||box.min.x>actor.position.x+.4||box.max.z<actor.position.z-.4||box.min.z>actor.position.z+.4,`${danger}: flame ${i} ${JSON.stringify({min:box.min.toArray(),max:box.max.toArray()})} overlaps traveler ${actor.userData.id} at ${actor.position.toArray()}`);
     }
    }
   }
@@ -196,8 +198,8 @@ test('bridge fire respects waiting slots, instance budget, failure edge, victory
   scene.update(10,0,'');assert.deepEqual(Array.from(fire.instanceMatrix.array),staticFlames);assert.deepEqual(Array.from(smoke.instanceMatrix.array),staticSmoke);assert.deepEqual(Array.from(embers.instanceMatrix.array),staticEmbers);assert.equal(lights[1].intensity,staticLight);
   scene.sync({...initial,minutes:37,failure:{reason:'timeout'}});scene.update(1,0,'');
   assert.equal(scene.root.userData.fireProgress,1);fire.computeBoundingBox();scene.root.updateMatrixWorld(true);
-  const failedBox=new Box3().setFromObject(fire);assert.ok(failedBox.max.x>=-2.25&&failedBox.max.z>-.95,'fire reaches start-side entrance edge');
-  assert.ok(failedBox.max.y>=1.8&&failedBox.max.y<=scene.bounds.y[1],'final flames are roughly 3× the old .68-unit flames');
+  const failedBox=new Box3().setFromObject(fire);assert.ok(failedBox.max.x>=-1.99&&failedBox.max.z>-.95,'fire reaches the bridge-side edge of the start bank');
+  assert.ok(failedBox.max.y>=10&&failedBox.max.y<13,'final forest flames tower over the travelers');
   const tense=lights[1].intensity;
   scene.sync({...initial,minutes:36,side:Object.fromEntries(Object.keys(initial.side).map(id=>[id,1]))});scene.update(1,0,'');
   assert.equal(scene.root.userData.fireRelaxed,true);assert.ok(lights[1].intensity<tense);assert.ok(lights[0].intensity>0);
