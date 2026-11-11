@@ -8,7 +8,7 @@ No separate approval is needed to maintain the map.
 
 Run `npm run feature-map:check` (or `node scripts/check-feature-map.mjs`). The
 checker uses `git ls-files`, so **stage new files before checking**. CI blocks
-stale feature globs, unmapped tracked files, and mismatched IDs/headings.
+stale feature/ignore globs, unmapped tracked files, and mismatched IDs/headings.
 Optional local enforcement: `git config core.hooksPath .githooks`; the hook blocks
 failures and warns/skips if Node is unavailable. Node 22 is sufficient; no install
 is needed for the check.
@@ -19,6 +19,11 @@ Subsystem globs cover files within an established feature; shared files may
 belong to multiple features. The check verifies coverage, not prose accuracy.
 Keep new locations specific; do not add catch-all source/test ignores. `ignore`
 is for repository housekeeping, generated copies, and static reference assets.
+
+**Ignored files:** `tests/backlog-todo.test.ts` only checks `TODO.md` Backlog #32's
+task formatting, the exact two remaining follow-ups, and absence of environment
+details. It tests repository housekeeping rather than product behavior, so it
+remains ignored alongside `TODO.md`.
 
 ### platform — Public directory, dashboard and shared shell
 

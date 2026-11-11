@@ -36,13 +36,17 @@ function check() {
   if (!Array.isArray(map.features) || !map.features.length) {
     throw new Error("features must be a nonempty array");
   }
-  const ignored = globs(map.ignore, "ignore").map(globRegex);
+  const ignore = globs(map.ignore, "ignore");
+  const ignored = ignore.map(globRegex);
   const files = execFileSync("git", ["ls-files", "-z"], {
     cwd: root, encoding: "utf8", maxBuffer: 16 * 1024 * 1024,
   }).split("\0").filter(Boolean);
   const covered = new Set();
   const ids = new Set();
   const errors = [];
+  for (const [index, regex] of ignored.entries()) {
+    if (!files.some(file => regex.test(file))) errors.push(`Stale glob: ignore: ${ignore[index]}`);
+  }
   for (const feature of map.features) {
     if (typeof feature.id !== "string" || !/^\S+$/.test(feature.id)) {
       throw new Error("Each feature needs a nonempty ID without whitespace");
