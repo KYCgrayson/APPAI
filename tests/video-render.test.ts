@@ -58,9 +58,10 @@ test("locale table uses exact match, primary fallback and default English", () =
   for (const [locale, heading] of [["en", "Key moments"], ["zh-TW", "重點時刻"], ["zh-CN", "重点时刻"], ["ja", "主なシーン"], ["ko", "주요 장면"], ["es-MX", "Momentos clave"], ["fr-CA", "Moments clés"], ["de-AT", "Wichtige Momente"], ["xx-YY", "Key moments"]]) assert.equal(videoStrings(locale).heading, heading);
 });
 
-test("unrecognized legacy URLs render byte-identically to origin/main with only fabricated uploadDate removed", async () => {
+test("supported legacy providers and files render byte-identically to origin/main with fabricated uploadDate removed", async () => {
   const baseline = JSON.parse(readFileSync(new URL("./fixtures/video-legacy-urls.json", import.meta.url), "utf8"));
   for (const fixture of baseline.fixtures) {
+    if (fixture.data.url === "https://example.test") continue; // non-media URLs now use an external link card
     const render = (data: typeof fixture.data) => renderHtml(createElement(VideoSection, { themeColor: "#334455", data }));
     assert.equal(await render(fixture.data), fixture.html, fixture.data.url);
     assert.equal(await render({ ...fixture.data, uploadDate: "bad", duration: "bad" }), fixture.html, "invalid optional SEO never breaks the legacy output");
@@ -68,6 +69,47 @@ test("unrecognized legacy URLs render byte-identically to origin/main with only 
   const old = readFileSync(new URL("./fixtures/video-legacy.html", import.meta.url), "utf8").trim();
   const html = await renderHtml(createElement(VideoSection, { themeColor: "#334455", data: { url: "https://example.test/video.mp4", heading: "Demo", subheading: "Overview", caption: "A fictional demo", uploadDate: "2024/01/01" } }));
   assert.equal(html, old.replace('"2026-01-01T00:00:00.000Z"', '"2024-01-01"'));
+});
+
+test("unknown stored URLs use external link cards; provider substrings never create an iframe", async () => {
+  for (const url of ["https://example.test", "https://fictional-tool.vercel.app/?ref=youtube.com", "https://example.test/youtube.com/watch?v=short", "https://example.test/?ref=vimeo.com/123", "https://example.test/#youtube.com"]) {
+    const html = await renderHtml(createElement(VideoSection, { themeColor: "#334455", data: { url } }));
+    assert.doesNotMatch(html, /<iframe|<video|Video unavailable/);
+    assert.match(html, /<span>Open video<\/span>/);
+    assert.ok(html.includes(`<span>${new URL(url).hostname}</span>`));
+    assert.match(html, /target="_blank" rel="noopener noreferrer"/);
+  }
+  for (const url of ["https://youtube.com.evil.test/watch?v=short", "https://notyoutube.com/watch?v=short", "https://vimeo.com.evil.test/123", "javascript:alert(1)"]) {
+    const html = await renderHtml(createElement(VideoSection, { themeColor: "#334455", data: { url } }));
+    assert.match(html, /Video unavailable/);
+    assert.doesNotMatch(html, /<iframe|<a /);
+  }
+  for (const url of ["https://sub.youtube.com/channel/fictional", "https://sub.vimeo.com/showcase/123", "https://sub.youtube-nocookie.com/embed/short"]) {
+    const html = await renderHtml(createElement(VideoSection, { themeColor: "#334455", data: { url } }));
+    assert.ok(html.includes(`src="${url}"`));
+    assert.match(html, /<iframe/);
+  }
+});
+
+test("two uncaptioned videos use their distinct section headings as JSON-LD names", async () => {
+  for (const renderVersion of [undefined, 2]) {
+    const html = await renderHtml(createElement(PageRenderer, { page: { slug: "lessons", title: "All lessons", template: "APP_LANDING", content: { renderVersion, sections: [
+      { type: "video", data: { url, heading: "Drawing orbits" } },
+      { type: "video", data: { url: "https://vimeo.com/123", heading: "Exporting artwork" } },
+    ] } } }));
+    const schemas = [...html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/g)].map(match => JSON.parse(match[1])).filter(schema => schema["@type"] === "VideoObject");
+    assert.deepEqual(schemas.map(schema => schema.name), ["Drawing orbits", "Exporting artwork"]);
+    for (const schema of schemas) assert.equal(Object.hasOwn(schema, "description"), false);
+    assert.equal(/<h2/.test(html), renderVersion === 2, "legacy visible headings stay unchanged");
+  }
+  const legacy = await renderHtml(createElement(VideoSection, { themeColor: "#334455", pageTitle: "All lessons", data: { url: "http://example.test/video.mp4", heading: "A legacy lesson" } }));
+  assert.match(legacy, /"name":"A legacy lesson"/);
+});
+
+test("provider play facade uses an aria-hidden SVG instead of an emoji glyph", async () => {
+  const html = await renderHtml(createElement(VideoSection, { themeColor: "#334455", data: { url } }));
+  assert.match(html, /<svg[^>]+viewBox="0 0 24 24"[^>]+aria-hidden="true"/);
+  assert.doesNotMatch(html, /▶/);
 });
 
 test("legacy moments are plain text without links, a facade, a controller or Clip markup", async () => {

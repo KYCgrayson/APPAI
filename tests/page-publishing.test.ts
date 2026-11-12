@@ -210,7 +210,8 @@ test('production preview context scopes style warnings to newly created pages', 
   assert.deepEqual(styles({ ...body, parentSlug: 'root' }, false).map(w => w.path), ['fontFamily']);
   assert.deepEqual(styles({ ...body, parentSlug: 'root' }, true), []);
   const route = readFileSync(new URL('../src/app/api/v1/pages/preview/route.ts', import.meta.url), 'utf8');
-  assert.match(route, /checkPagePreview\(body, ICON_NAMES, \{ origin: request.nextUrl.origin, exists: !!existing \}\)/);
+  assert.match(route, /const context = \{ origin: request.nextUrl.origin, exists: !!existing, existingContent \}/);
+  assert.match(route, /checkPagePreview\(body, ICON_NAMES, context\)/);
   const publish = readFileSync(new URL('../src/app/api/v1/pages/route.ts', import.meta.url), 'utf8');
   assert.match(publish, /if \(dryRun\) return previewPage\(request\)/);
 });

@@ -5,7 +5,8 @@
 - [x] Generic optional moments/startAt and real SEO metadata; strict shared provider/file URL parsing, stable normalization and field-path validation on create/upsert, PUT, merged PATCH, section PATCH and preview.
 - [x] Server-rendered moment links and Clip JSON-LD; click-to-load SDK-free players, native seeking, localized status/fallbacks, same-page Markdown/share links and history handling. Existing direct-file markup preserved except removal of fabricated uploadDate.
 - [x] Registry/JSON Schema, fictional spec example, generated agent spec and regression coverage.
-- [x] Review round 2: preserve legacy URLs/rendering and untouched PATCH sections; warn on unsupported URLs, invalid optional SEO and duplicate timestamps; eager first facade, neutral AA moments, real schema names and one-second seek confirmation.
+- [x] Review round 2: preserve legacy URLs/rendering and untouched PATCH sections; warn on invalid optional SEO and duplicate timestamps; eager first facade, neutral AA moments, real schema names and one-second seek confirmation.
+- [x] Review round 3: reject new/changed unsupported video URLs, grandfather exact stored section URLs with warnings, restrict legacy iframes to parsed provider hosts and link unknown web URLs. Map video files; recognize already-playing providers, use authored section headings for SEO names, and replace the play glyph with SVG. Add write/render/controller regressions and rebuild the spec.
 - [ ] Live YouTube/Vimeo sandbox/playback QA, mobile browser layout and real autoplay-block behavior; provider permissions, regional restrictions and private-file availability remain external constraints.
 
 ## Hosted Markdown typography (#43)

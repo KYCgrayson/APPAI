@@ -1,5 +1,6 @@
 import { serializeJsonLd } from "@/lib/json-ld";
-import { sanitizeUrl } from "@/lib/sanitize";
+import { isSafeLegacyVideoUrl } from "@/lib/video-url";
+import { videoName } from "@/lib/video-jsonld";
 
 import type { ReactNode } from "react";
 import type { VideoData } from "@/lib/video-data";
@@ -9,38 +10,43 @@ interface Props {
   themeColor: string;
   typographyActive?: boolean;
   pageTitle?: string;
+  seoHeading?: string;
   moments?: ReactNode;
 }
 
 /** Preserves origin/main media markup for URLs outside the moments contract. */
-function getVideoType(url: string): "youtube" | "vimeo" | "video" | "gif" {
-  if (url.includes("youtube.com") || url.includes("youtu.be")) return "youtube";
-  if (url.includes("vimeo.com")) return "vimeo";
-  if (url.endsWith(".gif")) return "gif";
-  return "video";
+function getVideoType(url: URL): "youtube" | "vimeo" | "video" | "gif" | "link" {
+  if (/(?:^|\.)(?:youtube\.com|youtube-nocookie\.com)$/.test(url.hostname) || url.hostname === "youtu.be") return "youtube";
+  if (/(?:^|\.)vimeo\.com$/.test(url.hostname)) return "vimeo";
+  if (url.href.endsWith(".gif")) return "gif";
+  if (/\.(?:mp4|webm|m3u8|mpd|mov|m4v|ogv|ogg|avi|mkv|flv|ts|mpeg|mpg|3gp|gif)$/i.test(url.pathname)) return "video";
+  return "link";
 }
 
 function getYouTubeEmbedUrl(url: string): string {
-  const match =
-    url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/) || [];
-  return match[1] ? `https://www.youtube.com/embed/${match[1]}` : url;
+  const id = getYouTubeId(url);
+  return id ? `https://www.youtube.com/embed/${id}` : url;
 }
 
 function getVimeoEmbedUrl(url: string): string {
-  const match = url.match(/vimeo\.com\/(\d+)/) || [];
+  const match = new URL(url).pathname.match(/^\/(\d+)/) || [];
   return match[1] ? `https://player.vimeo.com/video/${match[1]}` : url;
 }
 
 function getYouTubeId(url: string): string | null {
-  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  const parsed = new URL(url);
+  const candidate = parsed.hostname === "youtu.be" ? parsed.pathname.slice(1) : parsed.pathname === "/watch" ? parsed.searchParams.get("v") : null;
+  const match = candidate?.match(/^([a-zA-Z0-9_-]+)/);
   return match?.[1] ?? null;
 }
 
-export function LegacyVideoSection({ data, themeColor, typographyActive = false, pageTitle, moments }: Props) {
-  const safeUrl = sanitizeUrl(data.url);
-  const type = getVideoType(safeUrl);
+export function LegacyVideoSection({ data, themeColor, typographyActive = false, pageTitle, seoHeading, moments }: Props) {
+  if (!isSafeLegacyVideoUrl(data.url)) return <section className="py-12 md:py-20 px-4 sm:px-6"><p>Video unavailable</p></section>;
+  const safeUrl = data.url;
+  const parsed = new URL(safeUrl);
+  const type = getVideoType(parsed);
 
-  const name = data.caption?.trim() || pageTitle?.trim();
+  const name = videoName({ ...data, heading: seoHeading ?? data.heading }, pageTitle);
   const videoSchema: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "VideoObject",
@@ -100,6 +106,12 @@ export function LegacyVideoSection({ data, themeColor, typographyActive = false,
           )}
           {type === "gif" && (
             <img src={safeUrl} alt={data.caption || "Animation"} className="w-full" />
+          )}
+          {type === "link" && (
+            <a href={safeUrl} target="_blank" rel="noopener noreferrer" className="flex flex-col gap-2 p-6 underline">
+              <span>Open video</span>
+              <span>{parsed.hostname}</span>
+            </a>
           )}
         </div>
         {data.caption && (

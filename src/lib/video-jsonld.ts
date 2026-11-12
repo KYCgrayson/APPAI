@@ -8,9 +8,13 @@ export function videoShareUrl(pageUrl: string, sectionId: string, t: number): st
   return url.href;
 }
 
+export function videoName(data: VideoData, pageTitle?: string): string | undefined {
+  return data.caption?.trim() || data.heading?.trim() || data.momentsHeading?.trim() || pageTitle?.trim();
+}
+
 export function buildVideoJsonLd(input: VideoData, video: VideoUrl, pageUrl: string, sectionId: string, pageTitle?: string) {
   const { data } = normalizeVideoData(input);
-  const name = data.caption?.trim() || pageTitle?.trim();
+  const name = videoName(data, pageTitle);
   if (!name) return null;
   const schema: Record<string, unknown> = {
     "@context": "https://schema.org",

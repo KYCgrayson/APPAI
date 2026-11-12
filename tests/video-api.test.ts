@@ -84,12 +84,51 @@ test("JSON Schema endpoint exposes optional bounded fields and time alternatives
   }
 });
 
-test("every write/preview path accepts legacy URLs and returns video warnings in the preview shape", async () => {
+test("new pages reject unrecognized URLs, including when upsert or preview is requested", async () => {
+  gameApiFixture.page = null; gameApiFixture.apps = [];
+  const before = gameApiFixture.writes;
+  for (const url of ["https://fictional-tool.vercel.app/?ref=youtube.com", "https://vimeo.com/showcase/123", "http://example.test/a.mp4", "https://example.test/stream.m3u8"]) {
+    const body = { ...page, content: { sections: [{ type: "video", order: 8, data: { url } }] } };
+    for (const response of [await collection.POST(request(body)), await collection.POST(request(body, "POST", "?upsert=true")), await preview.POST(request(body)), await collection.POST(request(body, "POST", "?dryRun=true"))]) {
+      const result = await response.json();
+      assert.ok(response.status === 400 || result.valid === false, JSON.stringify(result));
+      assert.match(JSON.stringify(result), /sections\[0\]\.data\.url/);
+      assert.match(JSON.stringify(result), /Use a YouTube/);
+    }
+  }
+  assert.equal(gameApiFixture.writes, before);
+});
+
+test("changing a video to an unrecognized URL fails on upsert, PUT, page/section PATCH and preview", async () => {
+  await collection.POST(request(page, "POST", "?upsert=true"));
+  const before = gameApiFixture.writes;
+  const changed = { ...data, url: "https://fictional-tool.vercel.app/?ref=youtube.com" };
+  const content = { sections: [{ type: "video", order: 8, data: changed }] };
+  for (const response of [
+    await collection.POST(request({ ...page, content }, "POST", "?upsert=true")),
+    await item.PUT(request({ content }, "PUT"), params),
+    await item.PATCH(request({ content }, "PATCH"), params),
+    await section.PATCH(request({ data: changed }, "PATCH"), sectionParams),
+    await preview.POST(request({ ...page, content })),
+    await collection.POST(request({ ...page, content }, "POST", "?dryRun=true&upsert=true")),
+  ]) {
+    const body = await response.json();
+    assert.ok(response.status === 400 || body.valid === false, JSON.stringify(body));
+    assert.match(JSON.stringify(body), /sections\[\d\]\.data\.url/);
+    assert.match(JSON.stringify(body), /Use a YouTube/);
+  }
+  assert.equal(gameApiFixture.writes, before);
+  assert.equal(((gameApiFixture.page!.content as typeof page.content).sections[1].data as typeof data).url, data.url);
+});
+
+test("every update/preview path grandfathers the same stored legacy URL and returns field warnings", async () => {
   const legacyData = { url: "https://vimeo.com/showcase/123", uploadDate: "bad", duration: "bad", moments: [{ t: 0, title: "Opening" }, { t: 0, title: "Duplicate" }] };
   const legacyPage = { ...page, content: { sections: [{ type: "about", order: 0, data: {} }, { type: "video", order: 8, data: legacyData }] } };
-  gameApiFixture.page = null; gameApiFixture.apps = [];
+  await collection.POST(request(page, "POST", "?upsert=true"));
+  gameApiFixture.page!.content = legacyPage.content;
+  const create = await collection.POST(request(legacyPage));
+  assert.equal(create.status, 400, "create never grandfathers even when the slug already exists");
   for (const response of [
-    await collection.POST(request(legacyPage)),
     await collection.POST(request(legacyPage, "POST", "?upsert=true")),
     await item.PUT(request({ content: legacyPage.content }, "PUT"), params),
     await item.PATCH(request({ content: legacyPage.content }, "PATCH"), params),
@@ -104,7 +143,50 @@ test("every write/preview path accepts legacy URLs and returns video warnings in
       assert.ok(body.warnings.some((w: { path: string; message: string }) => w.path.endsWith(`data.${field}`) && typeof w.message === "string"), JSON.stringify(body.warnings));
     }
     assert.match(JSON.stringify(body.warnings), /moments need a YouTube, Vimeo or https .mp4\/.webm URL/);
+    assert.match(JSON.stringify(body.warnings), /grandfathered/);
   }
+});
+
+test("PATCH can resend an unknown stored web URL but cannot replace it with another unknown URL", async () => {
+  await collection.POST(request(page, "POST", "?upsert=true"));
+  const url = "https://fictional-tool.vercel.app/?ref=youtube.com";
+  gameApiFixture.page!.content = { sections: [{ type: "video", order: 8, data: { url } }] };
+  for (const response of [
+    await item.PATCH(request({ content: { sections: [{ type: "video", order: 8, data: { url } }] } }, "PATCH"), params),
+    await item.PATCH(request({ content: { sections: [{ type: "video", data: { url } }] } }, "PATCH"), params),
+    await section.PATCH(request({ data: { url } }, "PATCH"), sectionParams),
+  ]) {
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.ok(body.warnings.some((w: { path: string; message: string }) => w.path.endsWith("data.url") && /grandfathered/.test(w.message)));
+  }
+  const before = gameApiFixture.writes;
+  const changed = await section.PATCH(request({ data: { url: `${url}&changed=true` } }, "PATCH"), sectionParams);
+  assert.equal(changed.status, 400);
+  assert.equal(gameApiFixture.writes, before);
+});
+
+test("grandfathering follows section IDs on full replacement and cannot copy a legacy URL into a new section", async () => {
+  await collection.POST(request(page, "POST", "?upsert=true"));
+  const url = "https://example.test/legacy-player";
+  gameApiFixture.page!.content = { sections: [{ id: "stored-video", order: 8, type: "video", data: { url } }] };
+  const content = { sections: [{ id: "stored-video", order: 12, type: "video", data: { url } }] };
+  const reordered = await item.PUT(request({ content }, "PUT"), params);
+  assert.equal(reordered.status, 200);
+  assert.ok((await reordered.json()).warnings.some((w: { path: string }) => w.path.endsWith("data.url")));
+  const copied = { sections: [...content.sections, { id: "new-video", order: 13, type: "video", data: { url } }] };
+  const before = gameApiFixture.writes;
+  for (const response of [
+    await collection.POST(request({ ...page, content: copied }, "POST", "?upsert=true")),
+    await item.PUT(request({ content: copied }, "PUT"), params),
+    await item.PATCH(request({ content: copied }, "PATCH"), params),
+    await preview.POST(request({ ...page, content: copied })),
+  ]) {
+    const body = await response.json();
+    assert.ok(response.status === 400 || body.valid === false, JSON.stringify(body));
+    assert.match(JSON.stringify(body), /sections\[1\]\.data\.url/);
+  }
+  assert.equal(gameApiFixture.writes, before);
 });
 
 test("title-only and unrelated-section PATCH preserve untouched legacy videos and do not validate their old fields", async () => {

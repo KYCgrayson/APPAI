@@ -30,12 +30,13 @@ export function createVideoController(kind: "youtube" | "vimeo" | "file", initia
     clearTimeout(timeout);
     state("seeked");
     if (wantsPlay && !playing) blocked = setTimeout(() => state("blocked"), 1800);
-    else if (!wantsPlay) state("blocked"); // navigation may intentionally leave the player paused
+    else if (!playing) state("blocked"); // navigation may intentionally leave the player paused
   }
   function didPlay() { playing = true; clearTimeout(blocked); if (confirmed) state("seeked"); }
   function apply() {
     if (disposed || !ready) return;
-    confirmed = false; playing = false;
+    confirmed = false;
+    if (kind === "file") playing = false;
     clearTimeout(blocked);
     armTimeout();
     state("ready");
@@ -45,6 +46,7 @@ export function createVideoController(kind: "youtube" | "vimeo" | "file", initia
     } else {
       send({ method: "setCurrentTime", value: desired });
       if (wantsPlay) send({ method: "play" });
+      if (kind === "vimeo") send({ method: "getPaused" });
     }
   }
   function schedule() {
@@ -56,7 +58,7 @@ export function createVideoController(kind: "youtube" | "vimeo" | "file", initia
     if (ready || disposed) return;
     ready = true; clearInterval(handshake);
     if (kind === "youtube") for (const event of ["onStateChange", "onError", "onAutoplayBlocked"]) send({ event: "command", func: "addEventListener", args: [event] });
-    if (kind === "vimeo") for (const value of ["play", "timeupdate", "seeked", "error"]) send({ method: "addEventListener", value });
+    if (kind === "vimeo") for (const value of ["play", "pause", "ended", "playProgress", "timeupdate", "seeked", "error"]) send({ method: "addEventListener", value });
     schedule();
   }
   return {
@@ -80,13 +82,19 @@ export function createVideoController(kind: "youtube" | "vimeo" | "file", initia
         if (message.event === "onReady" || message.event === "initialDelivery" || message.event === "infoDelivery") markReady();
         if (message.event === "onError") { clearTimeout(timeout); state("error"); }
         if (message.event === "onAutoplayBlocked") { clearTimeout(blocked); state("blocked"); }
-        if (message.event === "onStateChange" && message.info === 1 || info?.playerState === 1) didPlay();
+        const playerState = message.event === "onStateChange" ? message.info : info?.playerState;
+        if (playerState === 1) didPlay();
+        else if (typeof playerState === "number") playing = false;
         if (message.event === "infoDelivery") confirm(info?.currentTime);
       } else {
         if (message.event === "ready" || message.method === "ping") markReady();
         if (message.event === "play" || message.method === "play") didPlay();
+        if (kind === "vimeo") {
+          if (message.method === "getPaused" && message.value === false || message.event === "playProgress" || message.event === "timeupdate") didPlay();
+          if (message.method === "getPaused" && message.value === true || message.event === "pause" || message.event === "ended") playing = false;
+        }
         if (message.method === "setCurrentTime") confirm(message.value);
-        if (message.event === "seeked" || message.event === "timeupdate") confirm((message.data as { seconds?: unknown } | undefined)?.seconds);
+        if (message.event === "seeked" || message.event === "timeupdate" || message.event === "playProgress") confirm((message.data as { seconds?: unknown } | undefined)?.seconds);
         if (message.event === "error") {
           const method = (message.data as { method?: string } | undefined)?.method;
           clearTimeout(blocked);

@@ -58,7 +58,7 @@ export function normalizeVideoUploadDate(value: unknown): string | null {
 }
 
 /** Shared by every API write, preview, and defensive rendering. Never mutates input. */
-export function normalizeVideoData(value: unknown, path: (string | number)[] = [], partial = false) {
+export function normalizeVideoData(value: unknown, path: (string | number)[] = [], partial = false, storedUrl?: unknown) {
   const issues: VideoIssue[] = [];
   const warnings: VideoWarning[] = [];
   const fail = (field: (string | number)[], message: string) => {
@@ -72,8 +72,8 @@ export function normalizeVideoData(value: unknown, path: (string | number)[] = [
   const data: Record<string, unknown> = value && typeof value === "object" && !Array.isArray(value) ? { ...value } : {};
   const video = parseVideoUrl(data.url);
   if ((!partial || data.url !== undefined) && !video) {
-    if (!isSafeLegacyVideoUrl(data.url)) fail(["url"], VIDEO_URL_HINT);
-    else warn(["url"], `${VIDEO_URL_HINT} This URL uses the legacy player without moments/startAt.`);
+    if (!isSafeLegacyVideoUrl(data.url) || data.url !== storedUrl) fail(["url"], `${VIDEO_URL_HINT} Unsupported URLs may only be kept unchanged in their existing section.`);
+    else warn(["url"], `${VIDEO_URL_HINT} This stored URL is grandfathered and uses the legacy player without moments/startAt.`);
   }
   if ((!partial || data.url !== undefined) && !video && data.moments !== undefined) warn(["moments"], "moments need a YouTube, Vimeo or https .mp4/.webm URL");
   if (data.momentsHeading !== undefined && (typeof data.momentsHeading !== "string" || data.momentsHeading.length > 60)) fail(["momentsHeading"], "must be a string of at most 60 characters");
@@ -134,14 +134,27 @@ export function normalizeVideoData(value: unknown, path: (string | number)[] = [
   return { data: data as unknown as VideoData, issues, warnings };
 }
 
-export function normalizeVideoContent(value: unknown, partial = false) {
+export function normalizeVideoContent(value: unknown, partial = false, existingContent?: unknown) {
   const content = value as { sections?: unknown } | null;
+  const existing = existingContent as { sections?: Array<{ id?: unknown; order?: unknown; type?: unknown; data?: { id?: unknown; url?: unknown } }> } | null;
+  const storedSections = Array.isArray(existing?.sections) ? existing.sections : [];
   const issues: VideoIssue[] = [];
   const warnings: VideoWarning[] = [];
   if (!Array.isArray(content?.sections)) return { content: value, issues, warnings };
   const sections = content.sections.map((section, i) => {
     if (section?.type !== "video") return section;
-    const result = normalizeVideoData(section.data, ["sections", i, "data"], partial);
+    // A type-only PATCH targets the first section of that type. The final
+    // merged section is checked again with partial=false and its stored ID/order.
+    const patchTarget = partial && section.order === undefined ? storedSections.find(row => row?.type === section.type) : undefined;
+    // Never grandfather by URL alone or array position: it must belong to this
+    // same stored section. data.id is the hosted renderer's authored anchor ID.
+    const stored = storedSections.find(row => row?.type === section.type && row.data?.url === section.data?.url && (
+      (typeof section.id === "string" && section.id.length > 0 && row.id === section.id) ||
+      (typeof section.data?.id === "string" && section.data.id.length > 0 && row.data?.id === section.data.id) ||
+      ((typeof section.order === "number" || typeof section.order === "string") && row.order === section.order) ||
+      row === patchTarget
+    ));
+    const result = normalizeVideoData(section.data, ["sections", i, "data"], partial, stored?.data?.url);
     issues.push(...result.issues);
     warnings.push(...result.warnings);
     return { ...section, data: result.data };

@@ -70,3 +70,54 @@ for (const kind of ["youtube", "vimeo", "file"] as const) test(`${kind}: seeks o
     player.dispose();
   }
 });
+
+test("YouTube infoDelivery preserves already-playing state through readiness and repeated seeks", async t => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval"] });
+  const states: VideoState[] = [];
+  const player = createVideoController("youtube", 30, () => {}, state => states.push(state));
+  player.request(30, true);
+  // State arrives before the queued initial seek; there is no new play event.
+  player.receive({ event: "infoDelivery", info: { playerState: 1, currentTime: 0 } });
+  await Promise.resolve();
+  player.receive({ event: "infoDelivery", info: { currentTime: 30 } });
+  t.mock.timers.tick(1800);
+  assert.equal(states.at(-1), "seeked");
+  player.request(90, true); await Promise.resolve();
+  player.receive({ event: "infoDelivery", info: { currentTime: 90 } });
+  t.mock.timers.tick(1800);
+  assert.equal(states.at(-1), "seeked");
+  assert.equal(states.includes("blocked"), false);
+  // A genuinely paused player must still expose the press-play fallback.
+  player.receive({ event: "infoDelivery", info: { playerState: 2 } });
+  player.request(120, true); await Promise.resolve();
+  player.receive({ event: "infoDelivery", info: { currentTime: 120 } });
+  t.mock.timers.tick(1800);
+  assert.equal(states.at(-1), "blocked");
+  player.dispose();
+});
+
+for (const signal of ["getPaused", "playProgress", "timeupdate"]) test(`Vimeo ${signal} confirms already-playing playback without a new play event`, async t => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval"] });
+  const sent: PlayerMessage[] = [];
+  const states: VideoState[] = [];
+  const player = createVideoController("vimeo", 90, message => sent.push(message), state => states.push(state));
+  player.request(90, true); player.ready(); await Promise.resolve();
+  assert.ok(sent.some(message => message.method === "getPaused"));
+  player.receive({ method: "setCurrentTime", value: 90 });
+  // Even if the paused fallback has appeared, a current state reply repairs it.
+  t.mock.timers.tick(1800);
+  assert.equal(states.at(-1), "blocked");
+  player.receive(signal === "getPaused" ? { method: "getPaused", value: false } : { event: signal, data: { seconds: 90 } });
+  t.mock.timers.tick(1800);
+  assert.equal(states.at(-1), "seeked");
+  player.request(120, true); await Promise.resolve();
+  player.receive({ method: "setCurrentTime", value: 120 });
+  t.mock.timers.tick(1800);
+  assert.equal(states.at(-1), "seeked");
+  player.receive({ method: "getPaused", value: true });
+  player.request(150, true); await Promise.resolve();
+  player.receive({ method: "setCurrentTime", value: 150 });
+  t.mock.timers.tick(1800);
+  assert.equal(states.at(-1), "blocked");
+  player.dispose();
+});

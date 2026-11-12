@@ -115,7 +115,8 @@ test("share URL matching ignores foreign documents, malformed times and unrelate
 
 test("legacy URLs and optional metadata warn; dates normalize and invalid SEO values are omitted", () => {
   for (const legacy of ["https://vimeo.com/showcase/123", "http://example.test/a.mp4", "https://example.test/a.m3u8", "https://example.test/player"]) {
-    const result = normalizeVideoData({ url: legacy, moments: [{ t: 1, title: "Scene" }], uploadDate: "2024/01/01", duration: "bad" }, ["sections", 2, "data"]);
+    assert.ok(normalizeVideoData({ url: legacy }).issues.some(issue => issue.path[0] === "url"), "new unsupported content is an error");
+    const result = normalizeVideoData({ url: legacy, moments: [{ t: 1, title: "Scene" }], uploadDate: "2024/01/01", duration: "bad" }, ["sections", 2, "data"], false, legacy);
     assert.deepEqual(result.issues, []);
     assert.equal(result.data.uploadDate, "2024-01-01");
     assert.equal(result.data.duration, undefined);
@@ -138,6 +139,43 @@ test("legacy URLs and optional metadata warn; dates normalize and invalid SEO va
   }
   const duplicates = normalizeVideoData({ url, moments: [{ t: 0, title: "First" }, { t: "0:00", title: "Second" }, { t: 0, title: "Third" }] }, ["sections", 1, "data"]);
   assert.deepEqual(duplicates.warnings.map(w => w.path), ["sections[1].data.moments[1]", "sections[1].data.moments[2]"]);
+});
+
+test("grandfathering requires the exact stored URL in the same section ID or order and type", () => {
+  const url = "https://example.test/legacy-player";
+  const stored = { sections: [{ id: "first", order: 8, type: "video", data: { id: "anchor", url } }, { id: "other", order: 9, type: "about", data: { url } }] };
+  const check = (section: object, existing: unknown = stored) => normalizeVideoContent({ sections: [section] }, false, existing);
+  for (const section of [
+    { id: "first", order: 10, type: "video", data: { url } },
+    { order: 10, type: "video", data: { id: "anchor", url } },
+    { order: 8, type: "video", data: { url } },
+  ]) {
+    const result = check(section);
+    assert.deepEqual(result.issues, []);
+    assert.equal(result.warnings[0].path, "sections[0].data.url");
+  }
+  for (const section of [
+    { id: "new", order: 10, type: "video", data: { url } },
+    { id: "other", order: 9, type: "video", data: { url } },
+    { id: "first", order: 8, type: "video", data: { url: `${url}?changed=1` } },
+    { type: "video", data: { url } },
+  ]) assert.equal(check(section).issues[0].message.startsWith("sections[0].data.url:"), true);
+  assert.ok(check(stored.sections[0], null).issues.length);
+  const stringOrder = { type: "video", order: "8", data: { url } };
+  assert.deepEqual(check(stringOrder, { sections: [stringOrder] }).issues, [], "legacy numeric string orders stay editable");
+  for (const url of ["javascript:alert(1)", "https://youtube.com.evil.test/player"]) {
+    const section = { order: 8, type: "video", data: { url } };
+    assert.ok(check(section, { sections: [section] }).issues.length, "unsafe URLs never grandfather");
+  }
+});
+
+test("VideoObject names prefer caption, section heading, explicitly authored moments heading, then page title", () => {
+  const video = parseVideoUrl(url)!;
+  const name = (data: object) => buildVideoJsonLd({ url, ...data }, video, "https://appai.info/p/demo", "v", "Page title")!.name;
+  assert.equal(name({ caption: " Caption ", heading: "Heading", momentsHeading: "Scenes" }), "Caption");
+  assert.equal(name({ caption: "  ", heading: " Heading ", momentsHeading: "Scenes" }), "Heading");
+  assert.equal(name({ heading: " ", momentsHeading: " Scenes " }), "Scenes");
+  assert.equal(name({}), "Page title");
 });
 
 test("VideoObject requires a real name, prefers caption, and omits invented descriptions and malformed metadata", () => {

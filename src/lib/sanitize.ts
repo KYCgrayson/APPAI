@@ -249,9 +249,9 @@ export function extractDomain(url: string): string {
 }
 
 /** Server-owned render opt-in for page writes, including dry-run previews. */
-export function sanitizePageContent(obj: unknown, parentKey?: string, warnings?: SanitizeWarning[]): Record<string, unknown> {
-  warnings?.push(...normalizeVideoContent(obj).warnings);
+export function sanitizePageContent(obj: unknown, parentKey?: string, warnings?: SanitizeWarning[], existingContent?: unknown): Record<string, unknown> {
+  warnings?.push(...normalizeVideoContent(obj, false, existingContent).warnings);
   const content = sanitizeContent(obj, parentKey, warnings);
-  const normalized = normalizeVideoContent(content).content;
+  const normalized = normalizeVideoContent(content, false, existingContent).content;
   return storeGamesListing({ ...(normalized && typeof normalized === "object" && !Array.isArray(normalized) ? normalized : {}), renderVersion: 2 });
 }

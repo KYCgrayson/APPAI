@@ -101,15 +101,15 @@ export async function PATCH(
   // Merge + sanitize
   const merged = { ...sections[idx].data, ...patchData };
   const candidate = { ...content, sections: sections.map((section, i) => i === idx ? { ...section, data: merged } : {}) };
-  const issues = [...gameContentIssues(candidate), ...normalizeVideoContent(candidate).issues];
+  const issues = [...gameContentIssues(candidate), ...normalizeVideoContent(candidate, false, page.content).issues];
   if (issues.length) return NextResponse.json({ error: "Validation failed", details: issues }, { status: 400 });
   const warnings: SanitizeWarning[] = [];
-  const savedContent = sanitizePageContent(candidate, undefined, warnings);
-  const sanitizedIssues = [...gameContentIssues(savedContent), ...normalizeVideoContent(savedContent).issues];
+  const savedContent = sanitizePageContent(candidate, undefined, warnings, page.content);
+  const sanitizedIssues = [...gameContentIssues(savedContent), ...normalizeVideoContent(savedContent, false, page.content).issues];
   if (sanitizedIssues.length) return NextResponse.json({ error: "Validation failed", details: sanitizedIssues }, { status: 400 });
   savedContent.sections = sections.map((section, i) => i === idx ? (savedContent.sections as typeof sections)[i] : section);
   // Report legacy warnings without revalidating or rewriting untouched sections.
-  warnings.push(...normalizeVideoContent({ sections: sections.map((section, i) => i !== idx ? section : {}) }).warnings);
+  warnings.push(...normalizeVideoContent({ sections: sections.map((section, i) => i !== idx ? section : {}) }, false, page.content).warnings);
   if (gameSlugReserved({ ...page, content: savedContent })) return NextResponse.json({ error: "This game slug is reserved; choose a distinct slug." }, { status: 400 });
   warnings.push(...gamePageWarnings({ ...page, content: savedContent }));
 

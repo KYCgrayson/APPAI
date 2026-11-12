@@ -15,13 +15,14 @@ interface Props {
   sectionId?: string;
   pageUrl?: string;
   pageTitle?: string;
+  seoHeading?: string;
   darkMode?: boolean;
   priority?: boolean;
 }
 
-export function VideoSection({ data: input, themeColor, typographyActive = false, locale = "en", sectionId = "video", pageUrl = "https://appai.info/", pageTitle, darkMode = false, priority = false }: Props) {
+export function VideoSection({ data: input, themeColor, typographyActive = false, locale = "en", sectionId = "video", pageUrl = "https://appai.info/", pageTitle, seoHeading, darkMode = false, priority = false }: Props) {
   const strings = videoStrings(locale);
-  const { data, issues } = normalizeVideoData(input);
+  const { data, issues } = normalizeVideoData(input, [], false, input.url);
   const video = parseVideoUrl(data.url);
   if (issues.some(issue => issue.path[0] !== "thumbnail") || !isSafeLegacyVideoUrl(data.url)) return <section className="py-12 md:py-20 px-4 sm:px-6"><p>{strings.unavailable}</p></section>;
   // Neutral foregrounds pass AA on both standard section backgrounds, regardless of theme.
@@ -38,8 +39,8 @@ export function VideoSection({ data: input, themeColor, typographyActive = false
       </li>)}
     </ol>
   </div>;
-  if (!video) return <LegacyVideoSection data={data} themeColor={themeColor} typographyActive={typographyActive} pageTitle={pageTitle} moments={moments} />;
-  const schema = buildVideoJsonLd(data, video, pageUrl, sectionId, pageTitle);
+  if (!video) return <LegacyVideoSection data={data} themeColor={themeColor} typographyActive={typographyActive} pageTitle={pageTitle} seoHeading={seoHeading} moments={moments} />;
+  const schema = buildVideoJsonLd({ ...data, heading: seoHeading ?? data.heading }, video, pageUrl, sectionId, pageTitle);
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6">
       {data.heading && <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-3xl font-bold text-center mb-6" style={{ color: themeColor }}>{data.heading}</h2>}

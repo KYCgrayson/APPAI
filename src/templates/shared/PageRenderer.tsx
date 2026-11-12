@@ -185,10 +185,12 @@ function renderSection(
       content = <HeroSection {...props} />;
       break;
     case "video":
+      // Older render versions hide headings, but authored copy still names the video for SEO.
       content = <VideoSection
         {...props}
         locale={page.locale}
         pageTitle={page.title}
+        seoHeading={section.data?.heading}
         priority={videoPriority}
         sectionId={sectionId || ""}
         pageUrl={page.videoPageUrl || `${PLATFORM_ORIGIN}${buildPagePath(page.parentSlug || page.slug, page.locale || "en", page.parentSlug ? page.slug : null, page.isDefault ?? true)}`}

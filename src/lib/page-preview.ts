@@ -2,21 +2,21 @@ import { normalizeVideoContent } from "./video-data.ts";
 import { gamePageWarnings, gamesListingResponse, gameContentIssues } from "./game-section.ts";
 import { computeTypography, storeTypography, typographySettings } from "./typography.ts";
 import { buildPagePath } from "./parse-page-segments.ts";
-import { createPageSchema } from "./validations/page.ts";
+import { createPageSchemaFor } from "./validations/page.ts";
 import { sanitizePageContent, type SanitizeWarning } from "./sanitize.ts";
 import { sectionFieldWarnings, pageHeadingWarnings } from "./section-field-warnings.ts";
 import { pageLogoWarnings } from "./page-logo.ts";
 import { SECTION_DEFS, type SectionFieldDef } from "./template-registry.ts";
 
-export function checkPagePreview(body: unknown, iconNames: readonly string[] = [], context: { origin?: string; isDefault?: boolean; exists?: boolean } = {}) {
-  const parsed = createPageSchema.safeParse(body);
+export function checkPagePreview(body: unknown, iconNames: readonly string[] = [], context: { origin?: string; isDefault?: boolean; exists?: boolean; existingContent?: unknown } = {}) {
+  const parsed = createPageSchemaFor(context.existingContent).safeParse(body);
   if (!parsed.success) return { valid: false as const, errors: parsed.error.issues.map(e => ({ path: e.path.map(String).join("."), message: e.message })), warnings: [...gamePageWarnings((body || {}) as Record<string, unknown>), ...pageHeadingWarnings((body as { content?: unknown } | null)?.content, (body as { template?: string } | null)?.template)], sanitizedContent: null, typography: undefined, typographyMobile: undefined, gamesListing: undefined, next: "Fix errors and dry-run again." };
   const warnings: SanitizeWarning[] = [];
   const rawBody = body as Record<string, unknown>;
   for (const field of ["themeColor", "fontFamily"]) {
     if (!context.exists && !(field === "themeColor" && parsed.data.parentSlug) && rawBody[field] === undefined) warnings.push({ path: field, message: `The page will use defaults for ${field}; pick a style kit at ${context.origin || "https://appai.info"}/spec/style.` });
   }
-  const sanitizedContent = sanitizePageContent(storeTypography(parsed.data).content, undefined, warnings) as Record<string, unknown>;
+  const sanitizedContent = sanitizePageContent(storeTypography(parsed.data).content, undefined, warnings, context.existingContent) as Record<string, unknown>;
 
   const computedTypography = computeTypography(typographySettings(sanitizedContent));
   warnings.push(...computedTypography.warnings);
@@ -62,7 +62,7 @@ export function checkPagePreview(body: unknown, iconNames: readonly string[] = [
     const section = Array.isArray(rawSections) ? rawSections[Number(index)] : null;
     return section && typeof section === "object" && "type" in section ? `${match}(${section.type})` : match;
   });
-  const errors = [...gameContentIssues(sanitizedContent), ...normalizeVideoContent(sanitizedContent).issues].map(e => ({ path: ["content", ...e.path].map(String).join("."), message: e.message }));
+  const errors = [...gameContentIssues(sanitizedContent), ...normalizeVideoContent(sanitizedContent, false, context.existingContent).issues].map(e => ({ path: ["content", ...e.path].map(String).join("."), message: e.message }));
   return { valid: errors.length === 0, errors, warnings, ...gamesListingResponse(sanitizedContent), sanitizedContent, typography: computedTypography.desktop, typographyMobile: computedTypography.mobile, next: errors.length ? "Fix errors and dry-run again." : pagePreviewNext(parsed.data, context) };
 }
 

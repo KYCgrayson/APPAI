@@ -72,6 +72,9 @@
         "src/templates/sections/ScreenshotFrame.tsx",
         "src/templates/sections/editorial.module.css",
         "src/templates/shared/*.tsx",
+        "src/templates/shared/prose.css",
+        "src/lib/prose-theme.ts",
+        "tests/prose-theme.test.ts",
         "src/components/AppAIBadge.tsx",
         "src/lib/hosted-content.ts",
         "src/lib/hosted-editorial-links.ts",
@@ -231,6 +234,30 @@
         "tests/iframe-*.test.ts",
         "tests/helpers/iframe-session-hook-fixture.mjs"
       ]
+    },
+    {
+      "id": "video-moments",
+      "paths": [
+        "src/lib/video-url.ts",
+        "src/lib/video-data.ts",
+        "src/lib/video-jsonld.ts",
+        "src/lib/video-controller.ts",
+        "src/lib/video-navigation.ts",
+        "src/templates/sections/VideoSection.tsx",
+        "src/templates/sections/LegacyVideoSection.tsx",
+        "src/templates/sections/VideoPlayer.tsx",
+        "src/templates/sections/video-strings.ts",
+        "tests/video-api.test.ts",
+        "tests/video-contract.test.ts",
+        "tests/video-controller.test.ts",
+        "tests/video-navigation.test.ts",
+        "tests/video-player.test.ts",
+        "tests/video-render.test.ts",
+        "tests/fixtures/video-legacy-urls.json",
+        "tests/fixtures/video-legacy.html",
+        "tests/helpers/video-player-fixture.mjs"
+      ],
+      "docs": ["docs/spec/sections.md"]
     },
     {
       "id": "video-subtitle",

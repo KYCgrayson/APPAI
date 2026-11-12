@@ -129,7 +129,7 @@ export function VideoPlayer({ video, sectionId, startAt, thumbnail, priority = f
             aria-label={strings.play} style={{ color: themeColor }}>
             {thumbnail && <img src={thumbnail} alt="" loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : undefined}
               width={480} height={360} referrerPolicy="no-referrer" className="absolute inset-0 w-full h-full object-cover" />}
-            <span className="relative rounded-full bg-white text-black shadow-lg p-5 text-2xl" aria-hidden="true">▶</span>
+            <span className="relative rounded-full bg-white text-black shadow-lg p-5 text-2xl" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg></span>
           </a>}
       </div>}
     </div>
