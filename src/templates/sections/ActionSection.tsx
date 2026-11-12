@@ -27,6 +27,7 @@ interface Props {
     items: ActionItem[];
   };
   themeColor: string;
+  darkMode?: boolean;
 }
 
 function ActionButton({ item, themeColor }: { item: ActionItem; themeColor: string }) {
@@ -131,7 +132,7 @@ function ActionButton({ item, themeColor }: { item: ActionItem; themeColor: stri
   );
 }
 
-export function ActionSection({ data, themeColor, typographyActive = false }: Props & { typographyActive?: boolean }) {
+export function ActionSection({ data, themeColor, darkMode, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const items = data.items || [];
 
   return (
@@ -142,7 +143,7 @@ export function ActionSection({ data, themeColor, typographyActive = false }: Pr
         )}
         {data.subheading && <p className="text-center mb-6">{data.subheading}</p>}
         {data.description && (
-          <Prose typographyRole={typographyActive ? "body" : undefined} className="prose prose-sm md:prose-base max-w-none text-gray-600 text-center mb-8 prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{data.description}</Prose>
+          <Prose typographyRole={typographyActive ? "body" : undefined} className={`prose prose-sm md:prose-base max-w-none text-center mb-8 ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{data.description}</Prose>
         )}
         <div className="flex flex-col gap-4">
           {items.map((item, i) => (

@@ -110,3 +110,9 @@ Edit `docs/spec/`, never the generated root file. Keep overview.md at most 200 l
   UI — they never belong in `src/messages/*.json`. They follow the visitor's
   locale by reading the app's `HostedPage` row for that language (`title` is the
   name, `tagline` the subtitle), falling back to the `App` columns
+
+## Feature map
+
+Before changing code, read docs/FEATURE_MAP.md. If you add, move or delete files,
+update docs/FEATURE_MAP.md and docs/feature-map.json in the same commit;
+`npm run feature-map:check` must pass.

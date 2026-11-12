@@ -4,9 +4,16 @@
 
 - [x] Generic optional moments/startAt and real SEO metadata; strict shared provider/file URL parsing, stable normalization and field-path validation on create/upsert, PUT, merged PATCH, section PATCH and preview.
 - [x] Server-rendered moment links and Clip JSON-LD; click-to-load SDK-free players, native seeking, localized status/fallbacks, same-page Markdown/share links and history handling. Existing direct-file markup preserved except removal of fabricated uploadDate.
-- [x] Registry/JSON Schema, fictional spec example, generated agent spec and regression coverage. See `PR_NOTES_91.md` for compatibility, security choices and validation results.
+- [x] Registry/JSON Schema, fictional spec example, generated agent spec and regression coverage.
 - [x] Review round 2: preserve legacy URLs/rendering and untouched PATCH sections; warn on unsupported URLs, invalid optional SEO and duplicate timestamps; eager first facade, neutral AA moments, real schema names and one-second seek confirmation.
 - [ ] Live YouTube/Vimeo sandbox/playback QA, mobile browser layout and real autoplay-block behavior; provider permissions, regional restrictions and private-file availability remain external constraints.
+
+## Hosted Markdown typography (#43)
+
+- [x] Add scoped `.prose` Markdown CSS without the typography plugin (headings, lists, links, tables, blockquote, code); expose hosted darkMode through data-dark. Editorial renderers unchanged.
+- [x] Typecheck passes. Local `npm run build` compiles; prerender of /llms.txt needs DATABASE_URL (not available locally).
+- [x] Review fixes (#91): sanitise theme CSS variables, preserve AA link contrast, correct dark Markdown colours, and remove dead prose variants; typecheck, lint and tests pass.
+- [x] Verified on Vercel preview (2 review rounds) and merged to production (#67).
 
 ## Game fixes (#78)
 

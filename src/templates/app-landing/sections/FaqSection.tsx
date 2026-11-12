@@ -62,7 +62,7 @@ export function FaqSection({ data, themeColor, darkMode, typographyActive = fals
                 {item.question}
                 <span className="text-gray-400 group-open:rotate-180 transition-transform">▾</span>
               </summary>
-              <Prose typographyRole={typographyActive ? "card" : undefined} className={`prose prose-sm md:prose-base max-w-none mt-4 leading-relaxed prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold ${darkMode ? "text-gray-400 prose-headings:text-gray-200" : "text-gray-600"}`}>{item.answer}</Prose>
+              <Prose typographyRole={typographyActive ? "card" : undefined} className={`prose prose-sm md:prose-base max-w-none mt-4 leading-relaxed ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{item.answer}</Prose>
             </details>
           ))}
         </div>

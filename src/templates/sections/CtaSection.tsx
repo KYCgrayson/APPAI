@@ -25,7 +25,7 @@ export function CtaSection({ data, themeColor, typographyActive = false }: Props
           {data.headline}
         </h2>
         {data.subheadline && (
-          <Prose typographyRole={typographyActive ? "body" : undefined} className="prose prose-sm md:prose-base max-w-none text-white/80 mb-8 prose-a:text-white prose-a:underline prose-headings:font-semibold prose-headings:text-white prose-strong:text-white">{data.subheadline}</Prose>
+          <Prose typographyRole={typographyActive ? "body" : undefined} className="prose prose-sm md:prose-base max-w-none text-white/80 mb-8 prose-a:text-white prose-headings:text-white prose-strong:text-white">{data.subheadline}</Prose>
         )}
         <a data-typography-role={typographyActive ? "card" : undefined}
           href={safeUrl}
