@@ -83,3 +83,63 @@ test("JSON Schema endpoint exposes optional bounded fields and time alternatives
     for (const bad of ["1:75", "24:00:01", "86401"]) assert.equal(pattern.test(bad), false);
   }
 });
+
+test("every write/preview path accepts legacy URLs and returns video warnings in the preview shape", async () => {
+  const legacyData = { url: "https://vimeo.com/showcase/123", uploadDate: "bad", duration: "bad", moments: [{ t: 0, title: "Opening" }, { t: 0, title: "Duplicate" }] };
+  const legacyPage = { ...page, content: { sections: [{ type: "about", order: 0, data: {} }, { type: "video", order: 8, data: legacyData }] } };
+  gameApiFixture.page = null; gameApiFixture.apps = [];
+  for (const response of [
+    await collection.POST(request(legacyPage)),
+    await collection.POST(request(legacyPage, "POST", "?upsert=true")),
+    await item.PUT(request({ content: legacyPage.content }, "PUT"), params),
+    await item.PATCH(request({ content: legacyPage.content }, "PATCH"), params),
+    await section.PATCH(request({ data: legacyData }, "PATCH"), sectionParams),
+    await preview.POST(request(legacyPage)),
+    await collection.POST(request(legacyPage, "POST", "?dryRun=true")),
+  ]) {
+    const body = await response.json();
+    assert.ok([200, 201].includes(response.status), JSON.stringify(body));
+    assert.notEqual(body.valid, false);
+    for (const field of ["url", "uploadDate", "duration", "moments[1]"]) {
+      assert.ok(body.warnings.some((w: { path: string; message: string }) => w.path.endsWith(`data.${field}`) && typeof w.message === "string"), JSON.stringify(body.warnings));
+    }
+    assert.match(JSON.stringify(body.warnings), /moments need a YouTube, Vimeo or https .mp4\/.webm URL/);
+  }
+});
+
+test("title-only and unrelated-section PATCH preserve untouched legacy videos and do not validate their old fields", async () => {
+  await collection.POST(request(page, "POST", "?upsert=true"));
+  const legacy = { type: "video", order: 8, data: { url: "http://example.test/film.mp4", uploadDate: "old malformed date", duration: "bad", moments: [{ t: "old invalid time", title: "Old scene" }] } };
+  gameApiFixture.page!.content = { sections: [{ type: "about", order: 0, data: { text: "Before" } }, legacy] };
+  const before = JSON.stringify(legacy);
+  for (const response of [
+    await item.PATCH(request({ title: "Updated title" }, "PATCH"), params),
+    await item.PATCH(request({ content: { sections: [{ type: "about", order: 0, data: { text: "After" } }] } }, "PATCH"), params),
+    await section.PATCH(request({ data: { text: "Again" } }, "PATCH"), { params: Promise.resolve({ slug: "fictional-video", order: "0" }) }),
+  ]) {
+    assert.equal(response.status, 200, JSON.stringify(await response.clone().json()));
+    const body = await response.json();
+    assert.ok(body.warnings.some((w: { path: string }) => w.path.endsWith("data.url")));
+  }
+  assert.equal(JSON.stringify((gameApiFixture.page!.content as typeof page.content).sections[1]), before);
+  const touched = await section.PATCH(request({ data: { caption: "Edited video" } }, "PATCH"), sectionParams);
+  assert.equal(touched.status, 400);
+  assert.match(JSON.stringify(await touched.json()), /moments\[0\]\.t/);
+});
+
+test("unsafe URLs and moment limits remain hard errors on each write path", async () => {
+  await collection.POST(request(page, "POST", "?upsert=true"));
+  const before = gameApiFixture.writes;
+  for (const url of ["javascript:alert(1)", "data:video/mp4,example", "ftp://example.test/a.mp4", "https://youtube.com.evil.test/a.mp4", "https://player.vimeo.com.evil.test/123", 'https://example.test/<script>alert(1)</script>']) {
+    const content = { sections: [{ type: "video", order: 8, data: { url } }] };
+    for (const response of [
+      await collection.POST(request({ ...page, content }, "POST", "?upsert=true")),
+      await item.PUT(request({ content }, "PUT"), params),
+      await item.PATCH(request({ content }, "PATCH"), params),
+      await section.PATCH(request({ data: { url } }, "PATCH"), sectionParams),
+    ]) assert.equal(response.status, 400, url);
+  }
+  const overLimit = await section.PATCH(request({ data: { moments: Array.from({ length: 101 }, (_, t) => ({ t, title: "Scene" })) } }, "PATCH"), sectionParams);
+  assert.equal(overLimit.status, 400);
+  assert.equal(gameApiFixture.writes, before);
+});

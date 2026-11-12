@@ -8,21 +8,23 @@ export function videoShareUrl(pageUrl: string, sectionId: string, t: number): st
   return url.href;
 }
 
-export function buildVideoJsonLd(input: VideoData, video: VideoUrl, pageUrl: string, sectionId: string) {
+export function buildVideoJsonLd(input: VideoData, video: VideoUrl, pageUrl: string, sectionId: string, pageTitle?: string) {
   const { data } = normalizeVideoData(input);
+  const name = data.caption?.trim() || pageTitle?.trim();
+  if (!name) return null;
   const schema: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "VideoObject",
-    name: data.caption || "Video",
-    description: data.caption || "Video content",
+    name,
+    ...(data.caption?.trim() ? { description: data.caption.trim() } : {}),
+    ...(data.uploadDate ? { uploadDate: data.uploadDate } : {}),
+    ...(data.duration ? { duration: data.duration } : {}),
   };
   const embed = videoEmbedUrl(video);
   if (embed) schema.embedUrl = embed;
   else schema.contentUrl = video.url;
   const thumbnail = data.thumbnail || youtubeThumbnail(video);
   if (thumbnail) schema.thumbnailUrl = thumbnail;
-  if (data.uploadDate) schema.uploadDate = data.uploadDate;
-  if (data.duration) schema.duration = data.duration;
   const duration = videoDurationSeconds(data.duration);
   if (data.moments?.length) schema.hasPart = data.moments.map((moment, index, moments) => {
     const end = moments[index + 1]?.t ?? duration;

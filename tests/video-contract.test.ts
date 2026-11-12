@@ -12,7 +12,7 @@ const id = "Abc_123-xyz";
 const url = `https://www.youtube.com/watch?v=${id}`;
 
 test("strict video URL parsing accepts only the supported provider paths/IDs and HTTPS files", () => {
-  for (const input of [url, `https://youtube.com/watch?v=${id}&list=ignored`, `https://m.youtube.com/watch?v=${id}`, `https://youtu.be/${id}`, `https://www.youtube.com/shorts/${id}`, `https://youtube.com/embed/${id}`, `https://youtube-nocookie.com/embed/${id}`, `https://www.youtube-nocookie.com/embed/${id}`, `http://youtube.com/watch?v=${id}`]) {
+  for (const input of [url, `https://youtube.com/watch?v=${id}&list=ignored`, `https://m.youtube.com/watch?v=${id}`, `https://youtu.be/${id}`, `https://www.youtube.com/shorts/${id}`, `https://youtube.com/embed/${id}`, `https://youtube.com/live/${id}`, `https://youtube-nocookie.com/embed/${id}`, `https://www.youtube-nocookie.com/embed/${id}`, `http://youtube.com/watch?v=${id}`]) {
     const parsed = parseVideoUrl(input);
     assert.deepEqual(parsed, { kind: "youtube", id, url }, input);
     assert.equal(videoEmbedUrl(parsed!), `https://www.youtube-nocookie.com/embed/${id}`);
@@ -46,6 +46,8 @@ test("moments sort and dedupe stably without mutation; every limit has a precise
   const before = JSON.stringify(input);
   const result = normalizeVideoData(input);
   assert.deepEqual(result.issues, []);
+  assert.equal(result.warnings[0].path, "moments[2]");
+  assert.match(result.warnings[0].message, /dropped moment/);
   assert.equal(result.data.startAt, 90);
   assert.deepEqual(result.data.moments, [{ t: 0, title: "Opening" }, { t: 90, title: "First" }]);
   assert.equal(JSON.stringify(input), before);
@@ -58,8 +60,6 @@ test("moments sort and dedupe stably without mutation; every limit has a precise
     [{ moments: [{ t: 0, title: "A" }, { t: 2, title: "B" }, { t: 3, title: "C" }, { t: "1:75", title: "Bad" }] }, "sections[2].data.moments[3].t"],
     [{ startAt: -1 }, "sections[2].data.startAt"],
     [{ thumbnail: "javascript:alert(1)" }, "sections[2].data.thumbnail"],
-    [{ uploadDate: "2026-02-31" }, "sections[2].data.uploadDate"],
-    [{ duration: "tomorrow" }, "sections[2].data.duration"],
   ] as const) {
     const result = normalizeVideoData({ url, ...fields }, ["sections", 2, "data"]);
     assert.ok(result.issues.some(issue => issue.message.startsWith(`${path}:`)), path);
@@ -87,22 +87,22 @@ test("create/update schemas and preview use the same normalization and errors", 
 
 test("VideoObject has ordered Clips, real metadata, page-specific seek URLs and no invented dates", () => {
   const video = parseVideoUrl(url)!;
-  const data = { url, moments: [{ t: 90, title: "Second" }, { t: 0, title: "First" }] };
-  const schema = buildVideoJsonLd(data, video, "https://appai.info/p/fictional/ja/lesson", "intro-video");
+  const data = { url, caption: "Demo overview", moments: [{ t: 90, title: "Second" }, { t: 0, title: "First" }] };
+  const schema = buildVideoJsonLd(data, video, "https://appai.info/p/fictional/ja/lesson", "intro-video")!;
   assert.deepEqual(schema.hasPart, [
     { "@type": "Clip", name: "First", startOffset: 0, endOffset: 90, url: "https://appai.info/p/fictional/ja/lesson?t=0#intro-video" },
     { "@type": "Clip", name: "Second", startOffset: 90, url: "https://appai.info/p/fictional/ja/lesson?t=90#intro-video" },
   ]);
   assert.equal(schema.thumbnailUrl, `https://i.ytimg.com/vi/${id}/hqdefault.jpg`);
   for (const key of ["uploadDate", "duration", "contentUrl"]) assert.equal(Object.hasOwn(schema, key), false);
-  const supplied = buildVideoJsonLd({ ...data, uploadDate: "2025-02-01T12:00:00Z", duration: "PT2M", thumbnail: "https://example.test/cover.jpg" }, video, "https://appai.info/p/fictional", "intro");
-  assert.equal(supplied.uploadDate, "2025-02-01T12:00:00Z");
+  const supplied = buildVideoJsonLd({ ...data, uploadDate: "2025-02-01T12:00:00Z", duration: "PT2M", thumbnail: "https://example.test/cover.jpg" }, video, "https://appai.info/p/fictional", "intro")!;
+  assert.equal(supplied.uploadDate, "2025-02-01T12:00:00.000Z");
   assert.equal(supplied.duration, "PT2M");
   assert.equal((supplied.hasPart as { endOffset: number }[])[1].endOffset, 120);
   assert.equal(supplied.thumbnailUrl, "https://example.test/cover.jpg");
-  const vimeo = buildVideoJsonLd({ url: "https://vimeo.com/123" }, parseVideoUrl("https://vimeo.com/123")!, "https://appai.info/p/fictional", "v");
+  const vimeo = buildVideoJsonLd({ url: "https://vimeo.com/123", caption: "Vimeo demo" }, parseVideoUrl("https://vimeo.com/123")!, "https://appai.info/p/fictional", "v")!;
   assert.equal(Object.hasOwn(vimeo, "thumbnailUrl"), false);
-  const xss = buildVideoJsonLd({ url, moments: [{ t: 0, title: '</script><script>alert("x")</script>' }] }, video, "https://appai.info/p/fictional", "v");
+  const xss = buildVideoJsonLd({ url, caption: "Demo", moments: [{ t: 0, title: '</script><script>alert("x")</script>' }] }, video, "https://appai.info/p/fictional", "v");
   assert.doesNotMatch(serializeJsonLd(xss), /<script|<\/script/);
 });
 
@@ -111,4 +111,43 @@ test("share URL matching ignores foreign documents, malformed times and unrelate
   assert.equal(samePageVideoTime("?t=90#intro-video", current)?.id, "intro-video");
   assert.equal(samePageVideoTime("?t=90#intro-video", current)?.t, 90);
   for (const href of ["https://evil.test/p/fictional?t=90", "/p/other?t=90", "?t=-1", "?t=1:75", "?t=90&view=other", "#intro-video", "?t=90#%GG"]) assert.equal(samePageVideoTime(href, current), null, href);
+});
+
+test("legacy URLs and optional metadata warn; dates normalize and invalid SEO values are omitted", () => {
+  for (const legacy of ["https://vimeo.com/showcase/123", "http://example.test/a.mp4", "https://example.test/a.m3u8", "https://example.test/player"]) {
+    const result = normalizeVideoData({ url: legacy, moments: [{ t: 1, title: "Scene" }], uploadDate: "2024/01/01", duration: "bad" }, ["sections", 2, "data"]);
+    assert.deepEqual(result.issues, []);
+    assert.equal(result.data.uploadDate, "2024-01-01");
+    assert.equal(result.data.duration, undefined);
+    assert.ok(result.warnings.some(w => w.path === "sections[2].data.moments" && /moments need a YouTube, Vimeo or https .mp4\/.webm URL/.test(w.message)));
+  }
+  for (const [input, output] of [["2024-02-29", "2024-02-29"], ["2024/01/01", "2024-01-01"], ["2024-01-01T08:30:00+08:00", "2024-01-01T00:30:00.000Z"], ["2024-01-01T12:00Z", "2024-01-01T12:00:00.000Z"]]) {
+    assert.equal(normalizeVideoData({ url, uploadDate: input }).data.uploadDate, output);
+  }
+  for (const thumbnail of ["not a URL", 42, null, ["https://example.test/cover.jpg"], "http://example.test/cover.jpg"]) {
+    const result = normalizeVideoData({ url, thumbnail });
+    assert.deepEqual(result.issues, []);
+    assert.equal(result.data.thumbnail, undefined);
+    assert.equal(result.warnings[0].path, "thumbnail");
+  }
+  for (const uploadDate of ["2023-02-29", "2024/02/31", "01/02/2024", "2024-01-01T25:00:00Z", "2024-01-01T00:00:00", "yesterday", 42]) {
+    const result = normalizeVideoData({ url, uploadDate, duration: "bad" });
+    assert.deepEqual(result.issues, []);
+    assert.equal(result.data.uploadDate, undefined);
+    assert.deepEqual(result.warnings.map(w => w.path), ["uploadDate", "duration"]);
+  }
+  const duplicates = normalizeVideoData({ url, moments: [{ t: 0, title: "First" }, { t: "0:00", title: "Second" }, { t: 0, title: "Third" }] }, ["sections", 1, "data"]);
+  assert.deepEqual(duplicates.warnings.map(w => w.path), ["sections[1].data.moments[1]", "sections[1].data.moments[2]"]);
+});
+
+test("VideoObject requires a real name, prefers caption, and omits invented descriptions and malformed metadata", () => {
+  const video = parseVideoUrl(url)!;
+  assert.equal(buildVideoJsonLd({ url }, video, "https://appai.info/p/demo", "v"), null);
+  assert.equal(buildVideoJsonLd({ url, caption: "  " }, video, "https://appai.info/p/demo", "v", "  "), null);
+  const fromTitle = buildVideoJsonLd({ url, duration: "bad", uploadDate: "bad" }, video, "https://appai.info/p/demo", "v", "Page title")!;
+  assert.equal(fromTitle.name, "Page title");
+  for (const field of ["description", "duration", "uploadDate"]) assert.equal(Object.hasOwn(fromTitle, field), false);
+  const fromCaption = buildVideoJsonLd({ url, caption: " Video caption " }, video, "https://appai.info/p/demo", "v", "Page title")!;
+  assert.equal(fromCaption.name, "Video caption");
+  assert.equal(fromCaption.description, "Video caption");
 });

@@ -405,12 +405,12 @@ export const SECTION_DEFS: SectionDef[] = [
       { name: "caption", type: "string", required: false, description: "Caption text below the video" },
       { name: "startAt", type: "video-time", required: false, description: "Initial position: integer seconds, m:ss or h:mm:ss; 0–86400 inclusive. Normalized to integer seconds. No autoplay until interaction." },
       { name: "momentsHeading", type: "string", required: false, maxLength: 60, description: "Optional heading (max 60 characters); default follows hosted-page locale, e.g. Key moments / 重點時刻." },
-      { name: "moments", type: "array", required: false, maxItems: 100, description: "Up to 100 {t,title,text?} moments, sorted by time; duplicate times keep the first. GIFs cannot seek. When duration is supplied, all times must be before it.", items: [
+      { name: "moments", type: "array", required: false, maxItems: 100, description: "Up to 100 {t,title,text?} moments, sorted by time; duplicate times keep the first and warn with dropped input paths. GIFs cannot seek. When duration is supplied, all times must be before it.", items: [
         { name: "t", type: "video-time", required: true, description: "Integer seconds, m:ss or h:mm:ss; 0–86400 inclusive. Minute/second parts must be below 60." },
         { name: "title", type: "string", required: true, minLength: 1, maxLength: 120, description: "Nonblank plain text, max 120 characters." },
         { name: "text", type: "markdown", required: false, maxLength: 600, description: "Safe Markdown description, max 600 characters; no raw HTML." },
       ] },
-      { name: "uploadDate", type: "string", required: false, description: "SEO: real first-publication date or timezone-qualified ISO 8601 timestamp. Omitted from JSON-LD when absent; never fabricated." },
+      { name: "uploadDate", type: "string", required: false, description: "SEO: real YYYY-MM-DD, YYYY/MM/DD or timezone-qualified ISO 8601 timestamp, normalized to ISO 8601. Invalid values warn and are omitted; never fabricated." },
       { name: "duration", type: "string", required: false, description: "SEO: positive ISO 8601 day/time duration, at most 24h (e.g. PT5M30S). Supplies the last Clip endOffset." },
       { name: "thumbnail", type: "url", required: false, pattern: "^https://", description: "HTTPS thumbnail image without credentials/non-default port. SEO thumbnailUrl and facade image; YouTube has a real thumbnail fallback." },
     ],

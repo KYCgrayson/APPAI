@@ -252,17 +252,28 @@ export async function PATCH(
     // Deep merge content with existing content
     const patchWarnings: SanitizeWarning[] = [];
     const mergedContent = updateData.content ? mergeContent(page.content, updateData.content) : page.content;
-    const videoIssues = normalizeVideoContent(mergedContent).issues;
-    if (videoIssues.length) throw new z.ZodError(videoIssues);
-    updateData.content = sanitizePageContent(
+    const previousSections = (page.content as { sections?: Section[] } | null)?.sections;
+    const previous = Array.isArray(previousSections) ? previousSections : [];
+    const merged = mergedContent as { sections?: Section[] } | null;
+    // mergeContent retains object identity for untouched sections. Validate only
+    // changed sections, with their final merged data and original field indices.
+    const touchedContent = { ...merged, ...(Array.isArray(merged?.sections) ? { sections: merged.sections.map(section => previous.includes(section) ? {} : section) } : {}) };
+    const issues = [...gameContentIssues(touchedContent), ...normalizeVideoContent(touchedContent).issues];
+    if (issues.length) throw new z.ZodError(issues);
+    const sanitized = sanitizePageContent(
       mergedContent,
       undefined,
       patchWarnings,
     );
+    if (Array.isArray(merged?.sections) && Array.isArray(sanitized.sections)) {
+      const sanitizedTouched = { ...sanitized, sections: merged.sections.map((section, i) => previous.includes(section) ? {} : (sanitized.sections as unknown[])[i]) };
+      const sanitizedIssues = [...gameContentIssues(sanitizedTouched), ...normalizeVideoContent(sanitizedTouched).issues];
+      if (sanitizedIssues.length) throw new z.ZodError(sanitizedIssues);
+      sanitized.sections = merged.sections.map((section, i) => previous.includes(section) ? section : (sanitized.sections as unknown[])[i]);
+    }
+    updateData.content = sanitized;
 
     const effective = { ...page, ...updateData };
-    const gameIssues = [...gameContentIssues(effective.content), ...normalizeVideoContent(effective.content).issues];
-    if (gameIssues.length) throw new z.ZodError(gameIssues);
     if (gameSlugReserved(effective)) return errorResponse("This game slug is reserved; choose a distinct slug.", 400);
 
     const hadPersonRoot = !!await db.hostedPage.findFirst({

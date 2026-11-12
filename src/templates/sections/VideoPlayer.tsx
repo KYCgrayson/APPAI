@@ -12,12 +12,13 @@ interface Props {
   sectionId: string;
   startAt: number;
   thumbnail?: string;
+  priority?: boolean;
   title: string;
   themeColor: string;
   strings: VideoStrings;
 }
 
-export function VideoPlayer({ video, sectionId, startAt, thumbnail, title, themeColor, strings }: Props) {
+export function VideoPlayer({ video, sectionId, startAt, thumbnail, priority = false, title, themeColor, strings }: Props) {
   const root = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLIFrameElement>(null);
   const native = useRef<HTMLVideoElement>(null);
@@ -126,7 +127,8 @@ export function VideoPlayer({ video, sectionId, startAt, thumbnail, title, theme
           : <a href={videoTimeLink(video, selected)} data-video-time={selected}
             className="absolute inset-0 flex items-center justify-center focus-visible:outline-4 focus-visible:outline-offset-[-4px]"
             aria-label={strings.play} style={{ color: themeColor }}>
-            {thumbnail && <img src={thumbnail} alt="" loading="lazy" referrerPolicy="no-referrer" className="absolute inset-0 w-full h-full object-cover" />}
+            {thumbnail && <img src={thumbnail} alt="" loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : undefined}
+              width={480} height={360} referrerPolicy="no-referrer" className="absolute inset-0 w-full h-full object-cover" />}
             <span className="relative rounded-full bg-white text-black shadow-lg p-5 text-2xl" aria-hidden="true">▶</span>
           </a>}
       </div>}

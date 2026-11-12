@@ -25,7 +25,7 @@ export function createVideoController(kind: "youtube" | "vimeo" | "file", initia
   function state(value: VideoState) { if (!disposed) report(value, desired); }
   function armTimeout() { clearTimeout(timeout); timeout = setTimeout(() => { clearInterval(handshake); state("error"); }, 8000); }
   function confirm(t: unknown) {
-    if (!ready || typeof t !== "number" || Math.abs(t - desired) >= 1.5 || confirmed) return;
+    if (!ready || typeof t !== "number" || !Number.isFinite(t) || Math.abs(t - desired) > 1 || confirmed) return;
     confirmed = true;
     clearTimeout(timeout);
     state("seeked");

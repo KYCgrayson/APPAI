@@ -59,3 +59,14 @@ test("messages require the exact provider origin AND current frame window", asyn
     { origin: "https://www.youtube-nocookie.com", source: frame, data: [] },
   ]) assert.equal(trustedVideoMessage(event, frame, "youtube"), null);
 });
+
+for (const kind of ["youtube", "vimeo", "file"] as const) test(`${kind}: seeks only confirm within one second`, async () => {
+  for (const offset of [-1.01, -1, -0.9, 0.9, 1, 1.01, 1.49, NaN, Infinity]) {
+    const states: VideoState[] = [];
+    const player = createVideoController(kind, 90, () => {}, state => states.push(state));
+    player.request(90, true); player.ready(); await Promise.resolve();
+    player.receive(kind === "youtube" ? { event: "infoDelivery", info: { currentTime: 90 + offset } } : { event: "seeked", data: { seconds: 90 + offset } });
+    assert.equal(states.includes("seeked"), Number.isFinite(offset) && Math.abs(offset) <= 1, String(offset));
+    player.dispose();
+  }
+});

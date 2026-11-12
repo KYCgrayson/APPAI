@@ -4,7 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
-import { sanitizeContent, sanitizePageContent, type SanitizeWarning } from "@/lib/sanitize";
+import { sanitizePageContent, type SanitizeWarning } from "@/lib/sanitize";
 import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 import { hostedPageApprovalUpdate } from "@/lib/hosted-page-approval";
 
@@ -100,18 +100,16 @@ export async function PATCH(
 
   // Merge + sanitize
   const merged = { ...sections[idx].data, ...patchData };
-  const candidate = { ...content, sections: sections.map((section, i) => i === idx ? { ...section, data: merged } : section) };
-  const videoIssues = normalizeVideoContent(candidate).issues;
-  if (videoIssues.length) return NextResponse.json({ error: "Validation failed", details: videoIssues }, { status: 400 });
+  const candidate = { ...content, sections: sections.map((section, i) => i === idx ? { ...section, data: merged } : {}) };
+  const issues = [...gameContentIssues(candidate), ...normalizeVideoContent(candidate).issues];
+  if (issues.length) return NextResponse.json({ error: "Validation failed", details: issues }, { status: 400 });
   const warnings: SanitizeWarning[] = [];
-  const sanitized = sanitizeContent(merged, undefined, warnings, `sections[${order}].data`) as Record<string, unknown>;
-
-  // Replace section data in-place
-  sections[idx] = { ...sections[idx], data: sanitized };
-
-  const savedContent = sanitizePageContent({ ...content, sections });
-  const gameIssues = [...gameContentIssues(savedContent), ...normalizeVideoContent(savedContent).issues];
-  if (gameIssues.length) return NextResponse.json({ error: "Validation failed", details: gameIssues }, { status: 400 });
+  const savedContent = sanitizePageContent(candidate, undefined, warnings);
+  const sanitizedIssues = [...gameContentIssues(savedContent), ...normalizeVideoContent(savedContent).issues];
+  if (sanitizedIssues.length) return NextResponse.json({ error: "Validation failed", details: sanitizedIssues }, { status: 400 });
+  savedContent.sections = sections.map((section, i) => i === idx ? (savedContent.sections as typeof sections)[i] : section);
+  // Report legacy warnings without revalidating or rewriting untouched sections.
+  warnings.push(...normalizeVideoContent({ sections: sections.map((section, i) => i !== idx ? section : {}) }).warnings);
   if (gameSlugReserved({ ...page, content: savedContent })) return NextResponse.json({ error: "This game slug is reserved; choose a distinct slug." }, { status: 400 });
   warnings.push(...gamePageWarnings({ ...page, content: savedContent }));
 

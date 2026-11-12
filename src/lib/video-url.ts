@@ -4,10 +4,21 @@ export type VideoUrl =
   | { kind: "vimeo"; id: string; hash?: string; url: string }
   | { kind: "file" | "gif"; url: string };
 
-export const VIDEO_URL_HINT = "Use a YouTube watch, Shorts, embed or youtu.be URL with an 11-character ID, a Vimeo numeric video URL, or an HTTPS .mp4, .webm or .gif URL.";
+export const VIDEO_URL_HINT = "Use a YouTube watch, live, Shorts, embed or youtu.be URL with an 11-character ID, a Vimeo numeric video URL, or an HTTPS .mp4, .webm or .gif URL.";
+
+/** The legacy renderer is only available to safe HTTP(S) URLs. */
+export function isSafeLegacyVideoUrl(value: unknown): value is string {
+  if (typeof value !== "string" || /[<>\u0000-\u0020\\]/.test(value)) return false;
+  try {
+    const url = new URL(value);
+    if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || url.port) return false;
+    const provider = /(?:^|\.)(?:youtube\.com|youtube-nocookie\.com|youtu\.be|vimeo\.com)$/;
+    return !/(?:youtube\.com|youtube-nocookie\.com|youtu\.be|vimeo\.com)/i.test(url.hostname) || provider.test(url.hostname);
+  } catch { return false; }
+}
 
 export function parseVideoUrl(value: unknown): VideoUrl | null {
-  if (typeof value !== "string") return null;
+  if (!isSafeLegacyVideoUrl(value)) return null;
   let url: URL;
   try { url = new URL(value); } catch { return null; }
   if (!["https:", "http:"].includes(url.protocol) || url.username || url.password || url.port) return null;
@@ -16,7 +27,7 @@ export function parseVideoUrl(value: unknown): VideoUrl | null {
   let id: string | undefined;
   if (["youtube.com", "www.youtube.com", "m.youtube.com"].includes(host)) {
     if (path === "/watch") id = url.searchParams.get("v") ?? undefined;
-    else id = path.match(/^\/(?:shorts|embed)\/([^/]+)\/?$/)?.[1];
+    else id = path.match(/^\/(?:shorts|embed|live)\/([^/]+)\/?$/)?.[1];
   } else if (host === "youtu.be") id = path.match(/^\/([^/]+)\/?$/)?.[1];
   else if (["youtube-nocookie.com", "www.youtube-nocookie.com"].includes(host)) id = path.match(/^\/embed\/([^/]+)\/?$/)?.[1];
   if (id && /^[A-Za-z0-9_-]{11}$/.test(id)) return { kind: "youtube", id, url: `https://www.youtube.com/watch?v=${id}` };
