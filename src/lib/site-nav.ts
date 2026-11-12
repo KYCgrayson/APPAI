@@ -1,3 +1,4 @@
+import { publicPageWhere, publicRootSelect } from "./hosted-page-visibility";
 import { chineseFallback, chineseSourceLocales } from "./zh-convert";
 import { db } from "@/lib/db";
 import { sanitizeUrl } from "@/lib/sanitize";
@@ -58,11 +59,14 @@ export async function loadSiblings(
   organizationId: string,
   locale: string,
 ): Promise<SiblingRow[]> {
+  const roots = await db.hostedPage.findMany({
+    where: { ...publicPageWhere(), organizationId, slug: parentSlug }, select: publicRootSelect,
+  });
   const rows = await db.hostedPage.findMany({
     where: {
       organizationId,
       parentSlug,
-      isPublished: true,
+      AND: [publicPageWhere(roots)],
       hideFromNav: false,
       OR: [{ locale }, { locale: { in: chineseSourceLocales(locale) } }, { isDefault: true }],
     },

@@ -1,3 +1,4 @@
+import { isPublicChild, publicPageWhere, publicRootSelect } from "@/lib/hosted-page-visibility";
 import { orderedHostedSections } from "@/lib/hosted-content";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -41,10 +42,15 @@ export async function POST(request: NextRequest) {
   const isAdmin = ((session as unknown as { role?: string })?.role ?? "USER") === "ADMIN";
 
   const page = await db.hostedPage.findFirst({
-    where: { id: parsed.data.pageId, isPublished: true },
-    select: { id: true, slug: true, content: true },
+    where: { id: parsed.data.pageId },
+    select: { ...publicRootSelect, id: true, content: true },
   });
   if (!page) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404, headers: noStore });
+
+  const roots = page.parentSlug ? await db.hostedPage.findMany({
+    where: { ...publicPageWhere(), slug: page.parentSlug, organizationId: page.organizationId }, select: publicRootSelect,
+  }) : [];
+  if (!isPublicChild(page, roots)) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404, headers: noStore });
 
   const section = orderedHostedSections(page.content).find(s => s.order === parsed.data.section);
   if (!section || section.type !== "iframe-tool" || !sectionWantsIdentity(section.data)) {

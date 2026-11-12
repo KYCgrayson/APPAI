@@ -1,3 +1,4 @@
+import { publicPageWhere, publicAppFilter, publicRootSelect } from "./hosted-page-visibility";
 import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import { buildSitemapEntries, splitSitemapEntries } from "./sitemap-entries";
@@ -5,13 +6,14 @@ import { buildSitemapEntries, splitSitemapEntries } from "./sitemap-entries";
 // Never cache the full directory: a single Next data-cache entry is limited to 2 MB.
 async function loadSitemapEntries() {
   try {
+    const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: publicRootSelect });
     const [pages, apps] = await Promise.all([
       db.hostedPage.findMany({
-        where: { isPublished: true },
+        where: publicPageWhere(roots),
         select: { slug: true, parentSlug: true, organizationId: true, locale: true, isDefault: true,
           updatedAt: true, privacyPolicy: true, termsOfService: true, canonicalUrl: true },
       }),
-      db.app.findMany({ where: { isApproved: true }, select: { id: true, updatedAt: true, hostedPageSlug: true } }),
+      db.app.findMany({ where: publicAppFilter(roots), select: { id: true, updatedAt: true, hostedPageSlug: true } }),
     ]);
     return buildSitemapEntries(pages, apps);
   } catch (error) {

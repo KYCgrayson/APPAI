@@ -1,3 +1,5 @@
+import { hostedPageBindingIssue } from "@/lib/app-hosted-page-binding";
+import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -47,12 +49,17 @@ export async function PUT(
   try {
     const body = await request.json();
     const data = updateAppSchema.parse(body);
+    const bindingIssue = await hostedPageBindingIssue(db, authResult.organizationId, data.hostedPageSlug);
+    if (bindingIssue) {
+      return NextResponse.json({ error: "Validation failed", details: [bindingIssue] }, { status: 400 });
+    }
 
     const updated = await db.app.update({
       where: { id: app.id },
       data,
     });
 
+    revalidateSeoIndexes();
     return NextResponse.json(updated);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -82,5 +89,6 @@ export async function DELETE(
 
   await db.app.delete({ where: { id: app.id } });
 
+  revalidateSeoIndexes();
   return NextResponse.json({ message: "Deleted" });
 }

@@ -5,6 +5,34 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import ts from 'typescript';
 
 const sourceRoot = fileURLToPath(new URL('../../src/', import.meta.url));
+/** Evaluate the Prisma filters used by public read queries against fictional rows. */
+export function matchesWhere(row, where = {}) {
+  return Object.entries(where).every(([key, value]) => {
+    if (key === 'OR') return value.some(condition => matchesWhere(row, condition));
+    if (key === 'AND') return (Array.isArray(value) ? value : [value]).every(condition => matchesWhere(row, condition));
+    if (key === 'NOT') return !matchesWhere(row, value);
+    if (value && typeof value === 'object') {
+      if ('in' in value) return value.in.includes(row[key]);
+      if ('equals' in value) return row[key] === value.equals;
+    }
+    return row[key] === value;
+  });
+}
+function queryRows(rows, query) {
+  let result = rows.filter(row => matchesWhere(row, query.where));
+  if (query.orderBy) {
+    const orders = Array.isArray(query.orderBy) ? query.orderBy : [query.orderBy];
+    result.sort((a, b) => {
+      for (const order of orders) for (const [key, direction] of Object.entries(order)) {
+        const comparison = a[key] < b[key] ? -1 : a[key] > b[key] ? 1 : 0;
+        if (comparison) return direction === 'desc' ? -comparison : comparison;
+      }
+      return 0;
+    });
+  }
+  if (query.take !== undefined) result = result.slice(0, query.take);
+  return result;
+}
 export const fixtureDb = {
   /** @type {Array<Record<string, unknown>>} */
   rows: [], queries: [],
@@ -15,9 +43,11 @@ export const fixtureDb = {
   organizationQueries: 0,
   locale: "en",
   hostedPath: "",
+  acceptLanguage: "",
   app: {
     async findUnique(query) { return fixtureDb.apps.find(row => row.id === query.where.id) ?? null; },
-    async findMany(query) { return fixtureDb.apps.filter(row => Object.entries(query.where).every(([key, value]) => row[key] === value)); },
+    async findFirst(query) { return queryRows(fixtureDb.apps, query)[0] ?? null; },
+    async findMany(query) { return queryRows(fixtureDb.apps, query); },
   },
   appRelease: { async findMany() { return []; } },
   organization: { async findMany() { fixtureDb.organizationQueries++; return fixtureDb.organizations; } },
@@ -25,14 +55,9 @@ export const fixtureDb = {
     async count(query) { return (await fixtureDb.hostedPage.findMany(query)).length; },
     async findFirst(query) {
       fixtureDb.queries.push(query);
-      const rows = fixtureDb.rows.filter(row => Object.entries(query.where).every(([key, value]) => row[key] === value));
-      if (query.orderBy) rows.sort((a, b) => Number(b.isDefault) - Number(a.isDefault));
-      return rows[0] ?? null;
+      return queryRows(fixtureDb.rows, query)[0] ?? null;
     },
-    async findMany(query) {
-      return fixtureDb.rows.filter(row => Object.entries(query.where).every(([key, value]) =>
-        key === 'OR' ? value.some(condition => Object.entries(condition).every(([k, v]) => v && typeof v === 'object' && 'in' in v ? v.in.includes(row[k]) : row[k] === v)) : value && typeof value === 'object' && 'in' in value ? value.in.includes(row[key]) : row[key] === value));
-    },
+    async findMany(query) { return queryRows(fixtureDb.rows, query); },
   },
 };
 globalThis[Symbol.for('appai.test.db')] = fixtureDb;
@@ -76,7 +101,7 @@ export function registerHostedHeaders() {
     },
     load(url, context, nextLoad) {
       return url === 'fixture:hosted-headers' ? { format: 'module', shortCircuit: true, source: `
-        export async function headers() { return new Headers({ 'x-appai-hosted-path': globalThis[Symbol.for('appai.test.db')].hostedPath }); }
+        export async function headers() { return new Headers({ 'x-appai-hosted-path': globalThis[Symbol.for('appai.test.db')].hostedPath, 'accept-language': globalThis[Symbol.for('appai.test.db')].acceptLanguage }); }
         export async function cookies() { return { get() { return undefined; } }; }
       ` } : nextLoad(url, context);
     },
@@ -104,7 +129,7 @@ export function registerDirectoryFixtures({ translated = false } = {}) {
           const t = (key, values = {}) => {
             const value = lookup(key);
             if (typeof value !== 'string') throw new Error('Missing translation: ' + locale + '/' + namespace + '/' + key);
-            return value.replace(/\{(\w+)\}/g, (match, field) => values[field] ?? match);
+            return value.replace(/\\{(\\w+)\\}/g, (match, field) => values[field] ?? match);
           };
           t.has = key => lookup(key) !== undefined;
           t.rich = createTranslator({ locale, namespace, messages }).rich;

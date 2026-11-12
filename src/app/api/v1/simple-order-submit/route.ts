@@ -1,3 +1,4 @@
+import { publicPageWhere, publicRootSelect } from "@/lib/hosted-page-visibility";
 import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -53,12 +54,15 @@ async function findSimpleOrderSection(
   pageId: string;
   organizationId: string;
 } | null> {
+  const roots = parentSlug ? await db.hostedPage.findMany({
+    where: { ...publicPageWhere(), slug: parentSlug }, select: publicRootSelect,
+  }) : [];
   const page = await db.hostedPage.findFirst({
     where: {
       slug,
       locale,
       parentSlug,
-      isPublished: true,
+      ...publicPageWhere(roots),
     },
     select: { id: true, organizationId: true, content: true },
   });

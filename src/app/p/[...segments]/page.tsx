@@ -1,3 +1,4 @@
+import { publicPageWhere } from "@/lib/hosted-page-visibility";
 import { normalizeHostedContent, contentString } from "@/lib/hosted-content";
 import { serializeJsonLd } from "@/lib/json-ld";
 import { resolvePage, resolveChildPage } from "@/lib/hosted-page-resolver";
@@ -67,7 +68,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Tool fullscreen: minimal metadata, noindex (the parent page is the canonical SEO target).
   if (parsed.toolOrder !== null) {
     const rootPage = await db.hostedPage.findFirst({
-      where: { slug: parsed.slug, isPublished: true, parentSlug: null },
+      where: { slug: parsed.slug, ...publicPageWhere() },
       orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
       select: { title: true, content: true },
     });
@@ -93,10 +94,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { headerLogo: logoUrl } = extractLogos(page);
 
   const roots = await db.hostedPage.findMany({
-    where: { slug, organizationId: rootPage.organizationId, isPublished: true, parentSlug: null },
+    where: { slug, organizationId: rootPage.organizationId, ...publicPageWhere() },
   });
   const variants = childSlug ? await db.hostedPage.findMany({
-    where: { organizationId: rootPage.organizationId, parentSlug: slug, slug: childSlug, isPublished: true },
+    where: { organizationId: rootPage.organizationId, parentSlug: slug, slug: childSlug, ...publicPageWhere(roots) },
   }) : roots;
   const legal = subpage ? hostedLegalCopy(page.locale, subpage, page.title) : null;
   const title = legal?.title || page.metaTitle || page.title;
@@ -154,7 +155,7 @@ export default async function HostedPage({ params }: Props) {
   // Renders just the iframe at viewport size, no site chrome (handled by layout).
   if (toolOrder !== null) {
     const rootPage = await db.hostedPage.findFirst({
-      where: { slug, isPublished: true, parentSlug: null },
+      where: { slug, ...publicPageWhere() },
       orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
     });
     if (!rootPage) notFound();
@@ -247,7 +248,7 @@ export default async function HostedPage({ params }: Props) {
 
       if (preferred.length > 0) {
         const variants = await db.hostedPage.findMany({
-          where: { slug, isPublished: true },
+          where: { slug, ...publicPageWhere() },
           select: { locale: true, isDefault: true },
         });
 
@@ -277,7 +278,7 @@ export default async function HostedPage({ params }: Props) {
 
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
   const roots = [rootPage, ...await db.hostedPage.findMany({
-    where: { slug, organizationId: rootPage.organizationId, isPublished: true, parentSlug: null },
+    where: { slug, organizationId: rootPage.organizationId, ...publicPageWhere() },
   })];
   const rootUrl = hostedPageUrl(rootPage, roots, baseUrl)!;
   const pageUrl = (!subpage && page.canonicalUrl) || hostedPageUrl(page, roots, baseUrl, subpage)

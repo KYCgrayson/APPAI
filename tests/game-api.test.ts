@@ -67,7 +67,7 @@ test("tool renewal uses normalized orders and fallback indices and keeps access 
     [{ type: "about", order: 10, data: {} }, tool],
     [null, "broken", { ...tool, order: "0" }, { type: "about", data: null }],
   ]) {
-    gameApiFixture.page = { id: "fixture-page", slug: "tool", isPublished: true, content: { sections } };
+    gameApiFixture.page = { id: "fixture-page", slug: "tool", parentSlug: null, organizationId: "fixture-org", isPublished: true, content: { sections } };
     gameApiFixture.issued.length = 0;
     assert.equal((await sessionApi.POST(request({ pageId: "fixture-page", section: 0 }))).status, 200);
     assert.equal(gameApiFixture.issued[0].src, tool.data.src);

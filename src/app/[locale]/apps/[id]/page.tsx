@@ -1,3 +1,4 @@
+import { publicPageWhere, publicAppFilter, publicRootSelect } from "@/lib/hosted-page-visibility";
 import { platformUrl, platformAlternates, platformOpenGraphLocale, DEFAULT_SHARE_IMAGE } from "@/lib/platform-seo";
 import { serializeJsonLd } from "@/lib/json-ld";
 import { notFound } from "next/navigation";
@@ -8,6 +9,8 @@ import { pickByLocale } from "@/lib/locale-match";
 import { canLaunchUniversalApp, getUniversalAppLaunchPath } from "@/lib/universal-apps/directory";
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
 interface Props {
   params: Promise<{ id: string; locale: string }>;
 }
@@ -17,10 +20,10 @@ interface Props {
  * published in that language. `App` itself is single-language (TODO.md D2), so
  * the hosted page is the only place per-locale copy exists today.
  */
-async function loadLocalizedCopy(hostedPageSlug: string | null, locale: string) {
+async function loadLocalizedCopy(hostedPageSlug: string | null, organizationId: string, locale: string) {
   if (!hostedPageSlug) return undefined;
   const variants = await db.hostedPage.findMany({
-    where: { slug: hostedPageSlug, isPublished: true },
+    where: { slug: hostedPageSlug, organizationId, ...publicPageWhere() },
     select: { locale: true, isDefault: true, title: true, tagline: true, metaDescription: true },
   });
   return pickByLocale(variants, locale);
@@ -28,10 +31,11 @@ async function loadLocalizedCopy(hostedPageSlug: string | null, locale: string) 
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, locale } = await params;
-  const app = await db.app.findUnique({ where: { id } });
-  if (!app || !app.isApproved) return { robots: { index: false } };
+  const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: publicRootSelect });
+  const app = await db.app.findFirst({ where: { id, ...publicAppFilter(roots) } });
+  if (!app) return { robots: { index: false } };
 
-  const localized = await loadLocalizedCopy(app.hostedPageSlug, locale);
+  const localized = await loadLocalizedCopy(app.hostedPageSlug, app.organizationId, locale);
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
   const title = `${localized?.title || app.name} - AppAI`;
   const description = localized?.metaDescription || localized?.tagline || app.tagline || undefined;
@@ -64,13 +68,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function AppDetailPage({ params }: Props) {
   const { id, locale } = await params;
   const [t, ta] = await Promise.all([getTranslations("appDetail"), getTranslations("apps")]);
-  const app = await db.app.findUnique({ where: { id } });
+  const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: publicRootSelect });
+  const app = await db.app.findFirst({ where: { id, ...publicAppFilter(roots) } });
 
-  if (!app || !app.isApproved) {
+  if (!app) {
     notFound();
   }
 
-  const localized = await loadLocalizedCopy(app.hostedPageSlug, locale);
+  const localized = await loadLocalizedCopy(app.hostedPageSlug, app.organizationId, locale);
   const name = localized?.title || app.name;
   const tagline = localized?.tagline || app.tagline;
   const categoryLabel = ta.has(`categories.${app.category}`)
