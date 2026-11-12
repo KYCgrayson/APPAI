@@ -4,16 +4,16 @@
   max-width: 100%;
   overflow-wrap: anywhere;
   line-height: 1.75;
-  --prose-link: var(--page-theme, #2563eb);
+  --prose-link: var(--page-theme-link-light, #2563eb);
   --prose-rule: color-mix(in srgb, currentColor 30%, transparent);
   --prose-fill: color-mix(in srgb, currentColor 8%, transparent);
 }
-.prose-sm { font-size: 0.875rem; }
-.prose-base { font-size: 1rem; }
-.prose-lg { font-size: 1.125rem; }
+.prose.prose-sm { font-size: 0.875rem; }
+.prose.prose-base { font-size: 1rem; }
+.prose.prose-lg { font-size: 1.125rem; }
 @media (min-width: 48rem) {
-  .md\:prose-base { font-size: 1rem; }
-  .md\:prose-lg { font-size: 1.125rem; }
+  .prose.md\:prose-base { font-size: 1rem; }
+  .prose.md\:prose-lg { font-size: 1.125rem; }
 }
 .prose :where(p, ul, ol, blockquote, pre, table) { margin-block: 1em; }
 .prose :where(h2, h3, h4) {
@@ -79,14 +79,14 @@
 .prose :where(th) { background-color: var(--prose-fill); font-weight: 600; }
 .prose > :where(:first-child) { margin-block-start: 0; }
 .prose > :where(:last-child) { margin-block-end: 0; }
-/* Hosted editorial sections use data-dark; the platform uses .dark. */
+/* Hosted pages use data-dark; the platform uses .dark. */
 :where(.dark, [data-dark="true"]) .prose,
 .prose:where(.dark, [data-dark="true"]) {
-  --prose-link: var(--page-theme, #93c5fd);
+  --prose-link: var(--page-theme-link-dark, #93c5fd);
 }
-/* Existing typography-plugin variants have no generator in this project.
-   Keep the blue variant as the theme-aware default and honor explicit white overrides. */
+:where(.dark, [data-dark="true"]) .prose :where(h2, h3, h4),
+.prose:where(.dark, [data-dark="true"]) :where(h2, h3, h4) { color: #f3f4f6; }
+/* Explicit CTA overrides remain white on the section's brand background. */
 .prose.prose-a\:text-white :where(a),
 .prose.prose-headings\:text-white :where(h2, h3, h4),
 .prose.prose-strong\:text-white :where(strong) { color: #fff; }
-.prose.prose-headings\:text-gray-200 :where(h2, h3, h4) { color: #e5e7eb; }

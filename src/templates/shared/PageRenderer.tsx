@@ -35,6 +35,7 @@ import { Suspense } from "react";
 import { SectionErrorBoundary } from "./SectionErrorBoundary";
 import { normalizeHostedContent, orderedHostedSections } from "@/lib/hosted-content";
 import { usesEditorialScreenshots } from "@/lib/screenshot-layout";
+import { proseThemeVariables } from "@/lib/prose-theme";
 import { LoginGate } from "./LoginGate";
 import { issueIframeToolSession } from "@/lib/iframe-tool-session";
 import { decideSectionAccess, sectionWantsIdentity } from "@/lib/iframe-tool-session-contract";
@@ -370,6 +371,7 @@ export function PageRenderer({
   const typographyVars = scale ? Object.fromEntries(ROLES.map(role => [`--ts-${role}`, scale.desktop[role]])) : {};
   const wrapperStyle: React.CSSProperties = {
     ...typographyVars,
+    ...proseThemeVariables(page.themeColor),
     ...(fontFamily ? { fontFamily: `"${fontFamily}", sans-serif` } : {}),
     ...(darkMode ? { backgroundColor: "#111827", color: "#f9fafb" } : {}),
   };

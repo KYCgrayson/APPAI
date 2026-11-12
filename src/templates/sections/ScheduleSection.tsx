@@ -12,9 +12,10 @@ interface Props {
     }>;
   };
   themeColor: string;
+  darkMode?: boolean;
 }
 
-export function ScheduleSection({ data, themeColor, typographyActive = false }: Props & { typographyActive?: boolean }) {
+export function ScheduleSection({ data, themeColor, darkMode, typographyActive = false }: Props & { typographyActive?: boolean }) {
   const items = data.items || [];
   if (items.length === 0) return null;
 
@@ -47,7 +48,7 @@ export function ScheduleSection({ data, themeColor, typographyActive = false }: 
                   <p data-typography-role={typographyActive ? "caption" : undefined} className="text-sm text-gray-400 mt-1">{item.speaker}</p>
                 )}
                 {item.description && (
-                  <Prose typographyRole={typographyActive ? "body" : undefined} className="prose prose-sm md:prose-base max-w-none text-gray-600 mt-2 prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{item.description}</Prose>
+                  <Prose typographyRole={typographyActive ? "body" : undefined} className={`prose prose-sm md:prose-base max-w-none mt-2 ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{item.description}</Prose>
                 )}
               </div>
             ))}

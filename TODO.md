@@ -4,6 +4,7 @@
 
 - [x] Add scoped `.prose` Markdown CSS without the typography plugin (headings, lists, links, tables, blockquote, code); expose hosted darkMode through data-dark. Editorial renderers unchanged.
 - [x] Typecheck passes. Local `npm run build` compiles; prerender of /llms.txt needs DATABASE_URL (not available locally).
+- [x] Review fixes (#91): sanitise theme CSS variables, preserve AA link contrast, correct dark Markdown colours, and remove dead prose variants; typecheck, lint and tests pass.
 - [ ] Verify on a Vercel preview / production after merge.
 
 ## Game fixes (#78)

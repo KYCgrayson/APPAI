@@ -127,7 +127,7 @@ export function PricingSection({ data, themeColor, darkMode, typographyActive = 
                 {item.price}
               </p>
               {item.description && (
-                <Prose typographyRole={typographyActive ? "card" : undefined} className="prose prose-sm max-w-none text-gray-500 mb-6 prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{item.description}</Prose>
+                <Prose typographyRole={typographyActive ? "card" : undefined} className={`prose prose-sm max-w-none mb-6 ${darkMode ? "text-gray-300" : "text-gray-500"}`}>{item.description}</Prose>
               )}
               <ul className="space-y-3 mb-8">
                 {(item.features || []).map((feature, j) => (
