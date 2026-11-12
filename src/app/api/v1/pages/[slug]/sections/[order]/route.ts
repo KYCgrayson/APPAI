@@ -1,11 +1,10 @@
+import { withPageWrite, type PageApiActor } from "@/lib/page-write-guard";
+import type { PageStore } from "@/lib/page-management";
 import { normalizeVideoContent } from "@/lib/video-data";
 import { gameContentIssues, gameSlugReserved, gamesListingResponse, gamePageWarnings } from "@/lib/game-section";
 import type { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { validateApiKey } from "@/lib/api-auth";
 import { sanitizePageContent, type SanitizeWarning } from "@/lib/sanitize";
-import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 import { hostedPageApprovalUpdate } from "@/lib/hosted-page-approval";
 
 /**
@@ -15,17 +14,12 @@ import { hostedPageApprovalUpdate } from "@/lib/hosted-page-approval";
  * into the existing section data. Uses If-Match for optional optimistic
  * locking against `updatedAt`.
  */
-export async function PATCH(
+async function patchPage(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string; order: string }> }
+  { params }: { params: Promise<{ slug: string; order: string }> },
+  db: PageStore,
+  authResult: PageApiActor,
 ) {
-  const authResult = await validateApiKey(request.headers.get("authorization"));
-  if (!authResult) {
-    return NextResponse.json(
-      { error: "Unauthorized. Provide a valid API key in the Authorization header: Bearer appai_sk_..." },
-      { status: 401 },
-    );
-  }
 
   const { slug, order: orderStr } = await params;
   const order = parseInt(orderStr, 10);
@@ -114,7 +108,7 @@ export async function PATCH(
   warnings.push(...gamePageWarnings({ ...page, content: savedContent }));
 
   const updated = await db.hostedPage.update({
-    where: { id: page.id },
+    where: { id: page.id, removalState: null },
     data: { content: savedContent as Prisma.InputJsonValue },
   });
 
@@ -125,11 +119,14 @@ export async function PATCH(
     });
   }
 
-  revalidateSeoIndexes(updated.slug);
   return NextResponse.json({
     section: (savedContent.sections as typeof sections)[idx],
     ...gamesListingResponse(updated.content),
     etag: `"${updated.updatedAt.toISOString()}"`,
     ...(warnings.length > 0 ? { warnings } : {}),
   });
+}
+
+export async function PATCH(request: NextRequest, context: { params: Promise<{ slug: string; order: string }> }) {
+  return withPageWrite(request, (await context.params).slug, (tx, actor) => patchPage(request, context, tx, actor));
 }

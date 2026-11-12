@@ -1,101 +1,56 @@
+import { PageActions } from "@/app/dashboard/pages/actions";
+import { db } from "@/lib/db";
+import { pagePresentation, type PageSummary } from "@/lib/dashboard-pages";
+import { logicalKey } from "@/lib/page-management";
+import { AdminPageActions } from "./actions";
 export const dynamic = "force-dynamic";
 
-import { db } from "@/lib/db";
-import { AdminPageActions } from "./actions";
-
-export default async function AdminPagesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ filter?: string }>;
-}) {
+export default async function AdminPagesPage({ searchParams }: { searchParams: Promise<{ filter?: string }> }) {
   const { filter } = await searchParams;
-
-  const where = filter === "published"
-    ? { isPublished: true }
-    : filter === "draft"
-    ? { isPublished: false }
-    : {};
-
-  const pages = await db.hostedPage.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    include: { organization: { select: { name: true, email: true } } },
+  const rows = await db.hostedPage.findMany({
+    orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+    select: { id: true, organizationId: true, parentSlug: true, slug: true, title: true, template: true,
+      locale: true, isDefault: true, isPublished: true, createdAt: true, removalState: true,
+      removalSource: true, removedAt: true, removedById: true, organization: { select: { name: true } } },
   });
-
-  const filters = [
-    { label: "All", value: "" },
-    { label: "Published", value: "published" },
-    { label: "Draft", value: "draft" },
-  ];
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Manage Pages</h1>
-        <span className="text-sm text-gray-500">{pages.length} pages</span>
-      </div>
-
-      <div className="flex gap-2 mb-6">
-        {filters.map((f) => (
-          <a
-            key={f.value}
-            href={f.value ? `/admin/pages?filter=${f.value}` : "/admin/pages"}
-            className={`px-3 py-1 rounded-full text-sm transition-colors ${
-              (filter || "") === f.value
-                ? "bg-black text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            {f.label}
-          </a>
-        ))}
-      </div>
-
-      {pages.length === 0 ? (
-        <div className="bg-white rounded-xl p-12 shadow-sm text-center">
-          <p className="text-gray-500">No pages found.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {pages.map((page) => (
-            <div key={page.id} className="bg-white rounded-xl p-5 shadow-sm">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold">{page.title}</span>
-                    <span className="text-xs text-gray-400">{page.template}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      page.isPublished
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}>
-                      {page.isPublished ? "Published" : "Draft"}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 truncate mt-1">{page.tagline}</p>
-                  <div className="text-xs text-gray-400 mt-1">
-                    by {page.organization.name}
-                    {" · "}
-                    <a href={`/p/${page.slug}`} target="_blank" className="text-blue-500 hover:underline">/p/{page.slug}</a>
-                    {" · "}{new Date(page.createdAt).toLocaleDateString()}
-                    {page.themeColor && (
-                      <span className="inline-flex items-center gap-1 ml-2">
-                        <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: page.themeColor }} />
-                        {page.themeColor}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <AdminPageActions
-                  pageId={page.id}
-                  slug={page.slug}
-                  isPublished={page.isPublished}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  const summaries = rows.map(row => ({ ...row, hasPrivacy: false, hasTerms: false }));
+  const roots = summaries.filter(row => !row.parentSlug);
+  const groups = new Map<string, typeof summaries>();
+  for (const row of summaries) groups.set(logicalKey(row), [...(groups.get(logicalKey(row)) || []), row]);
+  const pages = [...groups.values()].filter(variants => !filter || variants.some(row => {
+    const status = pagePresentation(row, roots).status;
+    return filter === "published" ? status === "Published" : filter === "hidden" ? status.startsWith("Hidden")
+      : filter === "draft" ? status === "Draft" : filter === "trash" ? status === "In Trash" : status.startsWith("Unpublished");
+  }));
+  const userIds = [...new Set(rows.flatMap(row => row.removedById ? [row.removedById] : []))];
+  const [users, events] = await Promise.all([
+    userIds.length ? db.user.findMany({ where: { id: { in: userIds } }, select: { id: true, name: true } }) : [],
+    rows.length ? db.hostedPageEvent.findMany({ where: { pageId: { in: rows.map(row => row.id) }, action: "agent_blocked" },
+      distinct: ["pageId"], orderBy: { createdAt: "desc" }, select: { pageId: true, createdAt: true } }) : [],
+  ]);
+  const filters = [["All", ""], ["Published", "published"], ["Hidden", "hidden"], ["Draft", "draft"], ["Unpublished", "unpublished"], ["Trash", "trash"]];
+  return <div>
+    <h1 className="mb-4 text-2xl font-bold">Manage Pages <span className="text-sm font-normal text-gray-500">{pages.length} logical pages</span></h1>
+    <nav className="mb-6 flex flex-wrap gap-3" aria-label="Page status">{filters.map(([label, value]) =>
+      <a key={value} href={value ? `/admin/pages?filter=${value}` : "/admin/pages"} className={`rounded-full px-3 py-1 text-sm ${filter === value ? "bg-black text-white" : "bg-gray-100"}`}>{label}</a>)}</nav>
+    <PageActions endpoint="/api/admin/pages"><div className="space-y-3">
+      {pages.map(variants => {
+        const page = variants[0];
+        const blocked = events.filter(event => variants.some(row => row.id === event.pageId)).sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+        return <article key={logicalKey(page)} className="rounded-xl bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-center gap-3"><input type="checkbox" name="targets" value={page.id} aria-label={`Select ${page.title}`} />
+            <h2 className="font-semibold">{page.title}</h2><span className="text-sm text-gray-500">{page.organization.name} · {page.parentSlug ? `${page.parentSlug} / ` : ""}{page.slug}</span>
+            <AdminPageActions pageId={page.id} slug={page.slug} isPublished={page.isPublished} /></div>
+          <ul className="mt-3 flex flex-wrap gap-3">{variants.map(row => {
+            const presentation = pagePresentation(row as PageSummary, roots);
+            return <li key={row.id} className="rounded border p-2 text-xs">{row.locale}{row.isDefault ? " · default" : ""} · {presentation.status}
+              {presentation.view && <a className="ml-2 text-blue-600" href={presentation.view} target="_blank" rel="noopener noreferrer">View</a>}</li>;
+          })}</ul>
+          {page.removedAt && <p className="mt-2 text-sm">Removed by {page.removalSource === "ADMIN" ? "Admin" : users.find(user => user.id === page.removedById)?.name || "owner"} on {page.removedAt.toISOString().slice(0,10)}</p>}
+          {blocked && <p className="text-sm">Agent tried to republish · last {blocked.createdAt.toISOString()}</p>}
+        </article>;
+      })}
+      {pages.length === 0 && <p>No matching pages.</p>}
+    </div></PageActions>
+  </div>;
 }

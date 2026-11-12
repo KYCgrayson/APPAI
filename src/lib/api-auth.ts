@@ -32,6 +32,7 @@ export async function validateApiKey(authHeader: string | null, options: { readO
   });
 
   return {
+    apiKeyId: apiKey.id,
     organizationId: apiKey.organizationId,
     organization: apiKey.organization,
   };

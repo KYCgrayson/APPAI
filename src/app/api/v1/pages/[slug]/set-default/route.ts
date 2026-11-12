@@ -1,15 +1,17 @@
+import { withPageWrite, type PageApiActor } from "@/lib/page-write-guard";
+import type { PageStore } from "@/lib/page-management";
+import { toPageDto } from "@/lib/page-dto";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { validateApiKey } from "@/lib/api-auth";
-import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 import { hostedPageApprovalUpdate } from "@/lib/hosted-page-approval";
 
 // POST /api/v1/pages/:slug/set-default?locale=ja
 // Sets the specified locale as the default for this slug.
 // The default locale is shown at /p/:slug (without locale suffix).
-export async function POST(
+async function postPage(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ slug: string }> },
+  db: PageStore,
+  authResult: PageApiActor,
 ) {
   const { slug } = await params;
   const locale = request.nextUrl.searchParams.get("locale");
@@ -20,10 +22,6 @@ export async function POST(
     );
   }
 
-  const authResult = await validateApiKey(request.headers.get("authorization"));
-  if (!authResult) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   // Verify the target locale exists
   const page = await db.hostedPage.findFirst({
@@ -38,17 +36,17 @@ export async function POST(
 
   // Unset all existing defaults for this slug, then set the new one
   await db.hostedPage.updateMany({
-    where: { slug, organizationId: authResult.organizationId },
+    where: { slug, organizationId: authResult.organizationId, parentSlug: page.parentSlug, removalState: null },
     data: { isDefault: false },
   });
 
   const updated = await db.hostedPage.update({
-    where: { id: page.id },
+    where: { id: page.id, removalState: null },
     data: { isDefault: true },
   });
 
   // Update the App listing from the new default
-  const app = await db.app.findUnique({ where: { hostedPageSlug: slug } });
+  const app = await db.app.findFirst({ where: { hostedPageSlug: slug, organizationId: authResult.organizationId } });
   if (app) {
     await db.app.update({
       where: { id: app.id },
@@ -60,9 +58,12 @@ export async function POST(
     });
   }
 
-  revalidateSeoIndexes(slug);
   return NextResponse.json({
     message: `Locale "${locale}" is now the default for "${slug}"`,
-    page: updated,
+    page: toPageDto(updated),
   });
+}
+
+export async function POST(request: NextRequest, context: { params: Promise<{ slug: string }> }) {
+  return withPageWrite(request, (await context.params).slug, (tx, actor) => postPage(request, context, tx, actor));
 }

@@ -1,3 +1,5 @@
+import { withPageWrite, type PageApiActor } from "@/lib/page-write-guard";
+import type { PageStore } from "@/lib/page-management";
 import { hostedPageBindingIssue } from "@/lib/app-hosted-page-binding";
 import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 import { z } from "zod";
@@ -29,15 +31,13 @@ export async function GET(
 }
 
 // PUT /api/v1/apps/:id
-export async function PUT(
+async function putApp(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
+  db: PageStore,
+  authResult: PageApiActor,
 ) {
   const { id } = await params;
-  const authResult = await validateApiKey(request.headers.get("authorization"));
-  if (!authResult) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   const app = await db.app.findFirst({
     where: { id, organizationId: authResult.organizationId },
@@ -59,7 +59,6 @@ export async function PUT(
       data,
     });
 
-    revalidateSeoIndexes();
     return NextResponse.json(updated);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -91,4 +90,8 @@ export async function DELETE(
 
   revalidateSeoIndexes();
   return NextResponse.json({ message: "Deleted" });
+}
+
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  return withPageWrite(request, null, (tx, actor) => putApp(request, context, tx, actor), { appId: (await context.params).id });
 }

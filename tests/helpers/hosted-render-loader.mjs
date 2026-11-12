@@ -14,8 +14,9 @@ export function matchesWhere(row, where = {}) {
     if (value && typeof value === 'object') {
       if ('in' in value) return value.in.includes(row[key]);
       if ('equals' in value) return row[key] === value.equals;
+      if ('not' in value) return (row[key] ?? null) !== value.not;
     }
-    return row[key] === value;
+    return (row[key] ?? null) === value;
   });
 }
 function queryRows(rows, query) {
@@ -44,6 +45,8 @@ export const fixtureDb = {
   locale: "en",
   hostedPath: "",
   acceptLanguage: "",
+  async $transaction(fn) { return fn(fixtureDb); },
+  async $queryRaw() { return []; },
   app: {
     async findUnique(query) { return fixtureDb.apps.find(row => row.id === query.where.id) ?? null; },
     async findFirst(query) { return queryRows(fixtureDb.apps, query)[0] ?? null; },
@@ -78,6 +81,8 @@ export function registerSitemapFixtures() {
       if (url !== 'fixture:sitemap-cache') return nextLoad(url, context);
       return { format: 'module', shortCircuit: true, source: `
         const { entries, writes } = globalThis[Symbol.for('appai.test.sitemap-cache')];
+        export function revalidateTag() { entries.clear(); }
+        export function revalidatePath() {}
         export function unstable_cache(fn, keys, options) {
           return async (...args) => {
             const key = JSON.stringify([keys, args]);

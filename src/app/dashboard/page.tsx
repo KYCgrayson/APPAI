@@ -17,7 +17,7 @@ export default async function DashboardPage() {
 
   const [org, rootPages, appCount, keyCount] = await Promise.all([
     db.organization.findUnique({ where: { id: orgId } }),
-    db.hostedPage.groupBy({ by: ["slug"], where: { organizationId: orgId, parentSlug: null } }),
+    db.hostedPage.groupBy({ by: ["slug"], where: { organizationId: orgId, parentSlug: null, OR: [{ removalState: null }, { removalState: { not: "DELETED" } }] } }),
     db.app.count({ where: { organizationId: orgId } }),
     db.apiKey.count({ where: { organizationId: orgId, isActive: true } }),
   ]);

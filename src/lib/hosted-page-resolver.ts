@@ -31,6 +31,8 @@ export const resolveChildPage = cache(async function resolveChildPage(
   explicitLocale: string | null,
   organizationId: string,
 ) {
+  const root = await resolvePage(parentSlug, explicitLocale);
+  if (!root || root.organizationId !== organizationId) return null;
   const roots = await db.hostedPage.findMany({
     where: { ...publicPageWhere(), slug: parentSlug, organizationId }, select: publicRootSelect,
   });

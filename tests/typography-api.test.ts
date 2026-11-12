@@ -13,7 +13,7 @@ const db = fixtureDb as unknown as Record<string, unknown>;
 db.hostedPage = {
   async findUnique() { return state.page; },
   async findFirst(query: { where: Record<string, unknown> }) {
-    if (query.where.template) return null;
+    if (query.where.template || query.where.removalState) return null;
     return state.page;
   },
   async findMany() { return []; },

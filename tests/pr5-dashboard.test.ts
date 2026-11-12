@@ -1,3 +1,4 @@
+import { localeEdge, removedPage } from "./fixtures/pr5-removal.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { loadDashboardPages, pageFilters, pagePresentation, dashboardPagesHref } from "../src/lib/dashboard-pages.ts";
@@ -76,7 +77,7 @@ test("P4: published, draft, hidden and mixed locales; only reachable URLs, root-
     const result = await load(store, { created: "all" });
     const expected: Record<string, [string, string | null]> = {
       "labels-en": ["Published", "/p/labels"], "labels-ja": ["Draft", null],
-      "child-en": ["Published", null], "default-child-en": ["Published", "/p/labels/default-child"],
+      "child-en": ["Hidden — root not public", null], "default-child-en": ["Published", "/p/labels/default-child"],
       "hidden-root-en": ["Draft", null], "hidden-en": ["Hidden — root not public", null],
     };
     for (const row of result.groups.flatMap(g => g.pages.flatMap(p => p.variants))) {
@@ -86,7 +87,19 @@ test("P4: published, draft, hidden and mixed locales; only reachable URLs, root-
       assert.equal(!!output.privacy, row.id === "labels-en");
       assert.equal(!!output.terms, row.id === "labels-en");
     }
-    assert.equal((await load(store, { status: "unpublished" })).groups.flatMap(g => g.pages).length, 1);
-    assert.equal((await load(store, { status: "published" })).groups.flatMap(g => g.pages).length, 4);
+    assert.equal((await load(store, { status: "draft" })).groups.flatMap(g => g.pages).length, 2);
+    assert.equal((await load(store, { status: "published" })).groups.flatMap(g => g.pages).length, 2);
   } finally { store.close(); }
+});
+
+
+test("PR-5b status filters count public, hidden, draft, owner-unpublished and Trash logical pages", async () => {
+  const rows=[...localeEdge,removedPage("unpublished"),removedPage("trash","DELETED")];
+  const store=storeFor(rows);
+  try {
+    for(const [status,slugs] of [["published",["locale-root","locale-child"]],["hidden",["locale-child"]],["draft",["locale-root"]],["unpublished",["unpublished"]],["trash",["trash"]]] as const) {
+      const result=await load(store,{created:"all",status});
+      assert.deepEqual(result.groups.flatMap(g=>g.pages.map(p=>p.slug)).sort(),[...slugs].sort(),status);
+    }
+  } finally {store.close();}
 });

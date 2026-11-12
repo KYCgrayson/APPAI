@@ -74,10 +74,11 @@ test('bundled logo is a small 512 square PNG; alias delegates before publishing'
   assert.ok(png.length < 20000);
   const route = readFileSync(new URL('../src/app/api/v1/pages/route.ts', import.meta.url), 'utf8');
   assert.ok(route.includes("if (dryRun) return previewPage(request)"));
-  assert.ok(route.indexOf('return previewPage(request)') < route.indexOf('await validateApiKey'));
+  const post = route.slice(route.indexOf('export async function POST'));
+  assert.ok(post.indexOf('return previewPage(request)') < post.indexOf('return withPageWrite'));
 });
 
-test('dry-run authentication skips all writes, including last-used metadata', () => {
+test('dry-run authentication skips last-used metadata and direct content writes', () => {
   const route = readFileSync(new URL('../src/app/api/v1/pages/preview/route.ts', import.meta.url), 'utf8');
   assert.match(route, /validateApiKey\(request.headers.get\("authorization"\), \{ readOnly: true \}\)/);
   assert.doesNotMatch(route, /db\.\w+\.(create|update|delete|upsert)/);

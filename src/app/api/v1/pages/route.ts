@@ -1,3 +1,6 @@
+import { withPageWrite, type PageApiActor } from "@/lib/page-write-guard";
+import type { PageStore } from "@/lib/page-management";
+import { toPageDto } from "@/lib/page-dto";
 import { normalizeVideoContent } from "@/lib/video-data";
 import { gameContentIssues, gamesListingResponse, gamePageWarnings } from "@/lib/game-section";
 import { storeTypography, typographyWarnings } from "@/lib/typography";
@@ -14,7 +17,6 @@ import { sanitizePageContent, type SanitizeWarning } from "@/lib/sanitize";
 import { hostedPageApprovalUpdate } from "@/lib/hosted-page-approval";
 import { pageParentConflict } from "@/lib/page-parent-conflict";
 import { slugOwnershipDecision } from "@/lib/slug-ownership";
-import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 
 function mapTemplateToCategory(template: string): string {
   const map: Record<string, string> = {
@@ -30,15 +32,7 @@ function mapTemplateToCategory(template: string): string {
 }
 
 // POST /api/v1/pages - Create a new hosted page
-export async function POST(request: NextRequest) {
-  const dryRun = parseDryRun(request.nextUrl.searchParams.get("dryRun"));
-  if (dryRun === "invalid") return NextResponse.json({ error: "Invalid dryRun value", hint: "Use dryRun=true/1/yes to preview, or false/0/no to publish." }, { status: 400 });
-  if (dryRun) return previewPage(request);
-  const authResult = await validateApiKey(request.headers.get("authorization"));
-  if (!authResult) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+async function postPage(request: NextRequest, db: PageStore, authResult: PageApiActor) {
   try {
     const body = await request.json();
     const identity = pageIdentitySchema.parse(body);
@@ -143,7 +137,7 @@ export async function POST(request: NextRequest) {
       });
 
       const updated = await db.hostedPage.update({
-        where: { id: existing.id },
+        where: { id: existing.id, removalState: null },
         data: {
           ...pageData,
           content: pageData.content as Prisma.InputJsonObject,
@@ -172,9 +166,9 @@ export async function POST(request: NextRequest) {
       }
 
       upsertWarnings.push(...pageLogoWarnings(updated), ...typographyWarnings(updated), ...gamePageWarnings(updated));
-      revalidateSeoIndexes(updated.slug);
+
       return NextResponse.json(
-        { ...updated, ...gamesListingResponse(updated.content), ...(upsertWarnings.length > 0 ? { warnings: upsertWarnings } : {}) },
+        { ...toPageDto(updated), ...gamesListingResponse(updated.content), ...(upsertWarnings.length > 0 ? { warnings: upsertWarnings } : {}) },
         { status: 200 },
       );
     }
@@ -191,7 +185,7 @@ export async function POST(request: NextRequest) {
       // slug and child pages of an existing root are free.
       const rootSlugs = await db.hostedPage.groupBy({
         by: ["slug"],
-        where: { organizationId: authResult.organizationId, parentSlug: null },
+        where: { organizationId: authResult.organizationId, parentSlug: null, OR: [{ removalState: null }, { removalState: { not: "DELETED" } }] },
       });
       if (authResult.organization.plan === "FREE" && rootSlugs.length >= 3 && !parentSlug) {
         const existingSlugs = rootSlugs.map((g) => g.slug);
@@ -276,9 +270,9 @@ export async function POST(request: NextRequest) {
     }
 
     contentWarnings.push(...pageLogoWarnings(page), ...typographyWarnings(page), ...gamePageWarnings(page));
-    revalidateSeoIndexes(page.slug);
+
     return NextResponse.json(
-      { ...page, ...gamesListingResponse(page.content), ...(contentWarnings.length > 0 ? { warnings: contentWarnings } : {}) },
+      { ...toPageDto(page), ...gamesListingResponse(page.content), ...(contentWarnings.length > 0 ? { warnings: contentWarnings } : {}) },
       { status: 201 },
     );
   } catch (error: unknown) {
@@ -307,5 +301,12 @@ export async function GET(request: NextRequest) {
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json(pages.map(page => ({ ...page, ...gamesListingResponse(page.content) })));
+  return NextResponse.json(pages.map(page => ({ ...toPageDto(page), ...gamesListingResponse(page.content) })));
+}
+
+export async function POST(request: NextRequest) {
+  const dryRun = parseDryRun(request.nextUrl.searchParams.get("dryRun"));
+  if (dryRun === "invalid") return NextResponse.json({ error: "Invalid dryRun value", hint: "Use dryRun=true/1/yes to preview, or false/0/no to publish." }, { status: 400 });
+  if (dryRun) return previewPage(request);
+  return withPageWrite(request, null, (tx, actor) => postPage(request, tx, actor));
 }

@@ -1,3 +1,4 @@
+import { chineseSourceLocales } from "./zh-convert.ts";
 import type { Prisma } from "@prisma/client";
 
 export interface VisibilityPage {
@@ -5,17 +6,20 @@ export interface VisibilityPage {
   slug: string;
   parentSlug: string | null;
   isPublished: boolean;
+  locale: string;
+  isDefault: boolean;
 }
 
 export const publicRootSelect = {
-  organizationId: true, slug: true, parentSlug: true, isPublished: true,
+  organizationId: true, slug: true, parentSlug: true, isPublished: true, locale: true, isDefault: true,
 } as const;
 
-/** Root publication is independent of locale: any published root row suffices. */
+/** A default child uses the locale-free root; explicit children need a resolvable root locale. */
 export function isPublicChild(page: VisibilityPage, roots: readonly VisibilityPage[]): boolean {
   return page.isPublished && (page.parentSlug === null || roots.some(root => root.isPublished
     && root.parentSlug === null && root.slug === page.parentSlug
-    && root.organizationId === page.organizationId));
+    && root.organizationId === page.organizationId
+    && (page.isDefault || root.locale === page.locale || chineseSourceLocales(page.locale).includes(root.locale))));
 }
 
 function rootGroups(roots: readonly VisibilityPage[]) {
@@ -33,8 +37,9 @@ export function publicPageWhere(roots?: readonly VisibilityPage[]): Prisma.Hoste
   if (!roots) return { isPublished: true, parentSlug: null };
   return {
     isPublished: true,
-    OR: [{ parentSlug: null }, ...rootGroups(roots).map(({ organizationId, slugs }) => ({
-      organizationId, parentSlug: { in: slugs },
+    OR: [{ parentSlug: null }, ...roots.filter(root => root.isPublished && root.parentSlug === null).map(root => ({
+      organizationId: root.organizationId, parentSlug: root.slug,
+      OR: [{ isDefault: true }, { locale: { in: [root.locale, ...["zh-TW", "zh-CN", "zh-HK", "zh-Hant", "zh-SG", "zh-Hans"].filter(locale => chineseSourceLocales(locale).includes(root.locale))] } }],
     }))],
   };
 }

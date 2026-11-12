@@ -1,18 +1,16 @@
+import { withPageWrite, type PageApiActor } from "@/lib/page-write-guard";
+import type { PageStore } from "@/lib/page-management";
+import { toPageDto } from "@/lib/page-dto";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { validateApiKey } from "@/lib/api-auth";
-import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 
-export async function POST(
+async function postPage(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ slug: string }> },
+  db: PageStore,
+  authResult: PageApiActor,
 ) {
   const { slug } = await params;
   const locale = request.nextUrl.searchParams.get("locale") || "en";
-  const authResult = await validateApiKey(request.headers.get("authorization"));
-  if (!authResult) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   const page = await db.hostedPage.findFirst({
     where: { slug, locale, organizationId: authResult.organizationId },
@@ -22,10 +20,13 @@ export async function POST(
   }
 
   const updated = await db.hostedPage.update({
-    where: { id: page.id },
+    where: { id: page.id, removalState: null },
     data: { isPublished: false },
   });
 
-  revalidateSeoIndexes(updated.slug);
-  return NextResponse.json(updated);
+  return NextResponse.json(toPageDto(updated));
+}
+
+export async function POST(request: NextRequest, context: { params: Promise<{ slug: string }> }) {
+  return withPageWrite(request, (await context.params).slug, (tx, actor) => postPage(request, context, tx, actor), { unpublish: true });
 }

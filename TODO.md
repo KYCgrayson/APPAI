@@ -1,5 +1,15 @@
 # TODO — AppAI Project Roadmap
 
+## Hosted page removal (#91, PR-5b — 2026-11-13)
+
+- [x] Nullable removal contract, validated DB CHECK, append-only event snapshots, idempotent M1 SQL, guarded abandonment down SQL and read-only drift verifier. SQL is prepared only; no real database used.
+- [x] Shared owner/admin transition service, all-locale/batch scope, sorted tree locks, conditional writes, API-key audit, all nine API write guards plus locale/child/App guards, preview errors and allowlist DTOs.
+- [x] English dashboard/admin selection and confirmations, Trash, removal/blocked-agent details, correct Published/Hidden/Draft/removal filters, and deleted-root quota accounting.
+- [x] Fix the PR-5a locale-root visibility edge across S1/S7/S8 and dashboard labels; scope set-default App sync to the caller's organization. Update docs and the publisher's removal preflight/skip/card behavior.
+- [x] Automated P1/P5–P15 fixtures, schema drift checks, real client confirmation logic and public origin invalidation checks. Optional P8/P16 PostgreSQL tests and P11 Playwright tests are supplied.
+- [x] Final local validation: TypeScript, lint (0 errors), 656 passing tests (3 DB checks and 1 Playwright check skipped), spec generation and feature map (temporary index including new files). Webpack production build passes with the existing local fallback; default Turbopack build is blocked by sandbox port binding.
+- [ ] Owner validation: apply M1 twice and verify on an isolated database, run `TEST_DATABASE_URL` tests, then validate a migrated Vercel preview and authenticated browser flow. Apply/verify production M1 before merging. No SQL was applied here.
+
 ## Hosted page dashboard (#91, PR-5a — 2026-11-12)
 
 - [x] Group locale rows into logical pages under their roots; UTC Created/search/status URL filters, 100-page cursor pagination, locale/default/status chips, and reachable View/Privacy/Terms links.
