@@ -1,3 +1,4 @@
+import { normalizeVideoContent } from "../video-data.ts";
 import { gameContentIssues, gameSlugReserved } from "../game-section.ts";
 import { isBusinessHours } from "../business-hours.ts";
 import { z } from "zod";
@@ -24,7 +25,8 @@ const typographyFields = {
   textContrast: z.enum(["low", "normal", "high"]).optional(),
   typography: z.object({ caption: textStep.optional(), card: textStep.optional(), body: textStep.optional(), heading: textStep.optional(), display: textStep.optional() }).strict().optional(),
 };
-const makeContentSchema = (partial = false) => z.object(typographyFields).catchall(z.any()).superRefine((content, ctx) => {
+const makeContentSchema = (partial = false, existingContent?: unknown) => z.object(typographyFields).catchall(z.any()).superRefine((content, ctx) => {
+  for (const issue of normalizeVideoContent(content, partial, existingContent).issues) ctx.addIssue({ ...issue });
   for (const issue of gameContentIssues(content, partial)) ctx.addIssue(issue);
   if (!Array.isArray(content.sections)) return;
   content.sections.forEach((section, index) => {
@@ -38,7 +40,7 @@ const makeContentSchema = (partial = false) => z.object(typographyFields).catcha
     if (!Array.isArray(section.data.hours) || !section.data.hours.every(isBusinessHours))
       ctx.addIssue({ code: "custom", path: ["sections", index, "data", "hours"], message: "hours must be an array of {days: nonempty mon–sun array, open: HH:MM, close: HH:MM, note?: string (max 200 characters); open and close must differ}" });
   });
-});
+}); // Normalize when saving/previewing, so warnings retain their original input paths.
 
 const contentSchema = makeContentSchema();
 
@@ -115,20 +117,28 @@ const pageSchema = z.object({
     .optional(),
 });
 
-export const createPageSchema = pageSchema.refine(
+export const pageIdentitySchema = pageSchema.pick({ slug: true, locale: true });
+
+/** Only pass content loaded from the owned existing page, never request data. */
+export const createPageSchemaFor = (existingContent?: unknown) => pageSchema.extend({
+  content: makeContentSchema(false, existingContent).default({}),
+}).refine(
   data => !gameSlugReserved(data),
   { path: ["slug"], message: "This game slug is reserved; choose a distinct slug." },
 ).refine(
   data => !data.parentSlug || (!isValidLocale(data.slug) && !["privacy", "terms", "tools"].includes(data.slug)),
   { path: ["slug"], message: "Child slug is reserved for hosted locales or privacy, terms, tools; choose a distinct project slug." },
 );
-export const updatePageSchema = pageSchema.extend({
+export const updatePageSchemaFor = (existingContent?: unknown) => pageSchema.extend({
   locale: pageSchema.shape.locale.unwrap().removeDefault().optional(),
   template: pageSchema.shape.template.removeDefault(),
-  content: makeContentSchema(true),
+  content: makeContentSchema(true, existingContent),
   darkMode: pageSchema.shape.darkMode.removeDefault(),
   isPublished: pageSchema.shape.isPublished.removeDefault(),
 }).partial();
+
+export const createPageSchema = createPageSchemaFor();
+export const updatePageSchema = updatePageSchemaFor();
 
 export type CreatePageInput = z.infer<typeof createPageSchema>;
 export type UpdatePageInput = z.infer<typeof updatePageSchema>;

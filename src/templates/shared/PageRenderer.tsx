@@ -1,3 +1,5 @@
+import { buildPagePath } from "@/lib/parse-page-segments";
+import { PLATFORM_ORIGIN } from "@/lib/platform-identity";
 import { GameSection } from "../sections/GameSection";
 import { typographyFactors, typographyCss, hasTypography, ROLES, typographySettings } from "@/lib/typography";
 import {
@@ -35,6 +37,8 @@ import { Suspense } from "react";
 import { SectionErrorBoundary } from "./SectionErrorBoundary";
 import { normalizeHostedContent, orderedHostedSections } from "@/lib/hosted-content";
 import { usesEditorialScreenshots } from "@/lib/screenshot-layout";
+import { normalizeVideoData } from "@/lib/video-data";
+import { parseVideoUrl } from "@/lib/video-url";
 import { proseThemeVariables } from "@/lib/prose-theme";
 import { LoginGate } from "./LoginGate";
 import { issueIframeToolSession } from "@/lib/iframe-tool-session";
@@ -72,6 +76,8 @@ export interface PageViewer {
 }
 
 interface PageData {
+  videoPageUrl?: string;
+  isDefault?: boolean;
   id?: string;
   slug: string;
   template: string;
@@ -144,6 +150,7 @@ function renderSection(
   darkMode: boolean,
   page: PageData,
   viewer: PageViewer,
+  videoPriority: boolean,
 ) {
   const renderVersion = asPageContent(page.content).renderVersion;
   const modern = typeof renderVersion === "number" && renderVersion >= 2;
@@ -158,6 +165,10 @@ function renderSection(
   const darkBgAlt = darkMode ? "#1f2937" : "#f9fafb";
   const editorial = ["profile-header", "project-cards", "entries"].includes(section.type);
   const bg = section.data?.backgroundColor || (editorial ? undefined : index % 2 === 1 ? darkBgAlt : darkBg);
+
+  const sectionId = section.data?.id || section.id || (
+    section.type === "video" && Array.isArray(section.data?.moments) && section.data.moments.length ? `video-${index}` : undefined
+  );
 
   let content;
   switch (section.type) {
@@ -174,7 +185,16 @@ function renderSection(
       content = <HeroSection {...props} />;
       break;
     case "video":
-      content = <VideoSection {...props} />;
+      // Older render versions hide headings, but authored copy still names the video for SEO.
+      content = <VideoSection
+        {...props}
+        locale={page.locale}
+        pageTitle={page.title}
+        seoHeading={section.data?.heading}
+        priority={videoPriority}
+        sectionId={sectionId || ""}
+        pageUrl={page.videoPageUrl || `${PLATFORM_ORIGIN}${buildPagePath(page.parentSlug || page.slug, page.locale || "en", page.parentSlug ? page.slug : null, page.isDefault ?? true)}`}
+      />;
       break;
     case "features":
       content = <FeaturesSection {...props} />;
@@ -302,9 +322,6 @@ function renderSection(
       return null;
   }
 
-  // Optional anchor id for in-page navigation (#pricing, #faq, etc.)
-  const sectionId = section.data?.id || section.id || undefined;
-
   // Hero section handles its own background
   if (section.type === "hero") {
     return <div key={index} id={sectionId}>{content}</div>;
@@ -319,12 +336,12 @@ function renderSection(
 
 // /p is dynamically rendered via auth(): errored RSC chunks reach the client
 // boundary. This catch only covers synchronous section setup (e.g. identity).
-function SafeSection({ section, index, themeColor, themeColorSecondary, darkMode, page, viewer }: {
+function SafeSection({ section, index, themeColor, themeColorSecondary, darkMode, page, viewer, videoPriority }: {
   section: PageSection; index: number; themeColor: string; themeColorSecondary: string;
-  darkMode: boolean; page: PageData; viewer: PageViewer;
+  darkMode: boolean; page: PageData; viewer: PageViewer; videoPriority: boolean;
 }) {
   try {
-    return renderSection(section, index, themeColor, themeColorSecondary, darkMode, page, viewer);
+    return renderSection(section, index, themeColor, themeColorSecondary, darkMode, page, viewer, videoPriority);
   } catch {
     console.error("Hosted section failed:", section.type);
     return null;
@@ -352,6 +369,12 @@ export function PageRenderer({
   const fontFamily = page.fontFamily || undefined;
   const pageContent = asPageContent(page.content);
   const sortedSections: PageSection[] = orderedHostedSections(page.content);
+  const firstFacade = sortedSections.findIndex(section => {
+    if (section.type !== "video" || decideSectionAccess(section.data?.access, viewer) !== "render") return false;
+    const { data, issues } = normalizeVideoData(section.data);
+    const video = parseVideoUrl(data.url);
+    return !issues.some(issue => issue.path[0] !== "thumbnail") && (video?.kind === "youtube" || video?.kind === "vimeo" && !!data.thumbnail);
+  });
 
   // Legacy content uses the same guarded path as explicit sections.
   if (sortedSections.length === 0 && page.template !== "GAME") {
@@ -409,7 +432,7 @@ export function PageRenderer({
         }
         return <SectionErrorBoundary key={index} sectionType={section.type}>
           <Suspense fallback={null}>
-            <SafeSection section={section} index={index} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} page={page} viewer={viewer} />
+            <SafeSection section={section} index={index} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} page={page} viewer={viewer} videoPriority={index === firstFacade} />
           </Suspense>
         </SectionErrorBoundary>;
       })}

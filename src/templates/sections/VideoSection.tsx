@@ -1,106 +1,58 @@
 import { serializeJsonLd } from "@/lib/json-ld";
-import { sanitizeUrl } from "@/lib/sanitize";
+import { normalizeVideoData, formatVideoTime, type VideoData } from "@/lib/video-data";
+import { isSafeLegacyVideoUrl, parseVideoUrl, videoTimeLink, youtubeThumbnail } from "@/lib/video-url";
+import { buildVideoJsonLd } from "@/lib/video-jsonld";
+import { Prose } from "../shared/Prose";
+import { VideoPlayer } from "./VideoPlayer";
+import { videoStrings } from "./video-strings";
+import { LegacyVideoSection } from "./LegacyVideoSection";
 
 interface Props {
-  data: {
-    subheading?: string;
-    heading?: string;
-    url: string;
-    caption?: string;
-  };
+  data: VideoData;
   themeColor: string;
+  typographyActive?: boolean;
+  locale?: string;
+  sectionId?: string;
+  pageUrl?: string;
+  pageTitle?: string;
+  seoHeading?: string;
+  darkMode?: boolean;
+  priority?: boolean;
 }
 
-function getVideoType(url: string): "youtube" | "vimeo" | "video" | "gif" {
-  if (url.includes("youtube.com") || url.includes("youtu.be")) return "youtube";
-  if (url.includes("vimeo.com")) return "vimeo";
-  if (url.endsWith(".gif")) return "gif";
-  return "video";
-}
-
-function getYouTubeEmbedUrl(url: string): string {
-  const match =
-    url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/) || [];
-  return match[1] ? `https://www.youtube.com/embed/${match[1]}` : url;
-}
-
-function getVimeoEmbedUrl(url: string): string {
-  const match = url.match(/vimeo\.com\/(\d+)/) || [];
-  return match[1] ? `https://player.vimeo.com/video/${match[1]}` : url;
-}
-
-function getYouTubeId(url: string): string | null {
-  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
-  return match?.[1] ?? null;
-}
-
-export function VideoSection({ data, themeColor, typographyActive = false }: Props & { typographyActive?: boolean }) {
-  const safeUrl = sanitizeUrl(data.url);
-  const type = getVideoType(safeUrl);
-
-  const videoSchema: Record<string, unknown> = {
-    "@context": "https://schema.org",
-    "@type": "VideoObject",
-    name: data.caption || "Video",
-    description: data.caption || "Video content",
-    uploadDate: new Date().toISOString(),
-  };
-  if (type === "youtube") {
-    const id = getYouTubeId(safeUrl);
-    videoSchema.embedUrl = getYouTubeEmbedUrl(safeUrl);
-    videoSchema.contentUrl = safeUrl;
-    if (id) videoSchema.thumbnailUrl = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
-  } else if (type === "vimeo") {
-    videoSchema.embedUrl = getVimeoEmbedUrl(safeUrl);
-    videoSchema.contentUrl = safeUrl;
-  } else {
-    videoSchema.contentUrl = safeUrl;
-  }
-
+export function VideoSection({ data: input, themeColor, typographyActive = false, locale = "en", sectionId = "video", pageUrl = "https://appai.info/", pageTitle, seoHeading, darkMode = false, priority = false }: Props) {
+  const strings = videoStrings(locale);
+  const { data, issues } = normalizeVideoData(input, [], false, input.url);
+  const video = parseVideoUrl(data.url);
+  if (issues.some(issue => issue.path[0] !== "thumbnail") || !isSafeLegacyVideoUrl(data.url)) return <section className="py-12 md:py-20 px-4 sm:px-6"><p>{strings.unavailable}</p></section>;
+  // Neutral foregrounds pass AA on both standard section backgrounds, regardless of theme.
+  const moments = !!data.moments?.length && <div className="mt-8 min-w-0" style={{ color: darkMode ? "#f9fafb" : "#111827" }}>
+    <h3 className="text-xl font-semibold mb-3 break-words">{data.momentsHeading || strings.heading}</h3>
+    <ol className="space-y-3">
+      {data.moments?.map(moment => <li key={moment.t} className="min-w-0 break-words">
+        {video ? <a href={videoTimeLink(video, moment.t)} data-video-time={moment.t}
+          className="inline-flex max-w-full min-h-11 items-center gap-3 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4">
+          <span className="font-mono tabular-nums shrink-0">{formatVideoTime(moment.t)}</span>
+          <span className="min-w-0 font-semibold">{moment.title}</span>
+        </a> : <span>{`${formatVideoTime(moment.t)} ${moment.title}`}</span>}
+        {moment.text && (video ? <Prose className="text-sm leading-relaxed [&_p]:my-2 [&_a]:underline [&_a]:underline-offset-4 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5" typographyRole={typographyActive ? "body" : undefined}>{moment.text}</Prose> : <p>{moment.text}</p>)}
+      </li>)}
+    </ol>
+  </div>;
+  if (!video) return <LegacyVideoSection data={data} themeColor={themeColor} typographyActive={typographyActive} pageTitle={pageTitle} seoHeading={seoHeading} moments={moments} locale={locale} />;
+  const schema = buildVideoJsonLd({ ...data, heading: seoHeading ?? data.heading }, video, pageUrl, sectionId, pageTitle);
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6">
       {data.heading && <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-3xl font-bold text-center mb-6" style={{ color: themeColor }}>{data.heading}</h2>}
       {data.subheading && <p className="text-center mb-6">{data.subheading}</p>}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: serializeJsonLd(videoSchema) }}
-      />
+      {schema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }} />}
       <div className="max-w-4xl mx-auto">
-        <div className="rounded-2xl overflow-hidden shadow-lg">
-          {type === "youtube" && (
-            <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
-              <iframe
-                className="absolute inset-0 w-full h-full"
-                src={getYouTubeEmbedUrl(safeUrl)}
-                title="Video"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-          )}
-          {type === "vimeo" && (
-            <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
-              <iframe
-                className="absolute inset-0 w-full h-full"
-                src={getVimeoEmbedUrl(safeUrl)}
-                title="Video"
-                allow="autoplay; fullscreen; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-          )}
-          {type === "video" && (
-            <video className="w-full" controls>
-              <source src={safeUrl} />
-            </video>
-          )}
-          {type === "gif" && (
-            <img src={safeUrl} alt={data.caption || "Animation"} className="w-full" />
-          )}
-        </div>
-        {data.caption && (
-          <p data-typography-role={typographyActive ? "caption" : undefined} className="text-center text-gray-500 mt-4 text-sm">{data.caption}</p>
-        )}
+        {video.kind === "gif" ? <div className="rounded-2xl overflow-hidden shadow-lg"><img src={video.url} alt={data.caption || strings.animation} className="w-full" /></div>
+          : <VideoPlayer key={`${pageUrl}#${sectionId}:${video.url}:${data.startAt ?? 0}`} video={video} sectionId={sectionId} startAt={data.startAt ?? 0}
+            thumbnail={data.thumbnail || youtubeThumbnail(video)} priority={priority} title={data.caption || strings.play}
+            themeColor={themeColor} strings={strings} />}
+        {data.caption && <p data-typography-role={typographyActive ? "caption" : undefined} className="text-center text-gray-500 mt-4 text-sm">{data.caption}</p>}
+        {moments}
       </div>
     </section>
   );

@@ -1,3 +1,4 @@
+import { normalizeVideoContent } from "@/lib/video-data";
 import { gameContentIssues, gameSlugReserved, gamesListingResponse, gamePageWarnings } from "@/lib/game-section";
 import { storeTypography, typographyWarnings } from "@/lib/typography";
 import { pageLogoUpdate, pageLogoWarnings } from "@/lib/page-logo";
@@ -6,7 +7,7 @@ import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
-import { updatePageSchema } from "@/lib/validations/page";
+import { updatePageSchemaFor } from "@/lib/validations/page";
 import { sanitizePageContent, type SanitizeWarning } from "@/lib/sanitize";
 import { hostedPageApprovalUpdate } from "@/lib/hosted-page-approval";
 import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
@@ -152,16 +153,16 @@ export async function PUT(
     const immutableError = checkImmutableFields(body);
     if (immutableError) return immutableError;
 
-    const parsed = updatePageSchema.parse(body);
+    const parsed = updatePageSchemaFor(page.content).parse(body);
     // Strip category and locale (they're not HostedPage columns to update)
     const { category, ...data } = storeTypography(parsed, page.content);
     delete data.locale;
 
     const putWarnings: SanitizeWarning[] = [];
-    data.content = sanitizePageContent(data.content ?? page.content, undefined, putWarnings);
+    data.content = sanitizePageContent(data.content ?? page.content, undefined, putWarnings, page.content);
 
     const effective = { ...page, ...data };
-    const gameIssues = gameContentIssues(effective.content);
+    const gameIssues = [...gameContentIssues(effective.content), ...normalizeVideoContent(effective.content, false, page.content).issues];
     if (gameIssues.length) throw new z.ZodError(gameIssues);
     if (gameSlugReserved(effective)) return errorResponse("This game slug is reserved; choose a distinct slug.", 400);
 
@@ -236,7 +237,7 @@ export async function PATCH(
     const immutableError = checkImmutableFields(body);
     if (immutableError) return immutableError;
 
-    const parsed = updatePageSchema.parse(body);
+    const parsed = updatePageSchemaFor(page.content).parse(body);
     const { category, ...fields } = storeTypography(parsed, page.content);
     delete fields.locale;
 
@@ -250,15 +251,30 @@ export async function PATCH(
 
     // Deep merge content with existing content
     const patchWarnings: SanitizeWarning[] = [];
-    updateData.content = sanitizePageContent(
-      updateData.content ? mergeContent(page.content, updateData.content) : page.content,
+    const mergedContent = updateData.content ? mergeContent(page.content, updateData.content) : page.content;
+    const previousSections = (page.content as { sections?: Section[] } | null)?.sections;
+    const previous = Array.isArray(previousSections) ? previousSections : [];
+    const merged = mergedContent as { sections?: Section[] } | null;
+    // mergeContent retains object identity for untouched sections. Validate only
+    // changed sections, with their final merged data and original field indices.
+    const touchedContent = { ...merged, ...(Array.isArray(merged?.sections) ? { sections: merged.sections.map(section => previous.includes(section) ? {} : section) } : {}) };
+    const issues = [...gameContentIssues(touchedContent), ...normalizeVideoContent(touchedContent, false, page.content).issues];
+    if (issues.length) throw new z.ZodError(issues);
+    const sanitized = sanitizePageContent(
+      mergedContent,
       undefined,
       patchWarnings,
+      page.content,
     );
+    if (Array.isArray(merged?.sections) && Array.isArray(sanitized.sections)) {
+      const sanitizedTouched = { ...sanitized, sections: merged.sections.map((section, i) => previous.includes(section) ? {} : (sanitized.sections as unknown[])[i]) };
+      const sanitizedIssues = [...gameContentIssues(sanitizedTouched), ...normalizeVideoContent(sanitizedTouched, false, page.content).issues];
+      if (sanitizedIssues.length) throw new z.ZodError(sanitizedIssues);
+      sanitized.sections = merged.sections.map((section, i) => previous.includes(section) ? section : (sanitized.sections as unknown[])[i]);
+    }
+    updateData.content = sanitized;
 
     const effective = { ...page, ...updateData };
-    const gameIssues = gameContentIssues(effective.content);
-    if (gameIssues.length) throw new z.ZodError(gameIssues);
     if (gameSlugReserved(effective)) return errorResponse("This game slug is reserved; choose a distinct slug.", 400);
 
     const hadPersonRoot = !!await db.hostedPage.findFirst({

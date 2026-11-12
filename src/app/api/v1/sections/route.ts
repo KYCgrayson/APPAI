@@ -1,3 +1,4 @@
+import { MAX_VIDEO_SECONDS, VIDEO_TIME_PATTERN } from "@/lib/video-data";
 import { ICON_NAMES } from "@/components/ui/Icon";
 import { LOGO_GUIDANCE } from "@/lib/page-logo";
 import { NextRequest, NextResponse } from "next/server";
@@ -9,6 +10,11 @@ import {
 
 type JsonSchema = {
   type?: string;
+  minimum?: number;
+  maximum?: number;
+  maxLength?: number;
+  minLength?: number;
+  maxItems?: number;
   enum?: readonly string[];
   pattern?: string;
   anyOf?: JsonSchema[];
@@ -22,6 +28,11 @@ type JsonSchema = {
 function fieldToJsonSchema(field: SectionFieldDef): JsonSchema {
   const base: JsonSchema = { type: "string" };
   switch (field.type) {
+    case "video-time":
+      delete base.type;
+      base.anyOf = [{ type: "integer", minimum: 0, maximum: MAX_VIDEO_SECONDS }, { type: "string", pattern: VIDEO_TIME_PATTERN }];
+      base.description = field.description;
+      break;
     case "string":
     case "url":
     case "markdown":
@@ -67,6 +78,7 @@ function fieldToJsonSchema(field: SectionFieldDef): JsonSchema {
       }
       break;
   }
+  for (const key of ["maxLength", "minLength", "maxItems"] as const) if (field[key] !== undefined) base[key] = field[key];
   if (field.enum) base.enum = field.enum;
   if (field.pattern) base.pattern = field.pattern;
   return base;

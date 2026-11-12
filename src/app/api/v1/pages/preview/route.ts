@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey } from "@/lib/api-auth";
-import { createPageSchema } from "@/lib/validations/page";
+import { createPageSchemaFor, pageIdentitySchema } from "@/lib/validations/page";
 import { checkPagePreview, pagePreviewNext } from "@/lib/page-preview";
 import { pageParentConflict } from "@/lib/page-parent-conflict";
 import { ICON_NAMES } from "@/components/ui/Icon";
@@ -31,15 +31,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  const parsed = createPageSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json(checkPagePreview(body, ICON_NAMES, { origin: request.nextUrl.origin }));
-  const data = parsed.data;
+  const identity = pageIdentitySchema.safeParse(body);
+  if (!identity.success) return NextResponse.json(checkPagePreview(body, ICON_NAMES, { origin: request.nextUrl.origin }));
 
   const existing = await db.hostedPage.findUnique({
-    where: { slug_locale: { slug: data.slug, locale: data.locale || "en" } },
-    select: { organizationId: true, parentSlug: true, isDefault: true },
+    where: { slug_locale: { slug: identity.data.slug, locale: identity.data.locale || "en" } },
+    select: { organizationId: true, parentSlug: true, isDefault: true, content: true },
   });
-  const result = checkPagePreview(body, ICON_NAMES, { origin: request.nextUrl.origin, exists: !!existing });
+  const existingContent = existing?.organizationId === authResult.organizationId ? existing.content : undefined;
+  const context = { origin: request.nextUrl.origin, exists: !!existing, existingContent };
+  const result = checkPagePreview(body, ICON_NAMES, context);
+  const parsed = createPageSchemaFor(existingContent).safeParse(body);
+  if (!parsed.success) return NextResponse.json(result);
+  const data = parsed.data;
   const { warnings, sanitizedContent: sanitized } = result;
   const rootDefault = await db.hostedPage.findFirst({
     where: { slug: data.parentSlug || data.slug, organizationId: authResult.organizationId, parentSlug: null, isDefault: true },

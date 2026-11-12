@@ -1,3 +1,4 @@
+import { normalizeVideoContent } from "@/lib/video-data";
 import { gameContentIssues, gamesListingResponse, gamePageWarnings } from "@/lib/game-section";
 import { storeTypography, typographyWarnings } from "@/lib/typography";
 import { parseDryRun } from "@/lib/page-preview";
@@ -8,7 +9,7 @@ import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
-import { createPageSchema } from "@/lib/validations/page";
+import { createPageSchemaFor, pageIdentitySchema } from "@/lib/validations/page";
 import { sanitizePageContent, type SanitizeWarning } from "@/lib/sanitize";
 import { hostedPageApprovalUpdate } from "@/lib/hosted-page-approval";
 import { pageParentConflict } from "@/lib/page-parent-conflict";
@@ -40,22 +41,24 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const data = storeTypography(createPageSchema.parse(body));
-    const locale = data.locale || "en";
-    const parentSlug = data.parentSlug ?? null;
+    const identity = pageIdentitySchema.parse(body);
+    const locale = identity.locale || "en";
 
     // Check slug+locale availability
     const existing = await db.hostedPage.findUnique({
-      where: { slug_locale: { slug: data.slug, locale } },
+      where: { slug_locale: { slug: identity.slug, locale } },
     });
     const upsert = request.nextUrl.searchParams.get("upsert") === "true";
 
     if (existing && existing.organizationId !== authResult.organizationId) {
       return NextResponse.json({
-        error: `Slug "${data.slug}" is already used for locale "${locale}" by another organization.`,
+        error: `Slug "${identity.slug}" is already used for locale "${locale}" by another organization.`,
         hint: `Choose a different slug. For child pages, prefix it with the parent slug, e.g. "kenji-tidepool".`,
       }, { status: 409 });
     }
+
+    const data = storeTypography(createPageSchemaFor(upsert ? existing?.content : undefined).parse(body));
+    const parentSlug = data.parentSlug ?? null;
 
     if (existing && upsert) {
       const conflict = pageParentConflict(data.slug, locale, parentSlug, existing.parentSlug);
@@ -123,8 +126,8 @@ export async function POST(request: NextRequest) {
       }
 
       const upsertWarnings: SanitizeWarning[] = [];
-      data.content = sanitizePageContent(data.content, undefined, upsertWarnings) as Record<string, unknown>;
-      const gameIssues = gameContentIssues(data.content);
+      data.content = sanitizePageContent(data.content, undefined, upsertWarnings, existing.content) as Record<string, unknown>;
+      const gameIssues = [...gameContentIssues(data.content), ...normalizeVideoContent(data.content, false, existing.content).issues];
       if (gameIssues.length) throw new z.ZodError(gameIssues);
 
       // parentSlug is intentionally excluded from upsert mutations: reparenting
@@ -205,7 +208,7 @@ export async function POST(request: NextRequest) {
     const contentWarnings: SanitizeWarning[] = [];
     data.content = sanitizePageContent(data.content, undefined, contentWarnings) as Record<string, unknown>;
 
-    const gameIssues = gameContentIssues(data.content);
+    const gameIssues = [...gameContentIssues(data.content), ...normalizeVideoContent(data.content).issues];
     if (gameIssues.length) throw new z.ZodError(gameIssues);
 
     // parentSlug is set explicitly below from the validated `parentSlug`
