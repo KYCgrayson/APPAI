@@ -35,6 +35,7 @@ import { Suspense } from "react";
 import { SectionErrorBoundary } from "./SectionErrorBoundary";
 import { normalizeHostedContent, orderedHostedSections } from "@/lib/hosted-content";
 import { usesEditorialScreenshots } from "@/lib/screenshot-layout";
+import { proseThemeVariables } from "@/lib/prose-theme";
 import { LoginGate } from "./LoginGate";
 import { issueIframeToolSession } from "@/lib/iframe-tool-session";
 import { decideSectionAccess, sectionWantsIdentity } from "@/lib/iframe-tool-session-contract";
@@ -370,12 +371,13 @@ export function PageRenderer({
   const typographyVars = scale ? Object.fromEntries(ROLES.map(role => [`--ts-${role}`, scale.desktop[role]])) : {};
   const wrapperStyle: React.CSSProperties = {
     ...typographyVars,
+    ...proseThemeVariables(page.themeColor),
     ...(fontFamily ? { fontFamily: `"${fontFamily}", sans-serif` } : {}),
     ...(darkMode ? { backgroundColor: "#111827", color: "#f9fafb" } : {}),
   };
 
   return (
-    <div style={wrapperStyle} data-typography={activeTypography ? "active" : undefined}>
+    <div style={wrapperStyle} data-dark={darkMode} data-typography={activeTypography ? "active" : undefined}>
       {activeTypography && <style>{typographyCss(settings)}</style>}
       {fontUrl && <link rel="stylesheet" href={fontUrl} />}
       {page.template === "GAME" && <header className="mx-auto max-w-5xl px-4 sm:px-6 pt-10 break-words"><h1 className="text-3xl sm:text-5xl font-bold mb-4" data-typography-role={activeTypography ? "display" : undefined}>{page.title}</h1>{page.tagline && <p className="text-lg">{page.tagline}</p>}</header>}

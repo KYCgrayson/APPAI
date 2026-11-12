@@ -7,9 +7,10 @@ interface Props {
     text: string;
   };
   themeColor: string;
+  darkMode?: boolean;
 }
 
-export function AboutSection({ data, themeColor, typographyActive = false }: Props & { typographyActive?: boolean }) {
+export function AboutSection({ data, themeColor, darkMode, typographyActive = false }: Props & { typographyActive?: boolean }) {
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto">
@@ -19,7 +20,7 @@ export function AboutSection({ data, themeColor, typographyActive = false }: Pro
           </h2>
         )}
         {data.subheading && <p className="text-center mb-6">{data.subheading}</p>}
-        <Prose typographyRole={typographyActive ? "body" : undefined} className="prose prose-sm md:prose-base max-w-none text-gray-600 leading-relaxed prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold">{data.text}</Prose>
+        <Prose typographyRole={typographyActive ? "body" : undefined} className={`prose prose-sm md:prose-base max-w-none leading-relaxed ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{data.text}</Prose>
       </div>
     </section>
   );

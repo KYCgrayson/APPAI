@@ -41,6 +41,59 @@ test("malformed agent sections cannot take down valid neighboring sections", asy
 
 });
 
+test("hosted wrappers expose prose theme variables only for valid explicit colours", async () => {
+  for (const themeColor of [undefined, null, "", "#123456; color: red", "#123456\n", "#7f1d1d", "#fde68a"]) {
+    const result = await stream(createElement(PageRenderer, { page: {
+      slug: "prose-theme", title: "Theme", template: "GAME", content: {}, themeColor,
+    } }));
+    assert.equal(result.errors.length, 0);
+    if (themeColor === "#7f1d1d" || themeColor === "#fde68a") {
+      assert.ok(result.html.includes(`--page-theme:${themeColor};`));
+      assert.match(result.html, /--page-theme-link-light:#[a-f\d]{6};--page-theme-link-dark:#[a-f\d]{6}/);
+    } else {
+      assert.doesNotMatch(result.html, /--page-theme/);
+    }
+  }
+});
+
+test("all standard Markdown sections choose readable dark utilities and retain their light colours", async () => {
+  const markdown = "### Markdown heading\n\nBody with **emphasis** and a [link](https://example.com).";
+  const fixtures = [
+    { type: "about", data: { text: markdown }, light: "text-gray-600" },
+    { type: "action", data: { description: markdown, items: [] }, light: "text-gray-600" },
+    { type: "schedule", data: { items: [{ title: "Talk", time: "12:00", description: markdown }] }, light: "text-gray-600" },
+    { type: "team", data: { items: [{ name: "Person", role: "Role", bio: markdown }] }, light: "text-gray-500" },
+    { type: "testimonials", data: { items: [{ name: "Person", quote: markdown }] }, light: "text-gray-600" },
+    { type: "pricing", data: { items: [{ name: "Plan", price: "$5", description: markdown, features: [] }] }, light: "text-gray-500" },
+    { type: "faq", data: { items: [{ question: "Question?", answer: markdown }] }, light: "text-gray-600" },
+  ];
+  for (const darkMode of [false, true]) {
+    for (const fixture of fixtures) {
+      const result = await stream(createElement(PageRenderer, { page: {
+        slug: "prose-sections", title: "Markdown", template: "APP_LANDING", darkMode,
+        content: { sections: [fixture] },
+      } }));
+      assert.equal(result.errors.length, 0, fixture.type);
+      const proseClasses = result.html.match(/class="([^"]*\bprose\b[^"]*)"/)?.[1];
+      assert.ok(proseClasses?.split(" ").includes(darkMode ? "text-gray-300" : fixture.light), fixture.type);
+      assert.match(result.html, /<h3>Markdown heading<\/h3>/);
+      assert.doesNotMatch(result.html, /prose-a:text-blue-600|hover:prose-a:underline|prose-headings:font-semibold/);
+      if (["team", "testimonials", "pricing"].includes(fixture.type)) {
+        assert.ok(result.html.includes(darkMode ? "bg-gray-800" : "bg-white"), fixture.type);
+      }
+    }
+    const cta = await stream(createElement(PageRenderer, { page: {
+      slug: "prose-cta", title: "CTA", template: "APP_LANDING", darkMode, themeColor: "#7f1d1d",
+      content: { sections: [{ type: "cta", data: { headline: "CTA", subheadline: markdown, buttonText: "Go", buttonUrl: "/" } }] },
+    } }));
+    assert.equal(cta.errors.length, 0);
+    assert.match(cta.html, /text-white\/80/);
+    for (const variant of ["prose-a:text-white", "prose-headings:text-white", "prose-strong:text-white"]) {
+      assert.ok(cta.html.includes(variant));
+    }
+  }
+});
+
 test("Suspense contains an unexpected SSR section exception", async () => {
   function BrokenSection(): never { throw new Error("Fixture section failure"); }
   const result = await stream(createElement("main", null,

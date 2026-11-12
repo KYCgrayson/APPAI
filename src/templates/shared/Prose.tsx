@@ -39,7 +39,7 @@ export function Prose({ children, className, editorialLinks = false, typographyR
       data-typography-role={typographyRole}
       className={
         className ??
-        "prose prose-sm md:prose-base max-w-none prose-a:text-blue-600 hover:prose-a:underline prose-headings:font-semibold"
+        "prose prose-sm md:prose-base max-w-none"
       }
     >
       <ReactMarkdown
