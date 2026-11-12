@@ -37,6 +37,9 @@ yarn-error.log*
 
 # docs (internal planning documents, but allow screenshots)
 /docs/*
+# Track feature maps so clean CI checkouts can run the coverage checker.
+!/docs/FEATURE_MAP.md
+!/docs/feature-map.json
 !/docs/spec/
 !/docs/spec/**
 !/docs/examples/
