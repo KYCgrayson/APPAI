@@ -1,3 +1,4 @@
+import { normalizeVideoContent } from "./video-data.ts";
 import { storeGamesListing } from "./game-section.ts";
 import { isBusinessHours } from "./business-hours.ts";
 /**
@@ -250,5 +251,6 @@ export function extractDomain(url: string): string {
 /** Server-owned render opt-in for page writes, including dry-run previews. */
 export function sanitizePageContent(obj: unknown, parentKey?: string, warnings?: SanitizeWarning[]): Record<string, unknown> {
   const content = sanitizeContent(obj, parentKey, warnings);
-  return storeGamesListing({ ...(content && typeof content === "object" && !Array.isArray(content) ? content : {}), renderVersion: 2 });
+  const normalized = normalizeVideoContent(content).content;
+  return storeGamesListing({ ...(normalized && typeof normalized === "object" && !Array.isArray(normalized) ? normalized : {}), renderVersion: 2 });
 }

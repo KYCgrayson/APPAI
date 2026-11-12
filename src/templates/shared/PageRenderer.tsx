@@ -1,3 +1,5 @@
+import { buildPagePath } from "@/lib/parse-page-segments";
+import { PLATFORM_ORIGIN } from "@/lib/platform-identity";
 import { GameSection } from "../sections/GameSection";
 import { typographyFactors, typographyCss, hasTypography, ROLES, typographySettings } from "@/lib/typography";
 import {
@@ -71,6 +73,8 @@ export interface PageViewer {
 }
 
 interface PageData {
+  videoPageUrl?: string;
+  isDefault?: boolean;
   id?: string;
   slug: string;
   template: string;
@@ -158,6 +162,10 @@ function renderSection(
   const editorial = ["profile-header", "project-cards", "entries"].includes(section.type);
   const bg = section.data?.backgroundColor || (editorial ? undefined : index % 2 === 1 ? darkBgAlt : darkBg);
 
+  const sectionId = section.data?.id || section.id || (
+    section.type === "video" && Array.isArray(section.data?.moments) && section.data.moments.length ? `video-${index}` : undefined
+  );
+
   let content;
   switch (section.type) {
     case "profile-header":
@@ -173,7 +181,12 @@ function renderSection(
       content = <HeroSection {...props} />;
       break;
     case "video":
-      content = <VideoSection {...props} />;
+      content = <VideoSection
+        {...props}
+        locale={page.locale}
+        sectionId={sectionId || ""}
+        pageUrl={page.videoPageUrl || `${PLATFORM_ORIGIN}${buildPagePath(page.parentSlug || page.slug, page.locale || "en", page.parentSlug ? page.slug : null, page.isDefault ?? true)}`}
+      />;
       break;
     case "features":
       content = <FeaturesSection {...props} />;
@@ -300,9 +313,6 @@ function renderSection(
     default:
       return null;
   }
-
-  // Optional anchor id for in-page navigation (#pricing, #faq, etc.)
-  const sectionId = section.data?.id || section.id || undefined;
 
   // Hero section handles its own background
   if (section.type === "hero") {

@@ -1,3 +1,4 @@
+import { normalizeVideoContent } from "../video-data.ts";
 import { gameContentIssues, gameSlugReserved } from "../game-section.ts";
 import { isBusinessHours } from "../business-hours.ts";
 import { z } from "zod";
@@ -25,6 +26,7 @@ const typographyFields = {
   typography: z.object({ caption: textStep.optional(), card: textStep.optional(), body: textStep.optional(), heading: textStep.optional(), display: textStep.optional() }).strict().optional(),
 };
 const makeContentSchema = (partial = false) => z.object(typographyFields).catchall(z.any()).superRefine((content, ctx) => {
+  for (const issue of normalizeVideoContent(content, partial).issues) ctx.addIssue({ ...issue });
   for (const issue of gameContentIssues(content, partial)) ctx.addIssue(issue);
   if (!Array.isArray(content.sections)) return;
   content.sections.forEach((section, index) => {
@@ -38,7 +40,7 @@ const makeContentSchema = (partial = false) => z.object(typographyFields).catcha
     if (!Array.isArray(section.data.hours) || !section.data.hours.every(isBusinessHours))
       ctx.addIssue({ code: "custom", path: ["sections", index, "data", "hours"], message: "hours must be an array of {days: nonempty mon–sun array, open: HH:MM, close: HH:MM, note?: string (max 200 characters); open and close must differ}" });
   });
-});
+}).transform(content => normalizeVideoContent(content, partial).content as typeof content);
 
 const contentSchema = makeContentSchema();
 

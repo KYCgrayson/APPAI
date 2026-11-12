@@ -1,3 +1,4 @@
+import { normalizeVideoContent } from "./video-data.ts";
 import { gamePageWarnings, gamesListingResponse, gameContentIssues } from "./game-section.ts";
 import { computeTypography, storeTypography, typographySettings } from "./typography.ts";
 import { buildPagePath } from "./parse-page-segments.ts";
@@ -61,7 +62,7 @@ export function checkPagePreview(body: unknown, iconNames: readonly string[] = [
     const section = Array.isArray(rawSections) ? rawSections[Number(index)] : null;
     return section && typeof section === "object" && "type" in section ? `${match}(${section.type})` : match;
   });
-  const errors = gameContentIssues(sanitizedContent).map(e => ({ path: ["content", ...e.path].map(String).join("."), message: e.message }));
+  const errors = [...gameContentIssues(sanitizedContent), ...normalizeVideoContent(sanitizedContent).issues].map(e => ({ path: ["content", ...e.path].map(String).join("."), message: e.message }));
   return { valid: errors.length === 0, errors, warnings, ...gamesListingResponse(sanitizedContent), sanitizedContent, typography: computedTypography.desktop, typographyMobile: computedTypography.mobile, next: errors.length ? "Fix errors and dry-run again." : pagePreviewNext(parsed.data, context) };
 }
 
@@ -102,6 +103,7 @@ function checkFields(value: unknown, fields: SectionFieldDef[], path: string, wa
       if (field.required) warnings.push({ path: location, message: `Missing required field ${field.name}.` });
       continue;
     }
+    if (field.type === "video-time") continue; // validated/normalized by the shared video contract
     const expected = ["url", "markdown"].includes(field.type) ? "string" : field.type;
     if (expected === "array" ? !Array.isArray(item) : typeof item !== expected || (expected === "object" && Array.isArray(item))) {
       warnings.push({ path: location, message: `Expected ${expected} for ${field.name}.` });

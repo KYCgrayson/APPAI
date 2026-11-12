@@ -1,3 +1,4 @@
+import { normalizeVideoContent } from "@/lib/video-data";
 import { gameContentIssues, gameSlugReserved, gamesListingResponse, gamePageWarnings } from "@/lib/game-section";
 import { storeTypography, typographyWarnings } from "@/lib/typography";
 import { pageLogoUpdate, pageLogoWarnings } from "@/lib/page-logo";
@@ -161,7 +162,7 @@ export async function PUT(
     data.content = sanitizePageContent(data.content ?? page.content, undefined, putWarnings);
 
     const effective = { ...page, ...data };
-    const gameIssues = gameContentIssues(effective.content);
+    const gameIssues = [...gameContentIssues(effective.content), ...normalizeVideoContent(effective.content).issues];
     if (gameIssues.length) throw new z.ZodError(gameIssues);
     if (gameSlugReserved(effective)) return errorResponse("This game slug is reserved; choose a distinct slug.", 400);
 
@@ -250,14 +251,17 @@ export async function PATCH(
 
     // Deep merge content with existing content
     const patchWarnings: SanitizeWarning[] = [];
+    const mergedContent = updateData.content ? mergeContent(page.content, updateData.content) : page.content;
+    const videoIssues = normalizeVideoContent(mergedContent).issues;
+    if (videoIssues.length) throw new z.ZodError(videoIssues);
     updateData.content = sanitizePageContent(
-      updateData.content ? mergeContent(page.content, updateData.content) : page.content,
+      mergedContent,
       undefined,
       patchWarnings,
     );
 
     const effective = { ...page, ...updateData };
-    const gameIssues = gameContentIssues(effective.content);
+    const gameIssues = [...gameContentIssues(effective.content), ...normalizeVideoContent(effective.content).issues];
     if (gameIssues.length) throw new z.ZodError(gameIssues);
     if (gameSlugReserved(effective)) return errorResponse("This game slug is reserved; choose a distinct slug.", 400);
 

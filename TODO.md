@@ -1,5 +1,12 @@
 # TODO — AppAI Project Roadmap
 
+## Video key moments (#91, PR-1)
+
+- [x] Generic optional moments/startAt and real SEO metadata; strict shared provider/file URL parsing, stable normalization and field-path validation on create/upsert, PUT, merged PATCH, section PATCH and preview.
+- [x] Server-rendered moment links and Clip JSON-LD; click-to-load SDK-free players, native seeking, localized status/fallbacks, same-page Markdown/share links and history handling. Existing direct-file markup preserved except removal of fabricated uploadDate.
+- [x] Registry/JSON Schema, fictional spec example, generated agent spec and regression coverage. See `PR_NOTES_91.md` for compatibility, security choices and validation results.
+- [ ] Live YouTube/Vimeo sandbox/playback QA, mobile browser layout and real autoplay-block behavior; provider permissions, regional restrictions and private-file availability remain external constraints.
+
 ## Game fixes (#78)
 
 - [x] Apply the win-modal name to the global profile after claiming, including login returns and inline rename retries. Remove the seven-day rename cooldown without a migration; keep validation, uniqueness and the 20/hour account quota. Existing scores use the current nickname.

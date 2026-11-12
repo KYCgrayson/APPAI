@@ -649,16 +649,56 @@ Required: each item's `title`; all top-level fields optional; links require `lab
 }}
 ```
 
-YouTube/Vimeo/mp4 → `video` (iframe player); social posts from Instagram, Facebook, Threads, TikTok, X, YouTube Shorts → `embed`.
+YouTube (including Shorts), Vimeo and direct mp4/webm → `video`; social posts from Instagram, Facebook, Threads, TikTok and X → `embed`.
 
 ### video
+
+Hosted Page capability: attach generic timestamped key moments to any video; no publisher-specific data format.
+
 ```json
 { "type": "video", "order": 2, "data": {
-    "url": "https://youtube.com/watch?v=...",
-    "caption": "Watch the demo"
+    "id": "intro-video",
+    "url": "https://media.example.com/fictional-orbit-demo.mp4",
+    "caption": "Orbit Studio — a fictional drawing tutorial",
+    "startAt": "0:15",
+    "momentsHeading": "Inside the demo",
+    "moments": [
+      { "t": 0, "title": "Set up the canvas" },
+      { "t": "1:30", "title": "Draw an orbit", "text": "Use **layers** to keep each shape editable." },
+      { "t": "3:00", "title": "Export the artwork" }
+    ],
+    "uploadDate": "2026-01-15T09:00:00Z",
+    "duration": "PT4M",
+    "thumbnail": "https://media.example.com/fictional-orbit-cover.jpg"
 }}
 ```
-Supports YouTube/Vimeo iframe players and direct mp4, webm, gif media (auto-detected). Use `embed` for YouTube Shorts and social posts.
+
+| Field | Contract |
+|---|---|
+| `url` | Required. YouTube: exact `youtube.com` / `www.youtube.com` / `m.youtube.com` watch, shorts or embed paths; `youtu.be/<id>`; `youtube-nocookie.com` / `www.youtube-nocookie.com` embed paths. ID: 11 letters/digits/`_`/`-`. Vimeo: `vimeo.com/<digits>`, optional `/<hash>` or `?h=<hash>`, or `player.vimeo.com/video/<digits>?h=<hash>`. Provider HTTP links normalize to HTTPS embeds. Direct files: HTTPS `.mp4`, `.webm`, `.gif` (case-insensitive path; query preserved). Credentials, non-default ports, lookalike provider hosts and unknown URLs fail validation with a hint. |
+| `moments` | Optional array, max 100 input entries, each `{t, title, text?}`. Time: integer seconds, decimal integer string, `m:ss` or `h:mm:ss`, 0–86400 inclusive; minute/second parts below 60. Normalized to integer seconds, ascending order; same timestamp keeps the first input entry. |
+| `moments[].title` | Required nonblank plain text, max 120 characters. |
+| `moments[].text` | Optional safe Markdown, max 600 characters; same renderer as `about.text`, no raw HTML or executable link schemes. |
+| `momentsHeading` | Optional, max 60 characters. Defaults: en “Key moments”, zh-TW “重點時刻”, zh-CN “重点时刻”, ja “主なシーン”, ko “주요 장면”, es “Momentos clave”, fr “Moments clés”, de “Wichtige Momente”. Hosted locale exact → primary language → English via `pickByLocale`. |
+| `startAt` | Optional initial position, same time parser. Does not autoplay. |
+| `uploadDate` | Optional SEO: real first-publication ISO 8601 date or timestamp with timezone. Never synthesized from the current date. |
+| `duration` | Optional SEO: positive ISO 8601 day/time duration, max 24h, e.g. `PT4M`. All moments and `startAt` must precede it. Supplies the last clip's end offset. |
+| `thumbnail` | Optional HTTPS image URL (no credentials or non-default port). Supplies SEO `thumbnailUrl` and the facade; YouTube otherwise uses its real `i.ytimg.com` thumbnail. No invented Vimeo thumbnail. |
+
+All new fields are optional. GIFs remain images and cannot use `moments` or `startAt`. `heading`, `subheading` and `caption` retain their existing behavior. Create/upsert, full PUT, merged page/section PATCH and preview use the same validator; errors include locations such as `sections[2].data.moments[3].t`. Preview with `POST /api/v1/pages/preview` or `POST /api/v1/pages?dryRun=true`; inspect `/api/v1/sections?type=video&format=jsonschema` for field limits and time alternatives. Calendar validity, provider URL semantics and duration-relative times are also checked server-side.
+
+| Visitor behavior | Result |
+|---|---|
+| Before interaction | Thumbnail/play facade; no provider iframe or SDK script. Vimeo without a thumbnail gets a neutral play facade. Thumbnail loading can contact the image host. |
+| Click play or a moment | Load the platform-built privacy-enhanced YouTube/Vimeo iframe and seek in-page using postMessage; direct files use native video controls. Only the latest requested time is applied. |
+| JavaScript disabled | Moment/play links open the provider or direct file at that timestamp. |
+| Playback blocked | Localized “Jumped to m:ss — press play” status plus external time link. |
+| Timeout (~8 seconds), refused embed or media error | Visible external time link; moment anchors also retain their external fallback. |
+| `?t=90#intro-video` | Targets `data.id || section.id`; missing/unknown anchor targets the first seekable video in document order. A section with moments and no authored ID gets `video-<rendered index>`; prefer an explicit stable `id`. |
+| Initial shared URL | Prepares the facade's selected position; provider loads after play/moment interaction. Back/forward restores the selected time and seeks an already loaded player without autoplay. Without JS, an existing `#id` still scrolls. |
+| Markdown anywhere on the page | `[▶ 1:30](?t=90#intro-video)` seeks the same page's video. Foreign origins/paths, unrelated query changes, download/new-tab links and modified clicks retain normal navigation. |
+
+SEO: server-rendered `VideoObject` uses direct files as `contentUrl`, providers as `embedUrl`, and `hasPart: Clip[]` ordered by time (`name`, `startOffset`, `url` to this hosted page's `?t=...#id`). Each clip ends at the next moment; the last has `endOffset` only with supplied duration. Unknown `uploadDate`/`duration`/`thumbnailUrl` are omitted, except the real YouTube thumbnail fallback. Google requires real upload date and thumbnail for video rich-result eligibility; missing metadata is intentionally not fabricated. See [Google video structured data](https://developers.google.com/search/docs/appearance/structured-data/video).
 
 ### features
 

@@ -1,3 +1,4 @@
+import { normalizeVideoContent } from "@/lib/video-data";
 import { gameContentIssues, gameSlugReserved, gamesListingResponse, gamePageWarnings } from "@/lib/game-section";
 import type { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
@@ -99,6 +100,9 @@ export async function PATCH(
 
   // Merge + sanitize
   const merged = { ...sections[idx].data, ...patchData };
+  const candidate = { ...content, sections: sections.map((section, i) => i === idx ? { ...section, data: merged } : section) };
+  const videoIssues = normalizeVideoContent(candidate).issues;
+  if (videoIssues.length) return NextResponse.json({ error: "Validation failed", details: videoIssues }, { status: 400 });
   const warnings: SanitizeWarning[] = [];
   const sanitized = sanitizeContent(merged, undefined, warnings, `sections[${order}].data`) as Record<string, unknown>;
 
@@ -106,7 +110,7 @@ export async function PATCH(
   sections[idx] = { ...sections[idx], data: sanitized };
 
   const savedContent = sanitizePageContent({ ...content, sections });
-  const gameIssues = gameContentIssues(savedContent);
+  const gameIssues = [...gameContentIssues(savedContent), ...normalizeVideoContent(savedContent).issues];
   if (gameIssues.length) return NextResponse.json({ error: "Validation failed", details: gameIssues }, { status: 400 });
   if (gameSlugReserved({ ...page, content: savedContent })) return NextResponse.json({ error: "This game slug is reserved; choose a distinct slug." }, { status: 400 });
   warnings.push(...gamePageWarnings({ ...page, content: savedContent }));
@@ -125,7 +129,7 @@ export async function PATCH(
 
   revalidateSeoIndexes(updated.slug);
   return NextResponse.json({
-    section: sections[idx],
+    section: (savedContent.sections as typeof sections)[idx],
     ...gamesListingResponse(updated.content),
     etag: `"${updated.updatedAt.toISOString()}"`,
     ...(warnings.length > 0 ? { warnings } : {}),

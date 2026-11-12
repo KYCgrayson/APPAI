@@ -21,11 +21,14 @@ import gameExample from "../../docs/examples/game.example.json" with { type: "js
 
 export interface SectionFieldDef {
   name: string;
-  type: "string" | "url" | "markdown" | "boolean" | "number" | "array" | "object";
+  type: "string" | "url" | "markdown" | "boolean" | "number" | "array" | "object" | "video-time";
   required: boolean;
   description: string;
   enum?: readonly string[];
   pattern?: string;
+  maxLength?: number;
+  minLength?: number;
+  maxItems?: number;
   allowStringItems?: boolean; // backward-compatible URL string arrays
   items?: SectionFieldDef[];  // for array types
   fields?: SectionFieldDef[]; // for object types
@@ -394,12 +397,22 @@ export const SECTION_DEFS: SectionDef[] = [
   {
     type: "video",
     name: "Video",
-    description: "Embedded video section. Supports YouTube, Vimeo, mp4/webm files, and GIFs. Auto-detects format.",
+    description: "Video with optional timestamped key moments and in-page seeking. YouTube/Vimeo load on interaction; direct HTTPS mp4/webm and GIFs supported.",
     fields: [
       { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
       { name: "heading", type: "string", required: false, description: "Optional section heading." },
       { name: "url", type: "url", required: true, description: "Video URL (YouTube/Vimeo link, .mp4, .webm, or .gif)" },
       { name: "caption", type: "string", required: false, description: "Caption text below the video" },
+      { name: "startAt", type: "video-time", required: false, description: "Initial position: integer seconds, m:ss or h:mm:ss; 0–86400 inclusive. Normalized to integer seconds. No autoplay until interaction." },
+      { name: "momentsHeading", type: "string", required: false, maxLength: 60, description: "Optional heading (max 60 characters); default follows hosted-page locale, e.g. Key moments / 重點時刻." },
+      { name: "moments", type: "array", required: false, maxItems: 100, description: "Up to 100 {t,title,text?} moments, sorted by time; duplicate times keep the first. GIFs cannot seek. When duration is supplied, all times must be before it.", items: [
+        { name: "t", type: "video-time", required: true, description: "Integer seconds, m:ss or h:mm:ss; 0–86400 inclusive. Minute/second parts must be below 60." },
+        { name: "title", type: "string", required: true, minLength: 1, maxLength: 120, description: "Nonblank plain text, max 120 characters." },
+        { name: "text", type: "markdown", required: false, maxLength: 600, description: "Safe Markdown description, max 600 characters; no raw HTML." },
+      ] },
+      { name: "uploadDate", type: "string", required: false, description: "SEO: real first-publication date or timezone-qualified ISO 8601 timestamp. Omitted from JSON-LD when absent; never fabricated." },
+      { name: "duration", type: "string", required: false, description: "SEO: positive ISO 8601 day/time duration, at most 24h (e.g. PT5M30S). Supplies the last Clip endOffset." },
+      { name: "thumbnail", type: "url", required: false, pattern: "^https://", description: "HTTPS thumbnail image without credentials/non-default port. SEO thumbnailUrl and facade image; YouTube has a real thumbnail fallback." },
     ],
   },
   {

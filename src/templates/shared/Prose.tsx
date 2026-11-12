@@ -28,7 +28,7 @@ const SAFE_URL_RE = /^(https?:|mailto:|tel:|#)/i;
 
 function sanitizeUrl(url: string | undefined): string | undefined {
   if (!url) return undefined;
-  return (SAFE_URL_RE.test(url) || /^\/(?![\/\\])/.test(url)) ? url : undefined;
+  return (SAFE_URL_RE.test(url) || /^\?t=/.test(url) || /^\/(?![\/\\])/.test(url)) ? url : undefined;
 }
 
 export function Prose({ children, className, editorialLinks = false, typographyRole }: Props) {

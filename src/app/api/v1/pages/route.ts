@@ -1,3 +1,4 @@
+import { normalizeVideoContent } from "@/lib/video-data";
 import { gameContentIssues, gamesListingResponse, gamePageWarnings } from "@/lib/game-section";
 import { storeTypography, typographyWarnings } from "@/lib/typography";
 import { parseDryRun } from "@/lib/page-preview";
@@ -124,7 +125,7 @@ export async function POST(request: NextRequest) {
 
       const upsertWarnings: SanitizeWarning[] = [];
       data.content = sanitizePageContent(data.content, undefined, upsertWarnings) as Record<string, unknown>;
-      const gameIssues = gameContentIssues(data.content);
+      const gameIssues = [...gameContentIssues(data.content), ...normalizeVideoContent(data.content).issues];
       if (gameIssues.length) throw new z.ZodError(gameIssues);
 
       // parentSlug is intentionally excluded from upsert mutations: reparenting
@@ -205,7 +206,7 @@ export async function POST(request: NextRequest) {
     const contentWarnings: SanitizeWarning[] = [];
     data.content = sanitizePageContent(data.content, undefined, contentWarnings) as Record<string, unknown>;
 
-    const gameIssues = gameContentIssues(data.content);
+    const gameIssues = [...gameContentIssues(data.content), ...normalizeVideoContent(data.content).issues];
     if (gameIssues.length) throw new z.ZodError(gameIssues);
 
     // parentSlug is set explicitly below from the validated `parentSlug`

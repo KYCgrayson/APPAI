@@ -394,7 +394,7 @@ export default async function HostedPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
       {page.customCss && <style>{page.customCss}</style>}
-      <PageRenderer page={page} isLoggedIn={isLoggedIn} isAdmin={isAdmin} userId={userId} />
+      <PageRenderer page={{ ...page, videoPageUrl: hostedPageUrl(page, roots, baseUrl) || pageUrl }} isLoggedIn={isLoggedIn} isAdmin={isAdmin} userId={userId} />
     </>
   );
 }
