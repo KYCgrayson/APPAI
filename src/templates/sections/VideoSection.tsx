@@ -39,7 +39,7 @@ export function VideoSection({ data: input, themeColor, typographyActive = false
       </li>)}
     </ol>
   </div>;
-  if (!video) return <LegacyVideoSection data={data} themeColor={themeColor} typographyActive={typographyActive} pageTitle={pageTitle} seoHeading={seoHeading} moments={moments} />;
+  if (!video) return <LegacyVideoSection data={data} themeColor={themeColor} typographyActive={typographyActive} pageTitle={pageTitle} seoHeading={seoHeading} moments={moments} locale={locale} />;
   const schema = buildVideoJsonLd({ ...data, heading: seoHeading ?? data.heading }, video, pageUrl, sectionId, pageTitle);
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6">
@@ -47,7 +47,7 @@ export function VideoSection({ data: input, themeColor, typographyActive = false
       {data.subheading && <p className="text-center mb-6">{data.subheading}</p>}
       {schema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }} />}
       <div className="max-w-4xl mx-auto">
-        {video.kind === "gif" ? <div className="rounded-2xl overflow-hidden shadow-lg"><img src={video.url} alt={data.caption || "Animation"} className="w-full" /></div>
+        {video.kind === "gif" ? <div className="rounded-2xl overflow-hidden shadow-lg"><img src={video.url} alt={data.caption || strings.animation} className="w-full" /></div>
           : <VideoPlayer key={`${pageUrl}#${sectionId}:${video.url}:${data.startAt ?? 0}`} video={video} sectionId={sectionId} startAt={data.startAt ?? 0}
             thumbnail={data.thumbnail || youtubeThumbnail(video)} priority={priority} title={data.caption || strings.play}
             themeColor={themeColor} strings={strings} />}

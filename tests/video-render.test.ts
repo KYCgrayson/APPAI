@@ -8,6 +8,8 @@ const loader = registerHostedRenderLoader();
 const translations = registerDirectoryFixtures();
 test.after(() => { translations.deregister(); loader.deregister(); });
 const { VideoSection } = await import("../src/templates/sections/VideoSection.tsx");
+const { LegacyVideoSection } = await import("../src/templates/sections/LegacyVideoSection.tsx");
+const { parseVideoUrl } = await import("../src/lib/video-url.ts");
 const { PageRenderer } = await import("../src/templates/shared/PageRenderer.tsx");
 const { Prose } = await import("../src/templates/shared/Prose.tsx");
 const { videoStrings } = await import("../src/templates/sections/video-strings.ts");
@@ -61,7 +63,7 @@ test("locale table uses exact match, primary fallback and default English", () =
 test("supported legacy providers and files render byte-identically to origin/main with fabricated uploadDate removed", async () => {
   const baseline = JSON.parse(readFileSync(new URL("./fixtures/video-legacy-urls.json", import.meta.url), "utf8"));
   for (const fixture of baseline.fixtures) {
-    if (fixture.data.url === "https://example.test") continue; // non-media URLs now use an external link card
+    if (["https://example.test", "https://vimeo.com/showcase/123"].includes(fixture.data.url)) continue; // non-media/unparseable provider URLs now use external cards
     const render = (data: typeof fixture.data) => renderHtml(createElement(VideoSection, { themeColor: "#334455", data }));
     assert.equal(await render(fixture.data), fixture.html, fixture.data.url);
     assert.equal(await render({ ...fixture.data, uploadDate: "bad", duration: "bad" }), fixture.html, "invalid optional SEO never breaks the legacy output");
@@ -86,9 +88,57 @@ test("unknown stored URLs use external link cards; provider substrings never cre
   }
   for (const url of ["https://sub.youtube.com/channel/fictional", "https://sub.vimeo.com/showcase/123", "https://sub.youtube-nocookie.com/embed/short"]) {
     const html = await renderHtml(createElement(VideoSection, { themeColor: "#334455", data: { url } }));
-    assert.ok(html.includes(`src="${url}"`));
-    assert.match(html, /<iframe/);
+    assert.doesNotMatch(html, /<iframe|"embedUrl"/);
+    assert.match(html, /<span>Open video<\/span>/);
   }
+});
+
+test("legacy fixture without a Vimeo ID changes only from a raw iframe/embedUrl to an external card", async () => {
+  const baseline = JSON.parse(readFileSync(new URL("./fixtures/video-legacy-urls.json", import.meta.url), "utf8"));
+  const fixture = baseline.fixtures.find((row: { data: { url: string } }) => row.data.url === "https://vimeo.com/showcase/123");
+  const html = await renderHtml(createElement(VideoSection, { themeColor: "#334455", data: fixture.data }));
+  const expected = fixture.html.replace('"embedUrl":"https://vimeo.com/showcase/123",', "")
+    .replace(/<div class="relative w-full".*?<\/iframe><\/div>/, '<a href="https://vimeo.com/showcase/123" target="_blank" rel="noopener noreferrer" class="flex flex-col gap-2 p-6 underline"><span>Open video</span><span>vimeo.com</span></a>');
+  assert.equal(html, expected);
+});
+
+test("legacy provider embeds are rebuilt from parsed IDs and keep main fixture parity", async () => {
+  const baseline = JSON.parse(readFileSync(new URL("./fixtures/video-legacy-urls.json", import.meta.url), "utf8"));
+  let providers = 0;
+  for (const fixture of baseline.fixtures) {
+    if (!fixture.html.includes("<iframe") || fixture.data.url === "https://vimeo.com/showcase/123") continue;
+    providers++;
+    assert.equal(parseVideoUrl(fixture.data.url), null, "fixture exercises the grandfathered legacy branch");
+    const html = await renderHtml(createElement(VideoSection, { themeColor: "#334455", data: fixture.data }));
+    assert.equal(html, fixture.html, fixture.data.url);
+    assert.doesNotMatch(html, new RegExp(`src="${fixture.data.url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`));
+  }
+  assert.ok(providers >= 3, "working legacy YouTube and Vimeo fixtures are present");
+  for (const url of ["https://youtube.com/watch", "https://www.youtube.com/@fictional", "https://m.youtube.com/watch?autoplay=1", "https://youtu.be/", "https://www.youtube-nocookie.com/embed/", "https://vimeo.com/showcase/123", "https://player.vimeo.com/video/not-a-video"]) {
+    const html = await renderHtml(createElement(VideoSection, { themeColor: "#334455", data: { url } }));
+    assert.doesNotMatch(html, /<iframe|"embedUrl"/);
+    assert.match(html, /<span>Open video<\/span>/);
+    assert.ok(html.includes(`<span>${new URL(url).hostname}</span>`));
+  }
+});
+
+for (const locale of ["zh-TW", "xx-YY"]) test(`${locale}: hosted locale reaches legacy cards, unavailable copy, iframe titles and animation alt text`, async () => {
+  const zh = locale === "zh-TW";
+  const html = await renderHtml(createElement(PageRenderer, { page: { slug: "legacy-locales", title: "Demo", locale, template: "APP_LANDING", content: { sections: [
+    { type: "video", data: { url: "https://vimeo.com/showcase/123" } },
+    { type: "video", data: { url: "javascript:alert(1)" } },
+    { type: "video", data: { url: "https://youtube.com/watch?v=short" } },
+    { type: "video", data: { url: "https://vimeo.com/123/extra/path" } },
+    { type: "video", data: { url: "https://example.test/demo.gif" } },
+    { type: "video", data: { url: "http://example.test/demo.gif" } },
+  ] } } }));
+  assert.ok(html.includes(`<span>${zh ? "開啟影片" : "Open video"}</span>`));
+  assert.ok(html.includes(`<p>${zh ? "影片無法使用" : "Video unavailable"}</p>`));
+  assert.equal((html.match(new RegExp(`title="${zh ? "影片" : "Video"}"`, "g")) || []).length, 2);
+  assert.equal((html.match(new RegExp(`alt="${zh ? "動畫" : "Animation"}"`, "g")) || []).length, 2);
+  if (zh) assert.doesNotMatch(html, /Open video|Video unavailable|title="Video"|alt="Animation"/);
+  const unavailable = await renderHtml(createElement(LegacyVideoSection, { themeColor: "#334455", locale, data: { url: "javascript:alert(1)" } }));
+  assert.ok(unavailable.includes(zh ? "影片無法使用" : "Video unavailable"));
 });
 
 test("two uncaptioned videos use their distinct section headings as JSON-LD names", async () => {

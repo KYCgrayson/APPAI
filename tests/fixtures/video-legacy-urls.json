@@ -36,6 +36,33 @@
         "caption": "A fictional demo"
       },
       "html": "<section class=\"py-12 md:py-20 px-4 sm:px-6\"><h2 class=\"text-3xl font-bold text-center mb-6\" style=\"color:#334455\">Demo</h2><p class=\"text-center mb-6\">Overview</p><script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"VideoObject\",\"name\":\"A fictional demo\",\"description\":\"A fictional demo\",\"contentUrl\":\"https://example.test\"}</script><div class=\"max-w-4xl mx-auto\"><div class=\"rounded-2xl overflow-hidden shadow-lg\"><video class=\"w-full\" controls=\"\"><source src=\"https://example.test\"/></video></div><p class=\"text-center text-gray-500 mt-4 text-sm\">A fictional demo</p></div></section>"
+    },
+    {
+      "data": {
+        "url": "https://www.youtube.com/watch?v=M7lc1UVf-VE!ignored",
+        "heading": "Demo",
+        "subheading": "Overview",
+        "caption": "A fictional demo"
+      },
+      "html": "<section class=\"py-12 md:py-20 px-4 sm:px-6\"><h2 class=\"text-3xl font-bold text-center mb-6\" style=\"color:#334455\">Demo</h2><p class=\"text-center mb-6\">Overview</p><script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"VideoObject\",\"name\":\"A fictional demo\",\"description\":\"A fictional demo\",\"embedUrl\":\"https://www.youtube.com/embed/M7lc1UVf-VE\",\"contentUrl\":\"https://www.youtube.com/watch?v=M7lc1UVf-VE!ignored\",\"thumbnailUrl\":\"https://img.youtube.com/vi/M7lc1UVf-VE/hqdefault.jpg\"}</script><div class=\"max-w-4xl mx-auto\"><div class=\"rounded-2xl overflow-hidden shadow-lg\"><div class=\"relative w-full\" style=\"padding-bottom:56.25%\"><iframe class=\"absolute inset-0 w-full h-full\" src=\"https://www.youtube.com/embed/M7lc1UVf-VE\" title=\"Video\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowFullScreen=\"\"></iframe></div></div><p class=\"text-center text-gray-500 mt-4 text-sm\">A fictional demo</p></div></section>"
+    },
+    {
+      "data": {
+        "url": "https://youtu.be/M7lc1UVf-VE/extra",
+        "heading": "Demo",
+        "subheading": "Overview",
+        "caption": "A fictional demo"
+      },
+      "html": "<section class=\"py-12 md:py-20 px-4 sm:px-6\"><h2 class=\"text-3xl font-bold text-center mb-6\" style=\"color:#334455\">Demo</h2><p class=\"text-center mb-6\">Overview</p><script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"VideoObject\",\"name\":\"A fictional demo\",\"description\":\"A fictional demo\",\"embedUrl\":\"https://www.youtube.com/embed/M7lc1UVf-VE\",\"contentUrl\":\"https://youtu.be/M7lc1UVf-VE/extra\",\"thumbnailUrl\":\"https://img.youtube.com/vi/M7lc1UVf-VE/hqdefault.jpg\"}</script><div class=\"max-w-4xl mx-auto\"><div class=\"rounded-2xl overflow-hidden shadow-lg\"><div class=\"relative w-full\" style=\"padding-bottom:56.25%\"><iframe class=\"absolute inset-0 w-full h-full\" src=\"https://www.youtube.com/embed/M7lc1UVf-VE\" title=\"Video\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowFullScreen=\"\"></iframe></div></div><p class=\"text-center text-gray-500 mt-4 text-sm\">A fictional demo</p></div></section>"
+    },
+    {
+      "data": {
+        "url": "https://vimeo.com/12345/extra/path",
+        "heading": "Demo",
+        "subheading": "Overview",
+        "caption": "A fictional demo"
+      },
+      "html": "<section class=\"py-12 md:py-20 px-4 sm:px-6\"><h2 class=\"text-3xl font-bold text-center mb-6\" style=\"color:#334455\">Demo</h2><p class=\"text-center mb-6\">Overview</p><script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"VideoObject\",\"name\":\"A fictional demo\",\"description\":\"A fictional demo\",\"embedUrl\":\"https://player.vimeo.com/video/12345\",\"contentUrl\":\"https://vimeo.com/12345/extra/path\"}</script><div class=\"max-w-4xl mx-auto\"><div class=\"rounded-2xl overflow-hidden shadow-lg\"><div class=\"relative w-full\" style=\"padding-bottom:56.25%\"><iframe class=\"absolute inset-0 w-full h-full\" src=\"https://player.vimeo.com/video/12345\" title=\"Video\" allow=\"autoplay; fullscreen; picture-in-picture\" allowFullScreen=\"\"></iframe></div></div><p class=\"text-center text-gray-500 mt-4 text-sm\">A fictional demo</p></div></section>"
     }
   ]
 }

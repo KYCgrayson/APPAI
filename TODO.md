@@ -7,6 +7,7 @@
 - [x] Registry/JSON Schema, fictional spec example, generated agent spec and regression coverage.
 - [x] Review round 2: preserve legacy URLs/rendering and untouched PATCH sections; warn on invalid optional SEO and duplicate timestamps; eager first facade, neutral AA moments, real schema names and one-second seek confirmation.
 - [x] Review round 3: reject new/changed unsupported video URLs, grandfather exact stored section URLs with warnings, restrict legacy iframes to parsed provider hosts and link unknown web URLs. Map video files; recognize already-playing providers, use authored section headings for SEO names, and replace the play glyph with SVG. Add write/render/controller regressions and rebuild the spec.
+- [x] Review round 4: separate YouTube listening acknowledgement from readiness, queue commands, confirm position before blocked/success status, recognize buffering, and retry an unconfirmed seek once after two seconds. Add deterministic fake-iframe races; localize legacy cards, unavailable copy, titles and animation alt text across eight locales. Rebuild legacy provider embeds only from parsed IDs; keep working main fixtures unchanged. Add opt-in 20-context/profile Playwright stress QA; sandbox loopback binding is blocked (`listen EPERM`), so live results remain pending.
 - [ ] Live YouTube/Vimeo sandbox/playback QA, mobile browser layout and real autoplay-block behavior; provider permissions, regional restrictions and private-file availability remain external constraints.
 
 ## Hosted Markdown typography (#43)

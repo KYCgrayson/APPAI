@@ -1,6 +1,7 @@
 import { serializeJsonLd } from "@/lib/json-ld";
 import { isSafeLegacyVideoUrl } from "@/lib/video-url";
 import { videoName } from "@/lib/video-jsonld";
+import { videoStrings } from "./video-strings";
 
 import type { ReactNode } from "react";
 import type { VideoData } from "@/lib/video-data";
@@ -12,6 +13,7 @@ interface Props {
   pageTitle?: string;
   seoHeading?: string;
   moments?: ReactNode;
+  locale?: string;
 }
 
 /** Preserves origin/main media markup for URLs outside the moments contract. */
@@ -23,14 +25,14 @@ function getVideoType(url: URL): "youtube" | "vimeo" | "video" | "gif" | "link" 
   return "link";
 }
 
-function getYouTubeEmbedUrl(url: string): string {
+function getYouTubeEmbedUrl(url: string): string | undefined {
   const id = getYouTubeId(url);
-  return id ? `https://www.youtube.com/embed/${id}` : url;
+  return id ? `https://www.youtube.com/embed/${id}` : undefined;
 }
 
-function getVimeoEmbedUrl(url: string): string {
+function getVimeoEmbedUrl(url: string): string | undefined {
   const match = new URL(url).pathname.match(/^\/(\d+)/) || [];
-  return match[1] ? `https://player.vimeo.com/video/${match[1]}` : url;
+  return match[1] ? `https://player.vimeo.com/video/${match[1]}` : undefined;
 }
 
 function getYouTubeId(url: string): string | null {
@@ -40,11 +42,14 @@ function getYouTubeId(url: string): string | null {
   return match?.[1] ?? null;
 }
 
-export function LegacyVideoSection({ data, themeColor, typographyActive = false, pageTitle, seoHeading, moments }: Props) {
-  if (!isSafeLegacyVideoUrl(data.url)) return <section className="py-12 md:py-20 px-4 sm:px-6"><p>Video unavailable</p></section>;
+export function LegacyVideoSection({ data, themeColor, typographyActive = false, pageTitle, seoHeading, moments, locale = "en" }: Props) {
+  const strings = videoStrings(locale);
+  if (!isSafeLegacyVideoUrl(data.url)) return <section className="py-12 md:py-20 px-4 sm:px-6"><p>{strings.unavailable}</p></section>;
   const safeUrl = data.url;
   const parsed = new URL(safeUrl);
-  const type = getVideoType(parsed);
+  let type = getVideoType(parsed);
+  const embedUrl = type === "youtube" ? getYouTubeEmbedUrl(safeUrl) : type === "vimeo" ? getVimeoEmbedUrl(safeUrl) : undefined;
+  if ((type === "youtube" || type === "vimeo") && !embedUrl) type = "link";
 
   const name = videoName({ ...data, heading: seoHeading ?? data.heading }, pageTitle);
   const videoSchema: Record<string, unknown> = {
@@ -57,11 +62,11 @@ export function LegacyVideoSection({ data, themeColor, typographyActive = false,
   };
   if (type === "youtube") {
     const id = getYouTubeId(safeUrl);
-    videoSchema.embedUrl = getYouTubeEmbedUrl(safeUrl);
+    videoSchema.embedUrl = embedUrl;
     videoSchema.contentUrl = safeUrl;
     if (id) videoSchema.thumbnailUrl = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
   } else if (type === "vimeo") {
-    videoSchema.embedUrl = getVimeoEmbedUrl(safeUrl);
+    videoSchema.embedUrl = embedUrl;
     videoSchema.contentUrl = safeUrl;
   } else {
     videoSchema.contentUrl = safeUrl;
@@ -81,8 +86,8 @@ export function LegacyVideoSection({ data, themeColor, typographyActive = false,
             <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
               <iframe
                 className="absolute inset-0 w-full h-full"
-                src={getYouTubeEmbedUrl(safeUrl)}
-                title="Video"
+                src={embedUrl}
+                title={strings.video}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
@@ -92,8 +97,8 @@ export function LegacyVideoSection({ data, themeColor, typographyActive = false,
             <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
               <iframe
                 className="absolute inset-0 w-full h-full"
-                src={getVimeoEmbedUrl(safeUrl)}
-                title="Video"
+                src={embedUrl}
+                title={strings.video}
                 allow="autoplay; fullscreen; picture-in-picture"
                 allowFullScreen
               />
@@ -105,11 +110,11 @@ export function LegacyVideoSection({ data, themeColor, typographyActive = false,
             </video>
           )}
           {type === "gif" && (
-            <img src={safeUrl} alt={data.caption || "Animation"} className="w-full" />
+            <img src={safeUrl} alt={data.caption || strings.animation} className="w-full" />
           )}
           {type === "link" && (
             <a href={safeUrl} target="_blank" rel="noopener noreferrer" className="flex flex-col gap-2 p-6 underline">
-              <span>Open video</span>
+              <span>{strings.open}</span>
               <span>{parsed.hostname}</span>
             </a>
           )}

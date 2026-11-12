@@ -18,32 +18,64 @@ export function createVideoController(kind: "youtube" | "vimeo" | "file", initia
   let disposed = false;
   let queued = false;
   let confirmed = false;
+  let awaitingPosition = false;
   let playing = false;
+  let youtubeState: number | undefined;
+  let acknowledged = false;
+  let connected = false;
+  let failed = false;
+  let seekAttempt = 0;
   let timeout: ReturnType<typeof setTimeout> | undefined;
   let blocked: ReturnType<typeof setTimeout> | undefined;
   let handshake: ReturnType<typeof setInterval> | undefined;
   function state(value: VideoState) { if (!disposed) report(value, desired); }
-  function armTimeout() { clearTimeout(timeout); timeout = setTimeout(() => { clearInterval(handshake); state("error"); }, 8000); }
+  function fail() {
+    failed = true; awaitingPosition = false; confirmed = false;
+    clearTimeout(timeout); clearTimeout(blocked); clearInterval(handshake);
+    state("error");
+  }
+  function armTimeout() { clearTimeout(timeout); timeout = setTimeout(fail, 8000); }
+  function youtubeBlocked() {
+    // Autoplay rejection is not a seek acknowledgement. Buffering is progress,
+    // and an unknown state must not be mistaken for a paused player.
+    if (!ready || !confirmed || youtubeState === undefined || playing || blocked !== undefined) return;
+    blocked = setTimeout(() => {
+      blocked = undefined;
+      if (ready && confirmed && !playing && youtubeState !== undefined) state("blocked");
+    }, wantsPlay ? 1800 : 0);
+  }
+  function seekYouTube() {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      if (confirmed || disposed) return;
+      if (seekAttempt++ === 0) seekYouTube();
+      else fail();
+    }, 2000);
+    send({ event: "command", func: "seekTo", args: [desired, true] });
+    if (wantsPlay) send({ event: "command", func: "playVideo", args: [] });
+  }
   function confirm(t: unknown) {
-    if (!ready || typeof t !== "number" || !Number.isFinite(t) || Math.abs(t - desired) > 1 || confirmed) return;
+    if (!ready || !awaitingPosition || typeof t !== "number" || !Number.isFinite(t) || Math.abs(t - desired) > 1 || confirmed) return;
     confirmed = true;
     clearTimeout(timeout);
     state("seeked");
-    if (wantsPlay && !playing) blocked = setTimeout(() => state("blocked"), 1800);
+    if (kind === "youtube") youtubeBlocked();
+    else if (wantsPlay && !playing) blocked = setTimeout(() => state("blocked"), 1800);
     else if (!playing) state("blocked"); // navigation may intentionally leave the player paused
   }
-  function didPlay() { playing = true; clearTimeout(blocked); if (confirmed) state("seeked"); }
+  function didPlay() { playing = true; clearTimeout(blocked); blocked = undefined; if (confirmed) state("seeked"); }
   function apply() {
-    if (disposed || !ready) return;
+    if (disposed || !ready || kind === "youtube" && failed) return;
     confirmed = false;
+    awaitingPosition = true;
     if (kind === "file") playing = false;
-    clearTimeout(blocked);
-    armTimeout();
+    clearTimeout(blocked); blocked = undefined;
     state("ready");
     if (kind === "youtube") {
-      send({ event: "command", func: "seekTo", args: [desired, true] });
-      if (wantsPlay) send({ event: "command", func: "playVideo", args: [] });
+      seekAttempt = 0;
+      seekYouTube();
     } else {
+      armTimeout();
       send({ method: "setCurrentTime", value: desired });
       if (wantsPlay) send({ method: "play" });
       if (kind === "vimeo") send({ method: "getPaused" });
@@ -63,29 +95,41 @@ export function createVideoController(kind: "youtube" | "vimeo" | "file", initia
   }
   return {
     request(t: number, play: boolean) {
+      if (disposed || kind === "youtube" && failed) return;
       desired = t; wantsPlay = play;
-      clearTimeout(blocked);
+      confirmed = false; awaitingPosition = false;
+      clearTimeout(blocked); blocked = undefined;
+      if (ready) clearTimeout(timeout);
       if (ready) schedule();
     },
     connect() {
-      if (ready || disposed) return;
+      if (ready || disposed || connected) return;
+      connected = true;
       state("loading"); armTimeout();
-      if (kind === "file") return;
+      if (kind === "file" || acknowledged) return;
       const hello = () => send(kind === "youtube" ? { event: "listening", id: "appai-video", channel: "widget" } : { method: "ping" });
-      hello(); clearInterval(handshake); handshake = setInterval(hello, 250);
+      clearInterval(handshake); handshake = setInterval(hello, 250); hello();
     },
     ready: markReady,
     receive(message: PlayerMessage) {
-      if (disposed) return;
+      if (disposed || kind === "youtube" && failed) return;
       const info = message.info as { currentTime?: unknown; playerState?: unknown } | undefined;
       if (kind === "youtube") {
-        if (message.event === "onReady" || message.event === "initialDelivery" || message.event === "infoDelivery") markReady();
-        if (message.event === "onError") { clearTimeout(timeout); state("error"); }
-        if (message.event === "onAutoplayBlocked") { clearTimeout(blocked); state("blocked"); }
+        if (typeof message.event === "string") {
+          acknowledged = true; clearInterval(handshake);
+        }
+        // Delivery messages acknowledge listening and carry API data, not
+        // readiness. Only onReady may flush queued commands; never iframe load.
+        if (message.event === "onReady") markReady();
+        if (message.event === "onError") { fail(); return; }
         const playerState = message.event === "onStateChange" ? message.info : info?.playerState;
-        if (playerState === 1) didPlay();
-        else if (typeof playerState === "number") playing = false;
+        if (typeof playerState === "number") {
+          youtubeState = playerState;
+          if (playerState === 1 || playerState === 3) didPlay();
+          else playing = false;
+        }
         if (message.event === "infoDelivery") confirm(info?.currentTime);
+        youtubeBlocked();
       } else {
         if (message.event === "ready" || message.method === "ping") markReady();
         if (message.event === "play" || message.method === "play") didPlay();

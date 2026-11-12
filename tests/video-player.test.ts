@@ -82,18 +82,30 @@ for (const kind of ["youtube", "vimeo", "file"] as const) test(`${kind}: real cl
       assert.equal(frame.props.allow, "autoplay; encrypted-media; picture-in-picture; fullscreen");
       assert.equal(frame.props.title, "Fictional demo");
       videoHooks.refs[1].current = { contentWindow: frameWindow };
-      const deliver = (origin: string, source: unknown) => {
+      const deliver = (origin: string, source: unknown, data: Record<string, unknown> = kind === "youtube" ? { event: "onReady" } : { event: "ready" }) => {
         const event = new Event("message");
-        Object.assign(event, { origin, source, data: kind === "youtube" ? { event: "onReady" } : { event: "ready" } });
+        Object.assign(event, { origin, source, data });
         window.dispatchEvent(event);
       };
       const origin = src.origin;
       deliver(origin + ".evil.test", frameWindow); deliver(origin, {}); await flush();
       assert.equal(sent.length, 0);
+      if (kind === "youtube") {
+        (frame.props.onLoad as () => void)();
+        t.mock.timers.tick(250);
+        assert.equal(sent.length, 1, "the click's first hello had no mounted frame; the next hello reaches it");
+        deliver(origin, frameWindow, { event: "infoDelivery", info: { currentTime: 0, playerState: 2 } });
+        deliver(origin, frameWindow, { event: "onAutoplayBlocked" });
+        await flush();
+        t.mock.timers.tick(500);
+        assert.equal(sent.length, 1, "the first reply stops listening without flushing the seek");
+        assert.equal(videoHooks.states[2].state, "loading");
+      }
       deliver(origin, frameWindow); await flush();
       assert.ok(sent.some(message => JSON.stringify(message.data).includes(kind === "youtube" ? "seekTo" : "setCurrentTime")));
       assert.ok(sent.every(message => message.origin === origin));
-      t.mock.timers.tick(8000);
+      if (kind === "youtube") { t.mock.timers.tick(2000); t.mock.timers.tick(2000); }
+      else t.mock.timers.tick(8000);
       assert.equal(videoHooks.states[2].state, "error");
     }
     cleanup?.(); cleanup = undefined;

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createVideoController, type VideoState, type PlayerMessage } from "../src/lib/video-controller.ts";
+import { createVideoController, trustedVideoMessage, type VideoState, type PlayerMessage } from "../src/lib/video-controller.ts";
 
 for (const kind of ["youtube", "vimeo", "file"] as const) test(`${kind}: latest pending seek wins, acknowledgement and blocked playback are visible`, async t => {
   t.mock.timers.enable({ apis: ["setTimeout", "setInterval"] });
@@ -12,7 +12,7 @@ for (const kind of ["youtube", "vimeo", "file"] as const) test(`${kind}: latest 
   const seeks = sent.filter(m => m.func === "seekTo" || m.method === "setCurrentTime");
   assert.equal(seeks.length, 1);
   assert.deepEqual(kind === "youtube" ? seeks[0].args : seeks[0].value, kind === "youtube" ? [90, true] : 90);
-  player.receive(kind === "youtube" ? { event: "infoDelivery", info: { currentTime: 30 } } : { method: "setCurrentTime", value: 30 });
+  player.receive(kind === "youtube" ? { event: "infoDelivery", info: { currentTime: 30, playerState: 2 } } : { method: "setCurrentTime", value: 30 });
   assert.equal(states.at(-1)?.state, "ready");
   player.receive(kind === "youtube" ? { event: "infoDelivery", info: { currentTime: 90 } } : { method: "setCurrentTime", value: 90 });
   assert.equal(states.at(-1)?.state, "seeked");
@@ -51,6 +51,7 @@ test("messages require the exact provider origin AND current frame window", asyn
   assert.deepEqual(trustedVideoMessage({ origin: "https://www.youtube-nocookie.com", source: frame, data: JSON.stringify(data) }, frame, "youtube"), data);
   assert.deepEqual(trustedVideoMessage({ origin: "https://player.vimeo.com", source: frame, data }, frame, "vimeo"), data);
   for (const event of [
+    { origin: "https://www.youtube.com", source: frame, data },
     { origin: "https://www.youtube-nocookie.com.evil.test", source: frame, data },
     { origin: "https://www.youtube-nocookie.com", source: {}, data },
     { origin: "null", source: frame, data },
@@ -78,6 +79,7 @@ test("YouTube infoDelivery preserves already-playing state through readiness and
   player.request(30, true);
   // State arrives before the queued initial seek; there is no new play event.
   player.receive({ event: "infoDelivery", info: { playerState: 1, currentTime: 0 } });
+  player.receive({ event: "onReady" });
   await Promise.resolve();
   player.receive({ event: "infoDelivery", info: { currentTime: 30 } });
   t.mock.timers.tick(1800);
@@ -94,6 +96,132 @@ test("YouTube infoDelivery preserves already-playing state through readiness and
   t.mock.timers.tick(1800);
   assert.equal(states.at(-1), "blocked");
   player.dispose();
+});
+
+/** Fake cross-origin iframe: the handshake/commands use the real wire format,
+ * and all replies go through the same source/origin guard as VideoPlayer. */
+function youtubeFrame(onSend: (message: PlayerMessage, reply: (message: PlayerMessage) => void) => void = () => {}) {
+  const sent: PlayerMessage[] = [];
+  const states: { state: VideoState; time: number }[] = [];
+  const origin = "https://www.youtube-nocookie.com";
+  const iframe = { contentWindow: { postMessage(data: string, targetOrigin: string) {
+    assert.equal(targetOrigin, origin);
+    const message = JSON.parse(data);
+    sent.push(message);
+    onSend(message, reply);
+  } } };
+  const player = createVideoController("youtube", 0, message => iframe.contentWindow.postMessage(JSON.stringify(message), origin),
+    (state, time) => states.push({ state, time }));
+  function reply(data: PlayerMessage) {
+    const message = trustedVideoMessage({ source: iframe.contentWindow, origin, data: JSON.stringify(data) }, iframe.contentWindow, "youtube");
+    if (message) player.receive(message);
+  }
+  return { player, reply, sent, states, seeks: () => sent.filter(message => message.func === "seekTo") };
+}
+
+for (const ackEvent of ["infoDelivery", "initialDelivery"]) test(`YouTube fake iframe: early ${ackEvent} at zero and autoplay block wait for late onReady and position`, async t => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval"] });
+  const f = youtubeFrame();
+  t.after(() => f.player.dispose());
+  f.player.connect(); f.player.request(90, true);
+  t.mock.timers.tick(250);
+  assert.equal(f.sent.filter(message => message.event === "listening").length, 2);
+  f.reply({ event: ackEvent, info: { currentTime: 0, playerState: -1, apiInterface: ["seekTo", "playVideo"] } });
+  f.reply({ event: "onAutoplayBlocked" });
+  await Promise.resolve();
+  t.mock.timers.tick(1000);
+  f.player.connect(); // iframe onLoad after the first delivery must not restart listening
+  assert.equal(f.sent.filter(message => message.event === "listening").length, 2);
+  assert.equal(f.seeks().length, 0, `${ackEvent} acknowledges listening, not API readiness`);
+  assert.equal(f.states.at(-1)?.state, "loading");
+  f.reply({ event: "onReady" }); await Promise.resolve();
+  assert.deepEqual(f.seeks().map(message => message.args), [[90, true]]);
+  f.reply({ event: "infoDelivery", info: { currentTime: 0, playerState: 2 } });
+  f.reply({ event: "onAutoplayBlocked" });
+  assert.equal(f.states.at(-1)?.state, "ready", "autoplay rejection cannot claim a completed seek");
+  t.mock.timers.tick(1999);
+  assert.equal(f.states.some(({ state }) => state === "blocked" || state === "seeked" || state === "error"), false);
+  f.reply({ event: "infoDelivery", info: { currentTime: 90, playerState: 2 } });
+  assert.deepEqual(f.states.at(-1), { state: "seeked", time: 90 });
+  t.mock.timers.tick(1800);
+  assert.deepEqual(f.states.at(-1), { state: "blocked", time: 90 });
+  t.mock.timers.tick(8000);
+  assert.equal(f.states.some(({ state }) => state === "error"), false);
+});
+
+test("YouTube fake iframe: listening repeats across lost messages until a delayed ack, then stops", async t => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval"] });
+  let hellos = 0;
+  const f = youtubeFrame((message, reply) => {
+    if (message.event === "listening" && ++hellos === 4) reply({ event: "initialDelivery" });
+  });
+  t.after(() => f.player.dispose());
+  f.player.connect(); f.player.request(90, true);
+  t.mock.timers.tick(749); await Promise.resolve();
+  assert.equal(hellos, 3); assert.equal(f.seeks().length, 0);
+  t.mock.timers.tick(1); await Promise.resolve();
+  assert.equal(hellos, 4); assert.equal(f.seeks().length, 0);
+  f.reply({ event: "onReady" }); await Promise.resolve();
+  assert.equal(f.seeks().length, 1);
+  f.reply({ event: "infoDelivery", info: { currentTime: 89.5, playerState: 1 } });
+  t.mock.timers.tick(9000);
+  assert.equal(hellos, 4);
+  assert.equal(f.states.at(-1)?.state, "seeked");
+});
+
+for (const recovers of [true, false]) test(`YouTube fake iframe: dropped seek retries once, then ${recovers ? "confirms" : "falls back"}`, async t => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval"] });
+  const f = youtubeFrame();
+  t.after(() => f.player.dispose());
+  f.player.connect(); f.player.request(90, true);
+  f.reply({ event: "onReady" }); await Promise.resolve();
+  f.reply({ event: "infoDelivery", info: { currentTime: 0, playerState: 2 } });
+  f.reply({ event: "onAutoplayBlocked" });
+  t.mock.timers.tick(1999); assert.equal(f.seeks().length, 1);
+  t.mock.timers.tick(1); assert.equal(f.seeks().length, 2);
+  if (recovers) f.reply({ event: "infoDelivery", info: { currentTime: 90, playerState: 1 } });
+  t.mock.timers.tick(1999);
+  assert.equal(f.states.some(({ state }) => state === "error"), false);
+  t.mock.timers.tick(1);
+  assert.equal(f.states.at(-1)?.state, recovers ? "seeked" : "error");
+  if (!recovers) {
+    f.reply({ event: "infoDelivery", info: { currentTime: 90, playerState: 1 } });
+    f.player.request(120, true); await Promise.resolve();
+  }
+  t.mock.timers.tick(9000);
+  assert.equal(f.seeks().length, 2);
+  assert.equal(f.states.at(-1)?.state, recovers ? "seeked" : "error", "late replies cannot resurrect a failed player");
+  assert.equal(f.states.some(({ state }) => state === "blocked"), false);
+});
+
+test("YouTube fake iframe: buffering is not blocked, unknown state waits, and a new request invalidates old confirmation", async t => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval"] });
+  const f = youtubeFrame();
+  t.after(() => f.player.dispose());
+  f.player.connect(); f.player.request(90, true);
+  f.reply({ event: "onReady" }); await Promise.resolve();
+  f.reply({ event: "infoDelivery", info: { currentTime: 90 } });
+  f.reply({ event: "onAutoplayBlocked" });
+  t.mock.timers.tick(1800);
+  assert.equal(f.states.at(-1)?.state, "seeked", "unknown playerState cannot imply blocked");
+  f.reply({ event: "onStateChange", info: 2 });
+  t.mock.timers.tick(1000);
+  f.reply({ event: "onStateChange", info: 3 });
+  f.reply({ event: "onAutoplayBlocked" });
+  t.mock.timers.tick(1800);
+  assert.equal(f.states.at(-1)?.state, "seeked", "buffering cancels the paused fallback timer");
+  f.player.request(120, true);
+  f.reply({ event: "infoDelivery", info: { currentTime: 120, playerState: 2 } });
+  await Promise.resolve();
+  assert.equal(f.states.at(-1)?.state, "ready", "pre-command delivery cannot confirm the new seek");
+  t.mock.timers.tick(2000);
+  assert.deepEqual(f.seeks().map(message => message.args), [[90, true], [120, true], [120, true]]);
+  f.reply({ event: "infoDelivery", info: { currentTime: 119, playerState: 3 } });
+  t.mock.timers.tick(1800);
+  assert.equal(f.states.at(-1)?.state, "seeked");
+  f.reply({ event: "onStateChange", info: 2 });
+  t.mock.timers.tick(1800);
+  assert.deepEqual(f.states.at(-1), { state: "blocked", time: 120 });
 });
 
 for (const signal of ["getPaused", "playProgress", "timeupdate"]) test(`Vimeo ${signal} confirms already-playing playback without a new play event`, async t => {

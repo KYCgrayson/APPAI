@@ -255,7 +255,8 @@
         "tests/video-render.test.ts",
         "tests/fixtures/video-legacy-urls.json",
         "tests/fixtures/video-legacy.html",
-        "tests/helpers/video-player-fixture.mjs"
+        "tests/helpers/video-player-fixture.mjs",
+        "scripts/stress-video-first-click.cjs"
       ],
       "docs": ["docs/spec/sections.md"]
     },
