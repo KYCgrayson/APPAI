@@ -20,7 +20,7 @@ export const createAppSchema = z.object({
   androidUrl: z.string().url().optional(),
   logoUrl: z.string().url().optional(),
   screenshots: z.array(z.string().url()).default([]),
-  hostedPageSlug: z.string().optional(),
+  hostedPageSlug: z.string().nullable().transform(value => value === "" ? null : value).optional(),
 });
 
 export const updateAppSchema = createAppSchema.extend({

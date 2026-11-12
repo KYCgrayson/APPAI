@@ -1,98 +1,72 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { dashboardPagesHref, loadDashboardPages, pageFilters, pagePresentation, type PageSearch } from "@/lib/dashboard-pages";
 import Link from "next/link";
 
-export default async function PagesListPage() {
+export default async function PagesListPage({ searchParams }: { searchParams: Promise<PageSearch> }) {
   const session = await auth();
-  const orgId = session?.organizationId;
-
-  const pages = orgId
-    ? await db.hostedPage.findMany({
-        where: { organizationId: orgId },
-        orderBy: { createdAt: "desc" },
-      })
-    : [];
+  const filters = pageFilters(await searchParams);
+  const result = session?.organizationId
+    ? await loadDashboardPages(db, session.organizationId, filters)
+    : { groups: [], roots: [], nextCursor: null };
+  const period = filters.created === "all" ? "Created at any time" : `Created in the last ${Number.parseInt(filters.created)} days`;
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold">Your Pages</h1>
-      </div>
-
-      {pages.length === 0 ? (
+      <h1 className="text-2xl font-bold mb-2">Your Pages</h1>
+      <p className="text-gray-600 mb-6">{period} · UTC · One row per page across all locales.</p>
+      <form action="/dashboard/pages" className="mb-8 flex flex-wrap items-end gap-4">
+        <label className="grid gap-1 text-sm">Search
+          <input name="q" defaultValue={filters.q} placeholder="Title or slug" className="rounded-lg border bg-white p-2" />
+        </label>
+        <label className="grid gap-1 text-sm">Created
+          <select name="created" defaultValue={filters.created} className="rounded-lg border bg-white p-2">
+            <option value="7d">Last 7 days</option><option value="30d">Last 30 days</option>
+            <option value="90d">Last 90 days</option><option value="all">All time</option>
+          </select>
+        </label>
+        <label className="grid gap-1 text-sm">Status
+          <select name="status" defaultValue={filters.status} className="rounded-lg border bg-white p-2">
+            <option value="">All statuses</option><option value="published">Published</option><option value="unpublished">Unpublished</option>
+          </select>
+        </label>
+        <button className="rounded-lg bg-black px-4 py-2 text-white">Filter</button>
+      </form>
+      {result.groups.length === 0 ? (
         <div className="bg-white rounded-xl p-12 shadow-sm text-center">
-          <h2 className="text-xl font-semibold mb-2">No pages yet</h2>
-          <p className="text-gray-600 mb-4">
-            Use your AI Agent with an API key to create your first page.
-          </p>
-          <Link
-            href="/dashboard/settings"
-            className="inline-block bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800"
-          >
-            Get API Key
-          </Link>
+          <h2 className="text-xl font-semibold mb-2">No matching pages</h2>
+          <p className="text-gray-600 mb-4">Change the filters, or use your AI Agent with an API key to create a page.</p>
+          <Link href="/dashboard/settings" className="text-blue-600 hover:underline">Get API Key</Link>
         </div>
-      ) : (
-        <div className="grid gap-4">
-          {pages.map((page) => (
-            <div
-              key={page.id}
-              className="bg-white rounded-xl p-6 shadow-sm flex items-center justify-between"
-            >
-              <div>
-                <div className="flex items-center gap-3">
-                  <h2 className="text-lg font-semibold">{page.title}</h2>
-                  <span
-                    className={`text-xs px-2 py-1 rounded-full ${
-                      page.isPublished
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {page.isPublished ? "Published" : "Draft"}
-                  </span>
-                  <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
-                    {page.template}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-500 mt-1">
-                  /p/{page.slug}
-                  {page.tagline && ` — ${page.tagline}`}
-                </p>
+      ) : <div className="space-y-6">
+        {result.groups.map(group => <section key={group.slug} className="overflow-hidden rounded-xl bg-white shadow-sm">
+          <h2 className="border-b bg-gray-50 px-6 py-4 font-semibold">{group.title} <span className="font-normal text-gray-500">{group.slug}{group.continued ? " · continued" : ""}</span></h2>
+          <div className="divide-y">{[...group.pages].sort((a, b) => Number(!!a.parentSlug) - Number(!!b.parentSlug)).map(page => {
+            const variant = page.variants[0];
+            const presentations = page.variants.map(row => ({ row, ...pagePresentation(row, result.roots) }));
+            const statuses = [...new Set(presentations.map(item => item.status))];
+            return <article key={page.id} className={`p-6 ${page.parentSlug ? "sm:pl-10" : ""}`}>
+              <div className="flex flex-wrap items-center gap-3">
+                <h3 className="text-lg font-semibold">{variant?.title || page.slug}</h3>
+                {statuses.length === 1 && <span className="rounded-full bg-gray-100 px-2 py-1 text-xs">{statuses[0]}</span>}
+                <span className="text-xs text-gray-500">{variant?.template}</span>
               </div>
-              <div className="flex items-center gap-3">
-                {page.isPublished && (
-                  <a
-                    href={`/p/${page.slug}`}
-                    target="_blank"
-                    className="text-sm text-blue-600 hover:underline"
-                  >
-                    View
-                  </a>
-                )}
-                {page.privacyPolicy && (
-                  <a
-                    href={`/p/${page.slug}/privacy`}
-                    target="_blank"
-                    className="text-xs text-gray-500 hover:underline"
-                  >
-                    Privacy
-                  </a>
-                )}
-                {page.termsOfService && (
-                  <a
-                    href={`/p/${page.slug}/terms`}
-                    target="_blank"
-                    className="text-xs text-gray-500 hover:underline"
-                  >
-                    Terms
-                  </a>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+              <p className="mt-1 break-all text-sm text-gray-500">{page.parentSlug ? `${page.parentSlug} / ` : ""}{page.slug} · Created {page.createdAt.toISOString().slice(0, 10)}</p>
+              <ul className="mt-3 flex flex-wrap gap-3" aria-label="Locales">
+                {presentations.map(item => <li key={item.row.id} className="flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-xs">
+                  <span>{item.row.locale}{item.row.isDefault ? " · default" : ""}{statuses.length > 1 ? ` · ${item.status}` : ""}</span>
+                  {([['View', item.view], ['Privacy', item.privacy], ['Terms', item.terms]] as const).map(([label, href]) => href &&
+                    <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{label}</a>)}
+                </li>)}
+              </ul>
+            </article>;
+          })}</div>
+        </section>)}
+      </div>}
+      <nav className="mt-6 flex gap-4" aria-label="Page navigation">
+        {filters.cursor && <Link href={dashboardPagesHref(filters)} className="text-blue-600 hover:underline">First page</Link>}
+        {result.nextCursor && <Link href={dashboardPagesHref(filters, result.nextCursor)} className="text-blue-600 hover:underline">Next page</Link>}
+      </nav>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { publicPageWhere } from "@/lib/hosted-page-visibility";
 import { hostedPagePath } from "@/lib/hosted-page-urls";
 import { normalizeHostedContent, contentString } from "@/lib/hosted-content";
 import { resolvePage, resolveChildPage } from "@/lib/hosted-page-resolver";
@@ -43,11 +44,11 @@ export default async function HostedPageLayout({ params, children }: Props) {
   const locale = childPage?.locale ?? page.locale;
   const labels = hostedChromeLabels(locale);
   const rootVariants = await db.hostedPage.findMany({
-    where: { slug, organizationId: page.organizationId, isPublished: true, parentSlug: null },
+    where: { slug, organizationId: page.organizationId, ...publicPageWhere() },
     orderBy: [{ isDefault: "desc" }, { locale: "asc" }],
   });
   const childVariants = parsed.childSlug ? await db.hostedPage.findMany({
-    where: { organizationId: page.organizationId, parentSlug: slug, slug: parsed.childSlug, isPublished: true },
+    where: { organizationId: page.organizationId, parentSlug: slug, slug: parsed.childSlug, ...publicPageWhere(rootVariants) },
   }) : [];
   const variants = parsed.childSlug
     ? childVariants.filter(variant => hostedPagePath(variant, rootVariants))

@@ -1,3 +1,4 @@
+import { publicPageWhere, publicRootSelect } from "./hosted-page-visibility";
 import { cache } from "react";
 import { convertChineseVariant, oppositeChineseLocale, chineseSourceLocales } from "./zh-convert";
 import { db } from "@/lib/db";
@@ -6,18 +7,18 @@ import { db } from "@/lib/db";
 export const resolvePage = cache(async function resolvePage(slug: string, explicitLocale: string | null) {
   if (explicitLocale) {
     const exact = await db.hostedPage.findFirst({
-      where: { slug, locale: explicitLocale, isPublished: true, parentSlug: null },
+      where: { slug, locale: explicitLocale, ...publicPageWhere() },
     });
     if (exact) return { ...exact, autoConverted: false };
     const opposite = oppositeChineseLocale(explicitLocale);
     if (!opposite) return null;
-    const sources = await db.hostedPage.findMany({ where: { slug, locale: { in: chineseSourceLocales(explicitLocale) }, isPublished: true, parentSlug: null } });
+    const sources = await db.hostedPage.findMany({ where: { slug, locale: { in: chineseSourceLocales(explicitLocale) }, ...publicPageWhere() } });
     const source = sources.find(row => row.locale === opposite) ?? sources[0];
     return source ? convertChineseVariant(source, explicitLocale) : null;
   }
   // No locale in URL — find the default, fallback to first
   const defaultPage = await db.hostedPage.findFirst({
-    where: { slug, isPublished: true, parentSlug: null },
+    where: { slug, ...publicPageWhere() },
     orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
   });
   return defaultPage ? { ...defaultPage, autoConverted: false } : null;
@@ -30,6 +31,10 @@ export const resolveChildPage = cache(async function resolveChildPage(
   explicitLocale: string | null,
   organizationId: string,
 ) {
+  const roots = await db.hostedPage.findMany({
+    where: { ...publicPageWhere(), slug: parentSlug, organizationId }, select: publicRootSelect,
+  });
+  if (!roots.length) return null;
   if (explicitLocale) {
     const exact = await db.hostedPage.findFirst({
       where: {
@@ -37,13 +42,13 @@ export const resolveChildPage = cache(async function resolveChildPage(
         parentSlug,
         slug: childSlug,
         locale: explicitLocale,
-        isPublished: true,
+        ...publicPageWhere(roots),
       },
     });
     if (exact) return { ...exact, autoConverted: false };
     const opposite = oppositeChineseLocale(explicitLocale);
     if (!opposite) return null;
-    const sources = await db.hostedPage.findMany({ where: { organizationId, parentSlug, slug: childSlug, locale: { in: chineseSourceLocales(explicitLocale) }, isPublished: true } });
+    const sources = await db.hostedPage.findMany({ where: { organizationId, parentSlug, slug: childSlug, locale: { in: chineseSourceLocales(explicitLocale) }, ...publicPageWhere(roots) } });
     const source = sources.find(row => row.locale === opposite) ?? sources[0];
     return source ? convertChineseVariant(source, explicitLocale) : null;
   }
@@ -52,7 +57,7 @@ export const resolveChildPage = cache(async function resolveChildPage(
       organizationId,
       parentSlug,
       slug: childSlug,
-      isPublished: true,
+      ...publicPageWhere(roots),
     },
     orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
   });

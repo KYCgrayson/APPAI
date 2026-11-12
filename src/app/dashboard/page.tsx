@@ -15,12 +15,14 @@ export default async function DashboardPage() {
     );
   }
 
-  const [org, pageCount, appCount, keyCount] = await Promise.all([
+  const [org, rootPages, appCount, keyCount] = await Promise.all([
     db.organization.findUnique({ where: { id: orgId } }),
-    db.hostedPage.count({ where: { organizationId: orgId } }),
+    db.hostedPage.groupBy({ by: ["slug"], where: { organizationId: orgId, parentSlug: null } }),
     db.app.count({ where: { organizationId: orgId } }),
     db.apiKey.count({ where: { organizationId: orgId, isActive: true } }),
   ]);
+
+  const pageCount = rootPages.length;
 
   return (
     <div>

@@ -1,3 +1,4 @@
+import { publicPageWhere, publicRootSelect } from "@/lib/hosted-page-visibility";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { formSectionDataSchema, type FormSectionData } from "@/lib/validations/form-section";
@@ -42,12 +43,15 @@ async function findFormSection(
   parentSlug: string | null,
   sectionOrder: number | undefined,
 ): Promise<FormSectionData | null> {
+  const roots = parentSlug ? await db.hostedPage.findMany({
+    where: { ...publicPageWhere(), slug: parentSlug }, select: publicRootSelect,
+  }) : [];
   const page = await db.hostedPage.findFirst({
     where: {
       slug,
       locale,
       parentSlug,
-      isPublished: true,
+      ...publicPageWhere(roots),
     },
     select: { content: true },
   });

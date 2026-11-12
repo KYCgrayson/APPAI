@@ -29,12 +29,14 @@ remains ignored alongside `TODO.md`.
 
 Home, websites, tools and app directories help visitors discover published work; app details and the dashboard share the platform chrome and base UI. Shared persistence starts at the Prisma schema and database client. Legacy static support/policy pages live in `public/ishift/`.
 Entry files: [home](../src/app/[locale]/page.tsx), [PlatformDirectory.tsx](../src/components/PlatformDirectory.tsx), [app details](../src/app/[locale]/apps/[id]/page.tsx), [dashboard](../src/app/dashboard/page.tsx), [schema.prisma](../prisma/schema.prisma), [db.ts](../src/lib/db.ts).
+Shared public visibility: [hosted-page-visibility.ts](../src/lib/hosted-page-visibility.ts) gates S1–S8; App bindings require a same-organisation root.
 Watch out: directory classification uses published root-page content; a launch link also depends on the Universal App runtime's readiness predicate.
 
 ### page-publishing — Hosted-page publish API
 
-Creates, validates, previews, updates and publishes hosted pages and their locale variants, plus public image uploads and section/preset discovery. The dashboard lists the publisher's pages.
+Creates, validates, previews, updates and publishes hosted pages and their locale variants, plus public image uploads and section/preset discovery. The dashboard groups the publisher's logical pages and locale chips under root headings, with UTC Created/search/status URL filters and cursor pagination.
 Entry files: [page API](../src/app/api/v1/pages/route.ts), [single-page API](../src/app/api/v1/pages/[slug]/route.ts), [validation](../src/lib/validations/page.ts), [template-registry.ts](../src/lib/template-registry.ts), [sanitize.ts](../src/lib/sanitize.ts), [upload](../src/app/api/v1/upload/route.ts).
+Dashboard entry: [dashboard-pages.ts](../src/lib/dashboard-pages.ts) aggregates logical creation dates before paging and selects locale summaries; [app-hosted-page-binding.ts](../src/lib/app-hosted-page-binding.ts) validates POST/PUT bindings. Tests: `tests/pr5-*.test.ts`, `tests/fixtures/pr5-*`, and `tests/helpers/pr5-*.mjs` cover pre-change hashes, S1–S8, real aggregate SQL in SQLite, dashboard rendering, links and binding errors.
 Watch out: root slugs belong to an Organization across locales; child pages do not create directory listings, and publishing does not imply listing approval.
 
 ### hosted-pages — Hosted routes, templates and submissions
@@ -59,7 +61,7 @@ Watch out: `/p/` has its own locale system and `/app/` skips next-intl routing; 
 
 Builds platform and hosted-page metadata, structured data, robots rules, and sharded sitemaps. Hosted URL helpers keep policy, child-page, alternate-language and canonical links consistent.
 Entry files: [platform-metadata.ts](../src/lib/platform-metadata.ts), [hosted-page-seo.ts](../src/lib/hosted-page-seo.ts), [hosted-page-urls.ts](../src/lib/hosted-page-urls.ts), [sitemap index](../src/app/sitemap.xml/route.ts), [sitemap-data.ts](../src/lib/sitemap-data.ts), [json-ld.ts](../src/lib/json-ld.ts).
-Watch out: hosted-page mutations must invalidate SEO indexes; external canonicals affect directory links and sitemap inclusion too.
+Watch out: hosted-page mutations expire the sitemap tag immediately and revalidate the hosted dynamic layout; external llms caches may retain responses for an hour. Index queries use the shared publication/organisation predicate; external canonicals affect directory links and sitemap inclusion too.
 
 ### game-platform — Game discovery, embedding, rooms and leaderboards
 

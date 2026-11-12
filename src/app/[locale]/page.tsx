@@ -1,3 +1,4 @@
+import { publicPageWhere, publicAppFilter, publicRootSelect } from "@/lib/hosted-page-visibility";
 import { platformMetadata } from "@/lib/platform-metadata";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -25,18 +26,19 @@ export default async function HomePage() {
   const directoryCopy = getDirectoryCopy(locale);
   const gamesCopy = getGamesCopy(locale);
 
+  const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: publicRootSelect });
   const [featuredApps, recentApps, totalPages] = await Promise.all([
     db.app.findMany({
-      where: { isApproved: true, isFeatured: true },
+      where: { ...publicAppFilter(roots), isFeatured: true },
       orderBy: { createdAt: "desc" },
       take: 6,
     }),
     db.app.findMany({
-      where: { isApproved: true },
+      where: publicAppFilter(roots),
       orderBy: { createdAt: "desc" },
       take: 12,
     }),
-    db.hostedPage.count({ where: { isPublished: true } }),
+    db.hostedPage.count({ where: publicPageWhere(roots) }),
   ]);
 
   // Same treatment as the directory: show each app's tagline in the visitor's
@@ -46,13 +48,13 @@ export default async function HomePage() {
     .filter((s): s is string => !!s);
   const homeVariants = homeSlugs.length
     ? await db.hostedPage.findMany({
-        where: { slug: { in: homeSlugs }, isPublished: true },
-        select: { slug: true, locale: true, isDefault: true, title: true, tagline: true },
+        where: { slug: { in: homeSlugs }, ...publicPageWhere() },
+        select: { organizationId: true, slug: true, locale: true, isDefault: true, title: true, tagline: true },
       })
     : [];
-  const variantsBySlug = groupByKey(homeVariants, (h) => h.slug);
-  const localizedFor = (slug: string | null) =>
-    slug ? pickByLocale(variantsBySlug.get(slug) ?? [], locale) : undefined;
+  const variantsBySlug = groupByKey(homeVariants, (h) => `${h.organizationId}/${h.slug}`);
+  const localizedFor = (app: { hostedPageSlug: string | null; organizationId: string }) =>
+    app.hostedPageSlug ? pickByLocale(variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) ?? [], locale) : undefined;
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
@@ -200,8 +202,8 @@ export default async function HomePage() {
                   key={app.id}
                   app={app}
                   href={app.hostedPageSlug ? `/p/${app.hostedPageSlug}` : `/apps/${app.id}`}
-                  localizedName={localizedFor(app.hostedPageSlug)?.title}
-                  localizedTagline={localizedFor(app.hostedPageSlug)?.tagline}
+                  localizedName={localizedFor(app)?.title}
+                  localizedTagline={localizedFor(app)?.tagline}
                 />
               ))}
             </div>
@@ -225,8 +227,8 @@ export default async function HomePage() {
                   key={app.id}
                   app={app}
                   href={app.hostedPageSlug ? `/p/${app.hostedPageSlug}` : `/apps/${app.id}`}
-                  localizedName={localizedFor(app.hostedPageSlug)?.title}
-                  localizedTagline={localizedFor(app.hostedPageSlug)?.tagline}
+                  localizedName={localizedFor(app)?.title}
+                  localizedTagline={localizedFor(app)?.tagline}
                 />
               ))}
             </div>

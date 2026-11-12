@@ -1,3 +1,4 @@
+import { publicPageWhere, publicAppFilter, publicRootSelect } from "@/lib/hosted-page-visibility";
 import { publisherLabel } from "@/lib/publisher-label";
 import { chineseFallback, chineseScript } from "@/lib/zh-convert";
 import { normalizeHostedContent } from "@/lib/hosted-content";
@@ -23,9 +24,10 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
   const [locale, appsT] = await Promise.all([getLocale(), getTranslations("apps")]);
   const copy = getDirectoryCopy(locale);
   const activeCategory = personalOnly ? "ALL" : category || "ALL";
+  const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: publicRootSelect });
   const apps = await db.app.findMany({
     where: {
-      isApproved: true,
+      ...publicAppFilter(roots),
       ...(activeCategory !== "ALL" ? { category: activeCategory } : {}),
     },
     orderBy: { createdAt: "desc" },
@@ -36,7 +38,7 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
   const hostedSlugs = apps.map((app) => app.hostedPageSlug).filter((slug): slug is string => !!slug);
   const hostedPages = hostedSlugs.length
     ? await db.hostedPage.findMany({
-        where: { slug: { in: hostedSlugs }, isPublished: true, parentSlug: null },
+        where: { slug: { in: hostedSlugs }, ...publicPageWhere() },
         select: {
           organizationId: true,
           slug: true,
@@ -50,9 +52,9 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
         },
       })
     : [];
-  const variantsBySlug = groupByKey(hostedPages, (page) => page.slug);
+  const variantsBySlug = groupByKey(hostedPages, (page) => `${page.organizationId}/${page.slug}`);
   const canonicalBySlug = new Map(
-    hostedPages.filter((page) => page.isDefault).map((page) => [page.slug, page.canonicalUrl]),
+    hostedPages.filter((page) => page.isDefault).map((page) => [`${page.organizationId}/${page.slug}`, page.canonicalUrl]),
   );
   const allAppIds = apps.map((app) => app.id);
   const releases = allAppIds.length
@@ -81,15 +83,15 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
 
   const directoryApps = apps.filter((app) => {
     if (personalOnly) return false;
-    const variants = app.hostedPageSlug ? variantsBySlug.get(app.hostedPageSlug) ?? [] : [];
+    const variants = app.hostedPageSlug ? variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) ?? [] : [];
     // Games have their own catalog and /games/{slug} routes. A legacy tool/app
     // tag or download section must never put one back in these directories.
     if (app.tags.includes("appai:kind:game") || variants.some((page) => page.template === "GAME")) return false;
     if ((variants.find((page) => page.isDefault) ?? variants[0])?.template === "PERSON") return false;
     if (!kind) return true;
     const page = app.hostedPageSlug
-      ? variantsBySlug.get(app.hostedPageSlug)?.find((candidate) => candidate.isDefault)
-        ?? variantsBySlug.get(app.hostedPageSlug)?.[0]
+      ? variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`)?.find((candidate) => candidate.isDefault)
+        ?? variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`)?.[0]
       : undefined;
     if (!app.appType && app.hostedPageSlug && !page) return false;
     const content = normalizeHostedContent(page?.content);
@@ -120,7 +122,7 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
   const categoryLabel = (value: string) =>
     appsT.has(`categories.${value}`) ? appsT(`categories.${value}`) : value;
   const personalProfiles = (!kind || (kind === "websites" && personalOnly))
-    ? apps.map((app) => app.hostedPageSlug ? variantsBySlug.get(app.hostedPageSlug) ?? [] : [])
+    ? apps.map((app) => app.hostedPageSlug ? variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) ?? [] : [])
       .filter((variants) => (variants.find((page) => page.isDefault) ?? variants[0])?.template === "PERSON")
       .map((variants) => localizedVariant(variants.filter((page) => page.template === "PERSON")))
       .filter((page) => page !== undefined)
@@ -187,9 +189,9 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
         {directoryApps.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-3">
             {directoryApps.map((app) => {
-              const canonical = app.hostedPageSlug ? getExternalCanonical(canonicalBySlug.get(app.hostedPageSlug)) : null;
+              const canonical = app.hostedPageSlug ? getExternalCanonical(canonicalBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`)) : null;
               const universalLaunchPath = canLaunchUniversalApp(app, releasesByApp.get(app.id)) ? getUniversalAppLaunchPath(app) : null;
-              const variant = app.hostedPageSlug ? localizedVariant(variantsBySlug.get(app.hostedPageSlug) ?? []) : undefined;
+              const variant = app.hostedPageSlug ? localizedVariant(variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) ?? []) : undefined;
               return (
                 <AppCard
                   key={app.id}

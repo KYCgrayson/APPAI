@@ -1,3 +1,4 @@
+import { publicPageWhere } from "@/lib/hosted-page-visibility";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
@@ -24,7 +25,7 @@ export async function GET() {
   }[] = [];
   try {
     pages = await db.hostedPage.findMany({
-      where: { isPublished: true, parentSlug: null },
+      where: publicPageWhere(),
       select: { slug: true, locale: true, title: true, tagline: true, updatedAt: true, isDefault: true, content: true },
       orderBy: { updatedAt: "desc" },
       take: 500,

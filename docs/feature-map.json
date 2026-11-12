@@ -29,7 +29,8 @@
         "tests/directory-*.test.ts",
         "tests/platform-header-render.test.ts",
         "tests/publisher-label.test.ts",
-        "tests/helpers/render-html.mjs"
+        "tests/helpers/render-html.mjs",
+        "src/lib/hosted-page-visibility.ts"
       ],
       "docs": ["docs/apps/platform-directory-personal-site-*.md"]
     },
@@ -56,7 +57,12 @@
         "tests/reserved-child-slugs.test.ts",
         "tests/section-field-warnings.test.ts",
         "tests/slug-ownership.test.ts",
-        "tests/update-validation.test.ts"
+        "tests/update-validation.test.ts",
+        "src/lib/dashboard-pages.ts",
+        "src/lib/app-hosted-page-binding.ts",
+        "tests/pr5-*.test.ts",
+        "tests/fixtures/pr5-*",
+        "tests/helpers/pr5-*.mjs"
       ]
     },
     {

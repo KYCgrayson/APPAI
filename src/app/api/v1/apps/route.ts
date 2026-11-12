@@ -1,3 +1,5 @@
+import { hostedPageBindingIssue } from "@/lib/app-hosted-page-binding";
+import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -14,6 +16,10 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const data = createAppSchema.parse(body);
+    const bindingIssue = await hostedPageBindingIssue(db, authResult.organizationId, data.hostedPageSlug);
+    if (bindingIssue) {
+      return NextResponse.json({ error: "Validation failed", details: [bindingIssue] }, { status: 400 });
+    }
 
     // Check plan limits
     const appCount = await db.app.count({
@@ -33,6 +39,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    revalidateSeoIndexes();
     return NextResponse.json(app, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {

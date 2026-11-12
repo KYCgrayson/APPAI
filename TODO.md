@@ -1,5 +1,13 @@
 # TODO — AppAI Project Roadmap
 
+## Hosted page dashboard (#91, PR-5a — 2026-11-12)
+
+- [x] Group locale rows into logical pages under their roots; UTC Created/search/status URL filters, 100-page cursor pagination, locale/default/status chips, and reachable View/Privacy/Terms links.
+- [x] Share public visibility across S1–S8, validate App bindings against same-organisation roots, count logical root usage, and invalidate sitemap/hosted caches correctly.
+- [x] Fixed-clock F0/F1/F2 regression, surface, list, pagination, URL/label and App-binding tests; update publishing spec and feature map.
+- [x] Local checks: TypeScript, lint (0 errors), 637 passing tests (1 existing DB integration skipped), spec generation and feature-map check. Default build hits sandbox port binding; Webpack compiles and typechecks, then prerender requires DATABASE_URL.
+- [ ] Before merge: review production impact counts and verify a Vercel preview with a configured database. Removal columns, owner actions, API locks/DTOs and audit events belong to PR-5b.
+
 ## Video key moments (#91, PR-1)
 
 - [x] Generic optional moments/startAt and real SEO metadata; strict shared provider/file URL parsing, stable normalization and field-path validation on create/upsert, PUT, merged PATCH, section PATCH and preview.

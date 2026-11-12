@@ -379,6 +379,21 @@ This platform gives you full control over visual design. Every parameter below i
 
 PERSON pages are live at `/p/{slug}` immediately but appear in the AppAI directory only after AppAI review.
 
+### Public visibility and App bindings
+
+| Record | Public when |
+|---|---|
+| Root page locale | That row has `isPublished: true`. |
+| Child page locale | That row is published and at least one root locale with its `parentSlug` in the **same organisation** is published. |
+| App with `hostedPageSlug` | The App is approved and its bound root has a published locale in the **same organisation**. |
+| Standalone App (`hostedPageSlug: null` or `""`) | Existing App approval and runtime rules apply. |
+
+These rules apply to hosted routes, navigation, discovery indexes, directories, home cards/counts, App details/social metadata, form/order submissions and tool-session issuance. Hidden hosted routes and App details return 404; hidden App metadata is noindex. A published child stays stored when its root is unpublished, but visitors cannot reach it. Republishing a root makes its published children visible again.
+
+`POST /api/v1/apps` and `PUT /api/v1/apps/{id}` accept `hostedPageSlug` only for a root belonging to the authenticated organisation (a draft root is allowed). A child, foreign root or missing slug returns 400 with `details[].path: ["hostedPageSlug"]`. Clear a binding with `null` or `""` (stored as null); omitting it on PUT preserves the current binding. Clearing an ordinary binding remains supported.
+
+Sitemap and origin discovery caches are invalidated after publishing changes. External `llms.txt` caches may retain the previous response for up to one hour.
+
 ### Directory classification
 
 For approved, published root pages, the first matching rule wins: Universal App (`appType` set) → **Apps**; explicit `appai:kind:website|tool|app` tag → **Websites / Tools / Apps**; `iframe-tool`, `tool`, `media-downloader` or `video-subtitle` section → **Tools**; `download` section, App record `iosUrl`/`androidUrl`, or a link anywhere in content to `apps.apple.com`, `itunes.apple.com`, `play.google.com` or `testflight.apple.com` → **Apps**; otherwise → **Websites**, including `APP_LANDING` without app signals. PERSON profiles appear only in **All** and **Personal pages**.
