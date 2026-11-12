@@ -1,0 +1,92 @@
+/* Minimal Markdown typography; imported into the components layer. */
+.prose {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  line-height: 1.75;
+  --prose-link: var(--page-theme, #2563eb);
+  --prose-rule: color-mix(in srgb, currentColor 30%, transparent);
+  --prose-fill: color-mix(in srgb, currentColor 8%, transparent);
+}
+.prose-sm { font-size: 0.875rem; }
+.prose-base { font-size: 1rem; }
+.prose-lg { font-size: 1.125rem; }
+@media (min-width: 48rem) {
+  .md\:prose-base { font-size: 1rem; }
+  .md\:prose-lg { font-size: 1.125rem; }
+}
+.prose :where(p, ul, ol, blockquote, pre, table) { margin-block: 1em; }
+.prose :where(h2, h3, h4) {
+  font-weight: 600;
+  line-height: 1.35;
+  margin-block: 1.5em 0.6em;
+}
+.prose :where(h2) { font-size: 1.5em; }
+.prose :where(h3) { font-size: 1.25em; }
+.prose :where(h4) { font-size: 1.125em; }
+.prose :where(ul, ol) { padding-inline-start: 1.5em; }
+.prose :where(ul) { list-style-type: disc; }
+.prose :where(ol) { list-style-type: decimal; }
+.prose :where(ul ul) { list-style-type: circle; }
+.prose :where(li) { margin-block: 0.35em; }
+.prose :where(li > ul, li > ol) { margin-block: 0.35em; }
+.prose :where(a) {
+  color: var(--prose-link);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.prose :where(strong) { font-weight: 700; }
+.prose :where(blockquote) {
+  border-inline-start: 3px solid var(--prose-rule);
+  padding-inline-start: 1em;
+  font-style: italic;
+}
+.prose :where(code) {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.875em;
+  background-color: var(--prose-fill);
+  border-radius: 0.25rem;
+  padding: 0.15em 0.3em;
+}
+.prose :where(pre) {
+  max-width: 100%;
+  overflow-x: auto;
+  background-color: var(--prose-fill);
+  border-radius: 0.375rem;
+  padding: 1em;
+}
+.prose :where(pre code) { background: none; padding: 0; }
+.prose :where(hr) {
+  border: 0;
+  border-top: 1px solid var(--prose-rule);
+  margin-block: 2em;
+}
+/* The table itself scrolls, including when injecting this CSS on an existing page. */
+.prose :where(table) {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  text-align: start;
+}
+.prose :where(th, td) {
+  border: 1px solid var(--prose-rule);
+  padding: 0.5em 0.75em;
+  vertical-align: top;
+  min-width: 8em;
+}
+.prose :where(th) { background-color: var(--prose-fill); font-weight: 600; }
+.prose > :where(:first-child) { margin-block-start: 0; }
+.prose > :where(:last-child) { margin-block-end: 0; }
+/* Hosted editorial sections use data-dark; the platform uses .dark. */
+:where(.dark, [data-dark="true"]) .prose,
+.prose:where(.dark, [data-dark="true"]) {
+  --prose-link: var(--page-theme, #93c5fd);
+}
+/* Existing typography-plugin variants have no generator in this project.
+   Keep the blue variant as the theme-aware default and honor explicit white overrides. */
+.prose.prose-a\:text-white :where(a),
+.prose.prose-headings\:text-white :where(h2, h3, h4),
+.prose.prose-strong\:text-white :where(strong) { color: #fff; }
+.prose.prose-headings\:text-gray-200 :where(h2, h3, h4) { color: #e5e7eb; }

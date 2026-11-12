@@ -375,7 +375,7 @@ export function PageRenderer({
   };
 
   return (
-    <div style={wrapperStyle} data-typography={activeTypography ? "active" : undefined}>
+    <div style={wrapperStyle} data-dark={darkMode} data-typography={activeTypography ? "active" : undefined}>
       {activeTypography && <style>{typographyCss(settings)}</style>}
       {fontUrl && <link rel="stylesheet" href={fontUrl} />}
       {page.template === "GAME" && <header className="mx-auto max-w-5xl px-4 sm:px-6 pt-10 break-words"><h1 className="text-3xl sm:text-5xl font-bold mb-4" data-typography-role={activeTypography ? "display" : undefined}>{page.title}</h1>{page.tagline && <p className="text-lg">{page.tagline}</p>}</header>}
