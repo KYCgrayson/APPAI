@@ -1,5 +1,14 @@
 # TODO — AppAI Project Roadmap
 
+## Hosted header Home (#91, owner request — 2026-11-13)
+
+- [x] Keep a localized Home link beside the publisher name on child/policy pages at every width, retain Home in non-root nav, and reserve mobile title space.
+- [x] Link to AppAI home from desktop utilities, mobile drawer and footer; retain publisher branding as primary.
+- [x] Recover public site roots on hosted 404s, retain hosted chrome, and suppress empty/whitespace-only policy links including custom nav.
+- [x] Add English/Traditional Chinese root, child, policy and 404 render coverage plus visible-child navigation regression checks; document publisher-visible behavior and update the feature map.
+- [x] Validate TypeScript, lint (0 errors), full tests (686 passed, 4 existing optional checks skipped), spec generation and feature map using a temporary index; leave the real index unchanged.
+- [ ] Browser visual QA of the long English/Chinese titles at narrow widths: local fixtures prepared; sandboxed Chrome cannot launch and Computer Use access to Chrome was denied. Render coverage checks reserved title width, truncation, 44px links and all templates.
+
 ## Hosted page removal (#91, PR-5b — 2026-11-13)
 
 - [x] Nullable removal contract, validated DB CHECK, append-only event snapshots, idempotent M1 SQL, guarded abandonment down SQL and read-only drift verifier. SQL is prepared only; no real database used.

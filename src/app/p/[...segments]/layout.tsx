@@ -1,5 +1,7 @@
 import { publicPageWhere } from "@/lib/hosted-page-visibility";
-import { hostedPagePath } from "@/lib/hosted-page-urls";
+import { hostedPagePath, isUnavailableHostedPolicyLink } from "@/lib/hosted-page-urls";
+import { hostedNavigationCopy, hostedLinkFocus } from "@/lib/hosted-navigation-copy";
+import { proseThemeVariables } from "@/lib/prose-theme";
 import { normalizeHostedContent, contentString } from "@/lib/hosted-content";
 import { resolvePage, resolveChildPage } from "@/lib/hosted-page-resolver";
 import { withChineseLocales, chineseScript } from "@/lib/zh-convert";
@@ -8,7 +10,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { AccountControls } from "@/components/AccountControls";
-import { parsePageSegments, buildPagePath } from "@/lib/parse-page-segments";
+import { parsePageSegments } from "@/lib/parse-page-segments";
 import { LocaleLink } from "./LocaleLink";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { getExternalCanonical } from "@/lib/canonical";
@@ -43,6 +45,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
   const autoConverted = (childPage ?? page).autoConverted;
   const locale = childPage?.locale ?? page.locale;
   const labels = hostedChromeLabels(locale);
+  const navigation = hostedNavigationCopy(locale);
   const rootVariants = await db.hostedPage.findMany({
     where: { slug, organizationId: page.organizationId, ...publicPageWhere() },
     orderBy: [{ isDefault: "desc" }, { locale: "asc" }],
@@ -60,6 +63,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
     hostedPagePath(variant, rootVariants, parsed.subpage)!;
 
   const themeColor = page.themeColor || "#000000";
+  const downloadColor = proseThemeVariables(themeColor)?.["--page-theme-link-light"] || "#000000";
   const content = normalizeHostedContent(page.content);
   const defaultLogo = contentString(content.logo)
     || contentString(content.sections.find(s => s.type === "hero")?.data.logo)
@@ -92,17 +96,31 @@ export default async function HostedPageLayout({ params, children }: Props) {
   // hideFromNav + sorted by navOrder) or from an explicit content.nav[] on
   // the root page.
   const siblings = await loadSiblings(slug, page.organizationId, locale);
-  const rootHref = buildPagePath(slug, page.locale, null, page.isDefault);
-  const navItems = buildNav(content, siblings, rootHref, locale);
+  // A default child can have a different locale from the default root. Match
+  // the rendered child's locale when that root translation is available.
+  const localizedRoot = rootVariants.find(variant => variant.locale === locale) ?? page;
+  const rootHref = hostedPagePath(localizedRoot, rootVariants)!;
+  const isRootPage = !parsed.childSlug && !parsed.subpage;
+  const currentPageHref = parsed.childSlug ? (childPage ? hostedPagePath(childPage, rootVariants) : null)
+    : parsed.subpage ? hostedPagePath(page, rootVariants, parsed.subpage) : rootHref;
+  const isCurrentHref = (href: string) => href === currentPath || href === currentPageHref;
   const localeSegment = page.isDefault ? "" : page.locale;
+  const privacyHref = hostedPagePath(page, rootVariants, "privacy");
+  const termsHref = hostedPagePath(page, rootVariants, "terms");
+  const navItems = buildNav(content, siblings, rootHref, locale, isRootPage)
+    .filter(item => !isUnavailableHostedPolicyLink(resolveNavHref(item.target, slug, localeSegment).href, [page, ...rootVariants]));
+  // Filtering an explicit empty policy must not leave a Home-only root nav.
+  const visibleNavItems = isRootPage && navItems.every(item => item.target === rootHref) ? [] : navItems;
 
   // Pre-resolve hrefs for the mobile drawer. Keeping URL resolution on the
   // server keeps the client component pure-JSX.
-  const mobileNavLinks = navItems.map((item) => {
+  const mobileNavLinks = visibleNavItems.map((item) => {
     const { href, external } = resolveNavHref(item.target, slug, localeSegment);
-    return { label: item.label, href, external };
+    return { label: item.label, href, external, isCurrent: isCurrentHref(href) };
   });
-  const mobileUtilityLinks: { label: string; href: string; external?: boolean }[] = [];
+  const mobileUtilityLinks: { label: string; href: string; external?: boolean; isCurrent?: boolean }[] = [
+    { label: navigation.appai, href: "/" },
+  ];
   if (externalCanonical) {
     mobileUtilityLinks.push({
       label: `${labels.officialSite}: ${externalCanonical.host}`,
@@ -110,16 +128,18 @@ export default async function HostedPageLayout({ params, children }: Props) {
       external: true,
     });
   }
-  if (page.privacyPolicy) {
+  if (privacyHref) {
     mobileUtilityLinks.push({
       label: labels.privacy,
-      href: hostedPagePath(page, rootVariants, "privacy")!,
+      href: privacyHref,
+      isCurrent: parsed.subpage === "privacy",
     });
   }
-  if (page.termsOfService) {
+  if (termsHref) {
     mobileUtilityLinks.push({
       label: labels.terms,
-      href: hostedPagePath(page, rootVariants, "terms")!,
+      href: termsHref,
+      isCurrent: parsed.subpage === "terms",
     });
   }
   // The drawer is the only chrome left on narrow screens, so the account
@@ -138,7 +158,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
   }
 
   return (
-    <div lang={locale} dir={locale === "ar" || locale === "he" ? "rtl" : "ltr"} className="min-h-screen bg-white flex flex-col">
+    <div lang={locale} dir={locale === "ar" || locale === "he" ? "rtl" : "ltr"} className="min-h-screen bg-white text-gray-900 flex flex-col">
       <PageViewTracker
         pageId={page.id}
         slug={page.slug}
@@ -169,31 +189,41 @@ export default async function HostedPageLayout({ params, children }: Props) {
           data-cramped on its wrapper. Descendants that should hide when the
           header runs out of space use group-data-[cramped=true]/chrome:!hidden.
           The hamburger shows when cramped OR below the md breakpoint. */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b">
+      <header className="sticky top-0 z-50 bg-white text-gray-900 border-b">
         <AdaptiveChrome>
-          <a
-            href={hostedPagePath(page, rootVariants)!}
-            className="flex items-center gap-3 min-w-0 shrink md:shrink-0 group-data-[cramped=true]/chrome:!shrink"
-          >
-            {logo && (<>
-              {/* eslint-disable-next-line @next/next/no-img-element -- Publisher logo uses arbitrary hosts. */}
-              <img src={logo} alt={page.title} className="w-8 h-8 rounded-xl object-cover flex-shrink-0" />
-            </>)}
-            <span className="font-semibold text-lg truncate">{page.title}</span>
-          </a>
+          <div className="flex min-w-0 flex-1 items-center gap-2 md:flex-initial md:shrink-0 group-data-[cramped=true]/chrome:!flex-1 group-data-[cramped=true]/chrome:!shrink">
+            <a
+              href={rootHref}
+              aria-current={isRootPage ? "page" : undefined}
+              title={page.title}
+              className={`flex min-h-11 min-w-28 flex-1 items-center gap-2 rounded-md md:flex-initial md:shrink-0 group-data-[cramped=true]/chrome:!flex-1 group-data-[cramped=true]/chrome:!shrink ${hostedLinkFocus}`}
+            >
+              {logo && (<>
+                {/* eslint-disable-next-line @next/next/no-img-element -- Publisher logo uses arbitrary hosts. */}
+                <img src={logo} alt={page.title} className="w-8 h-8 rounded-xl object-cover flex-shrink-0" />
+              </>)}
+              <span className="min-w-16 font-semibold text-lg truncate">{page.title}</span>
+            </a>
+            {!isRootPage && (
+              <a href={rootHref} className={`inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md px-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 ${hostedLinkFocus}`}>
+                {navigation.home}
+              </a>
+            )}
+          </div>
 
           {/* Desktop inline nav — natural widths so overflow is measurable */}
-          {navItems.length > 0 && (
+          {visibleNavItems.length > 0 && (
             <nav className="hidden md:flex items-center gap-1 flex-shrink-0 group-data-[cramped=true]/chrome:!hidden">
-              {navItems.map((item, i) => {
+              {visibleNavItems.map((item, i) => {
                 const { href, external } = resolveNavHref(item.target, slug, localeSegment);
                 return (
                   <a
                     key={i}
                     href={href}
+                    aria-current={isCurrentHref(href) ? "page" : undefined}
                     target={external ? "_blank" : undefined}
                     rel={external ? "noopener noreferrer" : undefined}
-                    className="px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors whitespace-nowrap"
+                    className={`inline-flex min-h-11 items-center px-3 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors whitespace-nowrap ${hostedLinkFocus}`}
                   >
                     {item.label}
                   </a>
@@ -202,7 +232,12 @@ export default async function HostedPageLayout({ params, children }: Props) {
             </nav>
           )}
 
-          <div className="flex items-center gap-4 ml-auto flex-shrink-0">
+          <div className="flex items-center gap-2 sm:gap-4 ml-auto flex-shrink-0">
+            <Link href="/" className={`hidden md:inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm text-gray-600 hover:text-gray-900 group-data-[cramped=true]/chrome:!hidden ${hostedLinkFocus}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- Platform logo. */}
+              <img src="/appai-logo2.png" alt="" className="h-4 w-4 rounded" />
+              {navigation.appai}
+            </Link>
             {variants.length > 1 && (
               <div className="hidden md:flex items-center gap-1 text-sm group-data-[cramped=true]/chrome:!hidden">
                 {variants.map((v) => (
@@ -221,19 +256,19 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 href={externalCanonical.url}
                 target="_blank"
                 rel="noopener"
-                className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline whitespace-nowrap group-data-[cramped=true]/chrome:!hidden"
+                className={`text-sm text-gray-600 hover:text-gray-900 hidden md:inline-flex min-h-11 items-center rounded-md whitespace-nowrap group-data-[cramped=true]/chrome:!hidden ${hostedLinkFocus}`}
                 title={`${labels.officialSite}: ${externalCanonical.host}`}
               >
                 {labels.officialSite}: {externalCanonical.host}
               </a>
             )}
-            {page.privacyPolicy && (
-              <a href={hostedPagePath(page, rootVariants, "privacy")!} className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline whitespace-nowrap group-data-[cramped=true]/chrome:!hidden">
+            {privacyHref && (
+              <a href={privacyHref} aria-current={parsed.subpage === "privacy" ? "page" : undefined} className={`text-sm text-gray-600 hover:text-gray-900 hidden md:inline-flex min-h-11 items-center rounded-md whitespace-nowrap group-data-[cramped=true]/chrome:!hidden ${hostedLinkFocus}`}>
                 {labels.privacy}
               </a>
             )}
-            {page.termsOfService && (
-              <a href={hostedPagePath(page, rootVariants, "terms")!} className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline whitespace-nowrap group-data-[cramped=true]/chrome:!hidden">
+            {termsHref && (
+              <a href={termsHref} aria-current={parsed.subpage === "terms" ? "page" : undefined} className={`text-sm text-gray-600 hover:text-gray-900 hidden md:inline-flex min-h-11 items-center rounded-md whitespace-nowrap group-data-[cramped=true]/chrome:!hidden ${hostedLinkFocus}`}>
                 {labels.terms}
               </a>
             )}
@@ -242,32 +277,32 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 href={appStoreUrl || playStoreUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden md:inline text-sm text-white px-4 py-1.5 rounded-full font-medium whitespace-nowrap group-data-[cramped=true]/chrome:!hidden"
-                style={{ backgroundColor: themeColor }}
+                className={`hidden md:inline-flex min-h-11 items-center text-sm text-white px-4 rounded-full font-medium whitespace-nowrap group-data-[cramped=true]/chrome:!hidden ${hostedLinkFocus}`}
+                style={{ backgroundColor: downloadColor }}
               >
                 {labels.download}
               </a>
             )}
 
-            {/* Account state. Unlike the links above it has no
-                group-data-[cramped]/chrome:!hidden — being able to see at a
-                glance that you are signed in is the point, so it survives
-                every breakpoint. AccountControls truncates the name and drops
-                its Dashboard link below sm to stay narrow. */}
-            <AccountControls
-              user={session?.user}
-              isAdmin={
-                ((session as unknown as { role?: string })?.role ?? "USER") ===
-                "ADMIN"
-              }
-              callbackUrl={currentPath}
-              labels={{
-                signIn: labels.signIn,
-                dashboard: labels.dashboard,
-                signOut: labels.signOut,
-                account: labels.account,
-              }}
-            />
+            {/* Account actions move into the drawer when space is limited,
+                reserving enough room for the publisher name and Home. */}
+            <div className="hidden sm:block group-data-[cramped=true]/chrome:!hidden">
+              <AccountControls
+                compact
+                user={session?.user}
+                isAdmin={
+                  ((session as unknown as { role?: string })?.role ?? "USER") ===
+                  "ADMIN"
+                }
+                callbackUrl={currentPath}
+                labels={{
+                  signIn: labels.signIn,
+                  dashboard: labels.dashboard,
+                  signOut: labels.signOut,
+                  account: labels.account,
+                }}
+              />
+            </div>
 
             {/* Hamburger wrapper: shown when either (a) below md breakpoint OR
                 (b) AdaptiveChrome reports cramped=true at any breakpoint. */}
@@ -283,6 +318,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 utilityLinks={mobileUtilityLinks}
                 download={hasDownload ? { label: labels.download, href: (appStoreUrl || playStoreUrl) as string } : undefined}
                 themeColor={themeColor}
+                labels={navigation}
               />
             </div>
           </div>
@@ -298,43 +334,38 @@ export default async function HostedPageLayout({ params, children }: Props) {
       </main>
 
       {/* Footer */}
-      <footer className="py-8 border-t">
-        {(page.privacyPolicy || page.termsOfService) && (
-          <div className="flex justify-center gap-6 mb-4 text-sm text-gray-500">
-            {page.privacyPolicy && (
-              <a href={hostedPagePath(page, rootVariants, "privacy")!} className="hover:text-gray-800">
+      <footer className="py-8 border-t bg-white text-gray-900">
+        {(privacyHref || termsHref) && (
+          <div className="flex flex-wrap justify-center gap-6 mb-4 text-sm text-gray-600">
+            {privacyHref && (
+              <a href={privacyHref} aria-current={parsed.subpage === "privacy" ? "page" : undefined} className={`inline-flex min-h-11 items-center rounded-md px-2 hover:text-gray-900 ${hostedLinkFocus}`}>
                 {labels.privacyPolicy}
               </a>
             )}
-            {page.termsOfService && (
-              <a href={hostedPagePath(page, rootVariants, "terms")!} className="hover:text-gray-800">
+            {termsHref && (
+              <a href={termsHref} aria-current={parsed.subpage === "terms" ? "page" : undefined} className={`inline-flex min-h-11 items-center rounded-md px-2 hover:text-gray-900 ${hostedLinkFocus}`}>
                 {labels.termsOfService}
               </a>
             )}
           </div>
         )}
-        {/* The header belongs to the publisher, so this is a visitor's only
-            route back to AppAI. It used to be grey micro-text opening a new tab
-            on the marketing home page — which is not "going back" at all. Now
-            it is a same-tab link into the directory, weighted enough to find
-            without hunting, still clearly subordinate to the publisher's own
-            footer links above. */}
+        {/* Platform navigation stays subordinate to the publisher's branding. */}
         <div className="text-center text-sm text-gray-400">
           <Link
-            href="/apps"
-            className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-4 py-2 text-gray-600 transition-colors hover:border-gray-300 hover:text-gray-900"
+            href="/"
+            className={`inline-flex min-h-11 items-center gap-2 rounded-full border border-gray-200 px-4 py-2 text-gray-600 transition-colors hover:border-gray-300 hover:text-gray-900 ${hostedLinkFocus}`}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/appai-logo2.png" alt="" aria-hidden className="h-4 w-4 rounded" />
-            <span className="font-medium">AppAI</span>
+            <span className="font-medium">{navigation.appai}</span>
             <span aria-hidden className="text-gray-300">|</span>
             <span>{labels.browse}</span>
           </Link>
           {externalCanonical && (
-            <div className="mt-3 inline-flex w-full flex-wrap justify-center items-center gap-x-2 text-gray-400">
+            <div className="mt-3 inline-flex w-full flex-wrap justify-center items-center gap-x-2 text-gray-600">
               <span>{labels.landingPage}</span>
               <span aria-hidden>·</span>
-              <a href={externalCanonical.url} target="_blank" rel="noopener" className="hover:text-gray-600">
+              <a href={externalCanonical.url} target="_blank" rel="noopener" className={`inline-flex min-h-11 items-center rounded-md px-2 hover:text-gray-900 ${hostedLinkFocus}`}>
                 {externalCanonical.host}
               </a>
             </div>

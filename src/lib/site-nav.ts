@@ -2,33 +2,9 @@ import { publicPageWhere, publicRootSelect } from "./hosted-page-visibility";
 import { chineseFallback, chineseSourceLocales } from "./zh-convert";
 import { db } from "@/lib/db";
 import { sanitizeUrl } from "@/lib/sanitize";
+import { hostedNavigationCopy } from "./hosted-navigation-copy.ts";
 
-/**
- * Localized label for the root-page "Home" nav entry. Falls back to "Home"
- * for unlisted locales. Keep short — it appears as a nav tab.
- */
-export const HOME_LABELS: Record<string, string> = {
-  en: "Home",
-  "zh-TW": "首頁",
-  "zh-CN": "首页",
-  ja: "ホーム",
-  ko: "홈",
-  es: "Inicio",
-  fr: "Accueil",
-  de: "Startseite",
-  pt: "Início",
-  "pt-BR": "Início",
-  it: "Home",
-  nl: "Home",
-  ru: "Главная",
-  ar: "الرئيسية",
-  hi: "होम",
-  th: "หน้าแรก",
-  vi: "Trang chủ",
-  id: "Beranda",
-  ms: "Laman Utama",
-  tr: "Ana Sayfa",
-};
+export { HOME_LABELS } from "./hosted-navigation-copy.ts";
 
 export type SiblingRow = {
   slug: string;
@@ -104,17 +80,21 @@ export async function loadSiblings(
  * Build the navigation list for a site. Priority:
  *   1. Explicit `content.nav` array on the root page (escape hatch)
  *   2. Auto-generated: localized "Home" + one entry per visible child
- *   3. Empty list when the site is single-page
+ * Non-root pages always include Home, including explicit/empty navigation.
+ * A root with no visible children does not get a Home-only nav.
  */
 export function buildNav(
   rootContent: unknown,
   siblings: SiblingRow[],
   rootHref: string,
   locale: string,
+  isRootPage = true,
 ): NavItem[] {
+  const homeLabel = hostedNavigationCopy(locale).home;
+  const home = { label: homeLabel, target: rootHref };
   const explicit = (rootContent as { nav?: unknown })?.nav;
   if (Array.isArray(explicit)) {
-    return explicit
+    const items = explicit
       .filter((item): item is NavItem =>
         typeof item === "object" &&
         item !== null &&
@@ -122,11 +102,12 @@ export function buildNav(
         typeof (item as NavItem).target === "string",
       )
       .map((item) => ({ label: item.label, target: item.target }));
+    if (!isRootPage && !items.some(item => item.target === rootHref)) items.unshift(home);
+    return isRootPage && items.every(item => item.target === rootHref) ? [] : items;
   }
-  if (siblings.length === 0) return [];
-  const homeLabel = HOME_LABELS[locale] || HOME_LABELS.en;
+  if (siblings.length === 0) return isRootPage ? [] : [home];
   return [
-    { label: homeLabel, target: rootHref },
+    home,
     // Resolve child slugs against the current URL locale, including Chinese
     // conversion routes whose requested locale differs from the stored row.
     ...siblings.map(s => ({ label: s.title, target: s.slug })),

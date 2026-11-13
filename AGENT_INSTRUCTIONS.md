@@ -481,7 +481,15 @@ Every section supports `id` (anchor for `#links`). Use kit backgroundColors when
 
 ### Auto-Generated Features
 
-Every page automatically gets: sticky header (with logo, title, language switcher, download button), footer (privacy/terms links), dynamic favicon (from hero logo), breadcrumb navigation on sub-pages, alternating section backgrounds, responsive mobile layout, SEO meta tags, JSON-LD structured data.
+Every page automatically gets: sticky header (with logo, title, language switcher, download button), footer (nonempty privacy/terms links), dynamic favicon (from hero logo), breadcrumb navigation on sub-pages, alternating section backgrounds, responsive mobile layout, SEO meta tags, JSON-LD structured data.
+
+| Hosted navigation | Visitor behavior |
+|---|---|
+| Site name/logo | Links to the site's root in the current locale when available. |
+| Child and policy pages | Visible localized Home beside the site name on desktop and mobile; Home also stays in the site nav, even with hidden children or custom nav. Root pages do not show a Home-only nav. |
+| AppAI | Subordinate header utility link (mobile drawer) and footer link to the platform home `/`. |
+| Privacy/terms | Header, drawer, footer and explicit nav omit links to empty or whitespace-only built-in policies. |
+| Unavailable hosted URL | Localized 404 with AppAI home and a site Home link only when the root is public; valid hosted routes retain the shared header/footer. |
 
 ## How to Work with the User
 
@@ -1048,13 +1056,13 @@ Child slugs matching `^[a-z]{2}(-[A-Z]{2})?$` or `privacy`, `terms`, `tools` are
 
 ### How the site nav is built (automatic)
 
-Branding (logo + site title + language switcher + Privacy/Terms) lives in the layout's sticky header. The site nav below it lists child pages only — no branding. You don't need to build any nav chrome yourself.
+Branding (logo + site title + language switcher + nonempty Privacy/Terms) and the site nav live in the sticky header. Child and policy pages show a localized Home link beside the site title on desktop and mobile, even when all children are hidden from nav. AppAI home is available in the desktop utility area, mobile drawer and footer. You don't need to build any nav chrome yourself.
 
 - **Locale dedup is automatic.** If you create `{slug: "my-app-contact", locale: "en"}` and `{slug: "my-app-contact", locale: "zh-TW"}`, the nav shows one "Contact" entry, titled in whichever locale the visitor is on. Just create every locale variant and trust the renderer.
 - **"Home" is auto-localized** (en/zh-TW/zh-CN/ja/ko/es/fr/de/pt/ar/hi/th/vi + more). No action needed.
 - **Ordering** defaults to `createdAt`. Set `navOrder: <int>` on a child page to force position (smaller = first).
 - **Hide from nav**: set `hideFromNav: true` on any page that should exist but not appear in the nav — typical for compliance-only child pages such as `my-app-delete-account` reached from a link.
-- **Custom nav (escape hatch)**: set `content.nav: [{label, target}, ...]` on the root page to bypass auto-generation entirely. Target resolution: `https://...` → new tab, `#anchor` → in-page jump, `my-app-faq` → child page.
+- **Custom nav (escape hatch)**: set `content.nav: [{label, target}, ...]` on the root page to replace auto-generated child entries. Non-root pages retain Home; root pages omit a Home-only nav. Empty built-in policy targets are omitted. Target resolution: `https://...` → new tab, `#anchor` → in-page jump, `my-app-faq` → child page.
 
 ### Compliance pages: recommended flags
 
