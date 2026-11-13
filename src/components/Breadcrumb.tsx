@@ -14,7 +14,7 @@ export function Breadcrumb({ items, label, variant = "hosted", dark = false, the
   className?: string;
   LinkComponent?: ElementType;
 }) {
-  if (items.length < 2) return null;
+  if (items.length === 0) return null;
   const colors = proseThemeVariables(themeColor);
   const style = {
     backgroundColor: variant === "platform" ? "transparent" : dark ? "#111827" : "#ffffff",

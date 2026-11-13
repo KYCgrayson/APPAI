@@ -1,7 +1,6 @@
 import { publicPageWhere, publicAppFilter, publicRootSelect } from "@/lib/hosted-page-visibility";
 import { publisherLabel } from "@/lib/publisher-label";
 import { chineseFallback, chineseScript } from "@/lib/zh-convert";
-import { normalizeHostedContent } from "@/lib/hosted-content";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { db } from "@/lib/db";
@@ -13,7 +12,7 @@ import { groupByKey, pickByLocale } from "@/lib/locale-match";
 import { canLaunchUniversalApp, getUniversalAppLaunchPath } from "@/lib/universal-apps/directory";
 import { UNIVERSAL_APP_CATEGORIES } from "@/lib/universal-apps/manifest";
 import { getDirectoryCopy } from "@/lib/directory-copy";
-import { inferDirectoryKind, type DirectoryKind } from "@/lib/directory-kind";
+import { appDirectoryKind, type DirectoryKind } from "@/lib/directory-kind";
 
 type Props = {
   kind?: DirectoryKind;
@@ -86,28 +85,9 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
   const directoryApps = apps.filter((app) => {
     if (personalOnly) return false;
     const variants = app.hostedPageSlug ? variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) ?? [] : [];
-    // Games have their own catalog and /games/{slug} routes. A legacy tool/app
-    // tag or download section must never put one back in these directories.
-    if (app.tags.includes("appai:kind:game") || variants.some((page) => page.template === "GAME")) return false;
-    if ((variants.find((page) => page.isDefault) ?? variants[0])?.template === "PERSON") return false;
+    const pageKind = appDirectoryKind(app, variants);
+    if (!pageKind || pageKind === "games") return false;
     if (!kind) return true;
-    const page = app.hostedPageSlug
-      ? variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`)?.find((candidate) => candidate.isDefault)
-        ?? variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`)?.[0]
-      : undefined;
-    if (!app.appType && app.hostedPageSlug && !page) return false;
-    const content = normalizeHostedContent(page?.content);
-    const pageKind = inferDirectoryKind({
-      tags: app.tags,
-      appType: app.appType,
-      hostedPageSlug: app.hostedPageSlug,
-      template: page?.template,
-      content: page?.content,
-      url: app.url,
-      iosUrl: app.iosUrl,
-      androidUrl: app.androidUrl,
-      sectionTypes: content?.sections?.map((section) => section.type ?? ""),
-    });
     return pageKind === kind;
   });
 

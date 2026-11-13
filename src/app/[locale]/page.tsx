@@ -13,6 +13,7 @@ import NextLink from "next/link";
 import { Link } from "@/i18n/navigation";
 import { db } from "@/lib/db";
 import { AppCard } from "@/components/AppCard";
+import { PlatformBreadcrumb } from "@/components/PlatformBreadcrumb";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { PlatformFooter } from "@/components/PlatformFooter";
 import { groupByKey, pickByLocale } from "@/lib/locale-match";
@@ -61,6 +62,7 @@ export default async function HomePage() {
     <div className="min-h-screen bg-gray-950 text-gray-100">
       {/* Agent discovery metadata lives in src/app/layout.tsx. */}
       <PlatformHeader />
+      <div className="max-w-6xl mx-auto px-6 pt-4"><PlatformBreadcrumb dark /></div>
 
       {/* Hero */}
       <section className="relative py-28 md:py-36 px-6 text-center overflow-hidden">

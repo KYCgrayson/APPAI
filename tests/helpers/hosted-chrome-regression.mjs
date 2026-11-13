@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { registerHooks } from 'node:module';
 import ts from 'typescript';
+import { serializeJsonLd } from '../../src/lib/json-ld.ts';
 
 /** Load main's actual source in a separate module namespace, using fixture DB/auth. */
 export function registerMainHostedBaseline(ref = 'main', fixtureImports = []) {
@@ -21,7 +22,7 @@ export function registerMainHostedBaseline(ref = 'main', fixtureImports = []) {
   const hooks = registerHooks({
     resolve(specifier, context, next) {
       if (specifier.startsWith(prefix)) return { url: specifier, shortCircuit: true };
-      if (context.parentURL?.startsWith(prefix) && !['@/lib/db', '@/lib/auth', ...fixtureImports].includes(specifier)) {
+      if (context.parentURL?.startsWith(prefix) && !['@/lib/db', '@/lib/auth', '@/lib/iframe-tool-session', ...fixtureImports].includes(specifier)) {
         const path = specifier.startsWith('@/') ? `src/${specifier.slice(2)}`
           : specifier.startsWith('.') ? decodeURIComponent(new URL(specifier, context.parentURL).href.slice(prefix.length)) : null;
         if (path) for (const suffix of ['', '.ts', '.tsx']) {
@@ -35,6 +36,7 @@ export function registerMainHostedBaseline(ref = 'main', fixtureImports = []) {
       const path = decodeURIComponent(url.slice(prefix.length));
       const input = source(path);
       if (input === undefined) throw new Error(`Missing main baseline: ${path}`);
+      if (path.endsWith('.css')) return { format: 'module', source: 'export default {};', shortCircuit: true };
       if (path.endsWith('.json')) return { format: 'json', source: input, shortCircuit: true };
       return { format: 'module', shortCircuit: true, source: ts.transpileModule(input, {
         compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
@@ -88,15 +90,25 @@ export function normalizeHostedNavigationChanges(html, url) {
     .replace(/<span aria-hidden="true" class="text-gray-300">\|<\/span><span>[^<]*<\/span>/, ''));
 }
 
-/** Undo only #91's non-root breadcrumb addition/replacement for archived hashes.
- * Root HTML is returned byte-for-byte; dedicated render tests check the new trail.
+/** Undo approved breadcrumb rows/prefixes for historical pre-breadcrumb hashes.
+ * Dedicated #73 root comparisons allow only the row and matching JSON-LD.
  */
 export function normalizeHostedBreadcrumbChanges(html, url) {
   const trail = html.match(/<nav\b[^>]*data-breadcrumb="hosted"[^>]*>[\s\S]*?<\/nav>/)?.[0];
   if (!trail) return html;
-  const names = [...trail.matchAll(/title="([^"]*)"/g)].map(match => match[1]);
-  const href = trail.match(/<a\b[^>]*href="([^"]*)"/)?.[1];
+  const names = [...trail.matchAll(/title="([^"]*)"/g)].map(match => match[1]).slice(-2);
+  const href = [...trail.matchAll(/<a\b[^>]*href="([^"]*)"/g)].at(-1)?.[1];
   html = html.replace(trail, '');
+  const isRoot = /^\/p\/[^/]+(?:\/[a-z]{2}(?:-[a-z0-9]+)*)?$/i.test(url);
+  html = html.replace(/(<script type="application\/ld\+json">)([\s\S]*?)(<\/script>)/g, (script, open, json, close) => {
+    const data = JSON.parse(json);
+    if (!data['@graph']) return script;
+    data['@graph'] = data['@graph'].flatMap(item => {
+      if (item['@type'] !== 'BreadcrumbList') return [item];
+      return isRoot ? [] : [{ ...item, itemListElement: item.itemListElement.slice(-2).map((entry, index) => ({ ...entry, position: index + 1 })) }];
+    });
+    return open + serializeJsonLd(data) + close;
+  });
   if (/\/(privacy|terms)$/.test(url)) {
     const legacy = `<nav class="flex items-center gap-2 text-sm text-gray-500 mb-6 md:mb-8 flex-wrap"><a href="${href}" class="hover:text-gray-900 truncate max-w-[60%]">${names[0]}</a><span class="text-gray-300">/</span><span class="text-gray-900">${names[1]}</span></nav>`;
     html = html.replace(/(<div class="max-w-3xl mx-auto py-10 md:py-16 px-4 sm:px-6">)/, `$1${legacy}`);

@@ -186,7 +186,7 @@ export function registerHostedRenderLoader() {
     load(url, context, nextLoad) {
       if (url === 'fixture:next-image') return { format: 'module', source: 'export { Image as default } from "next/dist/client/image-component.js";', shortCircuit: true };
       if (url === 'fixture:identity') return { format: 'module', source: 'export function issueIframeToolSession() { throw new Error("Unexpected identity issuance in render fixture"); }', shortCircuit: true };
-      if (url === 'fixture:auth') return { format: 'module', source: 'export async function auth() { return null; } export function signIn() { throw new Error("Unexpected auth in render fixture"); }', shortCircuit: true };
+      if (url === 'fixture:auth') return { format: 'module', source: 'export async function auth() { return null; } export function signIn() { throw new Error("Unexpected auth in render fixture"); } export const signOut = signIn;', shortCircuit: true };
       if (url === 'fixture:db') return { format: 'module', source: 'export const db = globalThis[Symbol.for("appai.test.db")];', shortCircuit: true };
       if (url.endsWith('.css')) return { format: 'module', source: 'export default {};', shortCircuit: true };
       if (/\.[cm]?tsx?$/.test(url) && !url.includes('/node_modules/')) {
@@ -270,6 +270,38 @@ export function registerBreadcrumbNavigation() {
       return url === "fixture:breadcrumb-navigation" ? { format: "module", shortCircuit: true, source: `
         export function usePathname() { return globalThis[Symbol.for('appai.test.db')].hostedPath; }
       ` } : next(url, context);
+    },
+  });
+}
+
+/** Render auth states without a session, network request, or server action. */
+export function registerAuthRenderState(state) {
+  globalThis[Symbol.for('appai.test.auth-state')] = state;
+  return registerHooks({
+    resolve(specifier, context, next) {
+      if (specifier === '@/lib/universal-apps/runtime-session') return { url: 'fixture:auth-revocation', shortCircuit: true };
+      if (context.parentURL?.endsWith('/auth/device/page.tsx')) {
+        if (specifier === 'next/navigation') return { url: 'fixture:device-navigation', shortCircuit: true };
+        if (specifier === 'next-auth/react') return { url: 'fixture:device-session', shortCircuit: true };
+        if (specifier === 'react') return { url: 'fixture:device-state', shortCircuit: true };
+      }
+      return next(specifier, context);
+    },
+    load(url, context, next) {
+      const sources = {
+        'fixture:auth-revocation': 'export function revokeUniversalAppSessionsForUser() { throw new Error("Unexpected revocation"); }',
+        'fixture:device-navigation': `export function useSearchParams() { return new URLSearchParams(globalThis[Symbol.for('appai.test.auth-state')].code === null ? '' : 'code=QA-CODE'); }`,
+        'fixture:device-session': `export function useSession() { return { data: { user: { email: 'fixture@example.com' } }, status: 'authenticated' }; } export function signIn() { throw new Error('Unexpected sign-in'); }`,
+        'fixture:device-state': `
+          export * from 'react';
+          import { useState as realUseState } from 'react';
+          export function useState(initial) {
+            const fixture = globalThis[Symbol.for('appai.test.auth-state')];
+            return realUseState(initial === 'loading' ? fixture.state : initial === null ? { userCode: 'QA-CODE', createdAt: '2026-01-01', expiresAt: '2026-01-02' } : initial);
+          }
+        `,
+      };
+      return url in sources ? { format: 'module', shortCircuit: true, source: sources[url] } : next(url, context);
     },
   });
 }

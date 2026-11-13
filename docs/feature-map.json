@@ -149,6 +149,7 @@
         "src/app/api/v1/keys/**",
         "src/app/dashboard/settings/**",
         "src/components/AccountControls.tsx",
+        "src/components/AuthBreadcrumb.tsx",
         "src/templates/shared/LoginGate.tsx",
         "src/types/next-auth.d.ts",
         "tests/device-approval.test.ts",

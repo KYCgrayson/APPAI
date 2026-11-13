@@ -1,3 +1,5 @@
+import { normalizeHostedContent } from "./hosted-content.ts";
+
 export const DIRECTORY_KINDS = ["websites", "tools", "apps"] as const;
 
 export type DirectoryKind = (typeof DIRECTORY_KINDS)[number];
@@ -69,4 +71,16 @@ export function inferDirectoryKind(input: {
   if (input.sectionTypes?.some((section) => TOOL_SECTIONS.has(section))) return "tools";
   if (input.sectionTypes?.includes("download") || input.iosUrl || input.androidUrl || hasStoreLink(input.url) || hasStoreLink(input.content)) return "apps";
   return "websites";
+}
+
+/** Shared directory membership/classification, always using published root variants. */
+export function appDirectoryKind(app: Parameters<typeof inferDirectoryKind>[0], variants: readonly {
+  isDefault: boolean; template: string; content: unknown;
+}[]): DirectoryKind | "games" | null {
+  const page = variants.find(candidate => candidate.isDefault) ?? variants[0];
+  if (app.tags?.includes("appai:kind:game") || variants.some(candidate => candidate.template === "GAME")) return "games";
+  // PERSON profiles live in the separate personal-pages view, not /websites.
+  if (page?.template === "PERSON" || (!app.appType && app.hostedPageSlug && !page)) return null;
+  return inferDirectoryKind({ ...app, template: page?.template, content: page?.content,
+    sectionTypes: normalizeHostedContent(page?.content).sections.map(section => section.type) });
 }

@@ -1,3 +1,4 @@
+import { getPlatformLocale } from "@/lib/platform-locale";
 import { ManagementBreadcrumb } from "@/components/ManagementBreadcrumb";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -12,6 +13,8 @@ export default async function DashboardLayout({
   if (!session) redirect("/login");
 
   const isAdmin = session.role === "ADMIN";
+
+  const locale = await getPlatformLocale();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -73,7 +76,7 @@ export default async function DashboardLayout({
           </div>
         </div>
       </nav>
-      <ManagementBreadcrumb area="dashboard" />
+      <ManagementBreadcrumb area="dashboard" homeHref={locale === "en" ? "/" : `/${locale}/`} />
       <main className="max-w-6xl mx-auto py-8 px-6">{children}</main>
     </div>
   );

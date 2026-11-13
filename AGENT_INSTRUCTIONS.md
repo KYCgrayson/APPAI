@@ -619,17 +619,22 @@ The canonical compliance setup:
 
 ### Hosted breadcrumbs
 
-AppAI supplies a compact, single-line breadcrumb directly below the hosted header. Do not add a second breadcrumb in publisher sections.
+AppAI supplies a small, low-emphasis, single-line breadcrumb below the hosted header on every root and subpage. Publisher branding stays primary. Do not add a second breadcrumb in publisher sections.
 
 | Page | Visible trail |
 |---|---|
-| Root `/p/{slug}[/{locale}]` | None; root content and headers are unchanged. |
-| Child (including FAQ/contact) | Root name › child title |
-| Privacy / terms | Root name › localised policy title |
-| Missing page under a public root | Root name › localised “Page not found” |
-| Fullscreen iframe tool | Root name › tool heading, above the frame or access gate |
+| Root `/p/{slug}[/{locale}]` | AppAI › category › site name |
+| Child (including FAQ/contact) | AppAI › category › site name › child title |
+| Privacy / terms | AppAI › category › site name › localised policy title |
+| Missing page under a public root | AppAI › category › site name › localised “Page not found” |
+| Fullscreen iframe tool | AppAI › category › site name › tool heading, above the frame or access gate |
+| Site without a public directory listing | Omit category: AppAI › site name [› page title] |
 
-The root links to its hosted URL in the current content locale (default/fallback locale rules still apply). The last item is text with `aria-current="page"`; earlier items are links. Long labels keep their full text in `title`, truncate with an ellipsis, and scroll horizontally on mobile without wrapping. Hosted labels use the hosted copy tables with locale matching, independently of platform UI messages. Visible trails and `BreadcrumbList` JSON-LD use the same items, including policies and known-root 404s. Hidden or unknown roots expose no site breadcrumb.
+Category follows the approved App's existing directory classification from published root variants (Websites, Tools, Apps or Games), with the shared public-visibility/organisation predicate. Never link to a directory that does not list the site; unapproved Apps, foreign-organisation bindings and separate personal-profile views supply no category crumb. Draft translations never supply classification signals.
+
+AppAI links to platform home; category links to `/websites`, `/tools`, `/apps` or `/games`. Pick the platform locale from the hosted content locale with `pickByLocale` across the nine platform locales, falling back to English. AppAI/category labels come from `hosted-navigation-copy.ts` with hosted locale matching, independently of platform message catalogs. The site name links to its hosted URL in the current content locale (default/fallback locale rules still apply).
+
+The last item is plain text with `aria-current="page"`; every ancestor is a link. Long labels keep full text in `title`, truncate with an ellipsis, and scroll horizontally on mobile without wrapping. Visible trails and `BreadcrumbList` JSON-LD use the same items and absolute URLs, including AppAI/category on roots, policies, tools and known-root 404s. Hidden or unknown roots expose no site breadcrumb. The root header is unchanged; the house icon appears only on non-root pages.
 
 ## Managing Pages (CRUD)
 
