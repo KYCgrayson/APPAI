@@ -15,6 +15,7 @@ test.after(() => hooks.reverse().forEach(h => h.deregister()));
 const { loadPublicDirectory, loadPublicHome, loadPublicAppDetail } = await import("../src/lib/public-directory.ts");
 const { revalidateSeoIndexes } = await import("../src/lib/revalidate-seo.ts");
 const admin = await import("../src/app/api/admin/apps/route.ts");
+const adminUsers = await import("../src/app/api/admin/users/route.ts");
 const { PlatformDirectory } = await import("../src/components/PlatformDirectory.tsx");
 const { default: home } = await import("../src/app/[locale]/page.tsx");
 const detail = await import("../src/app/[locale]/apps/[id]/page.tsx");
@@ -137,6 +138,29 @@ test("all four admin actions invalidate after successful write; unapprove remove
       }
     }
   } finally { update.mock.restore(); }
+});
+
+test("admin role changes expire the public directory after a successful write", async () => {
+  const writes: unknown[] = [];
+  Object.assign(fixtureDb, { user: { async update(input: unknown) {
+    assert.deepEqual(state.invalidations, []);
+    assert.ok(state.entries.size > 0);
+    writes.push(input);
+  } } });
+  try {
+    for (const role of ["ADMIN", "USER"]) {
+      reset(); await loadPublicDirectory("en");
+      const response = await adminUsers.PATCH(new NextRequest("https://example.test/api/admin/users", {
+        method: "PATCH", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ userId: "fixture-user", role }),
+      }));
+      assert.equal(response.status, 200);
+      assert.deepEqual(writes.at(-1), { where: { id: "fixture-user" }, data: { role } });
+      assert.deepEqual(state.invalidations, [["seo-sitemap", { expire: 0 }], ["public-directory", { expire: 0 }]]);
+      assert.equal(state.entries.size, 0);
+    }
+    assert.equal(writes.length, 2);
+  } finally { Reflect.deleteProperty(fixtureDb, "user"); }
 });
 
 test("admin deletion invalidates; unauthorized, invalid and failed writes do not", async t => {
