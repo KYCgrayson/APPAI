@@ -29,6 +29,8 @@ interface Props {
   download?: { label: string; href: string };
   themeColor: string;
   labels?: ReturnType<typeof hostedNavigationCopy>;
+  /** Only non-root headers use the tighter mobile layout and 44px trigger. */
+  compact?: boolean;
 }
 
 /**
@@ -44,6 +46,7 @@ export function MobileMenu({
   download,
   themeColor,
   labels = hostedNavigationCopy("en"),
+  compact = false,
 }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -74,7 +77,9 @@ export function MobileMenu({
         aria-label={open ? labels.closeMenu : labels.openMenu}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center justify-center w-11 h-11 md:w-10 md:h-10 md:-mr-2 rounded-md text-gray-700 hover:bg-gray-100"
+        className={compact
+          ? "inline-flex items-center justify-center w-11 h-11 md:w-10 md:h-10 md:-mr-2 rounded-md text-gray-700 hover:bg-gray-100"
+          : "inline-flex items-center justify-center w-10 h-10 -mr-2 rounded-md text-gray-700 hover:bg-gray-100"}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

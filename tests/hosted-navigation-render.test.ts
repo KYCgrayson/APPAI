@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { renderHtml } from "./helpers/render-html.mjs";
 import { fixtureDb, registerHostedHeaders, registerHostedRenderLoader, registerHostedNavigationState } from "./helpers/hosted-render-loader.mjs";
+import { normalizeRootHeaderAdditions, registerMainHostedBaseline } from "./helpers/hosted-chrome-regression.mjs";
 
 const loader = registerHostedRenderLoader();
 const headers = registerHostedHeaders();
@@ -10,8 +11,9 @@ const state = {
 };
 // Render the real drawer and links with fixture auth and initial menu state.
 const hooks = registerHostedNavigationState(state);
+const baseline = registerMainHostedBaseline();
 
-test.after(() => { hooks.deregister(); headers.deregister(); loader.deregister(); });
+test.after(() => { baseline.deregister(); hooks.deregister(); headers.deregister(); loader.deregister(); });
 
 const { default: Layout } = await import("../src/app/p/[...segments]/layout.tsx");
 const { default: HostedPage } = await import("../src/app/p/[...segments]/page.tsx");
@@ -19,6 +21,7 @@ const { default: NotFound } = await import("../src/app/p/[...segments]/not-found
 const { buildNav } = await import("../src/lib/site-nav.ts");
 const { hostedNavigationCopy } = await import("../src/lib/hosted-navigation-copy.ts");
 const { isUnavailableHostedPolicyLink } = await import("../src/lib/hosted-page-urls.ts");
+const { default: MainLayout } = await import(baseline.layoutUrl);
 
 function root(locale: string) {
   return {
@@ -59,6 +62,58 @@ function anchors(html: string) {
     attributes: match[1], href: match[1].match(/href="([^"]*)"/)?.[1], text: match[2].replace(/<[^>]+>/g, "").trim(),
   }));
 }
+
+function header(html: string) {
+  return html.match(/<header\b[\s\S]*?<\/header>/)![0];
+}
+
+function responsiveClassSets(html: string, width: number) {
+  return [...html.matchAll(/class="([^"]*)"/g)].map(match => match[1].split(/\s+/).flatMap(token => {
+    const breakpoint = token.match(/^(sm|md):(.+)$/);
+    if (!breakpoint) return [token];
+    return width >= (breakpoint[1] === "sm" ? 640 : 768) ? [breakpoint[2]] : [];
+  }));
+}
+
+test("root headers render identically to main, including mobile and desktop class sets", async () => {
+  // 32 actual render pairs: four logo/nav fixtures × two locales × auth × drawer.
+  // Only AppAI links and aria-current may be removed. No class normalization.
+  for (const logo of [false, true]) for (const nav of [false, true]) {
+    for (const locale of ["en", "zh-TW"]) for (const signedIn of [false, true]) {
+      seed(locale, nav);
+      if (!logo) for (const row of fixtureDb.rows) row.content = { sections: [] };
+      state.user = signedIn ? { id: "fixture-user", name: "Fixture account" } : null;
+      for (const open of [false, true]) {
+        state.open = open;
+        const context = `${locale}, logo=${logo}, nav=${nav}, signedIn=${signedIn}, open=${open}`;
+        const params = Promise.resolve({ segments: path(locale).slice(3).split("/") });
+        const actual = normalizeRootHeaderAdditions(header(await renderHtml(await Layout({ params, children: null }))));
+        const expected = header(await renderHtml(await MainLayout({ params, children: null })));
+        assert.equal(actual, expected, context);
+        for (const width of [375, 1280]) {
+          assert.deepEqual(responsiveClassSets(actual, width), responsiveClassSets(expected, width), `${context}, width=${width}`);
+        }
+      }
+    }
+  }
+});
+
+test("only non-root headers use px-4 mobile gutters and keep a 4px account/menu gap", async () => {
+  seed("zh-TW", true);
+  for (const suffix of ["site-contact", "privacy", "terms", "404"]) {
+    for (const row of fixtureDb.rows) row.termsOfService = "Fixture terms text";
+    const html = header(await render("zh-TW", suffix, suffix === "404"));
+    assert.match(html, /class="group\/chrome [^"]*mx-auto px-4 md:px-6 [^"]*gap-0 md:gap-6/);
+    assert.doesNotMatch(html, /mx-auto px-2/);
+    assert.match(html, /class="flex items-center gap-1 md:gap-4 ml-auto flex-shrink-0"/);
+    assert.match(html, /w-11 h-11 md:w-10 md:h-10 md:-mr-2/);
+  }
+  const rootHtml = header(await render("zh-TW"));
+  assert.match(rootHtml, /mx-auto px-6 py-3 flex items-center gap-6/);
+  assert.match(rootHtml, /flex items-center gap-3 min-w-0/);
+  assert.match(rootHtml, /flex items-center gap-4 ml-auto/);
+  assert.match(rootHtml, /w-10 h-10 -mr-2 rounded-md/);
+});
 
 for (const locale of ["en", "zh-TW"]) {
   for (const kind of ["root", "child without siblings", "child with siblings", "privacy", "terms", "404"] as const) {

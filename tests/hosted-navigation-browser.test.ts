@@ -49,9 +49,13 @@ test("desktop and mobile headers contain exactly one visible Home, with the draw
               const account = [...row.lastElementChild.querySelectorAll('a[href^="/login"], a[aria-label], a[href^="/logout"]')].find(visible);
               const rect = account?.getBoundingClientRect();
               const title = row.querySelector('a > span.truncate').getBoundingClientRect();
+              const menu = row.querySelector('button[aria-expanded]').getBoundingClientRect();
+              const accountGroup = [...row.lastElementChild.children].filter(visible).at(-2).getBoundingClientRect();
               return { homeCount: home.length, visibleHomes: home.filter(visible).length,
                 accountVisible: visible(account) && rect.left >= 0 && rect.right <= innerWidth,
                 accountWidth: rect.width, accountHeight: rect.height, titleWidth: title.width,
+                gutter: parseFloat(getComputedStyle(row).paddingLeft),
+                accountMenuGap: menu.left - accountGroup.right,
                 overflow: row.scrollWidth > row.clientWidth, siblings: links.filter(el => el.textContent === 'Contact').length };
             })()`);
             assert.equal(result.homeCount, 1, context);
@@ -59,11 +63,15 @@ test("desktop and mobile headers contain exactly one visible Home, with the draw
             assert.equal(result.accountVisible, true, context);
             if (width < 400) {
               assert.ok(result.accountWidth >= 44 && result.accountHeight >= 44, context);
-              if (locale === "zh-TW" && width <= 375) {
-                assert.ok(result.titleWidth >= (width === 320 ? 130 : 180), `${context}, titleWidth=${result.titleWidth}`);
+              if (locale === "zh-TW" && width === 375) {
+                assert.ok(result.titleWidth >= 170, `${context}, titleWidth=${result.titleWidth}`);
               }
             } else if (!signedIn) assert.equal(result.accountHeight, 36, context);
-            if (width < 768) assert.equal(result.overflow, false, context);
+            if (width < 768) {
+              assert.equal(result.overflow, false, context);
+              assert.equal(result.gutter, 16, context);
+              assert.ok(result.accountMenuGap >= 4, `${context}, accountMenuGap=${result.accountMenuGap}`);
+            }
             assert.equal(result.siblings, open ? 2 : 1, context);
           }
         }

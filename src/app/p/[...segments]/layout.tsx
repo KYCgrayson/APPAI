@@ -181,7 +181,9 @@ export default async function HostedPageLayout({ params, children }: Props) {
     <a
       href={rootHref}
       aria-current={isRootPage ? "page" : undefined}
-      className="flex items-center gap-1 md:gap-3 min-w-0 shrink md:shrink-0 group-data-[cramped=true]/chrome:!shrink"
+      className={isRootPage
+        ? "flex items-center gap-3 min-w-0 shrink md:shrink-0 group-data-[cramped=true]/chrome:!shrink"
+        : "flex items-center gap-1 md:gap-3 min-w-0 shrink md:shrink-0 group-data-[cramped=true]/chrome:!shrink"}
     >
       {logo && (<>
         {/* eslint-disable-next-line @next/next/no-img-element -- Publisher logo uses arbitrary hosts. */}
@@ -240,7 +242,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
           header runs out of space use group-data-[cramped=true]/chrome:!hidden.
           The hamburger shows when cramped OR below the md breakpoint. */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b">
-        <AdaptiveChrome>
+        <AdaptiveChrome compact={!isRootPage}>
           {isRootPage ? branding : (
             <div className="flex min-w-0 shrink items-center gap-0 md:gap-2 md:shrink-0 group-data-[cramped=true]/chrome:!shrink">
               {branding}
@@ -271,7 +273,9 @@ export default async function HostedPageLayout({ params, children }: Props) {
             </nav>
           )}
 
-          <div className="flex items-center gap-0 md:gap-4 ml-auto flex-shrink-0">
+          <div className={isRootPage
+            ? "flex items-center gap-4 ml-auto flex-shrink-0"
+            : "flex items-center gap-1 md:gap-4 ml-auto flex-shrink-0"}>
             <Link href="/" className={`hidden md:inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm text-gray-600 hover:text-gray-900 group-data-[cramped=true]/chrome:!hidden ${hostedLinkFocus}`}>
               {/* eslint-disable-next-line @next/next/no-img-element -- Platform logo. */}
               <img src="/appai-logo2.png" alt="" className="h-4 w-4 rounded" />
@@ -359,7 +363,8 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 utilityLinks={mobileUtilityLinks}
                 download={hasDownload ? { label: labels.download, href: (appStoreUrl || playStoreUrl) as string } : undefined}
                 themeColor={themeColor}
-                labels={navigation}
+                labels={isRootPage ? undefined : navigation}
+                compact={!isRootPage}
               />
             </div>
           </div>
