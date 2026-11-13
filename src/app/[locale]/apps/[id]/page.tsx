@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { db } from "@/lib/db";
 import { PlatformHeader } from "@/components/PlatformHeader";
+import { PlatformBreadcrumb } from "@/components/PlatformBreadcrumb";
 import { pickByLocale } from "@/lib/locale-match";
 import { canLaunchUniversalApp, getUniversalAppLaunchPath } from "@/lib/universal-apps/directory";
 import type { Metadata } from "next";
@@ -128,9 +129,10 @@ export default async function AppDetailPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
-      <PlatformHeader breadcrumbs={[{ name: "AppAI", href: "/" }, { name: tb("apps"), href: "/apps" }, { name, href: `/apps/${id}` }]} />
+      <PlatformHeader />
 
       <div className="max-w-3xl mx-auto px-6 py-12">
+        <PlatformBreadcrumb items={[{ name: "AppAI", href: "/" }, { name: tb("apps"), href: "/apps" }, { name, href: `/apps/${id}` }]} />
         <div className="flex items-start gap-6 mb-8">
           {app.logoUrl ? (
             <img

@@ -1,16 +1,18 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import test from "node:test";
 import { renderHtml } from "./helpers/render-html.mjs";
 import { page, app } from "./fixtures/pr5-pages.ts";
 import { fixtureDb, registerHostedRenderLoader, registerHostedHeaders, registerDirectoryFixtures, registerBreadcrumbNavigation } from "./helpers/hosted-render-loader.mjs";
+import { registerMainHostedBaseline } from "./helpers/hosted-chrome-regression.mjs";
+import { hostedNavigationCopy } from "../src/lib/hosted-navigation-copy.ts";
 
 const hooks = [registerHostedRenderLoader(), registerHostedHeaders(), registerDirectoryFixtures({ translated: true }), registerBreadcrumbNavigation()];
 test.after(() => hooks.reverse().forEach(hook => hook.deregister()));
 const { default: HostedPage } = await import("../src/app/p/[...segments]/page.tsx");
 const { default: HostedLayout } = await import("../src/app/p/[...segments]/layout.tsx");
 const { default: NotFound } = await import("../src/app/not-found.tsx");
-const { PlatformHeader } = await import("../src/components/PlatformHeader.tsx");
 const { Breadcrumb } = await import("../src/components/Breadcrumb.tsx");
 const { ManagementBreadcrumb } = await import("../src/components/ManagementBreadcrumb.tsx");
 const { default: AppDetail } = await import("../src/app/[locale]/apps/[id]/page.tsx");
@@ -79,24 +81,25 @@ for (const locale of ["en", "zh-TW"]) {
     }
   });
 
-  test(`${locale}: platform directories, app detail, auth/support and home`, async () => {
+  test(`${locale}: platform directories, app detail, feedback and home`, async () => {
     fixtureDb.locale = locale;
     fixtureDb.rows = [page("public-app", { title: "My app" }), page("public-app", { id: "tw", locale: "zh-TW", isDefault: false, title: "我的應用" })];
     fixtureDb.apps = [app("app-crumb", "public-app")];
     const prefix = locale === "en" ? "" : "/zh-TW";
     const label = locale === "en" ? "Breadcrumb" : "導覽路徑";
-    for (const [section, name] of Object.entries(locale === "en" ? { apps: "Apps", websites: "Websites", tools: "Tools", games: "Games" } : { apps: "應用程式", websites: "網站", tools: "工具", games: "遊戲" })) {
+    for (const [section, name] of Object.entries(locale === "en" ? { apps: "Apps", websites: "Websites", tools: "Tools" } : { apps: "應用程式", websites: "網站", tools: "工具" })) {
       const { default: Directory } = await import(`../src/app/[locale]/${section}/page.tsx`);
       const html = await renderHtml(await Directory({ searchParams: Promise.resolve({}) }));
       trail(html, ["AppAI", name], [`${prefix}/`], label);
-      assert.match(html, /<\/header><nav[^>]*data-breadcrumb="platform"/);
+      assert.match(html, /<\/header><main[^>]*><nav[^>]*data-breadcrumb="platform"/);
+      assert.match(html.match(/<header\b[\s\S]*?<\/header>/)![0], /<span>AppAI<\/span>[\s\S]*aria-label="Main navigation"/);
     }
     const detail = await renderHtml(await AppDetail({ params: Promise.resolve({ locale, id: "app-crumb" }) }));
     trail(detail, ["AppAI", locale === "en" ? "Apps" : "應用程式", locale === "en" ? "My app" : "我的應用"], [`${prefix}/`, `${prefix}/apps`], label);
-    const pages = locale === "en" ? { signIn: "Sign in", signOut: "Sign out", feedback: "Feedback", deviceAuth: "Device authorization" } : { signIn: "登入", signOut: "登出", feedback: "意見回饋", deviceAuth: "裝置授權" };
-    for (const [pageLabel, name] of Object.entries(pages)) {
-      trail(await renderHtml(await PlatformHeader({ pageLabel: pageLabel as "signIn" })), ["AppAI", name], [`${prefix}/`], label);
-    }
+    const { default: FeedbackPage } = await import("../src/app/[locale]/feedback/page.tsx");
+    const feedback = await renderHtml(await FeedbackPage());
+    trail(feedback, ["AppAI", locale === "en" ? "Feedback" : "意見回饋"], [`${prefix}/`], label);
+    assert.match(feedback, /<\/header><main[^>]*><nav[^>]*data-breadcrumb="platform"/);
     trail(await renderHtml(await PlatformHome()), [], []);
   });
 }
@@ -128,17 +131,39 @@ test("fullscreen hosted tools keep a trail above either the frame or access gate
   }
 });
 
-test("static game play pages reuse the shared localized trail below their toolbar", async () => {
-  const { NextRequest } = await import("next/server.js");
-  const { GET } = await import("../src/app/games/[slug]/runtime/route.ts");
-  for (const locale of ["en", "zh-TW"]) {
-    const response = await GET(new NextRequest(`https://appai.info/games/water-pouring/play?locale=${locale}&game=water`), { params: Promise.resolve({ slug: "water-pouring" }) });
-    const html = await response.text();
-    const prefix = locale === "en" ? "" : "/zh-TW";
-    trail(html, ["AppAI", locale === "en" ? "Games" : "遊戲", locale === "en" ? "Water Pouring" : "量水"], [`${prefix}/`, `${prefix}/games`], locale === "en" ? "Breadcrumb" : "導覽路徑");
-    assert.match(html, /89px/);
-    assert.match(html, /#appai-play-chrome ol\{[^}]*flex-wrap:nowrap/);
-    assert.ok(html.indexOf('id="appai-play-nav"') < html.indexOf('data-breadcrumb='));
+test("static game play pages preserve main's toolbar and viewport with no added trail", async () => {
+  const baseline = registerMainHostedBaseline();
+  try {
+    const { NextRequest } = await import("next/server.js");
+    const { GET } = await import("../src/app/games/[slug]/runtime/route.ts");
+    const { GET: MainGET } = await import(baseline.moduleUrl("src/app/games/[slug]/runtime/route.ts"));
+    for (const locale of ["en", "zh-TW"]) {
+      const request = new NextRequest(`https://appai.info/games/water-pouring/play?locale=${locale}&game=water`);
+      const params = Promise.resolve({ slug: "water-pouring" });
+      const response = await GET(request, { params });
+      const html = await response.text();
+      assert.equal(html, await (await MainGET(request, { params })).text());
+      trail(html, [], []);
+      assert.doesNotMatch(html, /appai-play-chrome|89px/);
+      assert.match(html, /id="appai-play-nav"/);
+    }
+  } finally { baseline.deregister(); }
+});
+
+test("auth flow layouts match main without added headers or breadcrumbs", () => {
+  for (const path of ["login/page.tsx", "logout/page.tsx", "auth/device/page.tsx"]) {
+    const file = `src/app/[locale]/${path}`;
+    const current = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
+    assert.equal(current, execFileSync("git", ["show", `main:${file}`], { encoding: "utf8" }));
+    assert.doesNotMatch(current, /PlatformHeader|Breadcrumb/);
+  }
+  assert.equal(existsSync(new URL("../src/app/[locale]/auth/device/layout.tsx", import.meta.url)), false);
+});
+
+test("all nine platform breadcrumb landmarks describe navigation rather than the current page", () => {
+  for (const locale of ["en", "zh-TW", "zh-CN", "ja", "ko", "de", "es", "fr", "hi"]) {
+    const messages = JSON.parse(readFileSync(new URL(`../src/messages/${locale}.json`, import.meta.url), "utf8"));
+    assert.equal(messages.breadcrumbs.label, locale === "hi" ? "पेज का रास्ता" : hostedNavigationCopy(locale).breadcrumb, locale);
   }
 });
 

@@ -3,7 +3,7 @@ import { registerHooks } from 'node:module';
 import ts from 'typescript';
 
 /** Load main's actual source in a separate module namespace, using fixture DB/auth. */
-export function registerMainHostedBaseline(ref = 'main') {
+export function registerMainHostedBaseline(ref = 'main', fixtureImports = []) {
   const root = new URL('../../', import.meta.url);
   // Virtual files stay under the repo so bare imports find the installed deps.
   const prefix = new URL(`.hosted-${ref}/`, root).href;
@@ -21,7 +21,7 @@ export function registerMainHostedBaseline(ref = 'main') {
   const hooks = registerHooks({
     resolve(specifier, context, next) {
       if (specifier.startsWith(prefix)) return { url: specifier, shortCircuit: true };
-      if (context.parentURL?.startsWith(prefix) && !['@/lib/db', '@/lib/auth'].includes(specifier)) {
+      if (context.parentURL?.startsWith(prefix) && !['@/lib/db', '@/lib/auth', ...fixtureImports].includes(specifier)) {
         const path = specifier.startsWith('@/') ? `src/${specifier.slice(2)}`
           : specifier.startsWith('.') ? decodeURIComponent(new URL(specifier, context.parentURL).href.slice(prefix.length)) : null;
         if (path) for (const suffix of ['', '.ts', '.tsx']) {
@@ -41,7 +41,7 @@ export function registerMainHostedBaseline(ref = 'main') {
       }).outputText };
     },
   });
-  return { layoutUrl: prefix + 'src/app/p/[...segments]/layout.tsx', deregister: () => hooks.deregister() };
+  return { layoutUrl: prefix + 'src/app/p/[...segments]/layout.tsx', moduleUrl: path => prefix + path, deregister: () => hooks.deregister() };
 }
 
 /** Root diffs may remove AppAI and aria-current only; never rewrite classes. */
@@ -67,7 +67,7 @@ export function normalizeHostedNavigationChanges(html, url) {
       .replace('flex items-center gap-1 md:gap-4 ml-auto', 'flex items-center gap-4 ml-auto')
       .replace('w-11 h-11 md:w-10 md:h-10 md:-mr-2 rounded-md', 'w-10 h-10 -mr-2 rounded-md');
     // Unwrap the Home icon + branding group, retaining the original name link.
-    header = header.replace(/<div class="flex min-w-0 shrink items-center gap-0 md:gap-2 md:shrink-0 group-data-\[cramped=true\]\/chrome:!shrink"><a\b[^>]*aria-label="[^"]*"[^>]*><svg\b[\s\S]*?<\/svg><\/a>(<a\b[\s\S]*?<\/a>)<\/div>/, '$1');
+    header = header.replace(/<div class="flex min-w-0 shrink items-center gap-[01] md:gap-2 md:shrink-0 group-data-\[cramped=true\]\/chrome:!shrink"><a\b[^>]*aria-label="[^"]*"[^>]*><svg\b[\s\S]*?<\/svg><\/a>(<a\b[\s\S]*?<\/a>)<\/div>/, '$1');
     header = header.replace(/<a\b[^>]*aria-label="[^"]*"[^>]*class="inline-flex h-11 w-11[^>]*>[\s\S]*?<\/a>/, '')
       .replace(/<div class="hidden min-\[400px\]:flex items-center">(<(?:a|div)\b[\s\S]*?<\/(?:a|div)>)<\/div>/, '$1');
     if (nonRoot) {

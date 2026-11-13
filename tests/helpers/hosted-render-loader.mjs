@@ -142,7 +142,17 @@ export function registerDirectoryFixtures({ translated = false } = {}) {
           return t;
         }
       `, shortCircuit: true };
-      if (url === 'fixture:intl-client') return { format: 'module', source: `export function useLocale() { return globalThis[Symbol.for('appai.test.db')].locale; }`, shortCircuit: true };
+      if (url === 'fixture:intl-client') return { format: 'module', source: `
+        import { readFileSync } from 'node:fs';
+        import { createTranslator } from 'use-intl/core';
+        export function useLocale() { return globalThis[Symbol.for('appai.test.db')].locale; }
+        export function useTranslations(namespace) {
+          if (!${translated}) return key => key;
+          const locale = useLocale();
+          const messages = JSON.parse(readFileSync(${JSON.stringify(sourceRoot)} + 'messages/' + locale + '.json', 'utf8'));
+          return createTranslator({ locale, namespace, messages });
+        }
+      `, shortCircuit: true };
       if (url === 'fixture:navigation') return { format: 'module', source: `
         import { createElement } from 'react';
         export function Link({ href, children, ...props }) {

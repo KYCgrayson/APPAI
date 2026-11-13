@@ -57,6 +57,7 @@ test("desktop and mobile headers contain exactly one visible Home, with the draw
               const accountGroup = [...row.lastElementChild.children].filter(visible).at(-2).getBoundingClientRect();
               const homeRect = home[0].getBoundingClientRect();
               const svg = home[0].querySelector('svg');
+              const brand = home[0].nextElementSibling.getBoundingClientRect();
               home[0].focus();
               return { firstFocusableIsHome: header.querySelector('a[href], button, input, [tabindex="0"]') === home[0],
                 homeIsFirstElement: row.firstElementChild.firstElementChild === home[0],
@@ -68,6 +69,7 @@ test("desktop and mobile headers contain exactly one visible Home, with the draw
                 homeCount: home.length, visibleHomes: home.filter(visible).length,
                 accountVisible: visible(account) && rect.left >= 0 && rect.right <= innerWidth,
                 accountWidth: rect.width, accountHeight: rect.height, titleWidth: title.width,
+                homeBrandGap: brand.left - homeRect.right,
                 gutter: parseFloat(getComputedStyle(row).paddingLeft),
                 accountMenuGap: menu.left - accountGroup.right,
                 overflow: row.scrollWidth > row.clientWidth, siblings: links.filter(el => el.textContent === 'Contact').length };
@@ -87,7 +89,8 @@ test("desktop and mobile headers contain exactly one visible Home, with the draw
             if (width < 400) {
               assert.ok(result.accountWidth >= 44 && result.accountHeight >= 44, context);
               if (locale === "zh-TW" && [320, 375].includes(width)) {
-                assert.equal(Math.round(result.titleWidth), width - (logo ? 204 : 168), context);
+                assert.equal(Math.round(result.titleWidth), width - (logo ? 208 : 172), context);
+                if (width === 375 && logo) assert.ok(result.titleWidth >= 165, `${context}: ${result.titleWidth}px`);
                 if (!signedIn && !open && suffix === "contact") t.diagnostic(`zh-TW title at ${width}px, logo=${logo}: ${result.titleWidth}px`);
               }
             } else if (!signedIn) assert.equal(result.accountHeight, 36, context);
@@ -95,6 +98,7 @@ test("desktop and mobile headers contain exactly one visible Home, with the draw
               assert.equal(result.overflow, false, context);
               assert.equal(result.gutter, 16, context);
               assert.ok(result.accountMenuGap >= 4, `${context}, accountMenuGap=${result.accountMenuGap}`);
+              assert.ok(result.homeBrandGap >= 4 && result.homeBrandGap <= 8, `${context}, homeBrandGap=${result.homeBrandGap}`);
             }
             assert.equal(result.siblings, open ? 2 : 1, context);
           }

@@ -245,7 +245,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b">
         <AdaptiveChrome compact={!isRootPage}>
           {isRootPage ? branding : (
-            <div className="flex min-w-0 shrink items-center gap-0 md:gap-2 md:shrink-0 group-data-[cramped=true]/chrome:!shrink">
+            <div className="flex min-w-0 shrink items-center gap-1 md:gap-2 md:shrink-0 group-data-[cramped=true]/chrome:!shrink">
               <a href={rootHref} aria-label={navigation.home} title={navigation.home}
                 className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 transition-colors hover:bg-gray-100 ${hostedLinkFocus}`}
                 // Hosted chrome stays white in both page modes. Use the light

@@ -6,7 +6,7 @@ import { GAMES, getOwnGame, getGamesCopy, gamePlayHref } from "../src/lib/games-
 import { gameNavigationLocale, injectGameNavigation } from "../src/lib/game-play-shell.ts";
 import { getGamePageLabels } from "../src/lib/games-pages-copy.ts";
 import { locales } from "../src/i18n/routing.ts";
-import { registerHostedRenderLoader, registerDirectoryFixtures } from "./helpers/hosted-render-loader.mjs";
+import { registerHostedRenderLoader } from "./helpers/hosted-render-loader.mjs";
 
 test("play shell localizes three navigation links, reserves control space and keeps static assets", () => {
   for (const game of GAMES) for (const locale of locales) {
@@ -117,7 +117,6 @@ test("Game info follows internal puzzle switching and history navigation without
 
 test("runtime route serves all five pages from allowlisted existing static builds, including HEAD", async () => {
   const hooks = registerHostedRenderLoader();
-  const intl = registerDirectoryFixtures({ translated: true });
   try {
     const { GET } = await import("../src/app/games/[slug]/runtime/route.ts");
     const { NextRequest } = await import("next/server");
@@ -134,5 +133,5 @@ test("runtime route serves all five pages from allowlisted existing static build
       const response = await GET(new NextRequest("https://appai.info/games/unknown/runtime"), { params: Promise.resolve({ slug }) });
       assert.equal(response.status, 404);
     }
-  } finally { intl.deregister(); hooks.deregister(); }
+  } finally { hooks.deregister(); }
 });
