@@ -1,3 +1,6 @@
+import { appDirectoryKind, isPersonalDirectoryProfile } from "@/lib/directory-kind";
+import { getDirectoryCopy } from "@/lib/directory-copy";
+import { breadcrumbJsonLd } from "@/lib/breadcrumbs";
 import { publicPageWhere, publicAppFilter, publicRootSelect } from "@/lib/hosted-page-visibility";
 import { platformUrl, platformAlternates, platformOpenGraphLocale, DEFAULT_SHARE_IMAGE } from "@/lib/platform-seo";
 import { serializeJsonLd } from "@/lib/json-ld";
@@ -21,14 +24,14 @@ interface Props {
  * published in that language. `App` itself is single-language (TODO.md D2), so
  * the hosted page is the only place per-locale copy exists today.
  */
-async function loadLocalizedCopy(hostedPageSlug: string | null, organizationId: string, locale: string) {
-  if (!hostedPageSlug) return undefined;
+async function loadPublicVariants(hostedPageSlug: string | null, organizationId: string) {
+  if (!hostedPageSlug) return [];
   const variants = await db.hostedPage.findMany({
     where: { slug: hostedPageSlug, organizationId, ...publicPageWhere() },
-    select: { locale: true, isDefault: true, title: true, tagline: true, metaDescription: true },
+    select: { locale: true, isDefault: true, title: true, tagline: true, metaDescription: true, template: true, content: true },
     orderBy: [{ slug: "asc" }, { locale: "asc" }],
   });
-  return pickByLocale(variants, locale);
+  return variants;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -37,7 +40,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const app = await db.app.findFirst({ where: { id, ...publicAppFilter(roots) } });
   if (!app) return { robots: { index: false } };
 
-  const localized = await loadLocalizedCopy(app.hostedPageSlug, app.organizationId, locale);
+  const variants = await loadPublicVariants(app.hostedPageSlug, app.organizationId);
+  const localized = pickByLocale(variants, locale);
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
   const title = `${localized?.title || app.name} - AppAI`;
   const description = localized?.metaDescription || localized?.tagline || app.tagline || undefined;
@@ -78,8 +82,18 @@ export default async function AppDetailPage({ params }: Props) {
   }
 
   const tb = await getTranslations("breadcrumbs");
-  const localized = await loadLocalizedCopy(app.hostedPageSlug, app.organizationId, locale);
+  const variants = await loadPublicVariants(app.hostedPageSlug, app.organizationId);
+  const localized = pickByLocale(variants, locale);
   const name = localized?.title || app.name;
+  const kind = appDirectoryKind(app, variants);
+  const directory = isPersonalDirectoryProfile(variants)
+    ? { name: getDirectoryCopy(locale).personalPages, href: "/websites?type=personal" }
+    : kind ? { name: tb(kind), href: `/${kind}` } : null;
+  const trail = [
+    { name: "AppAI", href: "/" },
+    ...(directory ? [directory] : []),
+    { name, href: `/apps/${id}` },
+  ];
   const tagline = localized?.tagline || app.tagline;
   const categoryLabel = ta.has(`categories.${app.category}`)
     ? ta(`categories.${app.category}`)
@@ -129,10 +143,17 @@ export default async function AppDetailPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd({
+        "@context": "https://schema.org",
+        ...breadcrumbJsonLd(trail.map(item => {
+          const url = new URL(item.href, baseUrl);
+          return { ...item, href: platformUrl(url.pathname, locale, baseUrl) + url.search };
+        }), baseUrl),
+      }) }} />
       <PlatformHeader />
 
       <div className="max-w-3xl mx-auto px-6 pt-4 pb-12">
-        <PlatformBreadcrumb items={[{ name: "AppAI", href: "/" }, { name: tb("apps"), href: "/apps" }, { name, href: `/apps/${id}` }]} dark={false} />
+        <PlatformBreadcrumb items={trail} dark={false} />
         <div className="flex items-start gap-6 mb-8">
           {app.logoUrl ? (
             <img

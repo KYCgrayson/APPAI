@@ -1,5 +1,6 @@
 "use client";
 
+import { AuthBreadcrumb } from "@/components/AuthBreadcrumb";
 import { useSearchParams } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 import { useEffect, useRef, useState, Suspense } from "react";
@@ -81,7 +82,8 @@ function DeviceAuthContent() {
   if (!code) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
+        <div className="relative bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
+          <AuthBreadcrumb page="deviceAuth" />
           <h1 className="text-2xl font-bold text-red-600 mb-4">{t("invalidLink")}</h1>
           <p className="text-gray-600">{t("missingCode")}</p>
         </div>
@@ -91,7 +93,8 @@ function DeviceAuthContent() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
+      <div className="relative bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
+          <AuthBreadcrumb page="deviceAuth" />
         <h1 className="text-2xl font-bold mb-6">{t("authorizeDevice")}</h1>
 
         <div className="mb-6 p-4 bg-gray-100 rounded-lg">
@@ -169,7 +172,8 @@ function DeviceAuthContent() {
 export default function DeviceAuthPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="relative min-h-screen flex items-center justify-center bg-gray-50">
+        <AuthBreadcrumb page="deviceAuth" />
         <p className="text-gray-500">Loading...</p>
       </div>
     }>

@@ -155,7 +155,7 @@ export default async function HostedPage({ params }: Props) {
     if (!check.ok || !check.url) notFound();
 
     const themeColor = rootPage.themeColor || "#000000";
-    const toolTrail = hostedBreadcrumbs(rootPage, [rootPage], rootPage.locale, {
+    const toolTrail = await hostedBreadcrumbs(rootPage, [rootPage], rootPage.locale, {
       name: data.heading || rootPage.title, href: `/p/${rootPage.slug}/tools/${toolOrder}`,
     });
     const toolBreadcrumb = <>
@@ -289,10 +289,10 @@ export default async function HostedPage({ params }: Props) {
   if (!pageUrl) notFound();
   const legal = subpage ? hostedLegalCopy(page.locale, subpage, page.title) : null;
 
-  const trail = childSlug || subpage ? hostedBreadcrumbs(rootPage, roots, page.locale, {
+  const trail = await hostedBreadcrumbs(rootPage, roots, page.locale, childSlug || subpage ? {
     name: legal?.heading ?? page.title,
     href: hostedPageUrl(page, roots, baseUrl, subpage) ?? pageUrl,
-  }) : [];
+  } : undefined);
   const breadcrumb = breadcrumbJsonLd(trail, baseUrl);
   const visibleBreadcrumb = trail.length > 0 ? <Breadcrumb items={trail}
     label={hostedNavigationCopy(page.locale).breadcrumb} themeColor={rootPage.themeColor}

@@ -30,7 +30,7 @@ export default async function NotFound() {
   const hasLayoutMain = layoutPath && layoutPath.toolOrder === null
     && await resolvePage(layoutPath.slug, layoutPath.locale);
   const Container = hasLayoutMain ? "section" : "main";
-  const trail = root && rootHref ? hostedBreadcrumbs(root, [root], locale, { name: copy.notFound, href: hostedPath! }) : [];
+  const trail = root && rootHref ? await hostedBreadcrumbs(root, [root], locale, { name: copy.notFound, href: hostedPath! }) : [];
   return <>
     <Breadcrumb items={trail} label={copy.breadcrumb} themeColor={root?.themeColor} className="px-4 py-2 sm:px-6" />
     {trail.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd({

@@ -76,7 +76,8 @@ test("every game, collection and hub has linked ancestors, current text, home br
     fixtureDb.locale = locale;
     for (const slug of [undefined, ...GAME_PAGE_SLUGS]) {
       const html = await renderHtml(slug ? await detail.default({ params: Promise.resolve({ locale, slug }) }) : await hub.default());
-      const breadcrumb = html.match(new RegExp(`<nav aria-label="${escapeHtml(getGamePageLabels(locale).breadcrumb)}"[\\s\\S]*?<\\/nav>`))?.[0];
+      const breadcrumbLabel = getGamePageLabels(locale).breadcrumb;
+      const breadcrumb = html.match(new RegExp(`<nav aria-label="${escapeHtml(breadcrumbLabel)}"[\\s\\S]*?<\\/nav>`))?.[0];
       assert.ok(breadcrumb);
       const items = gameBreadcrumbs(locale, slug);
       for (const { name, href } of items.slice(0, -1)) {

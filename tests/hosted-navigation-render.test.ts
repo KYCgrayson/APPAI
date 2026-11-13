@@ -213,7 +213,10 @@ for (const locale of ["en", "zh-TW"]) {
       for (const suffix of ["", "site-contact", "privacy", "terms"]) {
         const html = await render(locale, suffix, suffix === "privacy" || suffix === "terms");
         assert.doesNotMatch(html, /href="[^"]*\/(privacy|terms)"/);
-        if (!suffix) assert.doesNotMatch(html, /<nav\b/);
+        if (!suffix) {
+          assert.doesNotMatch(header(html), /<nav\b/);
+          assert.equal([...html.matchAll(/data-breadcrumb="hosted"/g)].length, 1, "root retains exactly the new breadcrumb row");
+        }
       }
     }
   });

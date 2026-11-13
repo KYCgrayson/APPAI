@@ -1,5 +1,14 @@
 # TODO — AppAI Project Roadmap
 
+## Breadcrumbs from AppAI home (owner follow-up to #73, backlog #91)
+
+- [x] Start all requested trails at AppAI, including platform home, auth pages, Dashboard/Admin overviews and game information pages; use the shared single-line Breadcrumb and keep fullscreen game runtime unchanged. Spec endpoints remain plain text.
+- [x] Share approved-App/public-root directory classification for hosted and app-detail categories; omit category for sites without a public listing. Hosted labels stay in the hosted copy table; platform labels use all nine next-intl catalogs; hosted platform links match via `pickByLocale` with English fallback.
+- [x] Add hosted root trails and matching absolute-URL BreadcrumbList JSON-LD everywhere, including platform app details. Compare full root output against shipped #73 (`5379be0`): only the breadcrumb row and matching JSON-LD may differ; header remains byte-identical and root gains no house icon.
+- [x] Add en/zh-TW render/current-item/href/JSON-LD tests, unlisted/foreign/unapproved/draft fixtures and locale matching. Auth rows occupy 28px of existing 32px card padding (4px clearance), with 0px flow-height change verified through classes and compiled CSS. Optional Chrome scroll comparison covers mobile/desktop and eight device states; Chrome startup is blocked by the sandbox and the browser-control host is unavailable here.
+- [x] Update hosted breadcrumb documentation and both feature maps; rebuild the generated spec.
+- [x] Final verification: TypeScript, lint (0 errors, 33 existing warnings), full npm tests (725 passed, 6 optional checks skipped), spec generation and feature-map check pass. The feature-map check includes AuthBreadcrumb through a temporary index; the real index is unchanged.
+
 ## Clickable breadcrumbs (#91, owner request — 2026-11-13)
 
 - [x] Reuse one shared accessible Breadcrumb for hosted, platform, dashboard and admin pages: linked ancestors, non-linked current item, localised landmark, › separators, title/ellipsis, 24px targets, single-line mobile scrolling and theme-adjusted AA colours.
