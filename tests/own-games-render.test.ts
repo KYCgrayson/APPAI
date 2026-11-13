@@ -76,7 +76,7 @@ test("every game, collection and hub has linked ancestors, current text, home br
     fixtureDb.locale = locale;
     for (const slug of [undefined, ...GAME_PAGE_SLUGS]) {
       const html = await renderHtml(slug ? await detail.default({ params: Promise.resolve({ locale, slug }) }) : await hub.default());
-      const breadcrumbLabel = JSON.parse(readFileSync(new URL(`../src/messages/${locale}.json`, import.meta.url), "utf8")).breadcrumbs.label;
+      const breadcrumbLabel = getGamePageLabels(locale).breadcrumb;
       const breadcrumb = html.match(new RegExp(`<nav aria-label="${escapeHtml(breadcrumbLabel)}"[\\s\\S]*?<\\/nav>`))?.[0];
       assert.ok(breadcrumb);
       const items = gameBreadcrumbs(locale, slug);
@@ -85,11 +85,11 @@ test("every game, collection and hub has linked ancestors, current text, home br
         assert.ok(breadcrumb.includes(`href="${expected}"`));
         assert.ok(breadcrumb.includes(escapeHtml(name)));
         const link = [...breadcrumb.matchAll(/<a\b[^>]*>/g)].find(([tag]) => tag.includes(`href="${expected}"`))?.[0];
-        assert.match(link ?? "", /class="[^"]*inline-flex[^"]*min-h-6[^"]*items-center/);
+        assert.match(link ?? "", /class="[^"]*inline-flex[^"]*min-h-11[^"]*items-center/);
       }
       assert.equal([...breadcrumb.matchAll(/aria-current="page"/g)].length, 1);
       const current = items.at(-1)!;
-      assert.ok(breadcrumb.includes(`<span aria-current="page" title="${escapeHtml(current.name)}"`));
+      assert.ok(breadcrumb.includes(`<span title="${escapeHtml(current.name)}" aria-current="page"`));
       assert.doesNotMatch(breadcrumb, /<a\b[^>]*aria-current=/);
       assert.equal([...breadcrumb.matchAll(/<a\b/g)].length, items.length - 1);
       const header = html.match(/<header\b[\s\S]*?<\/header>/)![0];

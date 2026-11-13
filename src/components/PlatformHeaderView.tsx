@@ -1,4 +1,3 @@
-import { Breadcrumb } from "./Breadcrumb";
 import { Link } from "@/i18n/navigation";
 import { AccountControls, type AccountLabels, type AccountUser } from "./AccountControls";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -33,8 +32,25 @@ export function PlatformHeaderView({ currentSection, breadcrumbs, user, isAdmin,
           <AccountControls user={user} isAdmin={isAdmin} labels={labels.account} compact={!!breadcrumbs} light />
         </div>
         {breadcrumbs ? (
-          <Breadcrumb items={breadcrumbs} label={labels.breadcrumb} variant="platform" dark
-            LinkComponent={Link} className="order-3 basis-full" />
+          // A separate row at every width keeps long localized trails independent of account controls.
+          <nav aria-label={labels.breadcrumb} className="order-3 min-w-0 basis-full text-sm text-gray-300">
+            <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+              {breadcrumbs.map(({ name, href }, index) => (
+                <li key={href} className="flex min-w-0 max-w-full shrink-0 items-center gap-1.5 whitespace-nowrap">
+                  {index > 0 && <span aria-hidden="true" className="shrink-0 text-gray-500">›</span>}
+                  {index === breadcrumbs.length - 1 ? (
+                    <span title={name} aria-current="page" className="inline-flex min-h-11 min-w-0 max-w-full items-center whitespace-nowrap py-2">
+                      <span className="truncate">{name}</span>
+                    </span>
+                  ) : (
+                    <Link href={href} title={name} className="inline-flex min-h-11 min-w-0 max-w-full items-center whitespace-nowrap py-2 hover:text-white hover:underline">
+                      <span>{name}</span>
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </nav>
         ) : (
           <nav aria-label="Main navigation" className="order-3 basis-full border-t border-gray-800 pt-2 sm:order-2 sm:basis-auto sm:border-0 sm:pt-0">
             <ul className="flex flex-wrap items-center gap-x-5 gap-y-2">

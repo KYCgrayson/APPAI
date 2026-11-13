@@ -3,7 +3,8 @@ import { hostedPagePath, type HostedUrlPage } from "./hosted-page-urls.ts";
 import { pickByLocale } from "./locale-match.ts";
 import { locales } from "../i18n/routing.ts";
 import { publicAppFilter, publicPageWhere } from "./hosted-page-visibility.ts";
-import { appDirectoryKind } from "./directory-kind.ts";
+import { appDirectoryKind, isPersonalDirectoryProfile } from "./directory-kind.ts";
+import { getDirectoryCopy } from "./directory-copy.ts";
 import { hostedNavigationCopy } from "./hosted-navigation-copy.ts";
 import type { BreadcrumbItem } from "./breadcrumbs.ts";
 
@@ -25,9 +26,12 @@ export async function hostedBreadcrumbs(root: NamedPage, roots: readonly NamedPa
     hostedPageSlug: root.slug, organizationId: root.organizationId, ...publicAppFilter(variants),
   }, orderBy: [{ createdAt: "desc" }, { id: "desc" }] });
   const kind = app ? appDirectoryKind(app, variants) : null;
+  const category = app && isPersonalDirectoryProfile(variants)
+    ? { name: getDirectoryCopy(platformLocale).personalPages, href: `${prefix}/websites?type=personal` }
+    : kind ? { name: copy[kind], href: `${prefix}/${kind}` } : null;
   return [
     { name: copy.appai, href: `${prefix}/` },
-    ...(kind ? [{ name: copy[kind], href: `${prefix}/${kind}` }] : []),
+    ...(category ? [category] : []),
     { name: localizedRoot.title, href: hostedPagePath(localizedRoot, roots)! },
     ...(current ? [current] : []),
   ];

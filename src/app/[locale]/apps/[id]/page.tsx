@@ -1,4 +1,5 @@
-import { appDirectoryKind } from "@/lib/directory-kind";
+import { appDirectoryKind, isPersonalDirectoryProfile } from "@/lib/directory-kind";
+import { getDirectoryCopy } from "@/lib/directory-copy";
 import { breadcrumbJsonLd } from "@/lib/breadcrumbs";
 import { publicPageWhere, publicAppFilter, publicRootSelect } from "@/lib/hosted-page-visibility";
 import { platformUrl, platformAlternates, platformOpenGraphLocale, DEFAULT_SHARE_IMAGE } from "@/lib/platform-seo";
@@ -85,9 +86,12 @@ export default async function AppDetailPage({ params }: Props) {
   const localized = pickByLocale(variants, locale);
   const name = localized?.title || app.name;
   const kind = appDirectoryKind(app, variants);
+  const directory = isPersonalDirectoryProfile(variants)
+    ? { name: getDirectoryCopy(locale).personalPages, href: "/websites?type=personal" }
+    : kind ? { name: tb(kind), href: `/${kind}` } : null;
   const trail = [
     { name: "AppAI", href: "/" },
-    ...(kind ? [{ name: tb(kind), href: `/${kind}` }] : []),
+    ...(directory ? [directory] : []),
     { name, href: `/apps/${id}` },
   ];
   const tagline = localized?.tagline || app.tagline;
@@ -141,7 +145,10 @@ export default async function AppDetailPage({ params }: Props) {
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd({
         "@context": "https://schema.org",
-        ...breadcrumbJsonLd(trail.map(item => ({ ...item, href: platformUrl(item.href, locale, baseUrl) })), baseUrl),
+        ...breadcrumbJsonLd(trail.map(item => {
+          const url = new URL(item.href, baseUrl);
+          return { ...item, href: platformUrl(url.pathname, locale, baseUrl) + url.search };
+        }), baseUrl),
       }) }} />
       <PlatformHeader />
 

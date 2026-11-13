@@ -9,6 +9,8 @@ import { page, app } from "./fixtures/pr5-pages.ts";
 import { fixtureDb, registerHostedRenderLoader, registerHostedHeaders, registerDirectoryFixtures, registerBreadcrumbNavigation, registerAuthRenderState } from "./helpers/hosted-render-loader.mjs";
 import { registerMainHostedBaseline } from "./helpers/hosted-chrome-regression.mjs";
 import { hostedNavigationCopy } from "../src/lib/hosted-navigation-copy.ts";
+import { getDirectoryCopy } from "../src/lib/directory-copy.ts";
+import { locales } from "../src/i18n/routing.ts";
 
 const authState = { code: "QA-CODE" as string | null, state: "loading" };
 const hooks = [registerHostedRenderLoader(), registerHostedHeaders(), registerDirectoryFixtures({ translated: true }), registerBreadcrumbNavigation(), registerAuthRenderState(authState)];
@@ -20,6 +22,8 @@ const { Breadcrumb } = await import("../src/components/Breadcrumb.tsx");
 const { ManagementBreadcrumb } = await import("../src/components/ManagementBreadcrumb.tsx");
 const { default: AppDetail } = await import("../src/app/[locale]/apps/[id]/page.tsx");
 const { default: PlatformHome } = await import("../src/app/[locale]/page.tsx");
+const { default: Websites } = await import("../src/app/[locale]/websites/page.tsx");
+const { PlatformDirectory } = await import("../src/components/PlatformDirectory.tsx");
 
 function trail(html: string, names: string[], hrefs: string[], label = "Breadcrumb") {
   const navs = [...html.matchAll(/<nav\b[^>]*data-breadcrumb="[^"]+"[^>]*>[\s\S]*?<\/nav>/g)];
@@ -116,7 +120,12 @@ for (const locale of ["en", "zh-TW"]) {
       const html = await renderHtml(await GamePage({ params: Promise.resolve({ locale, slug }) }));
       const { gameBreadcrumbs } = await import("../src/lib/games-page-seo.ts");
       const items = gameBreadcrumbs(locale, slug);
-      trail(html, items.map(item => item.name), items.slice(0, -1).map(item => prefix + item.href), label);
+      const nav = html.match(/<header\b[\s\S]*?(<nav\b[\s\S]*?<\/nav>)/)![1];
+      assert.deepEqual([...nav.matchAll(/title="([^"]*)"/g)].map(match => match[1]), items.map(item => item.name));
+      assert.deepEqual([...nav.matchAll(/<a\b[^>]*href="([^"]*)"/g)].map(match => match[1]), items.slice(0, -1).map(item => prefix + item.href));
+      assert.equal([...nav.matchAll(/aria-current="page"/g)].length, 1);
+      assert.match(nav, /<span[^>]*aria-current="page"/);
+      assert.doesNotMatch(nav, /<a[^>]*aria-current=/);
     }
   });
 }
@@ -253,7 +262,7 @@ for (const locale of ["en", "zh-TW"]) {
     fixtureDb.locale = locale;
     const prefix = locale === "en" ? "" : "/zh-TW";
     const copy = hostedNavigationCopy(locale);
-    for (const [tag, kind] of [["website", "websites"], ["tool", "tools"], ["app", "apps"], ["game", "games"]] as const) {
+    for (const [tag, kind] of [["website", "websites"], ["tool", "tools"], ["app", "apps"]] as const) {
       fixtureDb.rows = [page("listed-site", { title: "Site" }), page("listed-site", { id: "tw", locale: "zh-TW", isDefault: false, title: "網站", content: { sections: [{ type: "download" }] } })];
       fixtureDb.apps = [app("listed-app", "listed-site", { tags: [`appai:kind:${tag}`] })];
       const site = locale === "en" ? "Site" : "網站";
@@ -273,10 +282,11 @@ for (const locale of ["en", "zh-TW"]) {
     fixtureDb.locale = locale;
     const prefix = locale === "en" ? "" : "/zh-TW";
     const copy = hostedNavigationCopy(locale);
-    for (const reason of ["no app", "unapproved", "foreign organization", "child binding", "personal profile"]) {
-      fixtureDb.rows = [page("unlisted", { locale, title: "Site", template: reason === "personal profile" ? "PERSON" : "APP_LANDING" }), page("contact", { locale, parentSlug: "unlisted", title: "Contact" })];
+    for (const reason of ["no app", "unapproved", "foreign organization", "child binding", "GAME template", "game tag"]) {
+      fixtureDb.rows = [page("unlisted", { locale, title: "Site", template: reason === "GAME template" ? "GAME" : "APP_LANDING" }), page("contact", { locale, parentSlug: "unlisted", title: "Contact" })];
       fixtureDb.apps = reason === "no app" ? [] : [app("unlisted-app", reason === "child binding" ? "contact" : "unlisted", {
         isApproved: reason !== "unapproved", organizationId: reason === "foreign organization" ? "org-b" : "org-a",
+        tags: reason === "game tag" ? ["appai:kind:game"] : [],
       })];
       for (const child of [false, true]) {
         const html = await renderHtml(await HostedPage({ params: Promise.resolve({ segments: ["unlisted", ...(child ? ["contact"] : [])] }) }));
@@ -284,9 +294,50 @@ for (const locale of ["en", "zh-TW"]) {
         trail(html, names, [`${prefix}/`, ...(child ? ["/p/unlisted"] : [])], copy.breadcrumb);
         assert.deepEqual(breadcrumbLd(html).itemListElement.map((item: { name: string }) => item.name), names, reason);
       }
+      if (reason === "GAME template" || reason === "game tag") {
+        const detail = await renderHtml(await AppDetail({ params: Promise.resolve({ locale, id: "unlisted-app" }) }));
+        trail(detail, ["AppAI", "Site"], [`${prefix}/`], copy.breadcrumb);
+        assert.deepEqual(breadcrumbLd(detail).itemListElement.map((item: { name: string }) => item.name), ["AppAI", "Site"]);
+        for (const kind of [undefined, "websites", "tools", "apps"] as const) {
+          assert.doesNotMatch(await renderHtml(await PlatformDirectory({ kind })), /href="\/p\/unlisted"/);
+        }
+        const { default: Games } = await import("../src/app/[locale]/games/page.tsx");
+        assert.doesNotMatch(await renderHtml(await Games()), /href="\/p\/unlisted"/);
+      }
     }
   });
 }
+
+test("PERSON trails link to the exact personal directory and its localized filter label", async () => {
+  for (const locale of locales) {
+    fixtureDb.locale = locale;
+    const prefix = locale === "en" ? "" : `/${locale}`;
+    const category = getDirectoryCopy(locale).personalPages;
+    const categoryPath = `${prefix}/websites?type=personal`;
+    const copy = hostedNavigationCopy(locale);
+    fixtureDb.rows = [page("person-site", { locale, title: "Person", template: "PERSON" }),
+      page("contact", { locale, parentSlug: "person-site", title: "Contact" }),
+      page("person-site", { id: "draft", locale: "pt-BR", isDefault: false, isPublished: false, template: "GAME" })];
+    fixtureDb.apps = [app("person-app", "person-site")];
+    const directory = await renderHtml(await Websites({ searchParams: Promise.resolve({ type: "personal" }) }));
+    assert.ok(directory.includes(`>${category}</h1>`));
+    assert.match(directory, /href="\/p\/person-site"/);
+    assert.doesNotMatch(await renderHtml(await Websites({ searchParams: Promise.resolve({}) })), /href="\/p\/person-site"/);
+    for (const child of [false, true]) {
+      const html = await renderHtml(await HostedPage({ params: Promise.resolve({ segments: ["person-site", ...(child ? ["contact"] : [])] }) }));
+      const names = ["AppAI", category, "Person", ...(child ? ["Contact"] : [])];
+      trail(html, names, [`${prefix}/`, categoryPath, ...(child ? ["/p/person-site"] : [])], copy.breadcrumb);
+      const ld = breadcrumbLd(html).itemListElement;
+      assert.deepEqual(ld.map((item: { name: string }) => item.name), names);
+      assert.equal(new URL(ld[1].item).pathname + new URL(ld[1].item).search, categoryPath);
+    }
+    const detail = await renderHtml(await AppDetail({ params: Promise.resolve({ locale, id: "person-app" }) }));
+    trail(detail, ["AppAI", category, "Person"], [`${prefix}/`, categoryPath], copy.breadcrumb);
+    const ld = breadcrumbLd(detail).itemListElement;
+    assert.deepEqual(ld.map((item: { name: string }) => item.name), ["AppAI", category, "Person"]);
+    assert.equal(new URL(ld[1].item).pathname + new URL(ld[1].item).search, categoryPath);
+  }
+});
 
 test("hosted locale matching bridges nine platform locales and ignores draft classification signals", async () => {
   for (const [locale, prefix, category] of [["ja-JP", "/ja", "ウェブサイト"], ["pt-BR", "", "Websites"], ["zh-TW", "/zh-TW", "網站"], ["hi-IN", "/hi", "वेबसाइट"]]) {

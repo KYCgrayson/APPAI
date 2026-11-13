@@ -73,14 +73,20 @@ export function inferDirectoryKind(input: {
   return "websites";
 }
 
-/** Shared directory membership/classification, always using published root variants. */
+/** The personal-pages filter uses the default published root's template. */
+export function isPersonalDirectoryProfile(variants: readonly { isDefault: boolean; template: string }[]): boolean {
+  return (variants.find(page => page.isDefault) ?? variants[0])?.template === "PERSON";
+}
+
+/** Shared directory membership, always using public apps and published root variants. */
 export function appDirectoryKind(app: Parameters<typeof inferDirectoryKind>[0], variants: readonly {
   isDefault: boolean; template: string; content: unknown;
-}[]): DirectoryKind | "games" | null {
+}[]): DirectoryKind | null {
   const page = variants.find(candidate => candidate.isDefault) ?? variants[0];
-  if (app.tags?.includes("appai:kind:game") || variants.some(candidate => candidate.template === "GAME")) return "games";
+  // /games lists built-in games only; hosted games are absent from the directories.
+  if (app.tags?.includes("appai:kind:game") || variants.some(candidate => candidate.template === "GAME")) return null;
   // PERSON profiles live in the separate personal-pages view, not /websites.
-  if (page?.template === "PERSON" || (!app.appType && app.hostedPageSlug && !page)) return null;
+  if (isPersonalDirectoryProfile(variants) || (!app.appType && app.hostedPageSlug && !page)) return null;
   return inferDirectoryKind({ ...app, template: page?.template, content: page?.content,
     sectionTypes: normalizeHostedContent(page?.content).sections.map(section => section.type) });
 }

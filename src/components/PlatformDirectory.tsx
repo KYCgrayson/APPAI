@@ -12,7 +12,7 @@ import { groupByKey, pickByLocale } from "@/lib/locale-match";
 import { canLaunchUniversalApp, getUniversalAppLaunchPath } from "@/lib/universal-apps/directory";
 import { UNIVERSAL_APP_CATEGORIES } from "@/lib/universal-apps/manifest";
 import { getDirectoryCopy } from "@/lib/directory-copy";
-import { appDirectoryKind, type DirectoryKind } from "@/lib/directory-kind";
+import { appDirectoryKind, isPersonalDirectoryProfile, type DirectoryKind } from "@/lib/directory-kind";
 
 type Props = {
   kind?: DirectoryKind;
@@ -86,7 +86,7 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
     if (personalOnly) return false;
     const variants = app.hostedPageSlug ? variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) ?? [] : [];
     const pageKind = appDirectoryKind(app, variants);
-    if (!pageKind || pageKind === "games") return false;
+    if (!pageKind) return false;
     if (!kind) return true;
     return pageKind === kind;
   });
@@ -105,7 +105,7 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
     appsT.has(`categories.${value}`) ? appsT(`categories.${value}`) : value;
   const personalProfiles = (!kind || (kind === "websites" && personalOnly))
     ? apps.map((app) => app.hostedPageSlug ? variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) ?? [] : [])
-      .filter((variants) => (variants.find((page) => page.isDefault) ?? variants[0])?.template === "PERSON")
+      .filter(isPersonalDirectoryProfile)
       .map((variants) => localizedVariant(variants.filter((page) => page.template === "PERSON")))
       .filter((page) => page !== undefined)
     : [];
