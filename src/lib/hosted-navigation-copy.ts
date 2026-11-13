@@ -45,8 +45,14 @@ const rows = Object.entries(HOME_LABELS).map(([locale, home]) => ({
 }));
 
 export function hostedNavigationCopy(locale: string) {
-  if (/^zh-(HK|MO|Hant)(-|$)/i.test(locale)) locale = "zh-TW";
-  else if (/^zh-(SG|Hans)(-|$)/i.test(locale)) locale = "zh-CN";
+  // pickByLocale's same-language fallback takes the first Chinese row (TW).
+  // Normalize Chinese UI copy here; leave publisher-content matching alone.
+  if (/^zh(?:-|$)/i.test(locale)) {
+    const subtags = locale.toLowerCase().split("-").slice(1);
+    const traditional = subtags.includes("hant")
+      || (!subtags.includes("hans") && subtags.some(tag => ["tw", "hk", "mo"].includes(tag)));
+    locale = traditional ? "zh-TW" : "zh-CN";
+  }
   return pickByLocale(rows, locale)!;
 }
 

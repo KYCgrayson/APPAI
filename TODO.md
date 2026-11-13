@@ -2,12 +2,13 @@
 
 ## Hosted header Home (#91, owner request — 2026-11-13)
 
-- [x] Keep a localized Home link beside the publisher name on child/policy pages at every width, retain Home in non-root nav, and reserve mobile title space.
+- [x] Keep a localized Home link beside the publisher name on child/policy pages at every width, dedupe Home from desktop nav and mobile drawer, and let the mobile title truncate.
 - [x] Link to AppAI home from desktop utilities, mobile drawer and footer; retain publisher branding as primary.
 - [x] Recover public site roots on hosted 404s, retain hosted chrome, and suppress empty/whitespace-only policy links including custom nav.
 - [x] Add English/Traditional Chinese root, child, policy and 404 render coverage plus visible-child navigation regression checks; document publisher-visible behavior and update the feature map.
-- [x] Validate TypeScript, lint (0 errors), full tests (686 passed, 4 existing optional checks skipped), spec generation and feature map using a temporary index; leave the real index unchanged.
-- [ ] Browser visual QA of the long English/Chinese titles at narrow widths: local fixtures prepared; sandboxed Chrome cannot launch and Computer Use access to Chrome was denied. Render coverage checks reserved title width, truncation, 44px links and all templates.
+- [x] Round 2: TypeScript, lint (0 errors), full tests (688 passed, 5 optional checks skipped), spec generation and feature map pass; the temporary feature-map index leaves the real index unchanged. Full rendered HTML for 60 fixtures matches main after only the approved navigation differences.
+- [x] Restore main's account visibility, publisher download colours, translucent header and existing link styles; shorten the footer home link to AppAI, fix bare zh copy, and ensure every 404 has one main landmark.
+- [ ] Browser viewport QA: automated 320/375/768/1280px test added; local Chrome aborts at startup and browser-tool access is unavailable.
 
 ## Hosted page removal (#91, PR-5b — 2026-11-13)
 

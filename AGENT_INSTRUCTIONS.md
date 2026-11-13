@@ -486,7 +486,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 | Hosted navigation | Visitor behavior |
 |---|---|
 | Site name/logo | Links to the site's root in the current locale when available. |
-| Child and policy pages | Visible localized Home beside the site name on desktop and mobile; Home also stays in the site nav, even with hidden children or custom nav. Root pages do not show a Home-only nav. |
+| Child and policy pages | Exactly one localized Home beside the site name on desktop and mobile, even with hidden children or custom nav; remaining nav entries keep their order. |
 | AppAI | Subordinate header utility link (mobile drawer) and footer link to the platform home `/`. |
 | Privacy/terms | Header, drawer, footer and explicit nav omit links to empty or whitespace-only built-in policies. |
 | Unavailable hosted URL | Localized 404 with AppAI home and a site Home link only when the root is public; valid hosted routes retain the shared header/footer. |
@@ -1062,7 +1062,7 @@ Branding (logo + site title + language switcher + nonempty Privacy/Terms) and th
 - **"Home" is auto-localized** (en/zh-TW/zh-CN/ja/ko/es/fr/de/pt/ar/hi/th/vi + more). No action needed.
 - **Ordering** defaults to `createdAt`. Set `navOrder: <int>` on a child page to force position (smaller = first).
 - **Hide from nav**: set `hideFromNav: true` on any page that should exist but not appear in the nav — typical for compliance-only child pages such as `my-app-delete-account` reached from a link.
-- **Custom nav (escape hatch)**: set `content.nav: [{label, target}, ...]` on the root page to replace auto-generated child entries. Non-root pages retain Home; root pages omit a Home-only nav. Empty built-in policy targets are omitted. Target resolution: `https://...` → new tab, `#anchor` → in-page jump, `my-app-faq` → child page.
+- **Custom nav (escape hatch)**: set `content.nav: [{label, target}, ...]` on the root page to replace auto-generated child entries. Non-root pages retain one Home beside the site name, without duplicating it in the nav or drawer. Explicit root navigation is preserved. Empty built-in policy targets are omitted. Target resolution: `https://...` → new tab, `#anchor` → in-page jump, `my-app-faq` → child page.
 
 ### Compliance pages: recommended flags
 

@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useEffect, useId } from "react";
-import { hostedNavigationCopy, hostedLinkFocus } from "@/lib/hosted-navigation-copy";
-import { proseThemeVariables } from "@/lib/prose-theme";
+import { useState, useEffect } from "react";
+
+import { hostedNavigationCopy } from "@/lib/hosted-navigation-copy";
 
 interface MenuLink {
   label: string;
   href: string;
   external?: boolean;
-  isCurrent?: boolean;
 }
 
 interface LocaleOption {
@@ -33,7 +32,7 @@ interface Props {
 
 /**
  * Mobile-only hamburger + drawer. Below the md breakpoint the sticky header
- * collapses to [logo, title, Home, hamburger] and other header elements
+ * collapses to [logo, title, hamburger] and every other header element
  * (nav items, language switcher, Privacy/Terms, Download) moves into this
  * drawer. Returns null on desktop (the trigger is hidden via md:hidden).
  */
@@ -46,8 +45,6 @@ export function MobileMenu({
   labels = hostedNavigationCopy("en"),
 }: Props) {
   const [open, setOpen] = useState(false);
-  const menuId = useId();
-  const downloadColor = proseThemeVariables(themeColor)?.["--page-theme-link-light"] || "#000000";
 
   useEffect(() => {
     if (!open) return;
@@ -75,9 +72,8 @@ export function MobileMenu({
         type="button"
         aria-label={open ? labels.closeMenu : labels.openMenu}
         aria-expanded={open}
-        aria-controls={open ? menuId : undefined}
         onClick={() => setOpen((v) => !v)}
-        className={`relative z-50 inline-flex items-center justify-center w-11 h-11 rounded-md text-gray-700 hover:bg-gray-100 ${hostedLinkFocus}`}
+        className="inline-flex items-center justify-center w-10 h-10 -mr-2 rounded-md text-gray-700 hover:bg-gray-100"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -112,11 +108,10 @@ export function MobileMenu({
             type="button"
             aria-label={labels.closeMenu}
             onClick={() => setOpen(false)}
-            className={`absolute inset-x-0 top-full z-40 h-dvh bg-black/20 ${hostedLinkFocus}`}
+            className="fixed inset-0 top-[57px] z-40 bg-black/20"
           />
           <div
-            id={menuId}
-            className="absolute left-0 right-0 top-full z-50 bg-white text-gray-900 border-b shadow-lg max-h-[calc(100dvh-5rem)] overflow-y-auto"
+            className="fixed left-0 right-0 top-[57px] z-40 bg-white border-b shadow-lg max-h-[calc(100vh-57px)] overflow-y-auto"
             style={{ borderBottomColor: `${themeColor}1a` }}
           >
             {navItems.length > 0 && (
@@ -125,11 +120,10 @@ export function MobileMenu({
                   <li key={i}>
                     <a
                       href={item.href}
-                      aria-current={item.isCurrent ? "page" : undefined}
                       target={item.external ? "_blank" : undefined}
                       rel={item.external ? "noopener noreferrer" : undefined}
                       onClick={() => setOpen(false)}
-                      className={`block min-h-11 px-6 py-4 text-base font-medium border-b border-gray-100 text-gray-900 hover:bg-gray-50 ${hostedLinkFocus} focus-visible:ring-inset`}
+                      className="block px-6 py-4 text-base font-medium border-b border-gray-100 text-gray-900 hover:bg-gray-50"
                     >
                       {item.label}
                     </a>
@@ -140,7 +134,7 @@ export function MobileMenu({
 
             {locales.length > 1 && (
               <div className="px-6 py-4 border-b border-gray-100">
-                <div className="text-xs font-semibold uppercase tracking-wider text-gray-600 mb-2">
+                <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
                   {labels.language}
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -148,9 +142,8 @@ export function MobileMenu({
                     <a
                       key={l.locale}
                       href={l.href}
-                      aria-current={l.isActive ? "page" : undefined}
                       onClick={() => setOpen(false)}
-                      className={`inline-flex min-h-11 min-w-11 items-center justify-center px-3 rounded-full text-sm font-medium border ${hostedLinkFocus} ${
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium border ${
                         l.isActive
                           ? "bg-gray-900 text-white border-gray-900"
                           : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
@@ -169,11 +162,10 @@ export function MobileMenu({
                   <li key={i}>
                     <a
                       href={item.href}
-                      aria-current={item.isCurrent ? "page" : undefined}
                       target={item.external ? "_blank" : undefined}
                       rel={item.external ? "noopener noreferrer" : undefined}
                       onClick={() => setOpen(false)}
-                      className={`block min-h-11 px-6 py-3 text-sm text-gray-600 hover:bg-gray-50 ${hostedLinkFocus} focus-visible:ring-inset`}
+                      className="block px-6 py-3 text-sm text-gray-600 hover:bg-gray-50"
                     >
                       {item.label}
                     </a>
@@ -189,8 +181,8 @@ export function MobileMenu({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => setOpen(false)}
-                  className={`block min-h-11 w-full text-center text-white px-4 py-3 rounded-full text-sm font-semibold ${hostedLinkFocus}`}
-                  style={{ backgroundColor: downloadColor }}
+                  className="block w-full text-center text-white px-4 py-3 rounded-full text-sm font-semibold"
+                  style={{ backgroundColor: themeColor }}
                 >
                   {download.label}
                 </a>

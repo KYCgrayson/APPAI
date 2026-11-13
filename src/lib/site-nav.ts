@@ -103,7 +103,7 @@ export function buildNav(
       )
       .map((item) => ({ label: item.label, target: item.target }));
     if (!isRootPage && !items.some(item => item.target === rootHref)) items.unshift(home);
-    return isRootPage && items.every(item => item.target === rootHref) ? [] : items;
+    return items;
   }
   if (siblings.length === 0) return isRootPage ? [] : [home];
   return [

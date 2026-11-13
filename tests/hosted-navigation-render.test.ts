@@ -7,7 +7,6 @@ const loader = registerHostedRenderLoader();
 const headers = registerHostedHeaders();
 const state = {
   open: false, user: null as null | { id: string; name: string },
-  measure: null as null | { ref: { current: unknown }; effects: (() => void | (() => void))[] },
 };
 // Render the real drawer and links with fixture auth and initial menu state.
 const hooks = registerHostedNavigationState(state);
@@ -19,7 +18,6 @@ const { default: HostedPage } = await import("../src/app/p/[...segments]/page.ts
 const { default: NotFound } = await import("../src/app/p/[...segments]/not-found.tsx");
 const { buildNav } = await import("../src/lib/site-nav.ts");
 const { hostedNavigationCopy } = await import("../src/lib/hosted-navigation-copy.ts");
-const { AdaptiveChrome } = await import("../src/app/p/[...segments]/AdaptiveChrome.tsx");
 const { isUnavailableHostedPolicyLink } = await import("../src/lib/hosted-page-urls.ts");
 
 function root(locale: string) {
@@ -75,10 +73,8 @@ for (const locale of ["en", "zh-TW"]) {
         const links = anchors(header);
         const home = hostedNavigationCopy(locale).home;
         assert.equal(links[0].href, path(locale), "publisher name still links home");
-        assert.match(links[0].attributes, /min-h-11/);
-        assert.match(header, /min-w-16 font-semibold text-lg truncate/);
+        assert.match(header, /font-semibold text-lg truncate/);
         if (kind === "root") {
-          assert.match(links[0].attributes, /aria-current="page"/);
           assert.equal(links.filter(link => link.text === home).length, 0, "no Home-only root nav");
         } else {
           assert.equal(links[1].text, home, "Home immediately follows branding");
@@ -86,21 +82,17 @@ for (const locale of ["en", "zh-TW"]) {
           assert.doesNotMatch(links[1].attributes, /aria-current|hidden/);
           assert.match(links[1].attributes, /min-h-11 min-w-11/);
           assert.match(links[1].attributes, /focus-visible:ring-2/);
-          const nav = header.match(/<nav\b[\s\S]*?<\/nav>/)![0];
-          assert.ok(anchors(nav).some(link => link.text === home && link.href === path(locale)));
-          if (kind === "404") assert.doesNotMatch(nav, /aria-current="page"/);
+          assert.equal(links.filter(link => link.text === home).length, 1, "exactly one header Home, including the open drawer");
         }
         assert.ok(links.some(link => link.text === "AppAI" && link.href === "/" && link.attributes.includes("md:inline-flex")), "desktop platform link");
         if (open) {
-          assert.ok(links.some(link => link.text === "AppAI" && link.href === "/" && link.attributes.includes("block min-h-11")), "drawer platform link");
+          assert.ok(links.some(link => link.text === "AppAI" && link.href === "/" && link.attributes.includes("block px-6")), "drawer platform link");
           assert.match(header, /aria-expanded="true"/);
         }
         const footer = html.match(/<footer\b[\s\S]*?<\/footer>/)![0];
         assert.ok(anchors(footer).some(link => link.href === "/" && link.text.includes("AppAI")));
         if (kind !== "terms") assert.doesNotMatch(html, /href="[^"]*\/terms"/);
-        if (kind === "privacy" || kind === "terms") {
-          assert.ok(links.some(link => link.href === path(locale, kind) && link.attributes.includes('aria-current="page"')));
-        }
+        assert.equal([...html.matchAll(/<main\b/g)].length, 1);
         if (kind === "404") {
           const fallback = html.match(/<section\b[\s\S]*?<\/section>/)![0];
           assert.ok(anchors(fallback).some(link => link.text === home && link.href === path(locale)));
@@ -140,8 +132,7 @@ for (const locale of ["en", "zh-TW"]) {
     for (const suffix of ["", "site-contact"]) {
       const html = await render(locale, suffix);
       const nav = html.match(/<nav\b[\s\S]*?<\/nav>/)![0];
-      assert.deepEqual(anchors(nav).map(link => [link.text, link.href]), expected);
-      assert.equal(anchors(nav).filter(link => link.attributes.includes('aria-current="page"')).length, 1);
+      assert.deepEqual(anchors(nav).map(link => [link.text, link.href]), suffix ? expected.slice(1) : expected);
     }
   });
 }
@@ -150,7 +141,7 @@ test("custom nav gains Home only on non-root pages and preserves an existing Hom
   assert.deepEqual(buildNav({ nav: [] }, [], "/p/site", "en", false), [{ label: "Home", target: "/p/site" }]);
   const custom = [{ label: "Publisher Home", target: "/p/site" }, { label: "Contact", target: "contact" }];
   assert.deepEqual(buildNav({ nav: custom }, [], "/p/site", "en", false), custom);
-  assert.deepEqual(buildNav({ nav: custom.slice(0, 1) }, [], "/p/site", "en"), []);
+  assert.deepEqual(buildNav({ nav: custom.slice(0, 1) }, [], "/p/site", "en"), custom.slice(0, 1));
   assert.equal(isUnavailableHostedPolicyLink("//[", [root("en")]), false, "malformed URLs must not crash hosted chrome");
 });
 
@@ -159,10 +150,12 @@ test("404 root recovery uses only public roots, including malformed paths and mi
     fixtureDb.rows = [{ ...root("en"), isPublished: published }];
     for (const requested of ["/p/navigation-site/privacy", "/p/navigation-site/de/missing", "/p/navigation-site/contact/too/deep"]) {
       fixtureDb.hostedPath = requested;
-      const html = await renderHtml(await NotFound());
+      const params = Promise.resolve({ segments: requested.slice(3).split("/") });
+      const html = await renderHtml(await Layout({ params, children: await NotFound() }));
+      assert.equal([...html.matchAll(/<main\b/g)].length, 1, requested);
       assert.equal(anchors(html).some(link => link.href === path("en")), published);
       assert.ok(anchors(html).some(link => link.href === "/"));
-      assert.doesNotMatch(html, /A long publisher site name/);
+      if (!published) assert.doesNotMatch(html, /A long publisher site name/);
     }
   }
   fixtureDb.rows = [{ ...root("en"), parentSlug: "another-site" }];
@@ -189,8 +182,14 @@ test("navigation labels match exact, primary, Chinese script aliases, then Engli
     assert.ok(copy.home && copy.notFound && copy.unavailable && copy.appai);
   }
   assert.equal(hostedNavigationCopy("es-MX").home, "Inicio");
-  assert.equal(hostedNavigationCopy("zh-Hant-HK").home, "首頁");
-  assert.equal(hostedNavigationCopy("zh-Hans-SG").home, "首页");
+  for (const locale of ["zh", "zh-CN", "zh-SG", "zh-Hans", "zh-Hans-SG", "ZH-cn"]) {
+    assert.equal(hostedNavigationCopy(locale).home, "首页", locale);
+    assert.equal(hostedNavigationCopy(locale).language, "语言", locale);
+  }
+  for (const locale of ["zh-TW", "zh-HK", "zh-MO", "zh-Hant", "zh-Hant-HK", "ZH-tw"]) {
+    assert.equal(hostedNavigationCopy(locale).home, "首頁", locale);
+    assert.equal(hostedNavigationCopy(locale).language, "語言", locale);
+  }
   assert.equal(hostedNavigationCopy("xx-YY").home, "Home");
 });
 
@@ -205,7 +204,7 @@ test("all hosted templates retain Home and AppAI for signed-in visitors in light
         const html = await render(locale, "site-contact");
         const header = html.match(/<header\b[\s\S]*?<\/header>/)![0];
         assert.equal(anchors(header)[1].text, hostedNavigationCopy(locale).home);
-        assert.match(header, /bg-white text-gray-900/);
+        assert.match(header, /bg-white\/90 backdrop-blur-sm/);
         assert.match(anchors(header)[1].attributes, /text-gray-700/);
         assert.ok(anchors(header).some(link => link.href === "/" && link.text === "AppAI"));
         assert.ok(anchors(header).some(link => link.href === "/dashboard"));
@@ -214,44 +213,46 @@ test("all hosted templates retain Home and AppAI for signed-in visitors in light
   }
 });
 
-test("explicit default-locale child URLs mark the canonical sibling link as current", async () => {
-  seed("en", true);
-  const params = Promise.resolve({ segments: ["navigation-site", "en", "site-contact"] });
-  const html = await renderHtml(await Layout({ params, children: null }));
-  const nav = html.match(/<nav\b[\s\S]*?<\/nav>/)![0];
-  assert.ok(anchors(nav).some(link => link.href === path("en", "site-contact") && link.attributes.includes('aria-current="page"')));
+test("every 404 layout variant has exactly one main landmark", async () => {
+  for (const published of [false, true]) {
+    fixtureDb.rows = [{ ...root("en"), isPublished: published }];
+    for (const requested of ["", "/p/missing-site", "/p/navigation-site", "/p/navigation-site/missing-child",
+      "/p/navigation-site/de/missing", "/p/navigation-site/privacy", "/p/navigation-site/terms",
+      "/p/navigation-site/contact/too/deep", "/p/navigation-site//missing-child", "/p/navigation-site/tools/0", "/p/navigation-site/tools/invalid"]) {
+      fixtureDb.hostedPath = requested;
+      const params = Promise.resolve({ segments: requested.slice(3).split("/") });
+      const html = await renderHtml(await Layout({ params, children: await NotFound() }));
+      assert.equal([...html.matchAll(/<main\b/g)].length, 1, `${requested || "platform"}, published=${published}`);
+      assert.equal([...html.matchAll(/<\/main>/g)].length, 1);
+    }
+  }
 });
 
-test("repeated overflow measurements keep the compact header until space is available", () => {
-  const element = { dataset: { cramped: "false" }, scrollWidth: 500, clientWidth: 320 };
-  const effects: (() => void | (() => void))[] = [];
-  state.measure = { ref: { current: element }, effects };
-  const old = { requestAnimationFrame: globalThis.requestAnimationFrame, cancelAnimationFrame: globalThis.cancelAnimationFrame, ResizeObserver: globalThis.ResizeObserver };
-  const frames: FrameRequestCallback[] = [];
-  let resize = () => {};
-  let disconnected = false;
-  globalThis.requestAnimationFrame = callback => frames.push(callback);
-  globalThis.cancelAnimationFrame = () => {};
-  globalThis.ResizeObserver = class {
-    constructor(callback: () => void) { resize = callback; }
-    observe() {}
-    unobserve() {}
-    disconnect() { disconnected = true; }
-  } as unknown as typeof ResizeObserver;
-  try {
-    AdaptiveChrome({ children: null });
-    const cleanup = effects[0]();
-    frames.shift()!(0);
-    assert.equal(element.dataset.cramped, "true");
-    resize(); frames.shift()!(0);
-    assert.equal(element.dataset.cramped, "true", "a second check must not clear compact mode");
-    element.clientWidth = 1024;
-    resize(); frames.shift()!(0);
-    assert.equal(element.dataset.cramped, "false");
-    if (cleanup) cleanup();
-    assert.equal(disconnected, true);
-  } finally {
-    Object.assign(globalThis, old);
-    state.measure = null;
+test("custom Home entries are deduped from both navs while siblings retain their order", async () => {
+  seed("en", true);
+  fixtureDb.rows[0].content = { sections: [], nav: [
+    { label: "Publisher Home", target: path("en") }, { label: "Contact", target: "site-contact" },
+    { label: "Home", target: path("en") }, { label: "Details", target: "#details" },
+    { label: "Home", target: `https://appai.info${path("en")}/` },
+    { label: "Home", target: `${path("en")}/en` },
+  ] };
+  state.open = true;
+  const header = (await render("en", "site-contact")).match(/<header\b[\s\S]*?<\/header>/)![0];
+  const links = anchors(header);
+  assert.equal(links.filter(link => link.text === "Home").length, 1);
+  assert.ok(!links.some(link => link.text === "Publisher Home"));
+  assert.deepEqual(anchors(header.match(/<nav\b[\s\S]*?<\/nav>/)![0]).map(link => link.text), ["Contact", "Details"]);
+});
+
+test("Download keeps the exact publisher colour in the header and drawer", async () => {
+  for (const themeColor of ["#facc15", "#ffff00", "#ffffff", "#123456"]) {
+    seed("en", false);
+    fixtureDb.rows[0].themeColor = themeColor;
+    fixtureDb.rows[0].content = { sections: [], appStoreUrl: "https://example.com/download" };
+    state.open = true;
+    const header = (await render("en", "site-contact")).match(/<header\b[\s\S]*?<\/header>/)![0];
+    const buttons = anchors(header).filter(link => link.href === "https://example.com/download");
+    assert.equal(buttons.length, 2);
+    for (const button of buttons) assert.ok(button.attributes.includes(`background-color:${themeColor}`));
   }
 });

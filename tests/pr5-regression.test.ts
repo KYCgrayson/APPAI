@@ -21,6 +21,13 @@ test("P1: consistent F0 data preserves publisher HTML for 12 URLs, sitemap shard
   assert.deepEqual(await captureF0({ publisherOnly: true }), { ...expected, html: publisher.html });
 });
 
+test("P1: full rendered HTML matches main after only the approved navigation deltas", async () => {
+  const { source, html } = JSON.parse(readFileSync(new URL("./fixtures/pr71-navigation-baseline.json", import.meta.url), "utf8"));
+  assert.match(source, /^949fda4/);
+  assert.equal(Object.keys(html).length, 12);
+  assert.deepEqual((await captureF0({ normalizeChrome: true })).html, html);
+});
+
 test("P1: hreflangs and language switchers retain main's en, ja, zh-CN, zh-TW order regardless of scan order", async () => {
   const hosted = await import("../src/app/p/[...segments]/page.tsx");
   const { default: layout } = await import("../src/app/p/[...segments]/layout.tsx");

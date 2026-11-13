@@ -9,8 +9,9 @@ export default async function NotFound() {
   // Supplied (and overwritten) by middleware, never taken from a query string.
   // Recover the root even for malformed/deeper paths under an existing site.
   const hostedPath = (await headers()).get("x-appai-hosted-path");
-  const segments = hostedPath?.startsWith("/p/") ? hostedPath.slice(3).split("/").filter(Boolean) : [];
-  const parsed = parsePageSegments(segments) ?? parsePageSegments(segments.slice(0, 2)) ?? parsePageSegments(segments.slice(0, 1));
+  const segments = hostedPath?.startsWith("/p/") ? hostedPath.slice(3).split("/") : [];
+  const layoutPath = parsePageSegments(segments);
+  const parsed = layoutPath ?? parsePageSegments(segments.slice(0, 2)) ?? parsePageSegments(segments.slice(0, 1));
   // resolvePage applies publicPageWhere from hosted-page-visibility. Never
   // expose a draft/unpublished root's name or link, even on a known child URL.
   const root = parsed ? await resolvePage(parsed.slug, parsed.locale)
@@ -18,9 +19,13 @@ export default async function NotFound() {
   const rootHref = root ? hostedPagePath(root, [root]) : null;
   const locale = root?.locale ?? parsed?.locale ?? "en";
   const copy = hostedNavigationCopy(locale);
-  // Hosted not-found boundaries sit inside the layout's <main>.
-  const Container = hostedPath ? "section" : "main";
-  return <Container lang={locale} className="mx-auto max-w-xl bg-white px-6 py-24 text-gray-900">
+  // Only use a section when the hosted layout actually supplies <main>.
+  // Unknown/unpublished roots, unavailable locales, malformed paths and
+  // fullscreen tools bypass that layout wrapper.
+  const hasLayoutMain = layoutPath && layoutPath.toolOrder === null
+    && await resolvePage(layoutPath.slug, layoutPath.locale);
+  const Container = hasLayoutMain ? "section" : "main";
+  return <Container lang={locale} className="mx-auto max-w-xl px-6 py-24">
     <meta name="robots" content="noindex, nofollow" />
     <h1 className="text-3xl font-bold">{copy.notFound}</h1>
     <p className="my-4">{copy.unavailable}</p>

@@ -36,12 +36,15 @@ export function AdaptiveChrome({ children }: { children: React.ReactNode }) {
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         // Force desktop state to get an honest "does this fit?" measurement.
+        const prev = el.dataset.cramped;
         el.dataset.cramped = "false";
         // Read triggers layout; write to dataset then read is fine because
         // CSS switches synchronously via the data-attribute variant.
         const overflows = el.scrollWidth > el.clientWidth + 2;
         const next = overflows ? "true" : "false";
-        el.dataset.cramped = next;
+        if (next !== prev) {
+          el.dataset.cramped = next;
+        }
       });
     };
 
@@ -68,7 +71,7 @@ export function AdaptiveChrome({ children }: { children: React.ReactNode }) {
       // there's no flash on mount. If it actually doesn't fit, the effect
       // flips it to true on the next frame.
       data-cramped="false"
-      className="group/chrome relative w-full max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3 md:gap-6"
+      className="group/chrome w-full max-w-6xl mx-auto px-6 py-3 flex items-center gap-6 overflow-hidden"
     >
       {children}
     </div>

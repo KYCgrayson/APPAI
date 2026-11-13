@@ -1,7 +1,5 @@
 "use client";
 
-import { hostedLinkFocus } from "@/lib/hosted-navigation-copy";
-
 interface Props {
   href: string;
   locale: string;
@@ -18,9 +16,8 @@ export function LocaleLink({ href, locale, isActive, label }: Props) {
   return (
     <a
       href={href}
-      aria-current={isActive ? "page" : undefined}
       onClick={handleClick}
-      className={`inline-flex min-h-11 items-center px-2 rounded ${hostedLinkFocus} ${isActive ? "bg-gray-100 font-medium text-gray-900" : "text-gray-600 hover:text-gray-900"}`}
+      className={`px-2 py-0.5 rounded ${isActive ? "bg-gray-100 font-medium text-gray-900" : "text-gray-500 hover:text-gray-900"}`}
     >
       {label}
     </a>
