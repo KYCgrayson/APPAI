@@ -1,3 +1,4 @@
+import { PlatformHeader } from "@/components/PlatformHeader";
 import Link from "next/link";
 import { auth, signOut } from "@/lib/auth";
 import { safeInternalPath } from "@/lib/redirects";
@@ -14,6 +15,8 @@ export default async function LogoutPage({
   const t = await getTranslations("logout");
 
   return (
+    <>
+    <PlatformHeader pageLabel="signOut" />
     <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-lg">
         <img src="/appai-logo2.png" alt="AppAI" className="mx-auto mb-4 h-14 w-14 rounded-xl" />
@@ -32,5 +35,6 @@ export default async function LogoutPage({
         </div>
       </div>
     </main>
+    </>
   );
 }

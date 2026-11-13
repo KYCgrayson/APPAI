@@ -617,6 +617,20 @@ The canonical compliance setup:
 
 ---
 
+### Hosted breadcrumbs
+
+AppAI supplies a compact, single-line breadcrumb directly below the hosted header. Do not add a second breadcrumb in publisher sections.
+
+| Page | Visible trail |
+|---|---|
+| Root `/p/{slug}[/{locale}]` | None; root content and headers are unchanged. |
+| Child (including FAQ/contact) | Root name › child title |
+| Privacy / terms | Root name › localised policy title |
+| Missing page under a public root | Root name › localised “Page not found” |
+| Fullscreen iframe tool | Root name › tool heading, above the frame or access gate |
+
+The root links to its hosted URL in the current content locale (default/fallback locale rules still apply). The last item is text with `aria-current="page"`; earlier items are links. Long labels keep their full text in `title`, truncate with an ellipsis, and scroll horizontally on mobile without wrapping. Hosted labels use the hosted copy tables with locale matching, independently of platform UI messages. Visible trails and `BreadcrumbList` JSON-LD use the same items, including policies and known-root 404s. Hidden or unknown roots expose no site breadcrumb.
+
 ## Managing Pages (CRUD)
 
 All endpoints use slug in the URL. Add `?locale=xx` to target a specific language version.

@@ -1,3 +1,4 @@
+import { ManagementBreadcrumb } from "@/components/ManagementBreadcrumb";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin";
@@ -56,6 +57,7 @@ export default async function AdminLayout({
           </div>
         </div>
       </nav>
+      <ManagementBreadcrumb area="admin" />
       <main className="max-w-7xl mx-auto py-8 px-6">{children}</main>
     </div>
   );

@@ -1,5 +1,14 @@
 # TODO — AppAI Project Roadmap
 
+## Clickable breadcrumbs (#91, owner request — 2026-11-13)
+
+- [x] Reuse one shared accessible Breadcrumb for hosted, platform, dashboard and admin pages: linked ancestors, non-linked current item, localised landmark, › separators, title/ellipsis, 24px targets, single-line mobile scrolling and theme-adjusted AA colours.
+- [x] Add hosted child/contact, privacy/terms, known-root 404 and fullscreen-tool trails; replace the inline policy trail and drive BreadcrumbList JSON-LD from the same items. Keep root HTML/header regression checks and the existing house icon unchanged.
+- [x] Cover public directories, app details, game details/collection/play, sign-in/out, feedback and device authorization with platform message labels in all nine locales. Dashboard/Admin sub-pages stay English; their overviews and platform home show no breadcrumb. Spec routes remain plain text; the subtitle test harness is development-only.
+- [x] Add en/zh-TW render, href/count/current-item, JSON-LD parity, mobile-class and light/dark contrast checks; update existing game/header assertions and preserve archived hosted regression hashes.
+- [x] Document hosted breadcrumbs in pages.md, rebuild the spec, and update both feature maps.
+- [x] Final verification: TypeScript, lint (0 errors, 33 existing warnings), full tests (707 passed, 5 optional checks skipped), feature-map check (including new files via a temporary index), and the Next.js webpack compile build pass. Browser smoke testing could not run because the sandbox rejects binding a local server port.
+
 ## Hosted header Home (#91, owner request — 2026-11-13)
 
 - [x] Keep a localized Home icon button before the publisher logo/name on child/policy pages at every width, dedupe Home from desktop nav and mobile drawer, and let the mobile title truncate.

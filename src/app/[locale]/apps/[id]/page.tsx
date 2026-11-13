@@ -76,6 +76,7 @@ export default async function AppDetailPage({ params }: Props) {
     notFound();
   }
 
+  const tb = await getTranslations("breadcrumbs");
   const localized = await loadLocalizedCopy(app.hostedPageSlug, app.organizationId, locale);
   const name = localized?.title || app.name;
   const tagline = localized?.tagline || app.tagline;
@@ -127,7 +128,7 @@ export default async function AppDetailPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
-      <PlatformHeader />
+      <PlatformHeader breadcrumbs={[{ name: "AppAI", href: "/" }, { name: tb("apps"), href: "/apps" }, { name, href: `/apps/${id}` }]} />
 
       <div className="max-w-3xl mx-auto px-6 py-12">
         <div className="flex items-start gap-6 mb-8">

@@ -1,3 +1,4 @@
+import { PlatformHeader } from "@/components/PlatformHeader";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { robots: { index: false, follow: true } };
@@ -21,6 +22,8 @@ export default async function LoginPage({
   const t = await getTranslations("login");
 
   return (
+    <>
+    <PlatformHeader pageLabel="signIn" />
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
         <img src="/appai-logo2.png" alt="AppAI" className="w-16 h-16 rounded-xl mx-auto mb-4" />
@@ -64,5 +67,6 @@ export default async function LoginPage({
         </p>
       </div>
     </div>
+    </>
   );
 }

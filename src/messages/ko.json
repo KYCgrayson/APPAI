@@ -194,5 +194,16 @@
       "title": "AI 웹사이트, 포트폴리오와 랜딩 페이지 | AppAI",
       "description": "AI로 만들고 AppAI에 게시한 웹사이트, 개인 포트폴리오와 프로젝트 랜딩 페이지를 둘러보세요."
     }
+  },
+  "breadcrumbs": {
+    "label": "현재 위치",
+    "apps": "앱",
+    "websites": "웹사이트",
+    "tools": "도구",
+    "games": "게임",
+    "signIn": "로그인",
+    "signOut": "로그아웃",
+    "feedback": "피드백",
+    "deviceAuth": "기기 인증"
   }
 }

@@ -248,3 +248,18 @@ export function registerHostedNavigationState(state) {
     },
   });
 }
+
+/** Supply the active management URL while server-rendering the real client trail. */
+export function registerBreadcrumbNavigation() {
+  return registerHooks({
+    resolve(specifier, context, next) {
+      return specifier === "next/navigation" && context.parentURL?.endsWith("/ManagementBreadcrumb.tsx")
+        ? { url: "fixture:breadcrumb-navigation", shortCircuit: true } : next(specifier, context);
+    },
+    load(url, context, next) {
+      return url === "fixture:breadcrumb-navigation" ? { format: "module", shortCircuit: true, source: `
+        export function usePathname() { return globalThis[Symbol.for('appai.test.db')].hostedPath; }
+      ` } : next(url, context);
+    },
+  });
+}

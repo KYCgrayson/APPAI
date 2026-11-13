@@ -35,11 +35,13 @@ for (const signedIn of [true, false]) {
         labels: labels(locale),
       }));
       const nav = html.match(/<nav\b[\s\S]*?<\/nav>/)![0];
-      assert.match(nav, /class="order-3 min-w-0 basis-full /);
+      assert.match(html, /<\/header><nav[^>]*data-breadcrumb="platform"/);
+      assert.match(nav, /overflow-x-auto/);
       assert.doesNotMatch(nav, /sm:(?:basis-auto|order-2)|break-words/);
-      assert.match(nav, /<ol class="flex flex-wrap /);
+      assert.match(nav, /<ol class="[^"]*flex-nowrap/);
+      assert.doesNotMatch(nav, /flex-wrap/);
       assert.equal([...nav.matchAll(/<li class="[^"]*whitespace-nowrap"/g)].length, 3);
-      assert.equal([...nav.matchAll(/<a [^>]*class="[^"]*inline-flex min-h-11 min-w-0 [^"]*whitespace-nowrap/g)].length, 3);
+      assert.equal([...nav.matchAll(/<a [^>]*class="[^"]*inline-flex min-h-6 min-w-0/g)].length, 2);
       assert.equal([...nav.matchAll(/aria-current="page"/g)].length, 1);
       assert.match(html, /order-2 ml-auto flex min-w-0 flex-1 items-center justify-end/);
       assert.match(html, /<select[^>]*class="[^"]*min-h-11 w-24 shrink-0 sm:w-auto/);
@@ -56,16 +58,16 @@ for (const signedIn of [true, false]) {
   });
 }
 
-test("a long current breadcrumb truncates inside the link and retains its full title", async () => {
+test("a long current breadcrumb truncates without a link and retains its full title", async () => {
   const name = 'Long CJK 遊戲名稱 & "name" '.repeat(20);
   const html = await renderHtml(PlatformHeaderView({
     breadcrumbs: [{ name: "AppAI", href: "/" }, { name, href: "/games/long" }],
     labels: labels("en"),
   }));
-  const link = html.match(/<a[^>]*aria-current="page"[^>]*>[\s\S]*?<\/a>/)![0];
+  const link = html.match(/<span[^>]*aria-current="page"[^>]*>[\s\S]*?<\/span><\/span>/)![0];
   assert.ok(link.includes(`title="${name.replaceAll("&", "&amp;").replaceAll('"', "&quot;")}"`));
-  assert.match(link, /min-w-0 max-w-full items-center whitespace-nowrap/);
-  assert.match(link, /<span class="truncate">/);
+  assert.doesNotMatch(link, /<a\b/);
+  assert.match(link, /<span class="[^"]*truncate/);
 });
 
 test("the header without breadcrumbs preserves the branding and responsive navigation classes", async () => {

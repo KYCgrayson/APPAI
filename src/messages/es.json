@@ -194,5 +194,16 @@
       "title": "Sitios de IA, portafolios y páginas de presentación | AppAI",
       "description": "Explora sitios web, portafolios personales y páginas de presentación de proyectos creados con IA y publicados en AppAI."
     }
+  },
+  "breadcrumbs": {
+    "label": "Ruta de navegación",
+    "apps": "Aplicaciones",
+    "websites": "Sitios web",
+    "tools": "Herramientas",
+    "games": "Juegos",
+    "signIn": "Iniciar sesión",
+    "signOut": "Cerrar sesión",
+    "feedback": "Comentarios",
+    "deviceAuth": "Autorización del dispositivo"
   }
 }

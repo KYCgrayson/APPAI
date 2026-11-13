@@ -194,5 +194,16 @@
       "title": "KI-Websites, Portfolios und Landingpages | AppAI",
       "description": "Entdecke mit KI erstellte Websites, persönliche Portfolios und Projekt-Landingpages, die auf AppAI veröffentlicht wurden."
     }
+  },
+  "breadcrumbs": {
+    "label": "Brotkrümelnavigation",
+    "apps": "Apps",
+    "websites": "Websites",
+    "tools": "Tools",
+    "games": "Spiele",
+    "signIn": "Anmelden",
+    "signOut": "Abmelden",
+    "feedback": "Feedback",
+    "deviceAuth": "Geräteautorisierung"
   }
 }

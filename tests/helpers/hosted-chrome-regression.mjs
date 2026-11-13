@@ -53,6 +53,7 @@ export function normalizeRootHeaderAdditions(header) {
 
 /** Remove only the approved #71 navigation deltas, preserving all other HTML. */
 export function normalizeHostedNavigationChanges(html, url) {
+  html = normalizeHostedBreadcrumbChanges(html, url);
   const nonRoot = /\/(?:f0-faq|privacy|terms)$/.test(url);
   html = html.replace(/<header\b[\s\S]*?<\/header>/, header => {
     const rootHref = header.match(/<a\b[^>]*href="([^"]+)"/)[1];
@@ -85,4 +86,20 @@ export function normalizeHostedNavigationChanges(html, url) {
   return html.replace(/<footer\b[\s\S]*?<\/footer>/, footer => footer
     .replace('href="/apps"', 'href="/"')
     .replace(/<span aria-hidden="true" class="text-gray-300">\|<\/span><span>[^<]*<\/span>/, ''));
+}
+
+/** Undo only #91's non-root breadcrumb addition/replacement for archived hashes.
+ * Root HTML is returned byte-for-byte; dedicated render tests check the new trail.
+ */
+export function normalizeHostedBreadcrumbChanges(html, url) {
+  const trail = html.match(/<nav\b[^>]*data-breadcrumb="hosted"[^>]*>[\s\S]*?<\/nav>/)?.[0];
+  if (!trail) return html;
+  const names = [...trail.matchAll(/title="([^"]*)"/g)].map(match => match[1]);
+  const href = trail.match(/<a\b[^>]*href="([^"]*)"/)?.[1];
+  html = html.replace(trail, '');
+  if (/\/(privacy|terms)$/.test(url)) {
+    const legacy = `<nav class="flex items-center gap-2 text-sm text-gray-500 mb-6 md:mb-8 flex-wrap"><a href="${href}" class="hover:text-gray-900 truncate max-w-[60%]">${names[0]}</a><span class="text-gray-300">/</span><span class="text-gray-900">${names[1]}</span></nav>`;
+    html = html.replace(/(<div class="max-w-3xl mx-auto py-10 md:py-16 px-4 sm:px-6">)/, `$1${legacy}`);
+  }
+  return html;
 }

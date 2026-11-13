@@ -3,7 +3,7 @@ import { gameContentLocale, getGamePageLabels } from "./games-pages-copy.ts";
 import { serializeJsonLd } from "./json-ld.ts";
 
 /** The URL stays top-level: no iframe, storage bridge, or query/hash reserialization. */
-export function injectGameNavigation(html: string, game: GameEntry, requestedLocale: string): string {
+export function injectGameNavigation(html: string, game: GameEntry, requestedLocale: string, breadcrumb = ""): string {
   const locale = gameContentLocale(requestedLocale);
   const labels = getGamePageLabels(locale);
   const title = `${getGamesCopy(locale).games[game.slug].name} · AppAI`;
@@ -25,6 +25,16 @@ export function injectGameNavigation(html: string, game: GameEntry, requestedLoc
     #appai-play-nav a:hover{background:#1f2937}
     #appai-play-nav a:focus-visible{outline:2px solid #6ee7b7;outline-offset:-2px}
     @media(max-width:400px){#appai-play-nav a{flex:1;padding-inline:4px;font-size:13px}}
+    ${breadcrumb ? `:root{--appai-play-bar-height:calc(89px + env(safe-area-inset-top,0px))}
+    #appai-play-chrome{position:fixed;inset:0 0 auto;z-index:2147483647}
+    #appai-play-chrome #appai-play-nav{position:static;min-height:calc(53px + env(safe-area-inset-top,0px))}
+    #appai-play-chrome [data-breadcrumb]{height:36px;box-sizing:border-box;overflow-x:auto;padding:4px 12px;font:14px/20px system-ui,sans-serif}
+    #appai-play-chrome ol{display:flex;flex-wrap:nowrap;align-items:center;gap:8px;white-space:nowrap;list-style:none;margin:0;padding:0}
+    #appai-play-chrome li{display:flex;flex-shrink:0;align-items:center;gap:8px;min-width:0}
+    #appai-play-chrome [data-breadcrumb] a,#appai-play-chrome [aria-current]{display:inline-flex;align-items:center;min-height:24px;padding:2px 4px}
+    #appai-play-chrome [data-breadcrumb] a{color:var(--breadcrumb-link);text-decoration:underline}
+    #appai-play-chrome [title]>span{display:block;max-width:60vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    #appai-play-chrome [data-breadcrumb] a:focus-visible{outline:2px solid currentColor;outline-offset:2px}` : ""}
     ${game.puzzle ? `body[data-appai-play] #app{top:var(--appai-play-bar-height)}
     body[data-appai-play] #app .menu{bottom:max(16px,env(safe-area-inset-bottom));max-height:none}
     body[data-appai-play] #app .scrim:not(.sheet-scrim) .modal{max-height:calc(100dvh - var(--appai-play-bar-height) - 40px)}
@@ -52,7 +62,7 @@ export function injectGameNavigation(html: string, game: GameEntry, requestedLoc
   return html.replace(/<html\b[^>]*\blang="[^"]*"/, (tag) => tag.replace(/lang="[^"]*"/, `lang="${locale}"`))
     .replace(/<title\b[^>]*>[\s\S]*?<\/title>/i, "")
     .replace("</head>", `<title>${titleHtml}</title>${titleScript}${style}</head>`)
-    .replace(/<body\b([^>]*)>/, `<body$1 data-appai-play>${nav}${script}`);
+    .replace(/<body\b([^>]*)>/, `<body$1 data-appai-play>${breadcrumb ? `<div id="appai-play-chrome">${nav}${breadcrumb}</div>` : nav}${script}`);
 }
 
 /** Explicit game language wins; Werewolf's legacy lang=zh means Traditional Chinese. */

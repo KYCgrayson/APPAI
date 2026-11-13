@@ -194,5 +194,16 @@
       "title": "AI Websites, Portfolios & Landing Pages | AppAI",
       "description": "Explore websites, personal portfolios and project landing pages built with AI and published on AppAI."
     }
+  },
+  "breadcrumbs": {
+    "label": "Breadcrumb",
+    "apps": "Apps",
+    "websites": "Websites",
+    "tools": "Tools",
+    "games": "Games",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "feedback": "Feedback",
+    "deviceAuth": "Device authorization"
   }
 }

@@ -1,3 +1,5 @@
+import { chineseScript } from "./zh-convert.ts";
+import { pickByLocale } from "./locale-match.ts";
 import type { Subpage } from "./parse-page-segments.ts";
 
 const labels: Record<string, [string, string, string, string]> = {
@@ -13,7 +15,7 @@ const labels: Record<string, [string, string, string, string]> = {
 };
 
 export function hostedLegalCopy(locale: string, subpage: Subpage, name: string) {
-  const copy = labels[locale] || labels[locale.split("-")[0]] || labels.en;
+  const copy = pickByLocale(Object.entries(labels).map(([locale, copy]) => ({ locale, copy, isDefault: locale === "en" })), chineseScript(locale) ?? locale)!.copy;
   const index = subpage === "privacy" ? 0 : 1;
   return { heading: copy[index], title: `${copy[index]} — ${name}`, description: `${copy[index + 2]} ${name}.` };
 }

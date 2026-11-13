@@ -79,16 +79,19 @@ test("every game, collection and hub has linked breadcrumbs, home branding and t
       const breadcrumb = html.match(new RegExp(`<nav aria-label="${escapeHtml(getGamePageLabels(locale).breadcrumb)}"[\\s\\S]*?<\\/nav>`))?.[0];
       assert.ok(breadcrumb);
       const items = gameBreadcrumbs(locale, slug);
-      for (const { name, href } of items) {
+      assert.equal([...breadcrumb.matchAll(/<li\b/g)].length, items.length);
+      assert.equal([...breadcrumb.matchAll(/<a\b/g)].length, items.length - 1);
+      for (const [index, { name, href }] of items.entries()) {
         const expected = href === "/" ? `${locale === "en" ? "" : `/${locale}`}/` : new URL(platformUrl(href, locale)).pathname;
-        assert.ok(breadcrumb.includes(`href="${expected}"`));
+        if (index < items.length - 1) assert.ok(breadcrumb.includes(`href="${expected}"`));
         assert.ok(breadcrumb.includes(escapeHtml(name)));
         const link = [...breadcrumb.matchAll(/<a\b[^>]*>/g)].find(([tag]) => tag.includes(`href="${expected}"`))?.[0];
-        assert.match(link ?? "", /class="[^"]*inline-flex[^"]*min-h-11[^"]*items-center/);
+        if (index < items.length - 1) assert.match(link ?? "", /class="[^"]*inline-flex[^"]*min-h-6[^"]*items-center/);
+        else assert.equal(link, undefined);
       }
       assert.equal([...breadcrumb.matchAll(/aria-current="page"/g)].length, 1);
       const current = items.at(-1)!;
-      assert.ok([...breadcrumb.matchAll(/<a\b[^>]*>/g)].some(([tag]) => tag.includes(`href="${new URL(platformUrl(current.href, locale)).pathname}"`) && tag.includes('aria-current="page"')));
+      assert.ok(breadcrumb.includes(`<span aria-current="page" title="${escapeHtml(current.name)}"`));
       const header = html.match(/<header\b[\s\S]*?<\/header>/)![0];
       assert.match(header, /src="\/appai-logo2.png"/);
       assert.match(header, /<a[^>]*class="[^"]*min-h-11[^"]*min-w-11[^"]*"[^>]*><img[^>]*src="\/appai-logo2.png"/);
