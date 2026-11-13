@@ -71,7 +71,7 @@ export function AdaptiveChrome({ children }: { children: React.ReactNode }) {
       // there's no flash on mount. If it actually doesn't fit, the effect
       // flips it to true on the next frame.
       data-cramped="false"
-      className="group/chrome w-full max-w-6xl mx-auto px-6 py-3 flex items-center gap-6 overflow-hidden"
+      className="group/chrome w-full max-w-6xl mx-auto px-2 md:px-6 py-3 flex items-center gap-0 md:gap-6 overflow-hidden"
     >
       {children}
     </div>

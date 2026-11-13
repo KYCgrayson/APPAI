@@ -8,6 +8,7 @@
 - [x] Add English/Traditional Chinese root, child, policy and 404 render coverage plus visible-child navigation regression checks; document publisher-visible behavior and update the feature map.
 - [x] Round 2: TypeScript, lint (0 errors), full tests (688 passed, 5 optional checks skipped), spec generation and feature map pass; the temporary feature-map index leaves the real index unchanged. Full rendered HTML for 60 fixtures matches main after only the approved navigation differences.
 - [x] Restore main's account visibility, publisher download colours, translucent header and existing link styles; shorten the footer home link to AppAI, fix bare zh copy, and ensure every 404 has one main landmark.
+- [x] Round 3: suppress explicit Home-only root nav after policy filtering, restore current-page semantics in desktop/drawer links, enlarge the compact account target to 44px, and restore the full sign-in button's 36px height. Tighten mobile padding/gaps: calculated zh-TW title space at 375/320px is 191/136px with a 32px logo, or 227/172px without one. TypeScript, lint (0 errors, 33 existing warnings), tests (693 passed, 5 optional checks skipped) and feature map pass; Chrome still aborts at startup.
 - [ ] Browser viewport QA: automated 320/375/768/1280px test added; local Chrome aborts at startup and browser-tool access is unavailable.
 
 ## Hosted page removal (#91, PR-5b — 2026-11-13)

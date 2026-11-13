@@ -135,7 +135,63 @@ for (const locale of ["en", "zh-TW"]) {
       assert.deepEqual(anchors(nav).map(link => [link.text, link.href]), suffix ? expected.slice(1) : expected);
     }
   });
+
+  test(`${locale}: filtering an empty policy from explicit Home/Privacy leaves no root nav`, async () => {
+    for (const empty of ["", " \n\t "]) {
+      seed(locale, false);
+      for (const row of fixtureDb.rows) {
+        row.privacyPolicy = empty;
+        row.content = { sections: [], nav: [
+          { label: hostedNavigationCopy(locale).home, target: path(locale) },
+          { label: "Privacy", target: "privacy" },
+        ] };
+      }
+      state.open = true;
+      const header = (await render(locale)).match(/<header\b[\s\S]*?<\/header>/)![0];
+      assert.doesNotMatch(header, /<nav\b/);
+      assert.ok(!anchors(header).some(link => link.text === hostedNavigationCopy(locale).home));
+      assert.ok(!anchors(header).some(link => link.href?.endsWith("/privacy")));
+
+      // The root guard must preserve the beside-name Home on child pages.
+      const child = (await render(locale, "site-contact")).match(/<header\b[\s\S]*?<\/header>/)![0];
+      assert.equal(anchors(child).filter(link => link.text === hostedNavigationCopy(locale).home).length, 1);
+    }
+  });
+
+  test(`${locale}: branding, Home and matching desktop/drawer links identify the current page`, async () => {
+    seed(locale, true);
+    state.open = true;
+    for (const suffix of ["", "site-contact", "privacy"]) {
+      const header = (await render(locale, suffix)).match(/<header\b[\s\S]*?<\/header>/)![0];
+      const links = anchors(header);
+      assert.equal(links[0].attributes.includes('aria-current="page"'), !suffix);
+      const nav = header.match(/<nav\b[\s\S]*?<\/nav>/)![0];
+      const currentNav = anchors(nav).filter(link => link.attributes.includes('aria-current="page"'));
+      assert.deepEqual(currentNav.map(link => link.href), suffix === "privacy" ? [] : [path(locale, suffix)]);
+      const current = links.filter(link => link.attributes.includes('aria-current="page"'));
+      assert.ok(current.length >= 2, "both desktop and drawer identify their current destination");
+      assert.ok(current.every(link => link.href === path(locale, suffix)));
+      const home = links.filter(link => link.text === hostedNavigationCopy(locale).home);
+      assert.ok(home.every(link => link.attributes.includes('aria-current="page"') === !suffix));
+    }
+  });
 }
+
+test("current-page matching handles the explicit default-locale root URL and canonical custom links", async () => {
+  seed("en", true);
+  fixtureDb.rows[0].content = { sections: [], nav: [
+    { label: "Home", target: path("en") },
+    { label: "Contact", target: "site-contact" },
+    { label: "Details", target: "#details" },
+    { label: "External", target: "https://example.com/p/navigation-site" },
+  ] };
+  state.open = true;
+  const params = Promise.resolve({ segments: ["navigation-site", "en"] });
+  const header = (await renderHtml(await Layout({ params, children: null }))).match(/<header\b[\s\S]*?<\/header>/)![0];
+  const current = anchors(header).filter(link => link.attributes.includes('aria-current="page"'));
+  assert.equal(current.length, 3, "branding, desktop Home and drawer Home");
+  assert.ok(current.every(link => link.href === path("en")));
+});
 
 test("custom nav gains Home only on non-root pages and preserves an existing Home label", () => {
   assert.deepEqual(buildNav({ nav: [] }, [], "/p/site", "en", false), [{ label: "Home", target: "/p/site" }]);

@@ -32,7 +32,7 @@ test("desktop and mobile headers contain exactly one visible Home, with the draw
         for (const open of [false, true]) {
           state.open = open;
           const html = await renderHtml(await Layout({ params: Promise.resolve({ segments: [root.slug, "contact"] }), children: null }));
-          for (const width of [320, 375, 768, 1280]) {
+          for (const width of [320, 375, 399, 400, 640, 768, 1280]) {
             const context = `${locale}, signedIn=${signedIn}, open=${open}, width=${width}`;
             await browser.send("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: false });
             await browser.send("Page.setDocumentContent", { frameId: (await browser.send("Page.getFrameTree")).frameTree.frame.id,
@@ -48,13 +48,21 @@ test("desktop and mobile headers contain exactly one visible Home, with the draw
               const row = header.firstElementChild;
               const account = [...row.lastElementChild.querySelectorAll('a[href^="/login"], a[aria-label], a[href^="/logout"]')].find(visible);
               const rect = account?.getBoundingClientRect();
+              const title = row.querySelector('a > span.truncate').getBoundingClientRect();
               return { homeCount: home.length, visibleHomes: home.filter(visible).length,
                 accountVisible: visible(account) && rect.left >= 0 && rect.right <= innerWidth,
+                accountWidth: rect.width, accountHeight: rect.height, titleWidth: title.width,
                 overflow: row.scrollWidth > row.clientWidth, siblings: links.filter(el => el.textContent === 'Contact').length };
             })()`);
             assert.equal(result.homeCount, 1, context);
             assert.equal(result.visibleHomes, 1, context);
             assert.equal(result.accountVisible, true, context);
+            if (width < 400) {
+              assert.ok(result.accountWidth >= 44 && result.accountHeight >= 44, context);
+              if (locale === "zh-TW" && width <= 375) {
+                assert.ok(result.titleWidth >= (width === 320 ? 130 : 180), `${context}, titleWidth=${result.titleWidth}`);
+              }
+            } else if (!signedIn) assert.equal(result.accountHeight, 36, context);
             if (width < 768) assert.equal(result.overflow, false, context);
             assert.equal(result.siblings, open ? 2 : 1, context);
           }

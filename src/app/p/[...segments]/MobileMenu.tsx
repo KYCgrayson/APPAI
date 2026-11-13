@@ -8,6 +8,7 @@ interface MenuLink {
   label: string;
   href: string;
   external?: boolean;
+  isCurrent?: boolean;
 }
 
 interface LocaleOption {
@@ -73,7 +74,7 @@ export function MobileMenu({
         aria-label={open ? labels.closeMenu : labels.openMenu}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center justify-center w-10 h-10 -mr-2 rounded-md text-gray-700 hover:bg-gray-100"
+        className="inline-flex items-center justify-center w-11 h-11 md:w-10 md:h-10 md:-mr-2 rounded-md text-gray-700 hover:bg-gray-100"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -122,6 +123,7 @@ export function MobileMenu({
                       href={item.href}
                       target={item.external ? "_blank" : undefined}
                       rel={item.external ? "noopener noreferrer" : undefined}
+                      aria-current={item.isCurrent ? "page" : undefined}
                       onClick={() => setOpen(false)}
                       className="block px-6 py-4 text-base font-medium border-b border-gray-100 text-gray-900 hover:bg-gray-50"
                     >
@@ -164,6 +166,7 @@ export function MobileMenu({
                       href={item.href}
                       target={item.external ? "_blank" : undefined}
                       rel={item.external ? "noopener noreferrer" : undefined}
+                      aria-current={item.isCurrent ? "page" : undefined}
                       onClick={() => setOpen(false)}
                       className="block px-6 py-3 text-sm text-gray-600 hover:bg-gray-50"
                     >
