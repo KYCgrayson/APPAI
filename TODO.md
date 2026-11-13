@@ -2,7 +2,7 @@
 
 ## Hosted header Home (#91, owner request — 2026-11-13)
 
-- [x] Keep a localized Home link beside the publisher name on child/policy pages at every width, dedupe Home from desktop nav and mobile drawer, and let the mobile title truncate.
+- [x] Keep a localized Home icon button before the publisher logo/name on child/policy pages at every width, dedupe Home from desktop nav and mobile drawer, and let the mobile title truncate.
 - [x] Link to AppAI home from desktop utilities, mobile drawer and footer; retain publisher branding as primary.
 - [x] Recover public site roots on hosted 404s, retain hosted chrome, and suppress empty/whitespace-only policy links including custom nav.
 - [x] Add English/Traditional Chinese root, child, policy and 404 render coverage plus visible-child navigation regression checks; document publisher-visible behavior and update the feature map.
@@ -11,6 +11,7 @@
 - [x] Round 3: suppress explicit Home-only root nav after policy filtering, restore current-page semantics in desktop/drawer links, enlarge the compact account target to 44px, and restore the full sign-in button's 36px height. Tighten mobile padding/gaps: calculated zh-TW title space at 375/320px is 191/136px with a 32px logo, or 227/172px without one. TypeScript, lint (0 errors, 33 existing warnings), tests (693 passed, 5 optional checks skipped) and feature map pass; Chrome still aborts at startup.
 - [x] Round 4: scope compact spacing to non-root headers, restore main's root gutter/gaps/40px hamburger/negative margin and drawer labels, and use 16px non-root gutters with a 4px account/menu gap. All 32 root render pairs match main after removing only AppAI links and aria-current; 64 mobile/desktop class-set comparisons pass. Calculated zh-TW title space at 375/320px is 171/116px with a logo and 207/152px without one; matching the existing page/drawer's 24px gutter would leave only 163px at 375px with a logo. TypeScript, lint (0 errors, 33 existing warnings), tests (695 passed, 5 optional checks skipped) and feature map pass.
 - [ ] Browser viewport QA: automated 320/375/768/1280px test added; local Chrome aborts at startup. Round 4 browser connection succeeded, but automatic approval review rejected the local QA URL because access to 127.0.0.1 was declined; browser widths remain unverified.
+- [x] Owner follow-up: replace beside-name Home text with a leftmost 24px house in a 44×44 bordered button, localized aria-label/title, theme contrast from prose helpers, hover and focus ring. Preserve root headers byte-for-byte against #71 (`857c588`); retain 16px non-root gutters and 4px account/menu gap. Calculated title budgets at 375/320px remain 171/116px with a logo and 207/152px without one. TypeScript, lint (0 errors, 33 existing warnings), tests (697 passed, 5 optional checks skipped), feature map and spec build pass. Browser measurements remain unverified: local Chrome exits at startup and the in-app browser host is unavailable.
 
 ## Hosted page removal (#91, PR-5b — 2026-11-13)
 

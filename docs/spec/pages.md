@@ -109,7 +109,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 | Hosted navigation | Visitor behavior |
 |---|---|
 | Site name/logo | Links to the site's root in the current locale when available. |
-| Child and policy pages | Exactly one localized Home beside the site name on desktop and mobile, even with hidden children or custom nav; remaining nav entries keep their order. |
+| Child and policy pages | Exactly one 44×44 Home button with a 24px house icon at the far left, before the logo/name, on desktop and mobile (including 404s under a public root). Its accessible label and tooltip are localized; no duplicate Home appears in the nav or drawer. Theme-adjusted icon colour meets at least 3:1 contrast on the header, with visible hover/focus states. Root headers stay unchanged; remaining nav entries keep their order. |
 | AppAI | Subordinate header utility link (mobile drawer) and footer link to the platform home `/`. |
 | Privacy/terms | Header, drawer, footer and explicit nav omit links to empty or whitespace-only built-in policies. |
 | Unavailable hosted URL | Localized 404 with AppAI home and a site Home link only when the root is public; valid hosted routes retain the shared header/footer. |

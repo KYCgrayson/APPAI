@@ -1,6 +1,7 @@
 import { publicPageWhere } from "@/lib/hosted-page-visibility";
 import { hostedPagePath, isUnavailableHostedPolicyLink } from "@/lib/hosted-page-urls";
 import { hostedNavigationCopy, hostedLinkFocus } from "@/lib/hosted-navigation-copy";
+import { proseThemeVariables } from "@/lib/prose-theme";
 import { PLATFORM_ORIGIN } from "@/lib/platform-identity";
 import { normalizeHostedContent, contentString } from "@/lib/hosted-content";
 import { resolvePage, resolveChildPage } from "@/lib/hosted-page-resolver";
@@ -120,7 +121,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
         || (localizedRoot.isDefault && pathname === `${rootHref}/${localizedRoot.locale}`));
     } catch { return false; }
   };
-  // The beside-name Home is shared by desktop and mobile. Remove that same
+  // The leftmost Home button is shared by desktop and mobile. Remove that same
   // destination from both navs while retaining every sibling/custom entry.
   const filteredNavItems = buildNav(content, siblings, rootHref, locale, isRootPage)
     .filter(item => {
@@ -245,10 +246,16 @@ export default async function HostedPageLayout({ params, children }: Props) {
         <AdaptiveChrome compact={!isRootPage}>
           {isRootPage ? branding : (
             <div className="flex min-w-0 shrink items-center gap-0 md:gap-2 md:shrink-0 group-data-[cramped=true]/chrome:!shrink">
-              {branding}
-              <a href={rootHref} className={`inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md px-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 ${hostedLinkFocus}`}>
-                {navigation.home}
+              <a href={rootHref} aria-label={navigation.home} title={navigation.home}
+                className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 transition-colors hover:bg-gray-100 ${hostedLinkFocus}`}
+                // Hosted chrome stays white in both page modes. Use the light
+                // contrast variant even when the publisher's content is dark.
+                style={{ color: proseThemeVariables(themeColor)?.["--page-theme-link-light"] ?? "#000000" }}>
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z" />
+                </svg>
               </a>
+              {branding}
             </div>
           )}
 

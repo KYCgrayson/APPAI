@@ -25,7 +25,7 @@ test("readable theme links keep their original colour when contrast already pass
 });
 
 test("theme links meet AA on both alternating backgrounds, including dark red and pale yellow", () => {
-  const themes = ["#7f1d1d", "#fde68a"];
+  const themes = ["#7f1d1d", "#fde68a", "#facc15"];
   for (let r = 0; r <= 255; r += 51) {
     for (let g = 0; g <= 255; g += 51) {
       for (let b = 0; b <= 255; b += 51) {
@@ -40,6 +40,11 @@ test("theme links meet AA on both alternating backgrounds, including dark red an
     }
     for (const background of ["#111827", "#1f2937"]) {
       assert.ok(contrast(vars["--page-theme-link-dark"], background) >= 4.5, `${theme} on ${background}`);
+    }
+    // Hosted Home uses the light variant on white chrome in both page modes.
+    // Include its button, hover and the darkest possible white/90 backdrop.
+    for (const background of ["#ffffff", "#f9fafb", "#f3f4f6", "#e5e5e5"]) {
+      assert.ok(contrast(vars["--page-theme-link-light"], background) >= 3, `Home: ${theme} on ${background}`);
     }
   }
   assert.ok(contrast("#2563eb", "#ffffff") >= 4.5);

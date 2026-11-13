@@ -3,15 +3,15 @@ import { registerHooks } from 'node:module';
 import ts from 'typescript';
 
 /** Load main's actual source in a separate module namespace, using fixture DB/auth. */
-export function registerMainHostedBaseline() {
+export function registerMainHostedBaseline(ref = 'main') {
   const root = new URL('../../', import.meta.url);
   // Virtual files stay under the repo so bare imports find the installed deps.
-  const prefix = new URL('.hosted-main/', root).href;
+  const prefix = new URL(`.hosted-${ref}/`, root).href;
   const sources = new Map();
   const source = path => {
     if (!sources.has(path)) {
       try {
-        sources.set(path, execFileSync('git', ['cat-file', 'blob', `main:${path}`], {
+        sources.set(path, execFileSync('git', ['cat-file', 'blob', `${ref}:${path}`], {
           cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
         }));
       } catch { return undefined; }
@@ -60,16 +60,17 @@ export function normalizeHostedNavigationChanges(html, url) {
     // Compact spacing is approved only on non-root pages. Root spacing must
     // compare byte-for-byte with main, without a class-rewriting escape hatch.
     if (nonRoot) header = header
+      .replace(' dir="ltr" data-cramped=', ' data-cramped=')
       .replace('mx-auto px-4 md:px-6 py-3 flex items-center gap-0 md:gap-6', 'mx-auto px-6 py-3 flex items-center gap-6')
       .replace('flex items-center gap-1 md:gap-3 min-w-0', 'flex items-center gap-3 min-w-0')
       .replace('flex items-center gap-1 md:gap-4 ml-auto', 'flex items-center gap-4 ml-auto')
       .replace('w-11 h-11 md:w-10 md:h-10 md:-mr-2 rounded-md', 'w-10 h-10 -mr-2 rounded-md');
-    // Unwrap the new branding + Home group, retaining the original name link.
-    header = header.replace(/<div class="flex min-w-0 shrink items-center gap-0 md:gap-2 md:shrink-0 group-data-\[cramped=true\]\/chrome:!shrink">(<a\b[\s\S]*?<\/a>)<a\b[^>]*>[^<]*<\/a><\/div>/, '$1');
+    // Unwrap the Home icon + branding group, retaining the original name link.
+    header = header.replace(/<div class="flex min-w-0 shrink items-center gap-0 md:gap-2 md:shrink-0 group-data-\[cramped=true\]\/chrome:!shrink"><a\b[^>]*aria-label="[^"]*"[^>]*><svg\b[\s\S]*?<\/svg><\/a>(<a\b[\s\S]*?<\/a>)<\/div>/, '$1');
     header = header.replace(/<a\b[^>]*aria-label="[^"]*"[^>]*class="inline-flex h-11 w-11[^>]*>[\s\S]*?<\/a>/, '')
       .replace(/<div class="hidden min-\[400px\]:flex items-center">(<(?:a|div)\b[\s\S]*?<\/(?:a|div)>)<\/div>/, '$1');
     if (nonRoot) {
-      // Main's old Home occupies a nav slot; the branch moves it beside the name.
+      // Main's old Home occupies a nav slot; the branch moves it before branding.
       const isHome = anchor => anchor.includes(`href="${rootHref}"`) && />(Home|首頁|首页)<\/a>$/.test(anchor);
       header = header.replace(/<li>(<a\b[^>]*>[\s\S]*?<\/a>)<\/li>/g, (item, anchor) => isHome(anchor) ? '' : item);
       header = header.replace(/<nav\b[^>]*>[\s\S]*?<\/nav>/g, nav => nav.replace(/<a\b[^>]*>[\s\S]*?<\/a>/g, anchor => isHome(anchor) ? '' : anchor));
