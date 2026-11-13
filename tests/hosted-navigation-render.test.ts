@@ -12,16 +12,20 @@ const state = {
 // Render the real drawer and links with fixture auth and initial menu state.
 const hooks = registerHostedNavigationState(state);
 const baseline = registerMainHostedBaseline();
+// Local main still points to pre-#71; also compare the branch base byte-for-byte.
+const pr71Baseline = registerMainHostedBaseline("857c588");
 
-test.after(() => { baseline.deregister(); hooks.deregister(); headers.deregister(); loader.deregister(); });
+test.after(() => { pr71Baseline.deregister(); baseline.deregister(); hooks.deregister(); headers.deregister(); loader.deregister(); });
 
 const { default: Layout } = await import("../src/app/p/[...segments]/layout.tsx");
 const { default: HostedPage } = await import("../src/app/p/[...segments]/page.tsx");
 const { default: NotFound } = await import("../src/app/p/[...segments]/not-found.tsx");
 const { buildNav } = await import("../src/lib/site-nav.ts");
-const { hostedNavigationCopy } = await import("../src/lib/hosted-navigation-copy.ts");
+const { hostedNavigationCopy, HOME_LABELS } = await import("../src/lib/hosted-navigation-copy.ts");
+const { proseThemeVariables } = await import("../src/lib/prose-theme.ts");
 const { isUnavailableHostedPolicyLink } = await import("../src/lib/hosted-page-urls.ts");
 const { default: MainLayout } = await import(baseline.layoutUrl);
+const { default: Pr71Layout } = await import(pr71Baseline.layoutUrl);
 
 function root(locale: string) {
   return {
@@ -59,6 +63,8 @@ async function render(locale: string, suffix = "", expect404 = false) {
 
 function anchors(html: string) {
   return [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)].map(match => ({
+    name: match[1].match(/aria-label="([^"]*)"/)?.[1] ?? match[2].replace(/<[^>]+>/g, "").trim(),
+    icon: /<svg\b[^>]*width="24"[^>]*height="24"[^>]*aria-hidden="true"/.test(match[2]),
     attributes: match[1], href: match[1].match(/href="([^"]*)"/)?.[1], text: match[2].replace(/<[^>]+>/g, "").trim(),
   }));
 }
@@ -75,6 +81,34 @@ function responsiveClassSets(html: string, width: number) {
   }));
 }
 
+test("every Home locale labels the first header control, including the open drawer and sites without logos", async () => {
+  for (const [locale, label] of Object.entries(HOME_LABELS)) for (const logo of [false, true]) {
+    fixtureDb.rows = [root(locale), { ...root(locale), id: "child", slug: "contact", parentSlug: "navigation-site" }];
+    if (!logo) for (const row of fixtureDb.rows) row.content = { sections: [] };
+    state.open = true;
+    const html = header(await render(locale, "contact"));
+    const links = anchors(html);
+    assert.equal(links.filter(link => link.name === label).length, 1, locale);
+    assert.equal(links[0].name, label, locale);
+    assert.ok(links[0].attributes.includes(`title="${label}"`), locale);
+    assert.equal(links[0].text, "", locale);
+    assert.ok(links[0].icon, locale);
+    assert.match(html, /dir="ltr" data-cramped="false"/, "Home stays physically leftmost for RTL locales");
+  }
+});
+
+test("Home uses the contrast-adjusted theme colour on the white header in both page modes", async () => {
+  for (const themeColor of ["#000000", "#facc15", "#ffffff", "#123456"]) for (const darkMode of [false, true]) {
+    seed("en", false);
+    for (const row of fixtureDb.rows) Object.assign(row, { themeColor, darkMode });
+    const home = anchors(header(await render("en", "site-contact")))[0];
+    assert.ok(home.attributes.includes(`color:${proseThemeVariables(themeColor)!["--page-theme-link-light"]}`));
+    assert.match(home.attributes, /rounded-lg border border-gray-200 bg-gray-50/);
+    assert.match(home.attributes, /hover:bg-gray-100/);
+    assert.match(home.attributes, /focus-visible:ring-2 focus-visible:ring-gray-900 focus-visible:ring-offset-2/);
+  }
+});
+
 test("root headers render identically to main, including mobile and desktop class sets", async () => {
   // 32 actual render pairs: four logo/nav fixtures × two locales × auth × drawer.
   // Only AppAI links and aria-current may be removed. No class normalization.
@@ -87,10 +121,13 @@ test("root headers render identically to main, including mobile and desktop clas
         state.open = open;
         const context = `${locale}, logo=${logo}, nav=${nav}, signedIn=${signedIn}, open=${open}`;
         const params = Promise.resolve({ segments: path(locale).slice(3).split("/") });
-        const actual = normalizeRootHeaderAdditions(header(await renderHtml(await Layout({ params, children: null }))));
+        const currentHeader = header(await renderHtml(await Layout({ params, children: null })));
+        assert.equal(currentHeader, header(await renderHtml(await Pr71Layout({ params, children: null }))), `#71 main: ${context}`);
+        assert.ok(!anchors(currentHeader).some(link => link.icon), "root has no Home icon");
+        const actual = normalizeRootHeaderAdditions(currentHeader);
         const expected = header(await renderHtml(await MainLayout({ params, children: null })));
         assert.equal(actual, expected, context);
-        for (const width of [375, 1280]) {
+        for (const width of [320, 375, 399, 400, 640, 768, 1280]) {
           assert.deepEqual(responsiveClassSets(actual, width), responsiveClassSets(expected, width), `${context}, width=${width}`);
         }
       }
@@ -127,17 +164,20 @@ for (const locale of ["en", "zh-TW"]) {
         const header = html.match(/<header\b[\s\S]*?<\/header>/)![0];
         const links = anchors(header);
         const home = hostedNavigationCopy(locale).home;
-        assert.equal(links[0].href, path(locale), "publisher name still links home");
+        assert.equal(links[kind === "root" ? 0 : 1].href, path(locale), "publisher name still links home");
         assert.match(header, /font-semibold text-lg truncate/);
         if (kind === "root") {
-          assert.equal(links.filter(link => link.text === home).length, 0, "no Home-only root nav");
+          assert.equal(links.filter(link => link.name === home).length, 0, "no Home-only root nav");
         } else {
-          assert.equal(links[1].text, home, "Home immediately follows branding");
-          assert.equal(links[1].href, path(locale));
-          assert.doesNotMatch(links[1].attributes, /aria-current|hidden/);
-          assert.match(links[1].attributes, /min-h-11 min-w-11/);
-          assert.match(links[1].attributes, /focus-visible:ring-2/);
-          assert.equal(links.filter(link => link.text === home).length, 1, "exactly one header Home, including the open drawer");
+          assert.equal(links[0].name, home, "Home precedes branding");
+          assert.equal(links[0].text, "", "Home has no visible text");
+          assert.ok(links[0].icon, "decorative 24px inline house");
+          assert.equal(links[0].href, path(locale));
+          assert.doesNotMatch(links[0].attributes, /aria-current|hidden/);
+          assert.match(links[0].attributes, /h-11 w-11/);
+          assert.match(links[0].attributes, /focus-visible:ring-2/);
+          assert.equal(header.match(/<(?:a|button)\b[^>]*>/)?.[0], `<a${links[0].attributes}>`, "Home is the first focusable element");
+          assert.equal(links.filter(link => link.name === home).length, 1, "exactly one header Home, including the open drawer");
         }
         assert.ok(links.some(link => link.text === "AppAI" && link.href === "/" && link.attributes.includes("md:inline-flex")), "desktop platform link");
         if (open) {
@@ -150,7 +190,7 @@ for (const locale of ["en", "zh-TW"]) {
         assert.equal([...html.matchAll(/<main\b/g)].length, 1);
         if (kind === "404") {
           const fallback = html.match(/<section\b[\s\S]*?<\/section>/)![0];
-          assert.ok(anchors(fallback).some(link => link.text === home && link.href === path(locale)));
+          assert.ok(anchors(fallback).some(link => link.name === home && link.href === path(locale)));
           assert.ok(anchors(fallback).some(link => link.text === "AppAI" && link.href === "/"));
           assert.ok(fallback.includes(hostedNavigationCopy(locale).notFound));
         }
@@ -204,12 +244,12 @@ for (const locale of ["en", "zh-TW"]) {
       state.open = true;
       const header = (await render(locale)).match(/<header\b[\s\S]*?<\/header>/)![0];
       assert.doesNotMatch(header, /<nav\b/);
-      assert.ok(!anchors(header).some(link => link.text === hostedNavigationCopy(locale).home));
+      assert.ok(!anchors(header).some(link => link.name === hostedNavigationCopy(locale).home));
       assert.ok(!anchors(header).some(link => link.href?.endsWith("/privacy")));
 
-      // The root guard must preserve the beside-name Home on child pages.
+      // The root guard must preserve the leftmost Home icon on child pages.
       const child = (await render(locale, "site-contact")).match(/<header\b[\s\S]*?<\/header>/)![0];
-      assert.equal(anchors(child).filter(link => link.text === hostedNavigationCopy(locale).home).length, 1);
+      assert.equal(anchors(child).filter(link => link.name === hostedNavigationCopy(locale).home).length, 1);
     }
   });
 
@@ -226,7 +266,7 @@ for (const locale of ["en", "zh-TW"]) {
       const current = links.filter(link => link.attributes.includes('aria-current="page"'));
       assert.ok(current.length >= 2, "both desktop and drawer identify their current destination");
       assert.ok(current.every(link => link.href === path(locale, suffix)));
-      const home = links.filter(link => link.text === hostedNavigationCopy(locale).home);
+      const home = links.filter(link => link.name === hostedNavigationCopy(locale).home);
       assert.ok(home.every(link => link.attributes.includes('aria-current="page"') === !suffix));
     }
   });
@@ -281,10 +321,10 @@ test("Home matches a default child's own locale and falls back to the available 
   fixtureDb.hostedPath = "/p/navigation-site/site-contact";
   const params = Promise.resolve({ segments: ["navigation-site", "site-contact"] });
   let links = anchors((await renderHtml(await Layout({ params, children: null }))).match(/<header\b[\s\S]*?<\/header>/)![0]);
-  assert.equal(links[1].href, path("zh-TW"));
+  assert.equal(links[0].href, path("zh-TW"));
   fixtureDb.rows = fixtureDb.rows.filter(row => row.parentSlug || row.locale === "en");
   links = anchors((await renderHtml(await Layout({ params, children: null }))).match(/<header\b[\s\S]*?<\/header>/)![0]);
-  assert.equal(links[1].href, path("en"));
+  assert.equal(links[0].href, path("en"));
 });
 
 test("navigation labels match exact, primary, Chinese script aliases, then English", () => {
@@ -314,9 +354,9 @@ test("all hosted templates retain Home and AppAI for signed-in visitors in light
         state.open = true;
         const html = await render(locale, "site-contact");
         const header = html.match(/<header\b[\s\S]*?<\/header>/)![0];
-        assert.equal(anchors(header)[1].text, hostedNavigationCopy(locale).home);
+        assert.equal(anchors(header)[0].name, hostedNavigationCopy(locale).home);
         assert.match(header, /bg-white\/90 backdrop-blur-sm/);
-        assert.match(anchors(header)[1].attributes, /text-gray-700/);
+        assert.match(anchors(header)[0].attributes, /color:#[a-f0-9]{6}/);
         assert.ok(anchors(header).some(link => link.href === "/" && link.text === "AppAI"));
         assert.ok(anchors(header).some(link => link.href === "/dashboard"));
       }
@@ -350,7 +390,7 @@ test("custom Home entries are deduped from both navs while siblings retain their
   state.open = true;
   const header = (await render("en", "site-contact")).match(/<header\b[\s\S]*?<\/header>/)![0];
   const links = anchors(header);
-  assert.equal(links.filter(link => link.text === "Home").length, 1);
+  assert.equal(links.filter(link => link.name === "Home").length, 1);
   assert.ok(!links.some(link => link.text === "Publisher Home"));
   assert.deepEqual(anchors(header.match(/<nav\b[\s\S]*?<\/nav>/)![0]).map(link => link.text), ["Contact", "Details"]);
 });

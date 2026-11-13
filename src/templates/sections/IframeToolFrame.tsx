@@ -21,6 +21,7 @@ export function IframeToolFrame({
   darkMode,
   identity,
   children,
+  navigation,
 }: {
   src: string;
   trustedOrigin: string;
@@ -29,12 +30,14 @@ export function IframeToolFrame({
   darkMode: boolean;
   identity: IframeToolIdentity | null;
   children?: ReactNode;
+  navigation?: ReactNode;
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   useIframeToolSession(iframeRef, trustedOrigin, identity);
 
   return (
-    <div style={{ position: "fixed", inset: 0, backgroundColor: darkMode ? "#000" : "#fff" }}>
+    <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", backgroundColor: darkMode ? "#000" : "#fff" }}>
+      {navigation}
       <iframe
         ref={iframeRef}
         src={src}
@@ -43,7 +46,7 @@ export function IframeToolFrame({
         allow={allowFullscreen === false ? undefined : "fullscreen; clipboard-write; gamepad; accelerometer; gyroscope"}
         sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-popups allow-popups-to-escape-sandbox"
         referrerPolicy="strict-origin-when-cross-origin"
-        style={{ width: "100%", height: "100%", border: 0, display: "block" }}
+        style={{ width: "100%", height: "100%", flex: 1, minHeight: 0, border: 0, display: "block" }}
       />
       {children}
     </div>

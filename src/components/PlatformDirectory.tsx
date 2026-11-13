@@ -7,6 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { db } from "@/lib/db";
 import { AppCard } from "@/components/AppCard";
 import { PlatformHeader } from "@/components/PlatformHeader";
+import { PlatformBreadcrumb } from "@/components/PlatformBreadcrumb";
 import { getExternalCanonical } from "@/lib/canonical";
 import { groupByKey, pickByLocale } from "@/lib/locale-match";
 import { canLaunchUniversalApp, getUniversalAppLaunchPath } from "@/lib/universal-apps/directory";
@@ -132,7 +133,8 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
       <PlatformHeader currentSection={kind ?? "apps"} />
-      <main className="max-w-6xl mx-auto px-6 py-8">
+      <main className="max-w-6xl mx-auto px-6 pt-4 pb-8">
+        <PlatformBreadcrumb section={kind ?? "apps"} dark />
         <div className="mb-8">
           <p className="text-sm uppercase tracking-widest text-cyan-400">{copy.label}</p>
           <h1 className="mt-2 text-3xl font-bold text-white">

@@ -486,7 +486,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 | Hosted navigation | Visitor behavior |
 |---|---|
 | Site name/logo | Links to the site's root in the current locale when available. |
-| Child and policy pages | Exactly one localized Home beside the site name on desktop and mobile, even with hidden children or custom nav; remaining nav entries keep their order. |
+| Child and policy pages | Exactly one 44×44 Home button with a 24px house icon at the far left, before the logo/name, on desktop and mobile (including 404s under a public root). Its accessible label and tooltip are localized; no duplicate Home appears in the nav or drawer. Theme-adjusted icon colour meets at least 3:1 contrast on the header, with visible hover/focus states. Root headers stay unchanged; remaining nav entries keep their order. |
 | AppAI | Subordinate header utility link (mobile drawer) and footer link to the platform home `/`. |
 | Privacy/terms | Header, drawer, footer and explicit nav omit links to empty or whitespace-only built-in policies. |
 | Unavailable hosted URL | Localized 404 with AppAI home and a site Home link only when the root is public; valid hosted routes retain the shared header/footer. |
@@ -616,6 +616,20 @@ The canonical compliance setup:
 - Child `my-app-delete-account`: account deletion instructions/form only if the app has user accounts
 
 ---
+
+### Hosted breadcrumbs
+
+AppAI supplies a compact, single-line breadcrumb directly below the hosted header. Do not add a second breadcrumb in publisher sections.
+
+| Page | Visible trail |
+|---|---|
+| Root `/p/{slug}[/{locale}]` | None; root content and headers are unchanged. |
+| Child (including FAQ/contact) | Root name › child title |
+| Privacy / terms | Root name › localised policy title |
+| Missing page under a public root | Root name › localised “Page not found” |
+| Fullscreen iframe tool | Root name › tool heading, above the frame or access gate |
+
+The root links to its hosted URL in the current content locale (default/fallback locale rules still apply). The last item is text with `aria-current="page"`; earlier items are links. Long labels keep their full text in `title`, truncate with an ellipsis, and scroll horizontally on mobile without wrapping. Hosted labels use the hosted copy tables with locale matching, independently of platform UI messages. Visible trails and `BreadcrumbList` JSON-LD use the same items, including policies and known-root 404s. Hidden or unknown roots expose no site breadcrumb.
 
 ## Managing Pages (CRUD)
 
@@ -1056,13 +1070,13 @@ Child slugs matching `^[a-z]{2}(-[A-Z]{2})?$` or `privacy`, `terms`, `tools` are
 
 ### How the site nav is built (automatic)
 
-Branding (logo + site title + language switcher + nonempty Privacy/Terms) and the site nav live in the sticky header. Child and policy pages show a localized Home link beside the site title on desktop and mobile, even when all children are hidden from nav. AppAI home is available in the desktop utility area, mobile drawer and footer. You don't need to build any nav chrome yourself.
+Branding (logo + site title + language switcher + nonempty Privacy/Terms) and the site nav live in the sticky header. Child and policy pages (and 404s under a public root) show a house-icon Home button at the far left before the logo/site title on desktop and mobile, even when all children are hidden from nav. The button has a localized accessible label and tooltip, with no visible Home text. Root headers stay unchanged. AppAI home is available in the desktop utility area, mobile drawer and footer. You don't need to build any nav chrome yourself.
 
 - **Locale dedup is automatic.** If you create `{slug: "my-app-contact", locale: "en"}` and `{slug: "my-app-contact", locale: "zh-TW"}`, the nav shows one "Contact" entry, titled in whichever locale the visitor is on. Just create every locale variant and trust the renderer.
 - **"Home" is auto-localized** (en/zh-TW/zh-CN/ja/ko/es/fr/de/pt/ar/hi/th/vi + more). No action needed.
 - **Ordering** defaults to `createdAt`. Set `navOrder: <int>` on a child page to force position (smaller = first).
 - **Hide from nav**: set `hideFromNav: true` on any page that should exist but not appear in the nav — typical for compliance-only child pages such as `my-app-delete-account` reached from a link.
-- **Custom nav (escape hatch)**: set `content.nav: [{label, target}, ...]` on the root page to replace auto-generated child entries. Non-root pages retain one Home beside the site name, without duplicating it in the nav or drawer. Explicit root navigation is preserved. Empty built-in policy targets are omitted. Target resolution: `https://...` → new tab, `#anchor` → in-page jump, `my-app-faq` → child page.
+- **Custom nav (escape hatch)**: set `content.nav: [{label, target}, ...]` on the root page to replace auto-generated child entries. Non-root pages retain one Home icon before the logo/site name, without duplicating it in the nav or drawer. Explicit root navigation is preserved. Empty built-in policy targets are omitted. Target resolution: `https://...` → new tab, `#anchor` → in-page jump, `my-app-faq` → child page.
 
 ### Compliance pages: recommended flags
 

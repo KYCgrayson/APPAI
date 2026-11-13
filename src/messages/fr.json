@@ -194,5 +194,16 @@
       "title": "Sites IA, portfolios et pages de présentation | AppAI",
       "description": "Découvrez des sites, des portfolios personnels et des pages de présentation de projets créés avec l’IA et publiés sur AppAI."
     }
+  },
+  "breadcrumbs": {
+    "label": "Fil d’Ariane",
+    "apps": "Applications",
+    "websites": "Sites web",
+    "tools": "Outils",
+    "games": "Jeux",
+    "signIn": "Se connecter",
+    "signOut": "Se déconnecter",
+    "feedback": "Feedback",
+    "deviceAuth": "Autorisation de l’appareil"
   }
 }

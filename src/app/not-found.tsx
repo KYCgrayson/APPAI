@@ -1,4 +1,9 @@
 import Link from "next/link";
+import { Breadcrumb } from "@/components/Breadcrumb";
+import { hostedBreadcrumbs } from "@/lib/hosted-breadcrumbs";
+import { breadcrumbJsonLd } from "@/lib/breadcrumbs";
+import { serializeJsonLd } from "@/lib/json-ld";
+import { PLATFORM_ORIGIN } from "@/lib/platform-identity";
 import { headers } from "next/headers";
 import { parsePageSegments } from "@/lib/parse-page-segments";
 import { resolvePage } from "@/lib/hosted-page-resolver";
@@ -25,7 +30,13 @@ export default async function NotFound() {
   const hasLayoutMain = layoutPath && layoutPath.toolOrder === null
     && await resolvePage(layoutPath.slug, layoutPath.locale);
   const Container = hasLayoutMain ? "section" : "main";
-  return <Container lang={locale} className="mx-auto max-w-xl px-6 py-24">
+  const trail = root && rootHref ? hostedBreadcrumbs(root, [root], locale, { name: copy.notFound, href: hostedPath! }) : [];
+  return <>
+    <Breadcrumb items={trail} label={copy.breadcrumb} themeColor={root?.themeColor} className="px-4 py-2 sm:px-6" />
+    {trail.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd({
+      "@context": "https://schema.org", ...breadcrumbJsonLd(trail, PLATFORM_ORIGIN),
+    }) }} />}
+    <Container lang={locale} className="mx-auto max-w-xl px-6 py-24">
     <meta name="robots" content="noindex, nofollow" />
     <h1 className="text-3xl font-bold">{copy.notFound}</h1>
     <p className="my-4">{copy.unavailable}</p>
@@ -33,6 +44,7 @@ export default async function NotFound() {
       {rootHref && <Link href={rootHref} className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-3 text-gray-700 underline hover:text-gray-900 ${hostedLinkFocus}`}>{copy.home}</Link>}
       <Link href="/" className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-3 text-gray-700 underline hover:text-gray-900 ${hostedLinkFocus}`}>{copy.appai}</Link>
     </div>
-  </Container>;
+    </Container>
+  </>;
 }
 

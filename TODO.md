@@ -1,8 +1,19 @@
 # TODO — AppAI Project Roadmap
 
+## Clickable breadcrumbs (#91, owner request — 2026-11-13)
+
+- [x] Reuse one shared accessible Breadcrumb for hosted, platform, dashboard and admin pages: linked ancestors, non-linked current item, localised landmark, › separators, title/ellipsis, 24px targets, single-line mobile scrolling and theme-adjusted AA colours.
+- [x] Add hosted child/contact, privacy/terms, known-root 404 and fullscreen-tool trails; replace the inline policy trail and drive BreadcrumbList JSON-LD from the same items. Keep root HTML/header regression checks and the existing house icon unchanged.
+- [x] Cover public directories, app details and feedback with platform message labels in all nine locales. Preserve main's existing game hub/detail/collection header trails; play and sign-in/out/device-auth flows receive no added breadcrumb or header. Dashboard/Admin sub-pages stay English; their overviews and platform home show no breadcrumb. Spec routes remain plain text; the subtitle test harness is development-only.
+- [x] Add en/zh-TW render, href/count/current-item, JSON-LD parity, mobile-class and light/dark contrast checks; update existing game/header assertions and preserve archived hosted regression hashes.
+- [x] Document hosted breadcrumbs in pages.md, rebuild the spec, and update both feature maps.
+- [x] Final verification: TypeScript, lint (0 errors, 33 existing warnings), full tests (707 passed, 5 optional checks skipped), feature-map check (including new files via a temporary index), and the Next.js webpack compile build pass. Browser smoke testing could not run because the sandbox rejects binding a local server port.
+- [x] Round 2: restore both platform header components and auth/play layouts to main; render new platform trails only in page content. Compare directory/app-detail/login and legacy game header markup against main in all nine locales. Correct Japanese/Korean landmark labels; add a non-root-only 4px Home/branding gap (calculated zh-TW title width with logo at 375px: 167px). Browser measurement remains unavailable: Chrome exits at startup and the browser-control host is unavailable.
+- [x] Round 3: match platform breadcrumb colours to light app-detail/feedback and dark directory pages, remove strip backgrounds, retain each content container's width/gutters and use a consistent 16px header gap. Render only the final game header breadcrumb as current-page text; compare the rest of the header byte-for-byte against main across all nine locales. TypeScript, lint (0 errors, 33 existing warnings), full tests (716 passed, 5 optional checks skipped) and feature-map check pass.
+
 ## Hosted header Home (#91, owner request — 2026-11-13)
 
-- [x] Keep a localized Home link beside the publisher name on child/policy pages at every width, dedupe Home from desktop nav and mobile drawer, and let the mobile title truncate.
+- [x] Keep a localized Home icon button before the publisher logo/name on child/policy pages at every width, dedupe Home from desktop nav and mobile drawer, and let the mobile title truncate.
 - [x] Link to AppAI home from desktop utilities, mobile drawer and footer; retain publisher branding as primary.
 - [x] Recover public site roots on hosted 404s, retain hosted chrome, and suppress empty/whitespace-only policy links including custom nav.
 - [x] Add English/Traditional Chinese root, child, policy and 404 render coverage plus visible-child navigation regression checks; document publisher-visible behavior and update the feature map.
@@ -11,6 +22,7 @@
 - [x] Round 3: suppress explicit Home-only root nav after policy filtering, restore current-page semantics in desktop/drawer links, enlarge the compact account target to 44px, and restore the full sign-in button's 36px height. Tighten mobile padding/gaps: calculated zh-TW title space at 375/320px is 191/136px with a 32px logo, or 227/172px without one. TypeScript, lint (0 errors, 33 existing warnings), tests (693 passed, 5 optional checks skipped) and feature map pass; Chrome still aborts at startup.
 - [x] Round 4: scope compact spacing to non-root headers, restore main's root gutter/gaps/40px hamburger/negative margin and drawer labels, and use 16px non-root gutters with a 4px account/menu gap. All 32 root render pairs match main after removing only AppAI links and aria-current; 64 mobile/desktop class-set comparisons pass. Calculated zh-TW title space at 375/320px is 171/116px with a logo and 207/152px without one; matching the existing page/drawer's 24px gutter would leave only 163px at 375px with a logo. TypeScript, lint (0 errors, 33 existing warnings), tests (695 passed, 5 optional checks skipped) and feature map pass.
 - [ ] Browser viewport QA: automated 320/375/768/1280px test added; local Chrome aborts at startup. Round 4 browser connection succeeded, but automatic approval review rejected the local QA URL because access to 127.0.0.1 was declined; browser widths remain unverified.
+- [x] Owner follow-up: replace beside-name Home text with a leftmost 24px house in a 44×44 bordered button, localized aria-label/title, theme contrast from prose helpers, hover and focus ring. Preserve root headers byte-for-byte against #71 (`857c588`); retain 16px non-root gutters and 4px account/menu gap. Calculated title budgets at 375/320px remain 171/116px with a logo and 207/152px without one. TypeScript, lint (0 errors, 33 existing warnings), tests (697 passed, 5 optional checks skipped), feature map and spec build pass. Browser measurements remain unverified: local Chrome exits at startup and the in-app browser host is unavailable.
 
 ## Hosted page removal (#91, PR-5b — 2026-11-13)
 

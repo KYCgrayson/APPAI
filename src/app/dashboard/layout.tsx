@@ -1,3 +1,4 @@
+import { ManagementBreadcrumb } from "@/components/ManagementBreadcrumb";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -72,6 +73,7 @@ export default async function DashboardLayout({
           </div>
         </div>
       </nav>
+      <ManagementBreadcrumb area="dashboard" />
       <main className="max-w-6xl mx-auto py-8 px-6">{children}</main>
     </div>
   );

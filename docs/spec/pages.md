@@ -109,7 +109,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 | Hosted navigation | Visitor behavior |
 |---|---|
 | Site name/logo | Links to the site's root in the current locale when available. |
-| Child and policy pages | Exactly one localized Home beside the site name on desktop and mobile, even with hidden children or custom nav; remaining nav entries keep their order. |
+| Child and policy pages | Exactly one 44×44 Home button with a 24px house icon at the far left, before the logo/name, on desktop and mobile (including 404s under a public root). Its accessible label and tooltip are localized; no duplicate Home appears in the nav or drawer. Theme-adjusted icon colour meets at least 3:1 contrast on the header, with visible hover/focus states. Root headers stay unchanged; remaining nav entries keep their order. |
 | AppAI | Subordinate header utility link (mobile drawer) and footer link to the platform home `/`. |
 | Privacy/terms | Header, drawer, footer and explicit nav omit links to empty or whitespace-only built-in policies. |
 | Unavailable hosted URL | Localized 404 with AppAI home and a site Home link only when the root is public; valid hosted routes retain the shared header/footer. |
@@ -239,6 +239,20 @@ The canonical compliance setup:
 - Child `my-app-delete-account`: account deletion instructions/form only if the app has user accounts
 
 ---
+
+### Hosted breadcrumbs
+
+AppAI supplies a compact, single-line breadcrumb directly below the hosted header. Do not add a second breadcrumb in publisher sections.
+
+| Page | Visible trail |
+|---|---|
+| Root `/p/{slug}[/{locale}]` | None; root content and headers are unchanged. |
+| Child (including FAQ/contact) | Root name › child title |
+| Privacy / terms | Root name › localised policy title |
+| Missing page under a public root | Root name › localised “Page not found” |
+| Fullscreen iframe tool | Root name › tool heading, above the frame or access gate |
+
+The root links to its hosted URL in the current content locale (default/fallback locale rules still apply). The last item is text with `aria-current="page"`; earlier items are links. Long labels keep their full text in `title`, truncate with an ellipsis, and scroll horizontally on mobile without wrapping. Hosted labels use the hosted copy tables with locale matching, independently of platform UI messages. Visible trails and `BreadcrumbList` JSON-LD use the same items, including policies and known-root 404s. Hidden or unknown roots expose no site breadcrumb.
 
 ## Managing Pages (CRUD)
 

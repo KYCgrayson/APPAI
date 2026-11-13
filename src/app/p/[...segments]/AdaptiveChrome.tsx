@@ -67,6 +67,8 @@ export function AdaptiveChrome({ children, compact = false }: { children: React.
   return (
     <div
       ref={ref}
+      // Keep Home physically leftmost, including on RTL hosted pages.
+      dir={compact ? "ltr" : undefined}
       // Initial value matches the CSS-only (pre-hydration) desktop default so
       // there's no flash on mount. If it actually doesn't fit, the effect
       // flips it to true on the next frame.

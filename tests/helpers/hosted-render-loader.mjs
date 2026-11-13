@@ -142,7 +142,17 @@ export function registerDirectoryFixtures({ translated = false } = {}) {
           return t;
         }
       `, shortCircuit: true };
-      if (url === 'fixture:intl-client') return { format: 'module', source: `export function useLocale() { return globalThis[Symbol.for('appai.test.db')].locale; }`, shortCircuit: true };
+      if (url === 'fixture:intl-client') return { format: 'module', source: `
+        import { readFileSync } from 'node:fs';
+        import { createTranslator } from 'use-intl/core';
+        export function useLocale() { return globalThis[Symbol.for('appai.test.db')].locale; }
+        export function useTranslations(namespace) {
+          if (!${translated}) return key => key;
+          const locale = useLocale();
+          const messages = JSON.parse(readFileSync(${JSON.stringify(sourceRoot)} + 'messages/' + locale + '.json', 'utf8'));
+          return createTranslator({ locale, namespace, messages });
+        }
+      `, shortCircuit: true };
       if (url === 'fixture:navigation') return { format: 'module', source: `
         import { createElement } from 'react';
         export function Link({ href, children, ...props }) {
@@ -245,6 +255,21 @@ export function registerHostedNavigationState(state) {
         export function signIn() { throw new Error("Unexpected sign-in in render fixture"); }
       ` };
       return next(url, context);
+    },
+  });
+}
+
+/** Supply the active management URL while server-rendering the real client trail. */
+export function registerBreadcrumbNavigation() {
+  return registerHooks({
+    resolve(specifier, context, next) {
+      return specifier === "next/navigation" && context.parentURL?.endsWith("/ManagementBreadcrumb.tsx")
+        ? { url: "fixture:breadcrumb-navigation", shortCircuit: true } : next(specifier, context);
+    },
+    load(url, context, next) {
+      return url === "fixture:breadcrumb-navigation" ? { format: "module", shortCircuit: true, source: `
+        export function usePathname() { return globalThis[Symbol.for('appai.test.db')].hostedPath; }
+      ` } : next(url, context);
     },
   });
 }
