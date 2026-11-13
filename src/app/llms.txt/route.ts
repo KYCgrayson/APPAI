@@ -27,7 +27,7 @@ export async function GET() {
     pages = await db.hostedPage.findMany({
       where: publicPageWhere(),
       select: { slug: true, locale: true, title: true, tagline: true, updatedAt: true, isDefault: true, content: true },
-      orderBy: { updatedAt: "desc" },
+      orderBy: [{ updatedAt: "desc" }, { slug: "asc" }, { locale: "asc" }],
       take: 500,
     });
   } catch (e) {

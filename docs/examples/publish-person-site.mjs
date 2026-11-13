@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* Node 18+. Usage: node publish-person-site.mjs data.json [--dry-run]; page allows themeColor/themeColorSecondary/fontFamily/darkMode; publish en first, then zh-TW, zh-CN and es; locale fontFamily overrides the kit (Chinese defaults: Noto Sans TC/SC); locales require sections and project-cards require items.
- * --dry-run replaces relative images with HTTPS placeholders and only calls preview; it never uploads or saves.
+ * --dry-run reads removal state, replaces relative images with HTTPS placeholders and validates with preview; it never uploads or saves page content.
  * Root logo and avatar/icon/screenshot.url and images items upload relative PNG/JPEG/GIF/WebP/SVG files contained in the real data directory; absolute, .env* segments and symlink escapes are refused; links pass through. */
 import { readFile, realpath } from 'node:fs/promises';
 import { resolve, dirname, extname, basename, isAbsolute, relative, sep } from 'node:path';
@@ -14,11 +14,17 @@ const cache = new Map();
 const types = { '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp' };
 async function request(path, body, multipart = false) {
   const response = await fetch(`${base}${path}`, {
-    method: 'POST', headers: { Authorization: `Bearer ${key}`, ...(!multipart ? { 'Content-Type': 'application/json' } : {}) },
-    body: multipart ? body : JSON.stringify(body),
+    method: body === undefined ? 'GET' : 'POST', headers: { Authorization: `Bearer ${key}`, ...(!multipart ? { 'Content-Type': 'application/json' } : {}) },
+    body: body === undefined ? undefined : multipart ? body : JSON.stringify(body),
   });
   const text = await response.text();
+  if (response.status === 404 && body === undefined) return null;
   if (!response.ok) {
+    let failure = {};
+    try { failure = JSON.parse(text); } catch { /* Non-JSON failures still stop publishing. */ }
+    if (['removed_by_owner', 'parent_removed_by_owner'].includes(failure.code)) {
+      const error = new Error(failure.error); error.code = failure.code; throw error;
+    }
     console.error(`HTTP ${response.status}: ${text}`);
     if (response.status === 403 && /limit|plan/i.test(text)) console.error('Plan limit reached: use child pages (parentSlug) and locale variants; remove unused roots or upgrade your plan.');
     throw new Error('Request failed; publishing stopped.');
@@ -85,13 +91,43 @@ export function validateData(data) {
 function orderedSections(sections) {
   return sections.map(({ id, ...section }, order) => ({ ...section, order, data: { ...section.data, ...(id !== undefined ? { id } : {}) } }));
 }
-async function publish(payload, url) {
-  if (dryRun) {
-    const result = await request('/api/v1/pages/preview?upsert=true', payload);
-    if (!result.valid) throw new Error(`Invalid payload: ${JSON.stringify(result.errors)}`);
-    if (result.warnings?.length) console.error(JSON.stringify(result.warnings));
-  } else await request('/api/v1/pages?upsert=true', payload);
-  console.log(`${dryRun ? 'Validated: ' : ''}${url}`);
+// Preflight every existing logical page before publishing; never delete/recreate.
+export async function publishSite(data, directory, { api = request, upload = uploadUrl, log = console.log, preview = dryRun } = {}) {
+  const skipped = new Set();
+  const roots = new Set([data.slug]);
+  for (const person of Object.values(data.locales)) for (const section of person.sections) {
+    for (const item of section.type === 'project-cards' ? section.data.items : []) if (item.page?.as === 'root') roots.add(item.page.slug);
+  }
+  for (const slug of roots) {
+    const [variants, tree] = await Promise.all([
+      api(`/api/v1/pages/${encodeURIComponent(slug)}?variants=true`),
+      api(`/api/v1/pages/${encodeURIComponent(slug)}/children`),
+    ]);
+    for (const row of [...(Array.isArray(variants) ? variants : variants ? [variants] : []), ...(tree?.children || [])]) if (row.removedByOwner) skipped.add(row.slug);
+  }
+  let lateRemoval = false;
+  async function save(payload, url) {
+    if (skipped.has(payload.slug) || skipped.has(payload.parentSlug)) return;
+    try {
+      const result = await api(preview ? '/api/v1/pages/preview?upsert=true' : '/api/v1/pages?upsert=true', payload);
+      if (preview && !result.valid) {
+        const removal = result.errors?.find(error => ['removed_by_owner', 'parent_removed_by_owner'].includes(error.code));
+        if (removal) { const error = new Error(removal.error); error.code = removal.code; throw error; }
+        throw new Error(`Invalid payload: ${JSON.stringify(result.errors)}`);
+      }
+      if (preview && result.warnings?.length) console.error(JSON.stringify(result.warnings));
+      log(`${preview ? 'Validated: ' : ''}${url}`);
+    } catch (error) {
+      if (!['removed_by_owner', 'parent_removed_by_owner'].includes(error.code)) throw error;
+      skipped.add(error.code === 'parent_removed_by_owner' ? payload.parentSlug : payload.slug);
+      lateRemoval = true;
+    }
+  }
+  for (const [payload, url] of await buildPayloads(data, directory, upload, { dryRun: preview, skipped })) await save(payload, url);
+  // A removal can race preflight. Refresh surviving root cards with that page omitted.
+  if (lateRemoval) for (const [payload, url] of await buildPayloads(data, directory, upload, { dryRun: preview, skipped })) if (!payload.parentSlug) await save(payload, url);
+  log(`Skipped removed pages: ${[...skipped].sort().join(', ') || 'none'}`);
+  return [...skipped].sort();
 }
 async function main() {
   if (!input || !key) throw new Error('Usage: APPAI_API_KEY=... node publish-person-site.mjs data.json [--dry-run]');
@@ -99,9 +135,9 @@ async function main() {
   if (/^\.env/i.test(basename(path))) throw new Error('Provide a JSON data file.');
   const data = JSON.parse(await readFile(path, 'utf8'));
   validateData(data);
-  for (const [payload, url] of await buildPayloads(data, dirname(path), uploadUrl, { dryRun })) await publish(payload, url);
+  await publishSite(data, dirname(path));
 }
-export async function buildPayloads(data, directory, upload = uploadUrl, { dryRun = false } = {}) {
+export async function buildPayloads(data, directory, upload = uploadUrl, { dryRun = false, skipped = new Set() } = {}) {
   validateData(data);
   const imageUpload = dryRun ? async () => 'https://appai.info/spec/examples/placeholder.svg' : upload;
   const logo = data.logo === undefined ? undefined : await uploadTree(data.logo, directory, imageUpload, true);
@@ -123,6 +159,7 @@ export async function buildPayloads(data, directory, upload = uploadUrl, { dryRu
         for (const item of section.data.items) {
           const { page, ...card } = item;
           if (page) {
+            if (skipped.has(page.slug)) continue;
             if (page.as && !['child', 'root'].includes(page.as)) throw new Error('Project page.as must be child or root.');
             if (!page.slug || !page.linkLabel) throw new Error('Project pages require slug and linkLabel.');
             const child = page.as !== 'root';
@@ -142,7 +179,7 @@ export async function buildPayloads(data, directory, upload = uploadUrl, { dryRu
     const header = sections.find(section => section.type === 'profile-header');
     roots.push([{ ...common, template: 'PERSON', slug: data.slug, title: person.title || header?.data.name, ...(person.metaDescription !== undefined ? { metaDescription: person.metaDescription } : {}), content: { ...(logo !== undefined ? { logo } : {}), sections: orderedSections(sections) } }, `${base}${rootPath}`]);
   }
-  return [...roots, ...children, ...projects];
+  return [...roots, ...children, ...projects].filter(([payload]) => !skipped.has(payload.slug) && !skipped.has(payload.parentSlug));
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   main().catch(error => { console.error(error.message); process.exitCode = 1; });

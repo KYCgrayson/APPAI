@@ -1,3 +1,7 @@
+import { localeEdge, managedPage } from "./fixtures/pr5-removal.ts";
+import { interactionContent } from "./fixtures/pr5-pages.ts";
+import { managePages } from "../src/lib/page-management.ts";
+import { managementStore } from "./helpers/pr5-management-store.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
@@ -161,4 +165,42 @@ test("public read routes cannot reintroduce bare publication/approval queries", 
     assert.doesNotMatch(readFileSync(path, "utf8"), /is(?:Published|Approved): true/, path);
   }
   paths.forEach(scan);
+});
+
+
+test("PR-5a locale edge: S1, S7/S8 and dashboard agree when only en root is published", async () => {
+  fixtureDb.rows = localeEdge.map(row => ({ ...row, content: interactionContent }));
+  const fetchMock = test.mock.method(globalThis, "fetch", async () => new Response("{}", {status:200}));
+  const original = process.env.RESEND_API_KEY; process.env.RESEND_API_KEY="fixture";
+  Object.assign(fixtureDb, {usageEvent:{async count(){return 0;},async create(){return {};}}});
+  try {
+    for(const row of fixtureDb.rows.filter(row=>row.parentSlug)) {
+      const expected=row.locale==="en"?200:404;
+      const base={pageSlug:row.slug,parentSlug:row.parentSlug,locale:row.locale};
+      assert.equal((await form.POST(request({...base,sectionOrder:1,fields:{message:"Fixture"}}))).status,expected);
+      assert.equal((await order.POST(request({...base,sectionOrder:2,customer:{name:"Fixture",email:"fixture@example.com"},preferredDate:"2026-11-12",items:[{name:"Fixture",quantity:1,unitPrice:1}]}))).status,expected);
+      assert.equal((await issue.POST(request({pageId:row.id,section:3}))).status,expected);
+    }
+    assert.ok(await hosted.default(props("/p/locale-root/locale-child")));
+    await assert.rejects(()=>hosted.default(props("/p/locale-root/ja/locale-child")),/404/);
+  } finally {fetchMock.mock.restore();if(original===undefined)delete process.env.RESEND_API_KEY;else process.env.RESEND_API_KEY=original;}
+});
+
+test("P12 first public origin reads after removal omit the tree from all discovery surfaces", async () => {
+  reset();
+  const store=managementStore(f1Pages.map(row=>managedPage(row.slug,row)));
+  fixtureDb.rows=store.rows;
+  // Warm actual cached sitemap wrappers, then expire their shared tag after commit.
+  await sitemap.loadSitemapIds();
+  await managePages(store as unknown as PrismaClient,{kind:"user",userId:"owner",organizationId:"org-a"},{action:"delete",targets:["live-en"],expected:{pages:3,rows:3}});
+  fixtureDb.rows=store.rows;
+  const {revalidateSeoIndexes}=await import("../src/lib/revalidate-seo.ts");
+  assert.equal(revalidateSeoIndexes("live"),true);
+  await assert.rejects(()=>hosted.default(props("/p/live")),/404/);
+  await assert.rejects(()=>hosted.default(props("/p/live/live-child")),/404/);
+  const entries=(await Promise.all((await sitemap.loadSitemapIds()).map(({id})=>sitemap.loadSitemapShard(String(id))))).flat();
+  assert.ok(!entries.some(entry=>entry.url.includes("/p/live")));
+  assert.doesNotMatch(await (await llms.GET()).text(),/https:\/\/appai.info\/p\/live —/);
+  for(const html of [await renderHtml(await PlatformDirectory({})),await renderHtml(await home())])assert.ok(!html.includes('href="/p/live"'));
+  await assert.rejects(()=>detail.default({params:Promise.resolve({id:"live-app",locale:"en"})}),/404/);
 });

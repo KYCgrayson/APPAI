@@ -1,3 +1,4 @@
+import { toPageDto } from "@/lib/page-dto";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { validateApiKey } from "@/lib/api-auth";
@@ -48,8 +49,8 @@ export async function GET(
       parentSlug: slug,
       ...(locale ? { locale } : {}),
     },
-    orderBy: [{ createdAt: "asc" }],
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
   });
 
-  return NextResponse.json({ parentSlug: slug, children });
+  return NextResponse.json({ parentSlug: slug, children: children.map(toPageDto) });
 }

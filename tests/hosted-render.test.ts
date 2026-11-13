@@ -328,7 +328,12 @@ test("a root's default locale does not make a reachable nondefault child fall th
         title: "Japanese child", content: { sections: [{ type: "hero", data: { headline: "Japanese child" } }] } }];
     const params = Promise.resolve({ segments: ["fallback-site", "fallback-faq"] });
     const metadata = await generateMetadata({ params });
-    assert.equal(metadata.alternates?.canonical, `https://appai.info/p/fallback-site/${hasParentLocale ? "ja/" : ""}fallback-faq`);
+    if (!hasParentLocale) {
+      assert.deepEqual(metadata, {});
+      await assert.rejects(() => HostedPage({ params }), /NEXT_HTTP_ERROR_FALLBACK;404/);
+      continue;
+    }
+    assert.equal(metadata.alternates?.canonical, 'https://appai.info/p/fallback-site/ja/fallback-faq');
     const result = await stream(await HostedPage({ params }));
     assert.equal(result.errors.length, 0);
     assert.match(result.html, /Japanese child/);

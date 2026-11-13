@@ -1,5 +1,6 @@
+import { withPageWrite, type PageApiActor } from "@/lib/page-write-guard";
+import type { PageStore } from "@/lib/page-management";
 import { hostedPageBindingIssue } from "@/lib/app-hosted-page-binding";
-import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -7,12 +8,7 @@ import { validateApiKey } from "@/lib/api-auth";
 import { createAppSchema } from "@/lib/validations/app";
 
 // POST /api/v1/apps
-export async function POST(request: NextRequest) {
-  const authResult = await validateApiKey(request.headers.get("authorization"));
-  if (!authResult) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+async function postApp(request: NextRequest, db: PageStore, authResult: PageApiActor) {
   try {
     const body = await request.json();
     const data = createAppSchema.parse(body);
@@ -39,7 +35,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    revalidateSeoIndexes();
     return NextResponse.json(app, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -47,6 +42,10 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
+}
+
+export async function POST(request: NextRequest) {
+  return withPageWrite(request, null, (tx, actor) => postApp(request, tx, actor), { appCreate: true });
 }
 
 // GET /api/v1/apps
@@ -58,7 +57,7 @@ export async function GET(request: NextRequest) {
 
   const apps = await db.app.findMany({
     where: { organizationId: authResult.organizationId },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   });
 
   return NextResponse.json(apps);

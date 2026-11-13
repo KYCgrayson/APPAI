@@ -144,6 +144,14 @@ model HostedPage {
   darkMode            Boolean @default(false)
   isPublished         Boolean @default(false)
 
+  // Owner/admin removal is enforced by HostedPage_removal_consistent in M1.
+  removalState   String?
+  removalSource  String?
+  removedAt      DateTime? @db.Timestamp(3)
+  removedById    String?
+  removalBatchId String?
+  wasPublished   Boolean?
+
   customDomain String? @unique
 
   // Multi-page sites: parentSlug=null means root page; otherwise this is a child
@@ -162,6 +170,7 @@ model HostedPage {
 
   @@unique([slug, locale])
   @@index([organizationId, parentSlug, slug])
+  @@index([organizationId, createdAt])
 }
 
 // RFC 8628 OAuth Device Authorization Grant
@@ -769,4 +778,25 @@ model GameScore {
   @@index([board, tier, hidden, score, timeMs, achievedAt])
   // Profile deletion and lookup span all boards.
   @@index([userId])
+}
+
+// Append-only snapshots; deliberately no foreign keys or cascading deletion.
+model HostedPageEvent {
+  id             String @id @default(cuid())
+  createdAt      DateTime @default(now()) @db.Timestamp(3)
+  batchId        String
+  organizationId String
+  pageId         String
+  slug           String
+  parentSlug     String?
+  locale         String
+  action         String
+  fromState      String?
+  toState        String?
+  actorKind      String
+  actorUserId    String?
+  apiKeyId       String?
+
+  @@index([organizationId, createdAt])
+  @@index([pageId, createdAt])
 }

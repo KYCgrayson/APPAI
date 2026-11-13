@@ -22,12 +22,12 @@ export default async function AdminOverviewPage() {
     db.hostedPage.count({ where: { isPublished: true } }),
     db.apiKey.count({ where: { isActive: true } }),
     db.app.findMany({
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: 5,
       include: { organization: { select: { name: true } } },
     }),
     db.hostedPage.findMany({
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: 5,
       include: { organization: { select: { name: true } } },
     }),

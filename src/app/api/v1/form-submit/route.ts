@@ -45,6 +45,7 @@ async function findFormSection(
 ): Promise<FormSectionData | null> {
   const roots = parentSlug ? await db.hostedPage.findMany({
     where: { ...publicPageWhere(), slug: parentSlug }, select: publicRootSelect,
+    orderBy: [{ slug: "asc" }, { locale: "asc" }],
   }) : [];
   const page = await db.hostedPage.findFirst({
     where: {

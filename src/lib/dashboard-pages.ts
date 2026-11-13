@@ -3,11 +3,15 @@ import { hostedPagePath } from "./hosted-page-urls.ts";
 import { isPublicChild } from "./hosted-page-visibility.ts";
 
 export const DASHBOARD_PAGE_SIZE = 100;
+export const PAGE_STATUS_LABELS = { published: "Published", hidden: "Hidden", draft: "Draft",
+  unpublished: "Unpublished (owner)", "unpublished-admin": "Unpublished (admin)", trash: "Trash" } as const;
+type PageStatus = keyof typeof PAGE_STATUS_LABELS;
+const statusRank: Record<PageStatus, number> = { draft: 1, hidden: 2, published: 3, unpublished: 4, "unpublished-admin": 5, trash: 6 };
 export type PageSearch = Record<string, string | string[] | undefined>;
 export function pageFilters(search: PageSearch) {
   const single = (key: string) => typeof search[key] === "string" ? search[key] as string : "";
   const created = ["7d", "30d", "90d", "all"].includes(single("created")) ? single("created") : "30d";
-  const status = ["published", "unpublished"].includes(single("status")) ? single("status") : "";
+  const status: PageStatus | "" = Object.hasOwn(PAGE_STATUS_LABELS, single("status")) ? single("status") as PageStatus : "";
   return { q: single("q").trim(), created, status, cursor: single("cursor") };
 }
 type Filters = ReturnType<typeof pageFilters>;
@@ -25,6 +29,8 @@ function readCursor(value: string): Cursor | null {
 export interface PageSummary {
   id: string; organizationId: string; slug: string; parentSlug: string | null;
   title: string; template: string; locale: string; isDefault: boolean;
+  removalState?: string | null; removalSource?: string | null; removedAt?: Date | null;
+  removedById?: string | null; removedByName?: string | null; lastAgentBlockedAt?: Date | null;
   isPublished: boolean; createdAt: Date; hasPrivacy: boolean; hasTerms: boolean;
 }
 type LogicalKey = { id: string; slug: string; parentSlug: string | null; createdAt: Date };
@@ -36,11 +42,21 @@ export function pagePresentation(page: PageSummary, roots: readonly PageSummary[
   const publicRoots = roots.filter(root => isPublicChild(root, []));
   const urlPage = { ...page, privacyPolicy: page.hasPrivacy ? "present" : null, termsOfService: page.hasTerms ? "present" : null };
   return {
-    status: !page.isPublished ? "Draft" : visible ? "Published" : "Hidden — root not public",
+    status: page.removalState === "DELETED" ? "In Trash" : page.removalState ? (page.removalSource === "ADMIN" ? "Unpublished by Admin" : "Unpublished by owner") : !page.isPublished ? "Draft" : visible ? "Published" : "Hidden — root not public",
     view: visible ? hostedPagePath(urlPage, publicRoots) : null,
     privacy: visible ? hostedPagePath(urlPage, publicRoots, "privacy") : null,
     terms: visible ? hostedPagePath(urlPage, publicRoots, "terms") : null,
   };
+}
+
+/** One status per logical page; removal overrides its default locale's effective status. */
+export function logicalPageStatus(variants: readonly PageSummary[], roots: readonly PageSummary[]): PageStatus {
+  if (variants.some(row => row.removalState === "DELETED")) return "trash";
+  if (variants.some(row => row.removalState && row.removalSource === "ADMIN")) return "unpublished-admin";
+  if (variants.some(row => row.removalState)) return "unpublished";
+  const page = [...variants].sort((a, b) => Number(b.isDefault) - Number(a.isDefault)
+    || (a.locale < b.locale ? -1 : a.locale > b.locale ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0))[0];
+  return !page?.isPublished ? "draft" : isPublicChild(page, roots) ? "published" : "hidden";
 }
 
 /** Aggregate before filtering/paging: a translation never resets a logical page's age. */
@@ -49,19 +65,34 @@ export function logicalPageQuery(organizationId: string, filters: Filters, now: 
   const asOf = cursor ? new Date(cursor.asOf) : now;
   const since = filters.created === "all" ? null : new Date(asOf.getTime() - Number.parseInt(filters.created) * 86_400_000);
   const pattern = `%${filters.q.toLowerCase().replace(/[\\%_]/g, "\\$&")}%`;
+  const visible = Prisma.sql`p."removalState" IS NULL AND p."isPublished" AND (p."parentSlug" IS NULL OR EXISTS (
+    SELECT 1 FROM "HostedPage" r WHERE r."organizationId"=p."organizationId" AND r."slug"=p."parentSlug"
+      AND r."parentSlug" IS NULL AND r."removalState" IS NULL AND r."isPublished" AND (p."isDefault" OR r."locale"=p."locale"
+        OR (p."locale" IN ('zh-TW','zh-HK','zh-Hant') AND r."locale" IN ('zh-CN','zh-SG','zh-Hans'))
+        OR (p."locale" IN ('zh-CN','zh-SG','zh-Hans') AND r."locale" IN ('zh-TW','zh-HK','zh-Hant')))))`;
   const query = Prisma.sql`
-    WITH logical_pages AS (
+    WITH ranked_pages AS (
+      SELECT "id", "organizationId", "parentSlug", "slug", "title", "locale", "isDefault",
+        "isPublished", "removalState", "removalSource", "createdAt",
+        ROW_NUMBER() OVER (PARTITION BY "parentSlug", "slug"
+        ORDER BY "isDefault" DESC, "locale" ASC, "id" ASC) AS "statusRank"
+      FROM "HostedPage" p WHERE "organizationId" = ${organizationId}
+    ), logical_pages AS (
       SELECT "parentSlug", "slug", MIN("createdAt") AS "createdAt", MIN("id") AS "id",
-        MAX(CASE WHEN "isPublished" THEN 1 ELSE 0 END) AS published,
+        MAX(CASE WHEN p."removalState" = 'DELETED' THEN 6
+          WHEN p."removalState" IS NOT NULL AND p."removalSource" = 'ADMIN' THEN 5
+          WHEN p."removalState" IS NOT NULL THEN 4
+          WHEN p."statusRank" = 1 THEN CASE WHEN ${visible} THEN 3 WHEN p."isPublished" THEN 2 ELSE 1 END
+          ELSE 0 END) AS status,
         MAX(CASE WHEN LOWER("title") LIKE ${pattern} ESCAPE '\\'
           OR LOWER("slug") LIKE ${pattern} ESCAPE '\\' THEN 1 ELSE 0 END) AS matches
-      FROM "HostedPage" WHERE "organizationId" = ${organizationId}
+      FROM ranked_pages p
       GROUP BY "parentSlug", "slug"
     )
     SELECT "parentSlug", "slug", "createdAt", "id" FROM logical_pages
     WHERE matches = 1 AND "createdAt" <= ${asOf}
       ${since ? Prisma.sql`AND "createdAt" >= ${since}` : Prisma.empty}
-      ${filters.status ? Prisma.sql`AND published = ${filters.status === "published" ? 1 : 0}` : Prisma.empty}
+      ${filters.status ? Prisma.sql`AND status = ${statusRank[filters.status]}` : Prisma.empty}
       ${cursor ? Prisma.sql`AND ("createdAt" < ${new Date(cursor.createdAt)} OR ("createdAt" = ${new Date(cursor.createdAt)} AND "id" < ${cursor.id}))` : Prisma.empty}
     ORDER BY "createdAt" DESC, "id" DESC ${paginate ? Prisma.sql`LIMIT ${DASHBOARD_PAGE_SIZE + 1}` : Prisma.empty}`;
   return { query, asOf, cursor };
@@ -73,7 +104,9 @@ export async function loadDashboardPages(store: Pick<PrismaClient, "$queryRaw">,
   const keys = found.slice(0, DASHBOARD_PAGE_SIZE);
   const rootSlugs = [...new Set(keys.map(page => page.parentSlug || page.slug))];
   const summaries = keys.length ? await store.$queryRaw<PageSummary[]>(Prisma.sql`
-    SELECT "id", "organizationId", "parentSlug", "slug", "title", "template", "locale", "isDefault", "isPublished", "createdAt",
+    SELECT "id", "organizationId", "parentSlug", "slug", "title", "template", "locale", "isDefault", "isPublished", "createdAt", "removalState", "removalSource", "removedAt", "removedById",
+      (SELECT "name" FROM "User" WHERE "User"."id"="HostedPage"."removedById") AS "removedByName",
+      (SELECT MAX("createdAt") FROM "HostedPageEvent" e WHERE e."pageId"="HostedPage"."id" AND e."action"='agent_blocked') AS "lastAgentBlockedAt",
       ("privacyPolicy" IS NOT NULL AND "privacyPolicy" <> '') AS "hasPrivacy",
       ("termsOfService" IS NOT NULL AND "termsOfService" <> '') AS "hasTerms"
     FROM "HostedPage" WHERE "organizationId" = ${organizationId} AND (

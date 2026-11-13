@@ -36,7 +36,7 @@ export default async function PublisherPage() {
         },
       },
     },
-    orderBy: { updatedAt: "desc" },
+    orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
   });
 
   return <div className="space-y-8">

@@ -69,7 +69,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (parsed.toolOrder !== null) {
     const rootPage = await db.hostedPage.findFirst({
       where: { slug: parsed.slug, ...publicPageWhere() },
-      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }, { id: "asc" }],
       select: { title: true, content: true },
     });
     const sections = normalizeHostedContent(rootPage?.content).sections;
@@ -95,9 +95,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const roots = await db.hostedPage.findMany({
     where: { slug, organizationId: rootPage.organizationId, ...publicPageWhere() },
+    orderBy: { locale: "asc" },
   });
   const variants = childSlug ? await db.hostedPage.findMany({
     where: { organizationId: rootPage.organizationId, parentSlug: slug, slug: childSlug, ...publicPageWhere(roots) },
+    orderBy: { locale: "asc" },
   }) : roots;
   const legal = subpage ? hostedLegalCopy(page.locale, subpage, page.title) : null;
   const title = legal?.title || page.metaTitle || page.title;
@@ -156,7 +158,7 @@ export default async function HostedPage({ params }: Props) {
   if (toolOrder !== null) {
     const rootPage = await db.hostedPage.findFirst({
       where: { slug, ...publicPageWhere() },
-      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }, { id: "asc" }],
     });
     if (!rootPage) notFound();
     const sections = normalizeHostedContent(rootPage?.content).sections;
@@ -250,6 +252,7 @@ export default async function HostedPage({ params }: Props) {
         const variants = await db.hostedPage.findMany({
           where: { slug, ...publicPageWhere() },
           select: { locale: true, isDefault: true },
+          orderBy: { locale: "asc" },
         });
 
         if (variants.length > 1) {
@@ -279,6 +282,7 @@ export default async function HostedPage({ params }: Props) {
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
   const roots = [rootPage, ...await db.hostedPage.findMany({
     where: { slug, organizationId: rootPage.organizationId, ...publicPageWhere() },
+    orderBy: { locale: "asc" },
   })];
   const rootUrl = hostedPageUrl(rootPage, roots, baseUrl)!;
   const pageUrl = (!subpage && page.canonicalUrl) || hostedPageUrl(page, roots, baseUrl, subpage)

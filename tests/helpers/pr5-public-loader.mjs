@@ -4,14 +4,15 @@ globalThis[Symbol.for('appai.test.pr5')] = pr5State;
 export function registerPr5PublicFixtures() {
   return registerHooks({
     resolve(specifier, context, nextResolve) {
-      const names = { '@/lib/iframe-tool-session': 'identity', '@/lib/auth': 'auth', '@/lib/api-auth': 'api-auth', '@/lib/revalidate-seo': 'revalidate' };
+      const names = { '@/lib/iframe-tool-session': 'identity', '@/lib/auth': 'auth', '@/lib/api-auth': 'api-auth', '@/lib/revalidate-seo': 'revalidate', 'next/navigation': 'navigation' };
       return names[specifier] ? { url: 'fixture:pr5-' + names[specifier], shortCircuit: true } : nextResolve(specifier, context);
     },
     load(url, context, nextLoad) {
       const source = {
+        'fixture:pr5-navigation': 'export { notFound, redirect } from "next/navigation.js"; export function useRouter() { return { refresh() {} }; }',
         'fixture:pr5-identity': 'export function issueIframeToolSession() { globalThis[Symbol.for("appai.test.pr5")].issued++; return { token: "fixture-session", expiresAt: new Date("2026-11-12T01:00Z") }; }',
         'fixture:pr5-auth': 'export async function auth() { return globalThis[Symbol.for("appai.test.pr5")].session; } export function signIn() { throw new Error("Unexpected sign in"); }',
-        'fixture:pr5-api-auth': 'export async function validateApiKey() { return { organizationId: globalThis[Symbol.for("appai.test.pr5")].organizationId, organization: { plan: "PRO" } }; }',
+        'fixture:pr5-api-auth': 'export async function validateApiKey() { return { organizationId: globalThis[Symbol.for("appai.test.pr5")].organizationId, apiKeyId: "fixture-key", organization: { plan: "PRO" } }; }',
         'fixture:pr5-revalidate': 'export function revalidateSeoIndexes() {}',
       }[url];
       return source ? { format: 'module', shortCircuit: true, source } : nextLoad(url, context);

@@ -198,6 +198,46 @@ Publish with `POST /api/v1/pages` using the same body and `isPublished: true` (`
 
 Limit: 20 submissions per key per rolling 24 hours; also 20 requests per IP per hour. Returns `201 {id}`, `400` invalid input, `401` missing/invalid key or unavailable account ownership, `429` quota exceeded. Both endpoints reject bodies over 16 KB with `413`. The public `/feedback` form requires both `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` in production; missing keys disable the form and return `503` from the web endpoint. Development may run without Turnstile. Web submissions have a database-enforced global cap of 200 per rolling 24 hours (`429` when exceeded), plus 5 requests per IP per hour. IP limits use process-local middleware buckets.
 
+
+## Owner removal and API write blocks
+
+Every page DTO (including list, variants, children and set-default's nested page)
+adds `removedByOwner: null` or
+`{ state: "unpublished"|"deleted", source: "owner"|"admin", at, restoreUntil: null }`.
+Internal actor IDs, batch IDs and saved publication flags are never returned.
+
+| Request on a removed logical page (all locales) | Result |
+|---|---|
+| POST create/upsert or new locale; PUT; PATCH; DELETE; publish; set-default; PATCH sections | 409 `removed_by_owner` |
+| Create a child under a removed root | 409 `parent_removed_by_owner` |
+| POST unpublish | 200, unchanged page DTO |
+| App POST binding to any removed logical page; App PUT with a removed current or requested binding (including clearing/replacing the binding) | 409 `removed_by_owner` |
+| Preview or `?dryRun=true` | 200, `valid:false`; `errors` includes removal code; warnings keep their usual format |
+
+409 body: `{ error, code, retryable:false, requiredAction:"owner_restore_in_dashboard",
+removal:{state,source,at,restoreUntil:null}, hint }`. Do not retry, delete/recreate,
+change locale or clear an App binding to bypass removal. Skip the page and its
+cards, continue publishing other pages, and ask the owner to restore in Dashboard.
+Blocked attempts are audited with the API key ID. API keys cannot restore or
+remove the lock. Visitor routes return 404; v1 never uses 410.
+
+Within the same organization, a removed slug cannot be recreated as a root or child,
+under another parent, or in another locale. The conflict hint identifies the removed
+page. Removal committed between the read and conditional update also returns 409
+`removed_by_owner`; a changed or missing page scope returns 409 `scope_changed`.
+
+Owners use session-only `POST /api/dashboard/pages/actions`, with a same-origin
+browser request: `{action:"unpublish"|"delete"|"restore",targets:[pageId],dryRun:true}`
+returns `{pages,rows,children,titles,skipped,includesRoot}` (up to 10 titles).
+Send the same targets with `expected:{pages,rows}` to confirm. Limits are 1–100
+target IDs and 1000 expanded locale rows. `scope_changed` (409) requires a new
+confirmation. Other errors include `invalid_transition`/`parent_removed` (409),
+`admin_locked`/`plan_limit` (403), `batch_too_large` (413), and 404 for any foreign
+organization target, atomically. API key requests return 401; cross-origin 403.
+Success includes `batchId` and `cacheRefreshed`. Index invalidation follows commit;
+when false, indexes may take up to 1 hour. Origin visibility changes on the next
+request; external caches (including llms.txt) may retain responses for 1 hour.
+
 All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)
 
 # AppAI — Style & logo
@@ -591,6 +631,32 @@ Upsert requires the same `parentSlug` as the existing page (omitted means root);
 Error responses: `{ "error": "message", "hint": "suggested fix" }`. Status codes: 400 (validation), 401 (auth), 403 (plan limit), 404 (not found), 409 (own-org slug taken: use PATCH or ?upsert=true; another org: choose a different slug).
 
 Prefix every child slug with its root slug because `(slug, locale)` is unique across the whole platform; an unprefixed `contact` can collide with another user’s page.
+
+
+## Respect owner removal before publishing
+
+1. Read `GET /api/v1/pages/{root}/children` and `GET /api/v1/pages/{slug}`
+   (or `?variants=true`) for every planned root/project before publishing.
+2. Skip any page whose `removedByOwner` is not null, across all its locales.
+   Omit its project cards and navigation references too. Skip children of removed roots.
+3. On 409 `removed_by_owner` or `parent_removed_by_owner`, record the skipped page,
+   remove its cards, and continue with other pages. `retryable:false` means do not
+   retry; `requiredAction:"owner_restore_in_dashboard"` requires a human owner.
+   Never delete then recreate, create another locale, or rebind an App to bypass it.
+
+Removal affects a logical page: all same-organization `(parentSlug,slug)` locales.
+Unpublishing a root hides its children without changing their rows. Deleting a
+root soft-deletes only live children in the same batch; previously removed children
+keep their state. Restore returns each affected row to its saved published/draft
+state and restores only children in that root's removal batch. A child cannot be
+restored while its root is deleted. Administrator removals require an administrator
+to restore. Trash has no expiry (`restoreUntil:null`); no permanent deletion or
+single-locale removal is offered. Fully deleted logical roots do not consume the
+Free plan's three-root limit; restoring one rechecks that limit.
+
+`publish-person-site.mjs` performs the removal preflight, omits removed pages/cards,
+continues after removal conflicts and prints the skipped slugs. Removal never frees
+its slug. See [the API error contract](https://appai.info/spec/api#owner-removal-and-api-write-blocks).
 
 All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)
 

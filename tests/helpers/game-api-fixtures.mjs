@@ -13,20 +13,27 @@ export function registerGameApiFixtures() {
       return modules[specifier] ? { url: 'fixture:game-' + modules[specifier], shortCircuit: true } : nextResolve(specifier, context);
     },
     load(url, context, nextLoad) {
-      if (url === 'fixture:game-api-auth') return { format: 'module', shortCircuit: true, source: 'export async function validateApiKey() { return { organizationId: "fixture-org", organization: { plan: "FREE" } }; }' };
+      if (url === 'fixture:game-api-auth') return { format: 'module', shortCircuit: true, source: 'export async function validateApiKey() { return { organizationId: "fixture-org", apiKeyId: "fixture-key", organization: { plan: "FREE" } }; }' };
       if (url === 'fixture:game-revalidate') return { format: 'module', shortCircuit: true, source: 'export function revalidateSeoIndexes() {}' };
       if (url === 'fixture:game-identity') return { format: 'module', shortCircuit: true, source: 'export function issueIframeToolSession(input) { globalThis[Symbol.for("appai.test.game-api")].issued.push(input); return { token: "fixture-session", expiresAt: new Date("2030-01-01") }; }' };
       if (url === 'fixture:game-db') return { format: 'module', shortCircuit: true, source: `
         const f = globalThis[Symbol.for('appai.test.game-api')];
         const matches = globalThis[Symbol.for('appai.test.matches')];
         export const db = {
+          async $transaction(fn) { return fn(db); },
+          async $queryRaw() { return []; },
           hostedPage: {
             async findUnique() { return f.page; },
             async findFirst({ where }) { return f.page && matches(f.page, where) ? f.page : null; },
-            async findMany() { return f.page ? [f.page] : []; },
+            async findMany({ where } = {}) { return f.page && matches(f.page, where) ? [f.page] : []; },
             async count() { return f.variantCount; }, async groupBy() { return []; },
             async create({ data }) { f.writes++; return f.page = { id: 'fixture-page', createdAt: new Date(), updatedAt: new Date(), ...data }; },
-            async updateMany({ data }) { if (f.page) Object.assign(f.page, data); },
+            async updateMany({ where, data }) {
+              if (!f.page || !matches(f.page, where)) return { count: 0 };
+              f.writes++;
+              Object.assign(f.page, Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)), { updatedAt: new Date() });
+              return { count: 1 };
+            },
             async update({ data }) { f.writes++; return f.page = { ...f.page, ...Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)), updatedAt: new Date() }; },
           },
           user: { async findFirst() { return { id: 'fixture-admin' }; } },

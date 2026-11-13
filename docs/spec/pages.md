@@ -255,4 +255,30 @@ Error responses: `{ "error": "message", "hint": "suggested fix" }`. Status codes
 
 Prefix every child slug with its root slug because `(slug, locale)` is unique across the whole platform; an unprefixed `contact` can collide with another user’s page.
 
+
+## Respect owner removal before publishing
+
+1. Read `GET /api/v1/pages/{root}/children` and `GET /api/v1/pages/{slug}`
+   (or `?variants=true`) for every planned root/project before publishing.
+2. Skip any page whose `removedByOwner` is not null, across all its locales.
+   Omit its project cards and navigation references too. Skip children of removed roots.
+3. On 409 `removed_by_owner` or `parent_removed_by_owner`, record the skipped page,
+   remove its cards, and continue with other pages. `retryable:false` means do not
+   retry; `requiredAction:"owner_restore_in_dashboard"` requires a human owner.
+   Never delete then recreate, create another locale, or rebind an App to bypass it.
+
+Removal affects a logical page: all same-organization `(parentSlug,slug)` locales.
+Unpublishing a root hides its children without changing their rows. Deleting a
+root soft-deletes only live children in the same batch; previously removed children
+keep their state. Restore returns each affected row to its saved published/draft
+state and restores only children in that root's removal batch. A child cannot be
+restored while its root is deleted. Administrator removals require an administrator
+to restore. Trash has no expiry (`restoreUntil:null`); no permanent deletion or
+single-locale removal is offered. Fully deleted logical roots do not consume the
+Free plan's three-root limit; restoring one rechecks that limit.
+
+`publish-person-site.mjs` performs the removal preflight, omits removed pages/cards,
+continues after removal conflicts and prints the skipped slugs. Removal never frees
+its slug. See [the API error contract](https://appai.info/spec/api#owner-removal-and-api-write-blocks).
+
 All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)

@@ -1,3 +1,6 @@
+import { withPageWrite, updateLivePage, PageWriteConflict, type PageApiActor } from "@/lib/page-write-guard";
+import type { PageStore } from "@/lib/page-management";
+import { toPageDto } from "@/lib/page-dto";
 import { normalizeVideoContent } from "@/lib/video-data";
 import { gameContentIssues, gameSlugReserved, gamesListingResponse, gamePageWarnings } from "@/lib/game-section";
 import { storeTypography, typographyWarnings } from "@/lib/typography";
@@ -10,7 +13,6 @@ import { validateApiKey } from "@/lib/api-auth";
 import { updatePageSchemaFor } from "@/lib/validations/page";
 import { sanitizePageContent, type SanitizeWarning } from "@/lib/sanitize";
 import { hostedPageApprovalUpdate } from "@/lib/hosted-page-approval";
-import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 
 // Fields that cannot be changed via PUT/PATCH. parentSlug is immutable because
 // reparenting (root <-> child) is destructive — agents must delete and recreate.
@@ -113,7 +115,7 @@ export async function GET(
       where: { slug, organizationId: authResult.organizationId },
       orderBy: { locale: "asc" },
     });
-    return NextResponse.json(variants.map(page => ({ ...page, ...gamesListingResponse(page.content) })));
+    return NextResponse.json(variants.map(page => ({ ...toPageDto(page), ...gamesListingResponse(page.content) })));
   }
 
   const page = await db.hostedPage.findFirst({
@@ -124,20 +126,18 @@ export async function GET(
     return errorResponse(`Page "${slug}" (locale: ${locale}) not found in your organization`, 404);
   }
 
-  return NextResponse.json({ ...page, ...gamesListingResponse(page.content) });
+  return NextResponse.json({ ...toPageDto(page), ...gamesListingResponse(page.content) });
 }
 
 // PUT /api/v1/pages/:slug - Full replace
-export async function PUT(
+async function putPage(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ slug: string }> },
+  db: PageStore,
+  authResult: PageApiActor,
 ) {
   const { slug } = await params;
   const locale = getLocale(request);
-  const authResult = await validateApiKey(request.headers.get("authorization"));
-  if (!authResult) {
-    return errorResponse("Unauthorized. Provide a valid API key in the Authorization header: Bearer appai_sk_...", 401);
-  }
 
   const page = await db.hostedPage.findFirst({
     where: { slug, locale, organizationId: authResult.organizationId },
@@ -171,10 +171,7 @@ export async function PUT(
       select: { id: true },
     });
 
-    const updated = await db.hostedPage.update({
-      where: { id: page.id },
-      data: { ...data, content: data.content as Prisma.InputJsonObject },
-    });
+    const updated = await updateLivePage(db, page, { ...data, content: data.content as Prisma.InputJsonObject });
 
     const approvalUpdate = hostedPageApprovalUpdate(updated.template, page, hadPersonRoot);
 
@@ -196,9 +193,10 @@ export async function PUT(
     }
 
     putWarnings.push(...pageLogoWarnings(updated), ...typographyWarnings(updated), ...gamePageWarnings(updated));
-    revalidateSeoIndexes(updated.slug);
-    return NextResponse.json({ ...updated, ...gamesListingResponse(updated.content), ...(putWarnings.length > 0 ? { warnings: putWarnings } : {}) });
+
+    return NextResponse.json({ ...toPageDto(updated), ...gamesListingResponse(updated.content), ...(putWarnings.length > 0 ? { warnings: putWarnings } : {}) });
   } catch (error: unknown) {
+    if (error instanceof PageWriteConflict) throw error;
     if (error instanceof z.ZodError) {
       return errorResponse("Validation failed", 400, error.issues);
     }
@@ -208,16 +206,14 @@ export async function PUT(
 }
 
 // PATCH /api/v1/pages/:slug - True partial update with deep merge
-export async function PATCH(
+async function patchPage(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ slug: string }> },
+  db: PageStore,
+  authResult: PageApiActor,
 ) {
   const { slug } = await params;
   const locale = getLocale(request);
-  const authResult = await validateApiKey(request.headers.get("authorization"));
-  if (!authResult) {
-    return errorResponse("Unauthorized. Provide a valid API key in the Authorization header: Bearer appai_sk_...", 401);
-  }
 
   const page = await db.hostedPage.findFirst({
     where: { slug, locale, organizationId: authResult.organizationId },
@@ -282,10 +278,7 @@ export async function PATCH(
       select: { id: true },
     });
 
-    const updated = await db.hostedPage.update({
-      where: { id: page.id },
-      data: updateData as Prisma.HostedPageUpdateInput,
-    });
+    const updated = await updateLivePage(db, page, updateData as Prisma.HostedPageUpdateManyMutationInput);
 
     const approvalUpdate = hostedPageApprovalUpdate(updated.template, page, hadPersonRoot);
 
@@ -307,9 +300,10 @@ export async function PATCH(
     }
 
     patchWarnings.push(...pageLogoWarnings(updated), ...typographyWarnings(updated), ...gamePageWarnings(updated));
-    revalidateSeoIndexes(updated.slug);
-    return NextResponse.json({ ...updated, ...gamesListingResponse(updated.content), ...(patchWarnings.length > 0 ? { warnings: patchWarnings } : {}) });
+
+    return NextResponse.json({ ...toPageDto(updated), ...gamesListingResponse(updated.content), ...(patchWarnings.length > 0 ? { warnings: patchWarnings } : {}) });
   } catch (error: unknown) {
+    if (error instanceof PageWriteConflict) throw error;
     if (error instanceof z.ZodError) {
       return errorResponse("Validation failed", 400, error.issues);
     }
@@ -319,16 +313,14 @@ export async function PATCH(
 }
 
 // DELETE /api/v1/pages/:slug
-export async function DELETE(
+async function deletePage(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ slug: string }> },
+  db: PageStore,
+  authResult: PageApiActor,
 ) {
   const { slug } = await params;
   const locale = getLocale(request);
-  const authResult = await validateApiKey(request.headers.get("authorization"));
-  if (!authResult) {
-    return errorResponse("Unauthorized. Provide a valid API key in the Authorization header: Bearer appai_sk_...", 401);
-  }
 
   const page = await db.hostedPage.findFirst({
     where: { slug, locale, organizationId: authResult.organizationId },
@@ -340,14 +332,25 @@ export async function DELETE(
   await db.hostedPage.delete({ where: { id: page.id } });
 
   // Only delete the App listing if no more locale variants exist
-  const remaining = await db.hostedPage.count({ where: { slug } });
+  const remaining = await db.hostedPage.count({ where: { slug, organizationId: authResult.organizationId } });
   if (remaining === 0) {
-    await db.app.deleteMany({ where: { hostedPageSlug: slug } });
+    await db.app.deleteMany({ where: { hostedPageSlug: slug, organizationId: authResult.organizationId } });
   }
 
-  revalidateSeoIndexes(slug);
   return NextResponse.json({
     message: `Page "${slug}" (locale: ${locale}) has been deleted`,
     remaining_variants: remaining,
   });
+}
+
+export async function PUT(request: NextRequest, context: { params: Promise<{ slug: string }> }) {
+  return withPageWrite(request, (await context.params).slug, (tx, actor) => putPage(request, context, tx, actor));
+}
+
+export async function PATCH(request: NextRequest, context: { params: Promise<{ slug: string }> }) {
+  return withPageWrite(request, (await context.params).slug, (tx, actor) => patchPage(request, context, tx, actor));
+}
+
+export async function DELETE(request: NextRequest, context: { params: Promise<{ slug: string }> }) {
+  return withPageWrite(request, (await context.params).slug, (tx, actor) => deletePage(request, context, tx, actor));
 }

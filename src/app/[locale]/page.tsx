@@ -26,16 +26,16 @@ export default async function HomePage() {
   const directoryCopy = getDirectoryCopy(locale);
   const gamesCopy = getGamesCopy(locale);
 
-  const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: publicRootSelect });
+  const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: publicRootSelect, orderBy: [{ slug: "asc" }, { locale: "asc" }] });
   const [featuredApps, recentApps, totalPages] = await Promise.all([
     db.app.findMany({
       where: { ...publicAppFilter(roots), isFeatured: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: 6,
     }),
     db.app.findMany({
       where: publicAppFilter(roots),
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: 12,
     }),
     db.hostedPage.count({ where: publicPageWhere(roots) }),
@@ -50,6 +50,7 @@ export default async function HomePage() {
     ? await db.hostedPage.findMany({
         where: { slug: { in: homeSlugs }, ...publicPageWhere() },
         select: { organizationId: true, slug: true, locale: true, isDefault: true, title: true, tagline: true },
+        orderBy: [{ slug: "asc" }, { locale: "asc" }],
       })
     : [];
   const variantsBySlug = groupByKey(homeVariants, (h) => `${h.organizationId}/${h.slug}`);

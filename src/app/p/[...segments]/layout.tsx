@@ -49,6 +49,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
   });
   const childVariants = parsed.childSlug ? await db.hostedPage.findMany({
     where: { organizationId: page.organizationId, parentSlug: slug, slug: parsed.childSlug, ...publicPageWhere(rootVariants) },
+    orderBy: { locale: "asc" },
   }) : [];
   const variants = parsed.childSlug
     ? childVariants.filter(variant => hostedPagePath(variant, rootVariants))

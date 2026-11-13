@@ -1,3 +1,4 @@
+import { removalError, recordAgentBlocked } from "@/lib/page-write-guard";
 import { db } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey } from "@/lib/api-auth";
@@ -11,7 +12,7 @@ import { ICON_NAMES } from "@/components/ui/Icon";
  *
  * Dry-run validation endpoint. Accepts the same body as POST /api/v1/pages,
  * runs the full validation + sanitization pipeline, and returns structured
- * results WITHOUT writing anything to the database.
+ * results without content writes. Blocked removal attempts append an audit event.
  *
  * Response: { valid, errors[], warnings[], sanitizedContent, next }
  */
@@ -38,6 +39,16 @@ export async function POST(request: NextRequest) {
     where: { slug_locale: { slug: identity.data.slug, locale: identity.data.locale || "en" } },
     select: { organizationId: true, parentSlug: true, isDefault: true, content: true },
   });
+  const requestedParent = (body as { parentSlug?: string }).parentSlug ?? null;
+  const logicalParent = existing?.organizationId === authResult.organizationId ? existing.parentSlug : requestedParent;
+  const logicalRemoved = await db.hostedPage.findFirst({ where: { organizationId: authResult.organizationId, slug: identity.data.slug, removalState: { not: null } }, orderBy: { locale: "asc" } });
+  const parentRemoved = !logicalRemoved && logicalParent && !existing ? await db.hostedPage.findFirst({ where: { organizationId: authResult.organizationId, slug: logicalParent, parentSlug: null, removalState: { not: null } } }) : null;
+  const removed = logicalRemoved || parentRemoved;
+  if (removed) {
+    await recordAgentBlocked(removed, authResult);
+    const result = checkPagePreview(body, ICON_NAMES, { origin: request.nextUrl.origin });
+    return NextResponse.json({ ...result, valid: false, errors: [...result.errors, { path: "slug", ...removalError(removed, !!parentRemoved) }] });
+  }
   const existingContent = existing?.organizationId === authResult.organizationId ? existing.content : undefined;
   const context = { origin: request.nextUrl.origin, exists: !!existing, existingContent };
   const result = checkPagePreview(body, ICON_NAMES, context);

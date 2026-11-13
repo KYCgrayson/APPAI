@@ -62,7 +62,14 @@
         "src/lib/app-hosted-page-binding.ts",
         "tests/pr5-*.test.ts",
         "tests/fixtures/pr5-*",
-        "tests/helpers/pr5-*.mjs"
+        "tests/helpers/pr5-*.mjs",
+        "src/app/api/dashboard/pages/actions/route.ts",
+        "src/lib/page-management.ts",
+        "src/lib/page-write-guard.ts",
+        "src/lib/page-dto.ts",
+        "prisma/hosted-page-removal-migration.sql",
+        "prisma/hosted-page-removal-down.sql",
+        "scripts/check-hosted-page-removal-schema.mjs"
       ]
     },
     {
