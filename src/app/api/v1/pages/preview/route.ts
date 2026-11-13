@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   });
   const requestedParent = (body as { parentSlug?: string }).parentSlug ?? null;
   const logicalParent = existing?.organizationId === authResult.organizationId ? existing.parentSlug : requestedParent;
-  const logicalRemoved = await db.hostedPage.findFirst({ where: { organizationId: authResult.organizationId, slug: identity.data.slug, parentSlug: logicalParent, removalState: { not: null } } });
+  const logicalRemoved = await db.hostedPage.findFirst({ where: { organizationId: authResult.organizationId, slug: identity.data.slug, removalState: { not: null } }, orderBy: { locale: "asc" } });
   const parentRemoved = !logicalRemoved && logicalParent && !existing ? await db.hostedPage.findFirst({ where: { organizationId: authResult.organizationId, slug: logicalParent, parentSlug: null, removalState: { not: null } } }) : null;
   const removed = logicalRemoved || parentRemoved;
   if (removed) {

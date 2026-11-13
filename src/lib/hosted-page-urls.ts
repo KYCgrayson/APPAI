@@ -37,7 +37,7 @@ export function hasExternalCanonical(page: HostedUrlPage, origin = PLATFORM_ORIG
 
 export function hostedAlternates(variants: readonly HostedUrlPage[], roots: readonly HostedUrlPage[], origin = PLATFORM_ORIGIN, subpage?: Subpage | null) {
   const languages: Record<string, string> = {};
-  for (const variant of variants) {
+  for (const variant of [...variants].sort((a, b) => a.locale < b.locale ? -1 : a.locale > b.locale ? 1 : 0)) {
     if (!subpage && hasExternalCanonical(variant, origin)) continue;
     const url = hostedPageUrl(variant, roots, origin, subpage);
     if (!url) continue;

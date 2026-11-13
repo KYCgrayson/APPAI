@@ -1,4 +1,4 @@
-import { withPageWrite, type PageApiActor } from "@/lib/page-write-guard";
+import { withPageWrite, updateLivePage, type PageApiActor } from "@/lib/page-write-guard";
 import type { PageStore } from "@/lib/page-management";
 import { toPageDto } from "@/lib/page-dto";
 import { NextRequest, NextResponse } from "next/server";
@@ -19,10 +19,7 @@ async function postPage(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const updated = await db.hostedPage.update({
-    where: { id: page.id, removalState: null },
-    data: { isPublished: false },
-  });
+  const updated = await updateLivePage(db, page, { isPublished: false });
 
   return NextResponse.json(toPageDto(updated));
 }

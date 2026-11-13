@@ -2,7 +2,7 @@ import { registerRemovalFixtures } from "./helpers/pr5-removal-loader.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import type { PrismaClient, HostedPage } from "@prisma/client";
+import type { PrismaClient, HostedPage, Prisma } from "@prisma/client";
 import { NextRequest } from "next/server.js";
 import { registerHostedRenderLoader } from "./helpers/hosted-render-loader.mjs";
 import { managementStore } from "./helpers/pr5-management-store.mjs";
@@ -25,6 +25,7 @@ const defaultRoute = await import("../src/app/api/v1/pages/[slug]/set-default/ro
 const sectionRoute = await import("../src/app/api/v1/pages/[slug]/sections/[order]/route.ts");
 const childrenRoute = await import("../src/app/api/v1/pages/[slug]/children/route.ts");
 const previewRoute = await import("../src/app/api/v1/pages/preview/route.ts");
+const appsRoute = await import("../src/app/api/v1/apps/route.ts");
 const appRoute = await import("../src/app/api/v1/apps/[id]/route.ts");
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const reset = (rows = [managedPage("root")]) => { state.store = managementStore(rows); state.cache = []; state.session = { user: { id: "owner" } }; return state.store; };
@@ -210,4 +211,126 @@ test("P5 admin endpoint shares confirmed transitions; legacy hard deletion never
   const response=await route.POST(req("/api/admin/pages",{action:"unpublish",targets:["root-en"],expected:{pages:1,rows:1}},"POST",false));
   assert.equal(response.status,200);assert.equal(store.rows[0].removalSource,"ADMIN");assert.equal(store.events[0].actorKind,"admin");
   const before=hash(store.rows);assert.equal((await route.DELETE()).status,409);assert.equal(hash(store.rows),before);
+});
+
+test("App POST and PUT reject every removed logical binding and audit each attempt", async () => {
+  for (const parentSlug of [null, "parent"]) for (const [removal, source] of [["UNPUBLISHED", "OWNER"], ["UNPUBLISHED", "ADMIN"], ["DELETED", "OWNER"], ["DELETED", "ADMIN"]]) {
+    const store = reset([managedPage("parent"), managedPage("bound", { parentSlug }),
+      removedPage("bound", removal, source, { id: "bound-ja", locale: "ja", isDefault: false, parentSlug })]);
+    store.apps.push({ id: "app", organizationId: "org-a", hostedPageSlug: null });
+    for (const method of ["POST", "PUT"]) {
+      const body = { name: "Fixture", tagline: "Fixture", description: "Fixture", hostedPageSlug: "bound" };
+      const response = method === "POST" ? await appsRoute.POST(req("/api/v1/apps", body))
+        : await appRoute.PUT(req("/api/v1/apps/app", body, "PUT"), { params: Promise.resolve({ id: "app" }) });
+      assert.equal(response.status, 409, `${method} ${parentSlug} ${removal}/${source}`);
+      assert.equal((await response.json()).code, "removed_by_owner");
+    }
+    assert.equal(store.apps.length, 1);
+    assert.equal(store.apps[0].hostedPageSlug, null);
+    assert.equal(store.events.length, 2);
+    assert.ok(store.events.every(event => event.action === "agent_blocked" && event.pageId === "bound-ja" && event.apiKeyId === "key-fixture"));
+  }
+  const store = reset([managedPage("bound"), removedPage("bound", "DELETED", "OWNER", { organizationId: "org-b", locale: "ja", id: "foreign-ja" })]);
+  assert.equal((await appsRoute.POST(req("/api/v1/apps", { name: "Fixture", tagline: "Fixture", description: "Fixture", hostedPageSlug: "bound" }))).status, 201);
+  assert.equal(store.events.length, 0);
+});
+
+test("POST reserves any removed slug across root/child URLs, parents and locales, within its organisation", async () => {
+  for (const removedParent of [null, "old-parent"]) for (const removal of ["UNPUBLISHED", "DELETED"]) {
+    const store = reset([managedPage("old-parent"), managedPage("new-parent"), removedPage("kid", removal, "OWNER", { parentSlug: removedParent })]);
+    const before = hash(store.rows);
+    for (const parentSlug of [undefined, "old-parent", "new-parent"]) for (const locale of ["en", "ja"]) {
+      const payload = { slug: "kid", locale, parentSlug, title: "Recreated", content: { sections: [] } };
+      const response = await pagesRoute.POST(req("/api/v1/pages", payload));
+      assert.equal(response.status, 409);
+      const body = await response.json();
+      assert.equal(body.code, "removed_by_owner");
+      for (const identity of ["kid", "en", "kid-en", removedParent ?? "null"]) assert.ok(body.hint.includes(identity));
+      const preview = await previewRoute.POST(req("/api/v1/pages/preview", payload));
+      assert.equal((await preview.json()).errors.at(-1).code, "removed_by_owner");
+    }
+    assert.equal(hash(store.rows), before);
+    assert.equal(store.events.length, 12);
+  }
+  // Global slug/locale ownership still applies; distinct available identities in other orgs remain writable.
+  for (const foreignParent of [null, "foreign-root"]) {
+    const store = reset([managedPage("root"), removedPage("kid", "DELETED", "OWNER", { parentSlug: foreignParent, organizationId: "org-b" })]);
+    const response = await pagesRoute.POST(req("/api/v1/pages", { slug: "kid", locale: "ja", parentSlug: foreignParent ? undefined : "root", title: "Independent", content: { sections: [] } }));
+    assert.equal(response.status, 201);
+    assert.equal(store.events.length, 0);
+  }
+});
+
+test("all seven conditional page writes return audited 409s when removal lands between read and write", async () => {
+  const payload = { slug: "root", title: "Replaced", content: { sections: [] } };
+  const calls = [
+    () => pagesRoute.POST(req("/api/v1/pages?upsert=true", payload)),
+    () => pageRoute.PUT(req("/api/v1/pages/root", { title: "Replaced" }, "PUT"), ctx()),
+    () => pageRoute.PATCH(req("/api/v1/pages/root", { title: "Patched" }, "PATCH"), ctx()),
+    () => publishRoute.POST(req("/api/v1/pages/root/publish"), ctx()),
+    () => unpublishRoute.POST(req("/api/v1/pages/root/unpublish"), ctx()),
+    () => defaultRoute.POST(req("/api/v1/pages/root/set-default?locale=en"), ctx()),
+    () => sectionRoute.PATCH(req("/api/v1/pages/root/sections/0", { data: { text: "Patched" } }, "PATCH"), ctx()),
+  ];
+  for (const call of calls) {
+    const store = reset();
+    const removed = removedPage("root", "DELETED");
+    const delegate = client().hostedPage;
+    const updateMany = delegate.updateMany.bind(delegate);
+    Object.assign(delegate, { async updateMany(query: Prisma.HostedPageUpdateManyArgs) {
+      if (query.where?.id === "root-en") Object.assign(store.rows[0], removed);
+      return updateMany(query);
+    } });
+    const transaction = store.$transaction;
+    store.$transaction = async fn => {
+      try { return await transaction(fn); }
+      finally { Object.assign(store.rows[0], removed); } // The other writer's commit survives our rollback.
+    };
+    const response = await call();
+    assert.equal(response.status, 409);
+    assert.equal((await response.json()).code, "removed_by_owner");
+    assert.deepEqual(store.rows[0], removed);
+    assert.equal(store.events.length, 1);
+    assert.equal(store.events[0].action, "agent_blocked");
+    assert.equal(state.cache.length, 0);
+  }
+});
+
+test("conditional page writes map a changed tree or missing row to scope_changed", async () => {
+  for (const missing of [false, true]) {
+    const store = reset();
+    const delegate = client().hostedPage;
+    const updateMany = delegate.updateMany.bind(delegate);
+    Object.assign(delegate, { async updateMany(query: Prisma.HostedPageUpdateManyArgs) {
+      if (query.where?.id) {
+        if (missing) store.rows = [];
+        else store.rows[0].parentSlug = "different-root";
+      }
+      return updateMany(query);
+    } });
+    const response = await publishRoute.POST(req("/api/v1/pages/root/publish"), ctx());
+    assert.equal(response.status, 409);
+    assert.equal((await response.json()).code, "scope_changed");
+    assert.equal(store.events.length, 0);
+    assert.equal(state.cache.length, 0);
+  }
+});
+
+test("page DELETE counts remaining locales and deletes Apps only inside the caller's organisation", async () => {
+  for (const appOrganization of ["org-a", "org-b"]) {
+    const store = reset([managedPage("shared"), managedPage("shared", { id: "foreign-ja", locale: "ja", organizationId: "org-b", parentSlug: "foreign-root" })]);
+    store.apps.push({ id: "listing", hostedPageSlug: "shared", organizationId: appOrganization });
+    const response = await pageRoute.DELETE(req("/api/v1/pages/shared", undefined, "DELETE"), ctx("shared"));
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).remaining_variants, 0);
+    assert.deepEqual(store.rows.map(row => row.id), ["foreign-ja"]);
+    assert.equal(store.apps.length, appOrganization === "org-a" ? 0 : 1);
+  }
+});
+
+test("API page and App lists have deterministic id order when timestamps tie", async () => {
+  const store = reset([managedPage("a"), managedPage("c"), managedPage("b")]);
+  store.apps.push(...["a", "c", "b"].map(id => ({ id, organizationId: "org-a", createdAt: new Date("2026-11-12") })));
+  assert.deepEqual((await (await pagesRoute.GET(req("/api/v1/pages", undefined, "GET"))).json()).map((row: { id: string }) => row.id), ["c-en", "b-en", "a-en"]);
+  assert.deepEqual((await (await appsRoute.GET(req("/api/v1/apps", undefined, "GET"))).json()).map((row: { id: string }) => row.id), ["c", "b", "a"]);
 });

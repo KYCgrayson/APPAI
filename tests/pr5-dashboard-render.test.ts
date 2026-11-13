@@ -54,4 +54,10 @@ test("admin selection is logical-page scoped and displays hidden locales, remova
   assert.equal((html.match(/<article /g)||[]).length,3);assert.equal((html.match(/type="checkbox"/g)||[]).length,3);
   for(const text of ["Hidden — root not public","In Trash","Removed by Fixture owner","Agent tried to republish"])assert.ok(html.includes(text),text);
   assert.doesNotMatch(html,/href="\/p\/admin-root\/ja\/admin-child"/);
+  for (const [filter, count] of [["published", 2], ["hidden", 0], ["draft", 0], ["trash", 1]] as const) {
+    const filtered = await renderHtml(await AdminPages({ searchParams: Promise.resolve({ filter }) }));
+    assert.equal((filtered.match(/<article /g) || []).length, count, filter);
+  }
+  assert.ok(html.includes("Unpublished (owner)"));
+  assert.ok(html.includes("Unpublished (admin)"));
 });

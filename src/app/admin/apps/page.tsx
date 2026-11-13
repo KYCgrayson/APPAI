@@ -20,7 +20,7 @@ export default async function AdminAppsPage({
 
   const apps = await db.app.findMany({
     where,
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     include: { organization: { select: { name: true, email: true } } },
   });
 

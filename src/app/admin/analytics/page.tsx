@@ -170,6 +170,7 @@ export default async function AnalyticsPage() {
           locale: true,
           organization: { select: { name: true } },
         },
+        orderBy: [{ slug: "asc" }, { locale: "asc" }],
       })
     : [];
   const topPageMap = new Map(topPageDetails.map((p) => [p.id, p]));

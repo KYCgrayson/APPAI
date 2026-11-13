@@ -25,13 +25,14 @@ async function loadLocalizedCopy(hostedPageSlug: string | null, organizationId: 
   const variants = await db.hostedPage.findMany({
     where: { slug: hostedPageSlug, organizationId, ...publicPageWhere() },
     select: { locale: true, isDefault: true, title: true, tagline: true, metaDescription: true },
+    orderBy: [{ slug: "asc" }, { locale: "asc" }],
   });
   return pickByLocale(variants, locale);
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, locale } = await params;
-  const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: publicRootSelect });
+  const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: publicRootSelect, orderBy: [{ slug: "asc" }, { locale: "asc" }] });
   const app = await db.app.findFirst({ where: { id, ...publicAppFilter(roots) } });
   if (!app) return { robots: { index: false } };
 
@@ -68,7 +69,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function AppDetailPage({ params }: Props) {
   const { id, locale } = await params;
   const [t, ta] = await Promise.all([getTranslations("appDetail"), getTranslations("apps")]);
-  const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: publicRootSelect });
+  const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: publicRootSelect, orderBy: [{ slug: "asc" }, { locale: "asc" }] });
   const app = await db.app.findFirst({ where: { id, ...publicAppFilter(roots) } });
 
   if (!app) {

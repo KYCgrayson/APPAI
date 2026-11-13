@@ -12,14 +12,14 @@ export const resolvePage = cache(async function resolvePage(slug: string, explic
     if (exact) return { ...exact, autoConverted: false };
     const opposite = oppositeChineseLocale(explicitLocale);
     if (!opposite) return null;
-    const sources = await db.hostedPage.findMany({ where: { slug, locale: { in: chineseSourceLocales(explicitLocale) }, ...publicPageWhere() } });
+    const sources = await db.hostedPage.findMany({ where: { slug, locale: { in: chineseSourceLocales(explicitLocale) }, ...publicPageWhere() } , orderBy: { locale: "asc" } });
     const source = sources.find(row => row.locale === opposite) ?? sources[0];
     return source ? convertChineseVariant(source, explicitLocale) : null;
   }
   // No locale in URL — find the default, fallback to first
   const defaultPage = await db.hostedPage.findFirst({
     where: { slug, ...publicPageWhere() },
-    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }, { id: "asc" }],
   });
   return defaultPage ? { ...defaultPage, autoConverted: false } : null;
 });
@@ -35,6 +35,7 @@ export const resolveChildPage = cache(async function resolveChildPage(
   if (!root || root.organizationId !== organizationId) return null;
   const roots = await db.hostedPage.findMany({
     where: { ...publicPageWhere(), slug: parentSlug, organizationId }, select: publicRootSelect,
+    orderBy: { locale: "asc" },
   });
   if (!roots.length) return null;
   if (explicitLocale) {
@@ -50,7 +51,7 @@ export const resolveChildPage = cache(async function resolveChildPage(
     if (exact) return { ...exact, autoConverted: false };
     const opposite = oppositeChineseLocale(explicitLocale);
     if (!opposite) return null;
-    const sources = await db.hostedPage.findMany({ where: { organizationId, parentSlug, slug: childSlug, locale: { in: chineseSourceLocales(explicitLocale) }, ...publicPageWhere(roots) } });
+    const sources = await db.hostedPage.findMany({ where: { organizationId, parentSlug, slug: childSlug, locale: { in: chineseSourceLocales(explicitLocale) }, ...publicPageWhere(roots) } , orderBy: { locale: "asc" } });
     const source = sources.find(row => row.locale === opposite) ?? sources[0];
     return source ? convertChineseVariant(source, explicitLocale) : null;
   }
@@ -61,7 +62,7 @@ export const resolveChildPage = cache(async function resolveChildPage(
       slug: childSlug,
       ...publicPageWhere(roots),
     },
-    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }, { id: "asc" }],
   });
   return defaultPage ? { ...defaultPage, autoConverted: false } : null;
 });

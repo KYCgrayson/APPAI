@@ -49,7 +49,7 @@ export async function GET(
       parentSlug: slug,
       ...(locale ? { locale } : {}),
     },
-    orderBy: [{ createdAt: "asc" }],
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
   });
 
   return NextResponse.json({ parentSlug: slug, children: children.map(toPageDto) });

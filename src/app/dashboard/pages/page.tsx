@@ -1,7 +1,7 @@
 import { PageActions, PageActionButtons } from "./actions";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { dashboardPagesHref, loadDashboardPages, pageFilters, pagePresentation, type PageSearch } from "@/lib/dashboard-pages";
+import { dashboardPagesHref, loadDashboardPages, pageFilters, pagePresentation, logicalPageStatus, PAGE_STATUS_LABELS, type PageSearch } from "@/lib/dashboard-pages";
 import Link from "next/link";
 
 export default async function PagesListPage({ searchParams }: { searchParams: Promise<PageSearch> }) {
@@ -29,7 +29,7 @@ export default async function PagesListPage({ searchParams }: { searchParams: Pr
         </label>
         <label className="grid gap-1 text-sm">Status
           <select name="status" defaultValue={filters.status} className="rounded-lg border bg-white p-2">
-            <option value="">All statuses</option><option value="published">Published</option><option value="hidden">Hidden</option><option value="draft">Draft</option><option value="unpublished">Unpublished by owner / Admin</option><option value="trash">Trash</option>
+            <option value="">All statuses</option>{Object.entries(PAGE_STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
         </label>
         <button className="rounded-lg bg-black px-4 py-2 text-white">Filter</button>
@@ -47,12 +47,12 @@ export default async function PagesListPage({ searchParams }: { searchParams: Pr
           <div className="divide-y">{[...group.pages].sort((a, b) => Number(!!a.parentSlug) - Number(!!b.parentSlug)).map(page => {
             const variant = page.variants[0];
             const presentations = page.variants.map(row => ({ row, ...pagePresentation(row, result.roots) }));
-            const statuses = [...new Set(presentations.map(item => item.status))];
+            const status = logicalPageStatus(page.variants, result.roots);
             return <article key={page.id} className={`p-6 ${page.parentSlug ? "sm:pl-10" : ""}`}>
               <div className="flex flex-wrap items-center gap-3">
                 <input type="checkbox" name="targets" value={page.id} aria-label={`Select ${variant?.title || page.slug}`} disabled={!isAdmin && page.variants.some(row => row.removalSource === "ADMIN")} />
                 <h3 className="text-lg font-semibold">{variant?.title || page.slug}</h3>
-                {statuses.length === 1 && <span className="rounded-full bg-gray-100 px-2 py-1 text-xs">{statuses[0]}</span>}
+                <span className="rounded-full bg-gray-100 px-2 py-1 text-xs">{PAGE_STATUS_LABELS[status]}</span>
                 <span className="text-xs text-gray-500">{variant?.template}</span>
               </div>
               <p className="mt-1 break-all text-sm text-gray-500">{page.parentSlug ? `${page.parentSlug} / ` : ""}{page.slug} · Created {page.createdAt.toISOString().slice(0, 10)}</p>
@@ -62,7 +62,7 @@ export default async function PagesListPage({ searchParams }: { searchParams: Pr
               <div className="mt-3"><PageActionButtons id={page.id} locked={!isAdmin && page.variants.some(row => row.removalSource === "ADMIN")} /></div>
               <ul className="mt-3 flex flex-wrap gap-3" aria-label="Locales">
                 {presentations.map(item => <li key={item.row.id} className="flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-xs">
-                  <span>{item.row.locale}{item.row.isDefault ? " · default" : ""}{statuses.length > 1 ? ` · ${item.status}` : ""}</span>
+                  <span>{item.row.locale}{item.row.isDefault ? " · default" : ""} · {item.status}</span>
                   {([['View', item.view], ['Privacy', item.privacy], ['Terms', item.terms]] as const).map(([label, href]) => href &&
                     <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{label}</a>)}
                 </li>)}

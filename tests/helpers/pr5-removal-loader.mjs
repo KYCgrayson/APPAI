@@ -12,7 +12,7 @@ return registerHooks({
     const body = ({
       "fixture:removal-db": 'export const db = new Proxy({}, { get(_, key) { return state.store[key]; } });',
       "fixture:removal-auth": 'export async function auth() { return state.session; }',
-      "fixture:removal-api": 'export async function validateApiKey(header) { return header === "Bearer fixture" ? { organizationId: "org-a", apiKeyId: "key-fixture", organization: { plan: state.store.organizations[0].plan } } : null; }',
+      "fixture:removal-api": 'export async function validateApiKey(header) { return header === "Bearer fixture" ? (state.actor ?? { organizationId: "org-a", apiKeyId: "key-fixture", organization: { plan: state.store.organizations[0].plan } }) : null; }',
       "fixture:removal-cache": 'export function revalidateSeoIndexes() { state.cache.push(state.store.committed); return true; }',
     })[url];
     return body ? { format: "module", shortCircuit: true, source: pre + body } : next(url, context);

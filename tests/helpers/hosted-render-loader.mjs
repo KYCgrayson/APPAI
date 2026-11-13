@@ -8,6 +8,7 @@ const sourceRoot = fileURLToPath(new URL('../../src/', import.meta.url));
 /** Evaluate the Prisma filters used by public read queries against fictional rows. */
 export function matchesWhere(row, where = {}) {
   return Object.entries(where).every(([key, value]) => {
+    if (value === undefined) return true; // Prisma omits undefined filters and update fields.
     if (key === 'OR') return value.some(condition => matchesWhere(row, condition));
     if (key === 'AND') return (Array.isArray(value) ? value : [value]).every(condition => matchesWhere(row, condition));
     if (key === 'NOT') return !matchesWhere(row, value);

@@ -6,14 +6,15 @@ import { buildSitemapEntries, splitSitemapEntries } from "./sitemap-entries";
 // Never cache the full directory: a single Next data-cache entry is limited to 2 MB.
 async function loadSitemapEntries() {
   try {
-    const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: publicRootSelect });
+    const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: publicRootSelect, orderBy: [{ slug: "asc" }, { locale: "asc" }] });
     const [pages, apps] = await Promise.all([
       db.hostedPage.findMany({
         where: publicPageWhere(roots),
         select: { slug: true, parentSlug: true, organizationId: true, locale: true, isDefault: true,
           updatedAt: true, privacyPolicy: true, termsOfService: true, canonicalUrl: true },
+        orderBy: [{ slug: "asc" }, { locale: "asc" }],
       }),
-      db.app.findMany({ where: publicAppFilter(roots), select: { id: true, updatedAt: true, hostedPageSlug: true } }),
+      db.app.findMany({ where: publicAppFilter(roots), select: { id: true, updatedAt: true, hostedPageSlug: true }, orderBy: { id: "asc" } }),
     ]);
     return buildSitemapEntries(pages, apps);
   } catch (error) {

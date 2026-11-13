@@ -47,15 +47,15 @@ export async function managePages(store: PrismaClient, actor: PageActor, input: 
   if (!Array.isArray(input.targets) || input.targets.length < 1 || input.targets.length > 100) throw new PageManagementError(400, "invalid_targets");
   if (actor.kind !== "admin" && !actor.organizationId) throw new PageManagementError(403, "organization_required");
   return store.$transaction(async tx => {
-    const requested = await tx.hostedPage.findMany({ where: { id: { in: input.targets }, ...(actor.kind === "admin" ? {} : { organizationId: actor.organizationId! }) }, select: managementSelect });
+    const requested = await tx.hostedPage.findMany({ where: { id: { in: input.targets }, ...(actor.kind === "admin" ? {} : { organizationId: actor.organizationId! }) }, select: managementSelect, orderBy: [{ slug: "asc" }, { locale: "asc" }] });
     if (requested.length !== new Set(input.targets).size) throw new PageManagementError(404, "not_found");
     await lockPageTrees(tx, requested.map(treeKey));
     // A target deleted/recreated while waiting cannot redirect this operation.
-    const currentTargets = await tx.hostedPage.findMany({ where: { id: { in: input.targets }, ...(actor.kind === "admin" ? {} : { organizationId: actor.organizationId! }) }, select: managementSelect });
+    const currentTargets = await tx.hostedPage.findMany({ where: { id: { in: input.targets }, ...(actor.kind === "admin" ? {} : { organizationId: actor.organizationId! }) }, select: managementSelect, orderBy: [{ slug: "asc" }, { locale: "asc" }] });
     if (currentTargets.length !== requested.length) throw new PageManagementError(404, "not_found");
     if (currentTargets.some(p => !requested.some(old => old.id === p.id && logicalKey(old) === logicalKey(p)))) throw new PageManagementError(409, "scope_changed");
     // Re-read and expand INSIDE the locks. All locale variants are one target.
-    const trees = await tx.hostedPage.findMany({ where: { OR: requested.map(p => ({ organizationId: p.organizationId, OR: [{ slug: p.parentSlug || p.slug, parentSlug: null }, { parentSlug: p.parentSlug || p.slug }] })) }, select: managementSelect });
+    const trees = await tx.hostedPage.findMany({ where: { OR: requested.map(p => ({ organizationId: p.organizationId, OR: [{ slug: p.parentSlug || p.slug, parentSlug: null }, { parentSlug: p.parentSlug || p.slug }] })) }, select: managementSelect, orderBy: [{ slug: "asc" }, { locale: "asc" }] });
     const directKeys = new Set(requested.map(logicalKey));
     const direct = trees.filter(p => directKeys.has(logicalKey(p)));
     if (direct.length === 0) throw new PageManagementError(404, "not_found");

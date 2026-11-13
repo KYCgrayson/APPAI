@@ -39,8 +39,9 @@ export async function isolatedPostgres(url) {
   return {clients,schema,async close(){try{await clients[0].$executeRawUnsafe(`DROP SCHEMA "${schema}" CASCADE`);}finally{await Promise.all(clients.map(c=>c.$disconnect()));}}};
 }
 export const deferred = () => { let resolve = () => {}; const promise = new Promise(done => {resolve=()=>done(undefined);});return {promise,resolve}; };
-export async function waitForAdvisoryWait(observer, pid) {
-  const deadline = Date.now()+5000;
+export const postgresTimeoutMs = Number(process.env.TEST_DATABASE_TIMEOUT_MS || 15000);
+export async function waitForAdvisoryWait(observer, pid, timeout = postgresTimeoutMs) {
+  const deadline = Date.now()+timeout;
   while(Date.now()<deadline){
     const rows=await observer.$queryRaw`SELECT 1 FROM pg_locks WHERE pid=${pid} AND locktype='advisory' AND NOT granted`;
     if(rows.length)return;

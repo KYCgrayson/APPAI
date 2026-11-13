@@ -1,4 +1,4 @@
-import { withPageWrite, type PageApiActor } from "@/lib/page-write-guard";
+import { withPageWrite, updateLivePage, PageWriteConflict, type PageApiActor } from "@/lib/page-write-guard";
 import type { PageStore } from "@/lib/page-management";
 import { toPageDto } from "@/lib/page-dto";
 import { normalizeVideoContent } from "@/lib/video-data";
@@ -94,6 +94,7 @@ async function postPage(request: NextRequest, db: PageStore, authResult: PageApi
     const owners = parentSlug ? [] : await db.hostedPage.findMany({
       where: { slug: data.slug, parentSlug: null },
       select: { organizationId: true },
+      orderBy: [{ slug: "asc" }, { locale: "asc" }],
     });
     const ownership = slugOwnershipDecision(owners, authResult.organizationId, parentSlug);
     if (ownership.status === 403) {
@@ -136,13 +137,10 @@ async function postPage(request: NextRequest, db: PageStore, authResult: PageApi
         select: { id: true },
       });
 
-      const updated = await db.hostedPage.update({
-        where: { id: existing.id, removalState: null },
-        data: {
-          ...pageData,
-          content: pageData.content as Prisma.InputJsonObject,
-          slug: undefined, // don't update slug
-        },
+      const updated = await updateLivePage(db, existing, {
+        ...pageData,
+        content: pageData.content as Prisma.InputJsonObject,
+        slug: undefined, // don't update slug
       });
 
       // Sync default-locale metadata and apply template approval rules.
@@ -276,6 +274,7 @@ async function postPage(request: NextRequest, db: PageStore, authResult: PageApi
       { status: 201 },
     );
   } catch (error: unknown) {
+    if (error instanceof PageWriteConflict) throw error;
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Validation failed", details: error.issues }, { status: 400 });
     }
@@ -298,7 +297,7 @@ export async function GET(request: NextRequest) {
       organizationId: authResult.organizationId,
       ...(locale ? { locale } : {}),
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   });
 
   return NextResponse.json(pages.map(page => ({ ...toPageDto(page), ...gamesListingResponse(page.content) })));

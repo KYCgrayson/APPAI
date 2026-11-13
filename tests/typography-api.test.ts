@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerTypographyApiFixtures } from './helpers/typography-api-loader.mjs';
 import { NextRequest } from 'next/server.js';
-import { registerHostedRenderLoader, fixtureDb } from './helpers/hosted-render-loader.mjs';
+import { registerHostedRenderLoader, fixtureDb, matchesWhere } from './helpers/hosted-render-loader.mjs';
 
 const loader = registerHostedRenderLoader();
 const stubs = registerTypographyApiFixtures();
@@ -10,7 +10,7 @@ const { POST } = await import('../src/app/api/v1/pages/route.ts');
 const { PUT, PATCH } = await import('../src/app/api/v1/pages/[slug]/route.ts');
 const state: { page: Record<string, unknown> | null } = { page: null };
 const db = fixtureDb as unknown as Record<string, unknown>;
-db.hostedPage = {
+const pageStore = {
   async findUnique() { return state.page; },
   async findFirst(query: { where: Record<string, unknown> }) {
     if (query.where.template || query.where.removalState) return null;
@@ -23,12 +23,18 @@ db.hostedPage = {
     state.page = { ...state.page, ...Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) };
     return state.page;
   },
+  async updateMany({ where, data }: { where: Record<string, unknown>; data: Record<string, unknown> }) {
+    if (!state.page || !matchesWhere(state.page, where)) return { count: 0 };
+    await this.update({ data });
+    return { count: 1 };
+  },
   async create({ data }: { data: Record<string, unknown> }) {
     assert.ok(!('textSize' in data || 'textContrast' in data || 'typography' in data));
     state.page = { id: 'typography-page', ...data };
     return state.page;
   },
 };
+db.hostedPage = pageStore;
 db.user = { async findFirst() { return { id: 'admin' }; } };
 db.app = { async findFirst() { return { id: 'fixture-app' }; }, async update() {}, async updateMany() {} };
 const req = (method: string, body: unknown, query = '') => new NextRequest('https://example.test/api/v1/pages' + query, { method, body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } });

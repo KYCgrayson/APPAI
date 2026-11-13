@@ -28,7 +28,12 @@ export function registerGameApiFixtures() {
             async findMany({ where } = {}) { return f.page && matches(f.page, where) ? [f.page] : []; },
             async count() { return f.variantCount; }, async groupBy() { return []; },
             async create({ data }) { f.writes++; return f.page = { id: 'fixture-page', createdAt: new Date(), updatedAt: new Date(), ...data }; },
-            async updateMany({ data }) { if (f.page) Object.assign(f.page, data); },
+            async updateMany({ where, data }) {
+              if (!f.page || !matches(f.page, where)) return { count: 0 };
+              f.writes++;
+              Object.assign(f.page, Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)), { updatedAt: new Date() });
+              return { count: 1 };
+            },
             async update({ data }) { f.writes++; return f.page = { ...f.page, ...Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)), updatedAt: new Date() }; },
           },
           user: { async findFirst() { return { id: 'fixture-admin' }; } },

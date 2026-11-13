@@ -35,13 +35,13 @@ export function managementStore(initial = []) {
     async count(query) { return find(store.rows, query).length; },
     async groupBy(query) { return [...new Set(find(store.rows, query).map(row => row.slug))].map(slug => ({ slug })); },
     async update(query) { const row = find(store.rows, query)[0]; if (!row) throw new Error('Conditional update lost'); Object.assign(row, Object.fromEntries(Object.entries(query.data).filter(([,v]) => v !== undefined))); return row; },
-    async updateMany(query) { const rows = find(store.rows, query); rows.forEach(row => Object.assign(row, query.data)); return { count: rows.length }; },
+    async updateMany(query) { const rows = find(store.rows, query); rows.forEach(row => Object.assign(row, Object.fromEntries(Object.entries(query.data).filter(([,v]) => v !== undefined)))); return { count: rows.length }; },
     async delete(query) { const row = find(store.rows, query)[0]; if (!row) throw new Error('Conditional delete lost'); store.rows = store.rows.filter(p => p.id !== row.id); return row; },
     async create({ data }) { const row = { id: 'created-' + store.rows.length, removalState: null, removalSource: null, removedAt: null, removedById: null, removalBatchId: null, wasPublished: null, createdAt: new Date(), updatedAt: new Date(), ...data }; store.rows.push(row); return row; },
   };
   store.hostedPageEvent = { async create({ data }) { const event = { id: 'event-' + store.events.length, createdAt: new Date(), ...data }; store.events.push(event); return event; } };
   store.user = { async findUnique(query) { return find(store.users, query)[0] ?? null; }, async findFirst(query) { return find(store.users, query)[0] ?? null; } };
   store.organization = { async findUniqueOrThrow(query) { const org = find(store.organizations, query)[0]; if (!org) throw new Error('Missing fixture org'); return org; } };
-  store.app = { async findFirst(query) { return find(store.apps, query)[0] ?? null; }, async update(query) { const app = find(store.apps, query)[0]; Object.assign(app, query.data); return app; }, async updateMany(query) { find(store.apps, query).forEach(app => Object.assign(app, query.data)); }, async create({ data }) { const app = { id: 'new-app', ...data }; store.apps.push(app); return app; }, async deleteMany(query) { store.apps = store.apps.filter(app => !matchesWhere(app, query.where)); } };
+  store.app = { async findMany(query) { return structuredClone(find(store.apps, query)); }, async count(query) { return find(store.apps, query).length; }, async findFirst(query) { return find(store.apps, query)[0] ?? null; }, async update(query) { const app = find(store.apps, query)[0]; Object.assign(app, query.data); return app; }, async updateMany(query) { find(store.apps, query).forEach(app => Object.assign(app, query.data)); }, async create({ data }) { const app = { id: 'new-app', ...data }; store.apps.push(app); return app; }, async deleteMany(query) { store.apps = store.apps.filter(app => !matchesWhere(app, query.where)); } };
   return store;
 }

@@ -1,6 +1,6 @@
 import { PageActions } from "@/app/dashboard/pages/actions";
 import { db } from "@/lib/db";
-import { pagePresentation, type PageSummary } from "@/lib/dashboard-pages";
+import { pagePresentation, logicalPageStatus, PAGE_STATUS_LABELS, type PageSummary } from "@/lib/dashboard-pages";
 import { logicalKey } from "@/lib/page-management";
 import { AdminPageActions } from "./actions";
 export const dynamic = "force-dynamic";
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminPagesPage({ searchParams }: { searchParams: Promise<{ filter?: string }> }) {
   const { filter } = await searchParams;
   const rows = await db.hostedPage.findMany({
-    orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+    orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }, { id: "desc" }],
     select: { id: true, organizationId: true, parentSlug: true, slug: true, title: true, template: true,
       locale: true, isDefault: true, isPublished: true, createdAt: true, removalState: true,
       removalSource: true, removedAt: true, removedById: true, organization: { select: { name: true } } },
@@ -17,18 +17,14 @@ export default async function AdminPagesPage({ searchParams }: { searchParams: P
   const roots = summaries.filter(row => !row.parentSlug);
   const groups = new Map<string, typeof summaries>();
   for (const row of summaries) groups.set(logicalKey(row), [...(groups.get(logicalKey(row)) || []), row]);
-  const pages = [...groups.values()].filter(variants => !filter || variants.some(row => {
-    const status = pagePresentation(row, roots).status;
-    return filter === "published" ? status === "Published" : filter === "hidden" ? status.startsWith("Hidden")
-      : filter === "draft" ? status === "Draft" : filter === "trash" ? status === "In Trash" : status.startsWith("Unpublished");
-  }));
+  const pages = [...groups.values()].filter(variants => !filter || logicalPageStatus(variants, roots) === filter);
   const userIds = [...new Set(rows.flatMap(row => row.removedById ? [row.removedById] : []))];
   const [users, events] = await Promise.all([
     userIds.length ? db.user.findMany({ where: { id: { in: userIds } }, select: { id: true, name: true } }) : [],
     rows.length ? db.hostedPageEvent.findMany({ where: { pageId: { in: rows.map(row => row.id) }, action: "agent_blocked" },
       distinct: ["pageId"], orderBy: { createdAt: "desc" }, select: { pageId: true, createdAt: true } }) : [],
   ]);
-  const filters = [["All", ""], ["Published", "published"], ["Hidden", "hidden"], ["Draft", "draft"], ["Unpublished", "unpublished"], ["Trash", "trash"]];
+  const filters = [["All", ""], ...Object.entries(PAGE_STATUS_LABELS).map(([value, label]) => [label, value])];
   return <div>
     <h1 className="mb-4 text-2xl font-bold">Manage Pages <span className="text-sm font-normal text-gray-500">{pages.length} logical pages</span></h1>
     <nav className="mb-6 flex flex-wrap gap-3" aria-label="Page status">{filters.map(([label, value]) =>

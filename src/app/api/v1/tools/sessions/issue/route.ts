@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
 
   const roots = page.parentSlug ? await db.hostedPage.findMany({
     where: { ...publicPageWhere(), slug: page.parentSlug, organizationId: page.organizationId }, select: publicRootSelect,
+    orderBy: [{ slug: "asc" }, { locale: "asc" }],
   }) : [];
   if (!isPublicChild(page, roots)) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404, headers: noStore });
 

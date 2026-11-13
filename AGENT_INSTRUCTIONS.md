@@ -211,7 +211,7 @@ Internal actor IDs, batch IDs and saved publication flags are never returned.
 | POST create/upsert or new locale; PUT; PATCH; DELETE; publish; set-default; PATCH sections | 409 `removed_by_owner` |
 | Create a child under a removed root | 409 `parent_removed_by_owner` |
 | POST unpublish | 200, unchanged page DTO |
-| App PUT with a currently removed hosted root (including clearing/replacing the binding) | 409 `removed_by_owner` |
+| App POST binding to any removed logical page; App PUT with a removed current or requested binding (including clearing/replacing the binding) | 409 `removed_by_owner` |
 | Preview or `?dryRun=true` | 200, `valid:false`; `errors` includes removal code; warnings keep their usual format |
 
 409 body: `{ error, code, retryable:false, requiredAction:"owner_restore_in_dashboard",
@@ -220,6 +220,11 @@ change locale or clear an App binding to bypass removal. Skip the page and its
 cards, continue publishing other pages, and ask the owner to restore in Dashboard.
 Blocked attempts are audited with the API key ID. API keys cannot restore or
 remove the lock. Visitor routes return 404; v1 never uses 410.
+
+Within the same organization, a removed slug cannot be recreated as a root or child,
+under another parent, or in another locale. The conflict hint identifies the removed
+page. Removal committed between the read and conditional update also returns 409
+`removed_by_owner`; a changed or missing page scope returns 409 `scope_changed`.
 
 Owners use session-only `POST /api/dashboard/pages/actions`, with a same-origin
 browser request: `{action:"unpublish"|"delete"|"restore",targets:[pageId],dryRun:true}`

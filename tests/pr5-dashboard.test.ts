@@ -1,7 +1,7 @@
 import { localeEdge, removedPage } from "./fixtures/pr5-removal.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { loadDashboardPages, pageFilters, pagePresentation, dashboardPagesHref } from "../src/lib/dashboard-pages.ts";
+import { loadDashboardPages, pageFilters, pagePresentation, dashboardPagesHref, logicalPageStatus, PAGE_STATUS_LABELS } from "../src/lib/dashboard-pages.ts";
 import { hostedPagePath } from "../src/lib/hosted-page-urls.ts";
 import { dashboardStore } from "./helpers/pr5-sqlite.mjs";
 import { f2Pages, page, PR5_NOW, ago } from "./fixtures/pr5-pages.ts";
@@ -87,19 +87,43 @@ test("P4: published, draft, hidden and mixed locales; only reachable URLs, root-
       assert.equal(!!output.privacy, row.id === "labels-en");
       assert.equal(!!output.terms, row.id === "labels-en");
     }
-    assert.equal((await load(store, { status: "draft" })).groups.flatMap(g => g.pages).length, 2);
+    assert.equal((await load(store, { status: "draft" })).groups.flatMap(g => g.pages).length, 1);
     assert.equal((await load(store, { status: "published" })).groups.flatMap(g => g.pages).length, 2);
   } finally { store.close(); }
 });
 
 
-test("PR-5b status filters count public, hidden, draft, owner-unpublished and Trash logical pages", async () => {
-  const rows=[...localeEdge,removedPage("unpublished"),removedPage("trash","DELETED")];
-  const store=storeFor(rows);
+test("status filters partition logical pages by default locale, with strongest removal taking precedence", async () => {
+  const rows = [...localeEdge,
+    page("hidden-root", { isPublished: false }),
+    page("hidden", { parentSlug: "hidden-root", locale: "ja" }),
+    page("hidden", { id: "hidden-en-other", parentSlug: "hidden-root", isDefault: false }),
+    page("draft", { isPublished: false }), page("draft", { id: "draft-ja", locale: "ja", isDefault: false }),
+    removedPage("unpublished"),
+    page("unpublished", { id: "unpublished-ja", locale: "ja", isDefault: true }),
+    removedPage("admin", "UNPUBLISHED", "ADMIN"),
+    removedPage("admin", "UNPUBLISHED", "OWNER", { id: "admin-ja", locale: "ja", isDefault: false }),
+    removedPage("trash", "DELETED", "OWNER", { isDefault: false }),
+    removedPage("trash", "UNPUBLISHED", "ADMIN", { id: "trash-ja", locale: "ja", isDefault: true }),
+    // Without a marked default, use the first locale consistently in SQL and presentation.
+    page("fallback", { isDefault: false, isPublished: false }),
+    page("fallback", { id: "fallback-ja", locale: "ja", isDefault: false }),
+    removedPage("foreign", "DELETED", "ADMIN", { organizationId: "org-b" }),
+  ];
+  const store = storeFor(rows);
   try {
-    for(const [status,slugs] of [["published",["locale-root","locale-child"]],["hidden",["locale-child"]],["draft",["locale-root"]],["unpublished",["unpublished"]],["trash",["trash"]]] as const) {
-      const result=await load(store,{created:"all",status});
-      assert.deepEqual(result.groups.flatMap(g=>g.pages.map(p=>p.slug)).sort(),[...slugs].sort(),status);
+    const expected = { published: ["locale-root", "locale-child"], hidden: ["hidden"], draft: ["draft", "fallback", "hidden-root"],
+      unpublished: ["unpublished"], "unpublished-admin": ["admin"], trash: ["trash"] };
+    const union: string[] = [];
+    for (const status of Object.keys(PAGE_STATUS_LABELS) as (keyof typeof expected)[]) {
+      const result = await load(store, { created: "all", status });
+      const pages = result.groups.flatMap(group => group.pages);
+      assert.deepEqual(pages.map(page => page.slug).sort(), [...expected[status]].sort(), status);
+      for (const page of pages) assert.equal(logicalPageStatus(page.variants, result.roots), status);
+      union.push(...pages.map(page => page.slug));
     }
-  } finally {store.close();}
+    const all = (await load(store, { created: "all" })).groups.flatMap(group => group.pages.map(page => page.slug));
+    assert.equal(union.length, new Set(union).size);
+    assert.deepEqual(union.sort(), all.sort());
+  } finally { store.close(); }
 });

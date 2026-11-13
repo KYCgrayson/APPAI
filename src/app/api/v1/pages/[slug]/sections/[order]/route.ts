@@ -1,4 +1,4 @@
-import { withPageWrite, type PageApiActor } from "@/lib/page-write-guard";
+import { withPageWrite, updateLivePage, type PageApiActor } from "@/lib/page-write-guard";
 import type { PageStore } from "@/lib/page-management";
 import { normalizeVideoContent } from "@/lib/video-data";
 import { gameContentIssues, gameSlugReserved, gamesListingResponse, gamePageWarnings } from "@/lib/game-section";
@@ -107,10 +107,7 @@ async function patchPage(
   if (gameSlugReserved({ ...page, content: savedContent })) return NextResponse.json({ error: "This game slug is reserved; choose a distinct slug." }, { status: 400 });
   warnings.push(...gamePageWarnings({ ...page, content: savedContent }));
 
-  const updated = await db.hostedPage.update({
-    where: { id: page.id, removalState: null },
-    data: { content: savedContent as Prisma.InputJsonValue },
-  });
+  const updated = await updateLivePage(db, page, { content: savedContent as Prisma.InputJsonValue });
 
   if (!page.parentSlug && page.template === "GAME") {
     await db.app.updateMany({

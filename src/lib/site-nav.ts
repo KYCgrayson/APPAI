@@ -61,6 +61,7 @@ export async function loadSiblings(
 ): Promise<SiblingRow[]> {
   const roots = await db.hostedPage.findMany({
     where: { ...publicPageWhere(), organizationId, slug: parentSlug }, select: publicRootSelect,
+    orderBy: [{ slug: "asc" }, { locale: "asc" }],
   });
   const rows = await db.hostedPage.findMany({
     where: {
@@ -79,6 +80,7 @@ export async function loadSiblings(
       navOrder: true,
       createdAt: true,
     },
+    orderBy: [{ slug: "asc" }, { locale: "asc" }],
   });
 
   const grouped = new Map<string, SiblingRow[]>();
@@ -94,7 +96,7 @@ export async function loadSiblings(
     if (ao != null && bo != null && ao !== bo) return ao - bo;
     if (ao != null && bo == null) return -1;
     if (ao == null && bo != null) return 1;
-    return a.createdAt.getTime() - b.createdAt.getTime();
+    return a.createdAt.getTime() - b.createdAt.getTime() || (a.slug < b.slug ? -1 : a.slug > b.slug ? 1 : 0);
   });
 }
 

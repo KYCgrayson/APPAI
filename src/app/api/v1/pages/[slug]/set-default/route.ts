@@ -1,4 +1,4 @@
-import { withPageWrite, type PageApiActor } from "@/lib/page-write-guard";
+import { withPageWrite, updateLivePage, type PageApiActor } from "@/lib/page-write-guard";
 import type { PageStore } from "@/lib/page-management";
 import { toPageDto } from "@/lib/page-dto";
 import { NextRequest, NextResponse } from "next/server";
@@ -40,10 +40,7 @@ async function postPage(
     data: { isDefault: false },
   });
 
-  const updated = await db.hostedPage.update({
-    where: { id: page.id, removalState: null },
-    data: { isDefault: true },
-  });
+  const updated = await updateLivePage(db, page, { isDefault: true });
 
   // Update the App listing from the new default
   const app = await db.app.findFirst({ where: { hostedPageSlug: slug, organizationId: authResult.organizationId } });

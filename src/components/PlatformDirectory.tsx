@@ -24,13 +24,13 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
   const [locale, appsT] = await Promise.all([getLocale(), getTranslations("apps")]);
   const copy = getDirectoryCopy(locale);
   const activeCategory = personalOnly ? "ALL" : category || "ALL";
-  const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: publicRootSelect });
+  const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: publicRootSelect, orderBy: [{ slug: "asc" }, { locale: "asc" }] });
   const apps = await db.app.findMany({
     where: {
       ...publicAppFilter(roots),
       ...(activeCategory !== "ALL" ? { category: activeCategory } : {}),
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   });
 
   // Only published root pages enter the catalog. Draft variants never supply
@@ -50,6 +50,7 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
           template: true,
           content: true,
         },
+        orderBy: [{ slug: "asc" }, { locale: "asc" }],
       })
     : [];
   const variantsBySlug = groupByKey(hostedPages, (page) => `${page.organizationId}/${page.slug}`);

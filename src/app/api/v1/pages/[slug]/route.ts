@@ -1,4 +1,4 @@
-import { withPageWrite, type PageApiActor } from "@/lib/page-write-guard";
+import { withPageWrite, updateLivePage, PageWriteConflict, type PageApiActor } from "@/lib/page-write-guard";
 import type { PageStore } from "@/lib/page-management";
 import { toPageDto } from "@/lib/page-dto";
 import { normalizeVideoContent } from "@/lib/video-data";
@@ -171,10 +171,7 @@ async function putPage(
       select: { id: true },
     });
 
-    const updated = await db.hostedPage.update({
-      where: { id: page.id, removalState: null },
-      data: { ...data, content: data.content as Prisma.InputJsonObject },
-    });
+    const updated = await updateLivePage(db, page, { ...data, content: data.content as Prisma.InputJsonObject });
 
     const approvalUpdate = hostedPageApprovalUpdate(updated.template, page, hadPersonRoot);
 
@@ -199,6 +196,7 @@ async function putPage(
 
     return NextResponse.json({ ...toPageDto(updated), ...gamesListingResponse(updated.content), ...(putWarnings.length > 0 ? { warnings: putWarnings } : {}) });
   } catch (error: unknown) {
+    if (error instanceof PageWriteConflict) throw error;
     if (error instanceof z.ZodError) {
       return errorResponse("Validation failed", 400, error.issues);
     }
@@ -280,10 +278,7 @@ async function patchPage(
       select: { id: true },
     });
 
-    const updated = await db.hostedPage.update({
-      where: { id: page.id, removalState: null },
-      data: updateData as Prisma.HostedPageUpdateInput,
-    });
+    const updated = await updateLivePage(db, page, updateData as Prisma.HostedPageUpdateManyMutationInput);
 
     const approvalUpdate = hostedPageApprovalUpdate(updated.template, page, hadPersonRoot);
 
@@ -308,6 +303,7 @@ async function patchPage(
 
     return NextResponse.json({ ...toPageDto(updated), ...gamesListingResponse(updated.content), ...(patchWarnings.length > 0 ? { warnings: patchWarnings } : {}) });
   } catch (error: unknown) {
+    if (error instanceof PageWriteConflict) throw error;
     if (error instanceof z.ZodError) {
       return errorResponse("Validation failed", 400, error.issues);
     }
@@ -336,9 +332,9 @@ async function deletePage(
   await db.hostedPage.delete({ where: { id: page.id } });
 
   // Only delete the App listing if no more locale variants exist
-  const remaining = await db.hostedPage.count({ where: { slug } });
+  const remaining = await db.hostedPage.count({ where: { slug, organizationId: authResult.organizationId } });
   if (remaining === 0) {
-    await db.app.deleteMany({ where: { hostedPageSlug: slug } });
+    await db.app.deleteMany({ where: { hostedPageSlug: slug, organizationId: authResult.organizationId } });
   }
 
   return NextResponse.json({
