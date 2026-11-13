@@ -205,7 +205,7 @@ export async function activateVerifiedManagedRuntime(
  * are transaction-scoped and avoid a cross-table active-deployment race.
  */
 export async function activateVerifiedManagedRuntimeInDatabase(input: ActivateVerifiedManagedRuntimeInput) {
-  return db.$transaction(async (transaction) => {
+  const result = await db.$transaction(async (transaction) => {
     /* eslint-disable @typescript-eslint/no-explicit-any -- Prisma's generated
        delegate signatures are broader than this deliberately minimal
        transaction/test adapter. These casts are isolated at that boundary. */
@@ -249,4 +249,9 @@ export async function activateVerifiedManagedRuntimeInDatabase(input: ActivateVe
     /* eslint-enable @typescript-eslint/no-explicit-any */
     return activateVerifiedManagedRuntime(store, input);
   });
+  // Expire only after commit; invalidating inside the transaction could refill
+  // the directory with the previous approval/deployment state.
+  const { revalidateSeoIndexes } = await import("../revalidate-seo.ts");
+  revalidateSeoIndexes();
+  return result;
 }

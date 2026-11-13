@@ -32,6 +32,7 @@ function queryRows(rows, query) {
       return 0;
     });
   }
+  if (query.skip !== undefined) result = result.slice(query.skip);
   if (query.take !== undefined) result = result.slice(0, query.take);
   return result;
 }
@@ -49,6 +50,8 @@ export const fixtureDb = {
   async $transaction(fn) { return fn(fixtureDb); },
   async $queryRaw() { return []; },
   app: {
+    async update() { throw new Error("Unexpected fixture write"); },
+    async delete() { throw new Error("Unexpected fixture write"); },
     async findUnique(query) { return fixtureDb.apps.find(row => row.id === query.where.id) ?? null; },
     async findFirst(query) { return queryRows(fixtureDb.apps, query)[0] ?? null; },
     async findMany(query) { return queryRows(fixtureDb.apps, query); },
@@ -159,6 +162,7 @@ export function registerDirectoryFixtures({ translated = false } = {}) {
 export function registerHostedRenderLoader() {
   return registerHooks({
     resolve(specifier, context, nextResolve) {
+      if (specifier === 'next/cache') return { url: 'fixture:uncached-directory', shortCircuit: true };
       if (specifier === 'next/image') return { url: 'fixture:next-image', shortCircuit: true };
       if (specifier === '@/lib/iframe-tool-session') return { url: 'fixture:identity', shortCircuit: true };
       if (specifier === '@/lib/auth') return { url: 'fixture:auth', shortCircuit: true };
@@ -174,6 +178,7 @@ export function registerHostedRenderLoader() {
       return nextResolve(specifier, context);
     },
     load(url, context, nextLoad) {
+      if (url === 'fixture:uncached-directory') return { format: 'module', source: 'export const unstable_cache = fn => fn;', shortCircuit: true };
       if (url === 'fixture:next-image') return { format: 'module', source: 'export { Image as default } from "next/dist/client/image-component.js";', shortCircuit: true };
       if (url === 'fixture:identity') return { format: 'module', source: 'export function issueIframeToolSession() { throw new Error("Unexpected identity issuance in render fixture"); }', shortCircuit: true };
       if (url === 'fixture:auth') return { format: 'module', source: 'export async function auth() { return null; } export function signIn() { throw new Error("Unexpected auth in render fixture"); }', shortCircuit: true };

@@ -30,6 +30,7 @@ remains ignored alongside `TODO.md`.
 Home, websites, tools and app directories help visitors discover published work; app details and the dashboard share the platform chrome and base UI. Shared persistence starts at the Prisma schema and database client. Legacy static support/policy pages live in `public/ishift/`.
 Entry files: [home](../src/app/[locale]/page.tsx), [PlatformDirectory.tsx](../src/components/PlatformDirectory.tsx), [app details](../src/app/[locale]/apps/[id]/page.tsx), [dashboard](../src/app/dashboard/page.tsx), [schema.prisma](../prisma/schema.prisma), [db.ts](../src/lib/db.ts).
 Shared public visibility: [hosted-page-visibility.ts](../src/lib/hosted-page-visibility.ts) gates S1–S8; App bindings require a same-organisation root.
+Public data cache: [public-directory.ts](../src/lib/public-directory.ts) serves the homepage, all directory kinds/filters and App detail/metadata with one-hour `public-directory` entries. Directory batches hold at most 50 App cards and include locale, kind, category, personal filter and offset in their keys; classification reads content on misses but caches only display DTOs, with no Date fields. [QA procedure/evidence](apps/public-directory-cache-qa.md) and [production-handler harness](../scripts/qa-public-directory-cache.cjs) use fictional data only. `revalidateSeoIndexes()` immediately expires both public-directory and sitemap tags after visibility writes, including admin actions, release submissions and committed runtime activation.
 Watch out: directory classification uses published root-page content; a launch link also depends on the Universal App runtime's readiness predicate.
 
 ### page-publishing — Hosted-page publish API
@@ -63,7 +64,7 @@ Watch out: `/p/` has its own locale system and `/app/` skips next-intl routing; 
 
 Builds platform and hosted-page metadata, structured data, robots rules, and sharded sitemaps. Hosted URL helpers keep policy, child-page, alternate-language and canonical links consistent.
 Entry files: [platform-metadata.ts](../src/lib/platform-metadata.ts), [hosted-page-seo.ts](../src/lib/hosted-page-seo.ts), [hosted-page-urls.ts](../src/lib/hosted-page-urls.ts), [sitemap index](../src/app/sitemap.xml/route.ts), [sitemap-data.ts](../src/lib/sitemap-data.ts), [json-ld.ts](../src/lib/json-ld.ts).
-Watch out: hosted-page mutations expire the sitemap tag immediately and revalidate the hosted dynamic layout; external llms caches may retain responses for an hour. Index queries use the shared publication/organisation predicate; external canonicals affect directory links and sitemap inclusion too.
+Watch out: hosted-page and App mutations expire sitemap and public-directory tags immediately and revalidate the hosted dynamic layout; external llms caches may retain responses for an hour. Index queries use the shared publication/organisation predicate; external canonicals affect directory links and sitemap inclusion too.
 
 ### game-platform — Game discovery, embedding, rooms and leaderboards
 

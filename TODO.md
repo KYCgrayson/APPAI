@@ -1,3 +1,10 @@
+## Public directory data cache (#92-A, 2026-11-13)
+
+- [x] Cache public home, directories and App detail/metadata for one hour with immediate shared visibility invalidation; retain dynamic rendering and #91 visibility predicates.
+- [x] Keep content and Dates out of cache DTOs; batch directory cards and key every locale/filter/offset.
+- [x] Add cache/admin regression coverage and fictional-data production request-handler QA; verify zero further reads on requests 2–20 and immediate admin unapproval.
+- [ ] Complete actual `next start` HTTP and before/after browser screenshot QA in an environment permitting local listeners and browser access. This sandbox blocks both; production build DOM comparison is identical for home en/zh-TW and `/apps`. See `docs/apps/public-directory-cache-qa.md`.
+
 # TODO — AppAI Project Roadmap
 
 ## Hosted page removal (#91, PR-5b — 2026-11-13)

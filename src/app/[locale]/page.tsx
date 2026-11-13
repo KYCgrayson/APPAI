@@ -1,4 +1,4 @@
-import { publicPageWhere, publicAppFilter, publicRootSelect } from "@/lib/hosted-page-visibility";
+import { loadPublicHome } from "@/lib/public-directory";
 import { platformMetadata } from "@/lib/platform-metadata";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -11,11 +11,9 @@ import { serializeJsonLd } from "@/lib/json-ld";
 import { getLocale, getTranslations } from "next-intl/server";
 import NextLink from "next/link";
 import { Link } from "@/i18n/navigation";
-import { db } from "@/lib/db";
 import { AppCard } from "@/components/AppCard";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { PlatformFooter } from "@/components/PlatformFooter";
-import { groupByKey, pickByLocale } from "@/lib/locale-match";
 import { getDirectoryCopy } from "@/lib/directory-copy";
 import { GAMES, gamePageHref, getGamesCopy, isPlayableGame } from "@/lib/games-catalog";
 
@@ -26,36 +24,7 @@ export default async function HomePage() {
   const directoryCopy = getDirectoryCopy(locale);
   const gamesCopy = getGamesCopy(locale);
 
-  const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: publicRootSelect, orderBy: [{ slug: "asc" }, { locale: "asc" }] });
-  const [featuredApps, recentApps, totalPages] = await Promise.all([
-    db.app.findMany({
-      where: { ...publicAppFilter(roots), isFeatured: true },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: 6,
-    }),
-    db.app.findMany({
-      where: publicAppFilter(roots),
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: 12,
-    }),
-    db.hostedPage.count({ where: publicPageWhere(roots) }),
-  ]);
-
-  // Same treatment as the directory: show each app's tagline in the visitor's
-  // language when its hosted page was published in that language.
-  const homeSlugs = [...featuredApps, ...recentApps]
-    .map((a) => a.hostedPageSlug)
-    .filter((s): s is string => !!s);
-  const homeVariants = homeSlugs.length
-    ? await db.hostedPage.findMany({
-        where: { slug: { in: homeSlugs }, ...publicPageWhere() },
-        select: { organizationId: true, slug: true, locale: true, isDefault: true, title: true, tagline: true },
-        orderBy: [{ slug: "asc" }, { locale: "asc" }],
-      })
-    : [];
-  const variantsBySlug = groupByKey(homeVariants, (h) => `${h.organizationId}/${h.slug}`);
-  const localizedFor = (app: { hostedPageSlug: string | null; organizationId: string }) =>
-    app.hostedPageSlug ? pickByLocale(variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) ?? [], locale) : undefined;
+  const { featuredApps, recentApps, totalPages } = await loadPublicHome(locale);
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
@@ -203,8 +172,8 @@ export default async function HomePage() {
                   key={app.id}
                   app={app}
                   href={app.hostedPageSlug ? `/p/${app.hostedPageSlug}` : `/apps/${app.id}`}
-                  localizedName={localizedFor(app)?.title}
-                  localizedTagline={localizedFor(app)?.tagline}
+                  localizedName={app.localized?.title}
+                  localizedTagline={app.localized?.tagline}
                 />
               ))}
             </div>
@@ -228,8 +197,8 @@ export default async function HomePage() {
                   key={app.id}
                   app={app}
                   href={app.hostedPageSlug ? `/p/${app.hostedPageSlug}` : `/apps/${app.id}`}
-                  localizedName={localizedFor(app)?.title}
-                  localizedTagline={localizedFor(app)?.tagline}
+                  localizedName={app.localized?.title}
+                  localizedTagline={app.localized?.tagline}
                 />
               ))}
             </div>

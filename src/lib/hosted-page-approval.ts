@@ -1,3 +1,5 @@
+// Pure approval policy. Both page API callers run inside withPageWrite,
+// which expires public-directory after their transaction commits.
 /** Approval fields for a new listing or an existing App-owning page variant. */
 export function hostedPageApprovalUpdate(
   template: string,
