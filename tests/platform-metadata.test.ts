@@ -3,11 +3,12 @@ import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToPipeableStream, renderToStaticMarkup } from "react-dom/server";
 import { PassThrough } from "node:stream";
-import { registerHostedRenderLoader, registerDirectoryFixtures, fixtureDb } from "./helpers/hosted-render-loader.mjs";
+import { registerHostedRenderLoader, registerHostedHeaders, registerDirectoryFixtures, fixtureDb } from "./helpers/hosted-render-loader.mjs";
 
 const hooks = registerHostedRenderLoader();
 const intl = registerDirectoryFixtures({ translated: true });
-test.after(() => { intl.deregister(); hooks.deregister(); });
+const headers = registerHostedHeaders();
+test.after(() => { headers.deregister(); intl.deregister(); hooks.deregister(); });
 
 test("platform route generateMetadata reads the nine message files", async () => {
   const routes = [await import("../src/app/[locale]/page.tsx"), await import("../src/app/[locale]/tools/page.tsx"),
@@ -105,7 +106,7 @@ test("login, launcher and error surfaces carry noindex", async () => {
   const { default: ErrorPage } = await import("../src/app/error.tsx");
   const { default: GlobalError } = await import("../src/app/global-error.tsx");
   const props = { error: new Error("Example"), reset() {} };
-  for (const element of [createElement(NotFound), createElement(ErrorPage, props), createElement(GlobalError, props)]) {
+  for (const element of [await NotFound(), createElement(ErrorPage, props), createElement(GlobalError, props)]) {
     assert.match(renderToStaticMarkup(element), /name="robots" content="noindex, nofollow"/);
   }
 });

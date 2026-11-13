@@ -224,3 +224,27 @@ export function registerPlayCompatibilityEffects() {
     },
   });
 }
+
+/** Render real hosted chrome in open/closed and signed-in/out states. */
+export function registerHostedNavigationState(state) {
+  globalThis[Symbol.for("appai.test.hosted-navigation")] = state;
+  return registerHooks({
+    resolve(specifier, context, next) {
+      if (specifier === "react" && context.parentURL?.endsWith("/MobileMenu.tsx")) return { url: "fixture:hosted-menu-state", shortCircuit: true };
+      if (specifier === "@/lib/auth") return { url: "fixture:hosted-navigation-auth", shortCircuit: true };
+      return next(specifier, context);
+    },
+    load(url, context, next) {
+      if (url === "fixture:hosted-menu-state") return { format: "module", shortCircuit: true, source: `
+        export * from "react";
+        import { useState as realUseState } from "react";
+        export function useState(initial) { return realUseState(globalThis[Symbol.for("appai.test.hosted-navigation")].open || initial); }
+      ` };
+      if (url === "fixture:hosted-navigation-auth") return { format: "module", shortCircuit: true, source: `
+        export async function auth() { const user = globalThis[Symbol.for("appai.test.hosted-navigation")].user; return user ? { user } : null; }
+        export function signIn() { throw new Error("Unexpected sign-in in render fixture"); }
+      ` };
+      return next(url, context);
+    },
+  });
+}

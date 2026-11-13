@@ -104,7 +104,15 @@ Every section supports `id` (anchor for `#links`). Use kit backgroundColors when
 
 ### Auto-Generated Features
 
-Every page automatically gets: sticky header (with logo, title, language switcher, download button), footer (privacy/terms links), dynamic favicon (from hero logo), breadcrumb navigation on sub-pages, alternating section backgrounds, responsive mobile layout, SEO meta tags, JSON-LD structured data.
+Every page automatically gets: sticky header (with logo, title, language switcher, download button), footer (nonempty privacy/terms links), dynamic favicon (from hero logo), breadcrumb navigation on sub-pages, alternating section backgrounds, responsive mobile layout, SEO meta tags, JSON-LD structured data.
+
+| Hosted navigation | Visitor behavior |
+|---|---|
+| Site name/logo | Links to the site's root in the current locale when available. |
+| Child and policy pages | Exactly one localized Home beside the site name on desktop and mobile, even with hidden children or custom nav; remaining nav entries keep their order. |
+| AppAI | Subordinate header utility link (mobile drawer) and footer link to the platform home `/`. |
+| Privacy/terms | Header, drawer, footer and explicit nav omit links to empty or whitespace-only built-in policies. |
+| Unavailable hosted URL | Localized 404 with AppAI home and a site Home link only when the root is public; valid hosted routes retain the shared header/footer. |
 
 ## How to Work with the User
 

@@ -22,7 +22,7 @@ import { useEffect, useRef } from "react";
  * (fewer children) then declaring it fits (of course it does — everything
  * moved into the drawer).
  */
-export function AdaptiveChrome({ children }: { children: React.ReactNode }) {
+export function AdaptiveChrome({ children, compact = false }: { children: React.ReactNode; compact?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -71,7 +71,9 @@ export function AdaptiveChrome({ children }: { children: React.ReactNode }) {
       // there's no flash on mount. If it actually doesn't fit, the effect
       // flips it to true on the next frame.
       data-cramped="false"
-      className="group/chrome w-full max-w-6xl mx-auto px-6 py-3 flex items-center gap-6 overflow-hidden"
+      className={compact
+        ? "group/chrome w-full max-w-6xl mx-auto px-4 md:px-6 py-3 flex items-center gap-0 md:gap-6 overflow-hidden"
+        : "group/chrome w-full max-w-6xl mx-auto px-6 py-3 flex items-center gap-6 overflow-hidden"}
     >
       {children}
     </div>
