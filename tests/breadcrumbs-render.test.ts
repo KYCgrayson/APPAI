@@ -90,16 +90,20 @@ for (const locale of ["en", "zh-TW"]) {
     for (const [section, name] of Object.entries(locale === "en" ? { apps: "Apps", websites: "Websites", tools: "Tools" } : { apps: "應用程式", websites: "網站", tools: "工具" })) {
       const { default: Directory } = await import(`../src/app/[locale]/${section}/page.tsx`);
       const html = await renderHtml(await Directory({ searchParams: Promise.resolve({}) }));
-      trail(html, ["AppAI", name], [`${prefix}/`], label);
-      assert.match(html, /<\/header><main[^>]*><nav[^>]*data-breadcrumb="platform"/);
+      const nav = trail(html, ["AppAI", name], [`${prefix}/`], label)!;
+      assert.match(nav, /background-color:transparent;color:#e5e7eb;--breadcrumb-link:#67e8f9/);
+      assert.match(html, /<\/header><main class="max-w-6xl mx-auto px-6 pt-4 pb-8"><nav[^>]*data-breadcrumb="platform"/);
       assert.match(html.match(/<header\b[\s\S]*?<\/header>/)![0], /<span>AppAI<\/span>[\s\S]*aria-label="Main navigation"/);
     }
     const detail = await renderHtml(await AppDetail({ params: Promise.resolve({ locale, id: "app-crumb" }) }));
-    trail(detail, ["AppAI", locale === "en" ? "Apps" : "應用程式", locale === "en" ? "My app" : "我的應用"], [`${prefix}/`, `${prefix}/apps`], label);
+    const detailNav = trail(detail, ["AppAI", locale === "en" ? "Apps" : "應用程式", locale === "en" ? "My app" : "我的應用"], [`${prefix}/`, `${prefix}/apps`], label)!;
+    assert.match(detailNav, /background-color:transparent;color:#374151;--breadcrumb-link:#1f2937/);
+    assert.match(detail, /<\/header><div class="max-w-3xl mx-auto px-6 pt-4 pb-12"><nav[^>]*data-breadcrumb="platform"/);
     const { default: FeedbackPage } = await import("../src/app/[locale]/feedback/page.tsx");
     const feedback = await renderHtml(await FeedbackPage());
-    trail(feedback, ["AppAI", locale === "en" ? "Feedback" : "意見回饋"], [`${prefix}/`], label);
-    assert.match(feedback, /<\/header><main[^>]*><nav[^>]*data-breadcrumb="platform"/);
+    const feedbackNav = trail(feedback, ["AppAI", locale === "en" ? "Feedback" : "意見回饋"], [`${prefix}/`], label)!;
+    assert.match(feedbackNav, /background-color:transparent;color:#374151;--breadcrumb-link:#1f2937/);
+    assert.match(feedback, /<\/header><main class="max-w-xl mx-auto px-6 pt-4 pb-16"><nav[^>]*data-breadcrumb="platform"/);
     trail(await renderHtml(await PlatformHome()), [], []);
   });
 }

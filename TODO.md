@@ -9,6 +9,7 @@
 - [x] Document hosted breadcrumbs in pages.md, rebuild the spec, and update both feature maps.
 - [x] Final verification: TypeScript, lint (0 errors, 33 existing warnings), full tests (707 passed, 5 optional checks skipped), feature-map check (including new files via a temporary index), and the Next.js webpack compile build pass. Browser smoke testing could not run because the sandbox rejects binding a local server port.
 - [x] Round 2: restore both platform header components and auth/play layouts to main; render new platform trails only in page content. Compare directory/app-detail/login and legacy game header markup against main in all nine locales. Correct Japanese/Korean landmark labels; add a non-root-only 4px Home/branding gap (calculated zh-TW title width with logo at 375px: 167px). Browser measurement remains unavailable: Chrome exits at startup and the browser-control host is unavailable.
+- [x] Round 3: match platform breadcrumb colours to light app-detail/feedback and dark directory pages, remove strip backgrounds, retain each content container's width/gutters and use a consistent 16px header gap. Render only the final game header breadcrumb as current-page text; compare the rest of the header byte-for-byte against main across all nine locales. TypeScript, lint (0 errors, 33 existing warnings), full tests (716 passed, 5 optional checks skipped) and feature-map check pass.
 
 ## Hosted header Home (#91, owner request — 2026-11-13)
 

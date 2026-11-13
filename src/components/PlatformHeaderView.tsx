@@ -38,9 +38,15 @@ export function PlatformHeaderView({ currentSection, breadcrumbs, user, isAdmin,
               {breadcrumbs.map(({ name, href }, index) => (
                 <li key={href} className="flex min-w-0 max-w-full shrink-0 items-center gap-1.5 whitespace-nowrap">
                   {index > 0 && <span aria-hidden="true" className="shrink-0 text-gray-500">›</span>}
-                  <Link href={href} title={name} aria-current={index === breadcrumbs.length - 1 ? "page" : undefined} className="inline-flex min-h-11 min-w-0 max-w-full items-center whitespace-nowrap py-2 hover:text-white hover:underline">
-                    <span className={index === breadcrumbs.length - 1 ? "truncate" : undefined}>{name}</span>
-                  </Link>
+                  {index === breadcrumbs.length - 1 ? (
+                    <span title={name} aria-current="page" className="inline-flex min-h-11 min-w-0 max-w-full items-center whitespace-nowrap py-2">
+                      <span className="truncate">{name}</span>
+                    </span>
+                  ) : (
+                    <Link href={href} title={name} className="inline-flex min-h-11 min-w-0 max-w-full items-center whitespace-nowrap py-2 hover:text-white hover:underline">
+                      <span>{name}</span>
+                    </Link>
+                  )}
                 </li>
               ))}
             </ol>

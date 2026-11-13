@@ -71,7 +71,7 @@ test("SSG detail module cannot read request queries, cookies or headers", () => 
   assert.match(source, /export function generateStaticParams\(/);
 });
 
-test("every game, collection and hub has linked breadcrumbs, home branding and the four footer links", async () => {
+test("every game, collection and hub has linked ancestors, current text, home branding and the four footer links", async () => {
   for (const locale of locales) {
     fixtureDb.locale = locale;
     for (const slug of [undefined, ...GAME_PAGE_SLUGS]) {
@@ -79,7 +79,7 @@ test("every game, collection and hub has linked breadcrumbs, home branding and t
       const breadcrumb = html.match(new RegExp(`<nav aria-label="${escapeHtml(getGamePageLabels(locale).breadcrumb)}"[\\s\\S]*?<\\/nav>`))?.[0];
       assert.ok(breadcrumb);
       const items = gameBreadcrumbs(locale, slug);
-      for (const { name, href } of items) {
+      for (const { name, href } of items.slice(0, -1)) {
         const expected = href === "/" ? `${locale === "en" ? "" : `/${locale}`}/` : new URL(platformUrl(href, locale)).pathname;
         assert.ok(breadcrumb.includes(`href="${expected}"`));
         assert.ok(breadcrumb.includes(escapeHtml(name)));
@@ -88,7 +88,9 @@ test("every game, collection and hub has linked breadcrumbs, home branding and t
       }
       assert.equal([...breadcrumb.matchAll(/aria-current="page"/g)].length, 1);
       const current = items.at(-1)!;
-      assert.ok([...breadcrumb.matchAll(/<a\b[^>]*>/g)].some(([tag]) => tag.includes(`href="${new URL(platformUrl(current.href, locale)).pathname}"`) && tag.includes('aria-current="page"')));
+      assert.ok(breadcrumb.includes(`<span title="${escapeHtml(current.name)}" aria-current="page"`));
+      assert.doesNotMatch(breadcrumb, /<a\b[^>]*aria-current=/);
+      assert.equal([...breadcrumb.matchAll(/<a\b/g)].length, items.length - 1);
       const header = html.match(/<header\b[\s\S]*?<\/header>/)![0];
       assert.match(header, /src="\/appai-logo2.png"/);
       assert.match(header, /<a[^>]*class="[^"]*min-h-11[^"]*min-w-11[^"]*"[^>]*><img[^>]*src="\/appai-logo2.png"/);

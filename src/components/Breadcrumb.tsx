@@ -17,7 +17,7 @@ export function Breadcrumb({ items, label, variant = "hosted", dark = false, the
   if (items.length < 2) return null;
   const colors = proseThemeVariables(themeColor);
   const style = {
-    backgroundColor: dark ? "#111827" : "#ffffff",
+    backgroundColor: variant === "platform" ? "transparent" : dark ? "#111827" : "#ffffff",
     color: dark ? "#e5e7eb" : "#374151",
     "--breadcrumb-link": colors?.[dark ? "--page-theme-link-dark" : "--page-theme-link-light"] ?? (dark ? "#67e8f9" : "#1f2937"),
   } as CSSProperties;

@@ -3,7 +3,7 @@ import { Link } from "@/i18n/navigation";
 import { Breadcrumb, type BreadcrumbItem } from "./Breadcrumb";
 
 /** New page-content trails stay independent of the platform header's layout. */
-export async function PlatformBreadcrumb({ section, items, dark = true }: {
+export async function PlatformBreadcrumb({ section, items, dark = false }: {
   section?: "apps" | "websites" | "tools" | "feedback";
   items?: BreadcrumbItem[];
   dark?: boolean;

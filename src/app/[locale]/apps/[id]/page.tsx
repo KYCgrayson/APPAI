@@ -131,8 +131,8 @@ export default async function AppDetailPage({ params }: Props) {
       />
       <PlatformHeader />
 
-      <div className="max-w-3xl mx-auto px-6 py-12">
-        <PlatformBreadcrumb items={[{ name: "AppAI", href: "/" }, { name: tb("apps"), href: "/apps" }, { name, href: `/apps/${id}` }]} />
+      <div className="max-w-3xl mx-auto px-6 pt-4 pb-12">
+        <PlatformBreadcrumb items={[{ name: "AppAI", href: "/" }, { name: tb("apps"), href: "/apps" }, { name, href: `/apps/${id}` }]} dark={false} />
         <div className="flex items-start gap-6 mb-8">
           {app.logoUrl ? (
             <img

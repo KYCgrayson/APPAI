@@ -42,8 +42,10 @@ for (const signedIn of [true, false]) {
       assert.doesNotMatch(nav, /sm:(?:basis-auto|order-2)|break-words/);
       assert.match(nav, /<ol class="flex flex-wrap /);
       assert.equal([...nav.matchAll(/<li class="[^"]*whitespace-nowrap"/g)].length, 3);
-      assert.equal([...nav.matchAll(/<a [^>]*class="[^"]*inline-flex min-h-11 min-w-0 [^"]*whitespace-nowrap/g)].length, 3);
+      assert.equal([...nav.matchAll(/<a [^>]*class="[^"]*inline-flex min-h-11 min-w-0 [^"]*whitespace-nowrap/g)].length, 2);
       assert.equal([...nav.matchAll(/aria-current="page"/g)].length, 1);
+      assert.match(nav, /<span[^>]*aria-current="page"[^>]*class="[^"]*inline-flex min-h-11 min-w-0/);
+      assert.doesNotMatch(nav, /<a[^>]*aria-current=/);
       assert.match(html, /order-2 ml-auto flex min-w-0 flex-1 items-center justify-end/);
       assert.match(html, /<select[^>]*class="[^"]*min-h-11 w-24 shrink-0 sm:w-auto/);
       if (signedIn) {
@@ -59,16 +61,17 @@ for (const signedIn of [true, false]) {
   });
 }
 
-test("a long current breadcrumb truncates inside the link and retains its full title", async () => {
+test("a long current breadcrumb truncates inside plain text and retains its full title", async () => {
   const name = 'Long CJK 遊戲名稱 & "name" '.repeat(20);
   const html = await renderHtml(PlatformHeaderView({
     breadcrumbs: [{ name: "AppAI", href: "/" }, { name, href: "/games/long" }],
     labels: labels("en"),
   }));
-  const link = html.match(/<a[^>]*aria-current="page"[^>]*>[\s\S]*?<\/a>/)![0];
-  assert.ok(link.includes(`title="${name.replaceAll("&", "&amp;").replaceAll('"', "&quot;")}"`));
-  assert.match(link, /min-w-0 max-w-full items-center whitespace-nowrap/);
-  assert.match(link, /<span class="truncate">/);
+  const current = html.match(/<span[^>]*aria-current="page"[^>]*>[\s\S]*?<\/span><\/span>/)![0];
+  assert.ok(current.includes(`title="${name.replaceAll("&", "&amp;").replaceAll('"', "&quot;")}"`));
+  assert.match(current, /min-w-0 max-w-full items-center whitespace-nowrap/);
+  assert.match(current, /<span class="truncate">/);
+  assert.doesNotMatch(current, /href=|hover:/);
 });
 
 test("the header without breadcrumbs preserves the branding and responsive navigation classes", async () => {
@@ -94,7 +97,7 @@ for (const [route, source] of [
   ["/games", "src/app/[locale]/games/page.tsx"],
   ["/games/water-pouring", "src/app/[locale]/games/[slug]/page.tsx"],
 ] as const) {
-  test(`${route}: header markup equals main in all nine locales`, async () => {
+  test(`${route}: header markup equals main apart from current game text in all nine locales`, async () => {
     const { default: CurrentPage } = await import(new URL(`../${source}`, import.meta.url).href);
     const { default: MainPage } = await import(baseline.moduleUrl(source));
     for (const locale of locales) {
@@ -103,7 +106,13 @@ for (const [route, source] of [
       fixtureDb.apps = [app("app-crumb", "public-app")];
       const props = { params: Promise.resolve({ locale, id: "app-crumb", slug: "water-pouring" }), searchParams: Promise.resolve({}) };
       const current = header(await renderHtml(await CurrentPage(props)));
-      const main = header(await renderHtml(await MainPage(props)));
+      let main = header(await renderHtml(await MainPage(props)));
+      if (route.startsWith("/games")) {
+        // Permit only the final anchor-to-text change; compare every other byte.
+        const currentLink = /<a title="([^"]*)" aria-current="page" class="([^"]*) hover:text-white hover:underline" href="[^"]*">(<span class="truncate">[\s\S]*?<\/span>)<\/a>/g;
+        assert.equal([...main.matchAll(currentLink)].length, 1);
+        main = main.replace(currentLink, '<span title="$1" aria-current="page" class="$2">$3</span>');
+      }
       assert.equal(current, main, `${route}, ${locale}`);
       if (route === "/login") assert.equal(current, "", "main's login has no header");
       else assert.ok(current, `${route} must retain its header`);
