@@ -1,3 +1,4 @@
+import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -32,6 +33,7 @@ export async function PATCH(request: NextRequest) {
       data: updates[action],
     });
 
+    revalidateSeoIndexes();
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -54,6 +56,7 @@ export async function DELETE(request: NextRequest) {
 
     await db.app.delete({ where: { id: appId } });
 
+    revalidateSeoIndexes();
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) {

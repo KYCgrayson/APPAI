@@ -9,12 +9,12 @@ test.after(() => hook.deregister());
 const { revalidateSeoIndexes } = await import("../src/lib/revalidate-seo.ts");
 test("cache invalidation immediately expires sitemap and revalidates the hosted layout and discovery routes", () => {
   assert.equal(revalidateSeoIndexes("fixture-child"), true);
-  assert.deepEqual(tags, [["seo-sitemap", { expire: 0 }]]);
+  assert.deepEqual(tags, [["seo-sitemap", { expire: 0 }], ["public-directory", { expire: 0 }]]);
   assert.deepEqual(paths, [["/sitemap.xml"], ["/llms.txt"], ["/llms-full.txt"], ["/p/[...segments]", "layout"]]);
   state.fail = true;
   const errors = test.mock.method(console, "error", () => {});
   try {
     assert.equal(revalidateSeoIndexes("fixture-child"), false);
-    assert.equal(errors.mock.callCount(), 5);
+    assert.equal(errors.mock.callCount(), 6);
   } finally { errors.mock.restore(); state.fail = false; }
 });

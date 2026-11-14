@@ -1,16 +1,12 @@
-import { appDirectoryKind, isPersonalDirectoryProfile } from "@/lib/directory-kind";
 import { getDirectoryCopy } from "@/lib/directory-copy";
 import { breadcrumbJsonLd } from "@/lib/breadcrumbs";
-import { publicPageWhere, publicAppFilter, publicRootSelect } from "@/lib/hosted-page-visibility";
+import { PlatformBreadcrumb } from "@/components/PlatformBreadcrumb";
+import { loadPublicAppDetail } from "@/lib/public-directory";
 import { platformUrl, platformAlternates, platformOpenGraphLocale, DEFAULT_SHARE_IMAGE } from "@/lib/platform-seo";
 import { serializeJsonLd } from "@/lib/json-ld";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { db } from "@/lib/db";
 import { PlatformHeader } from "@/components/PlatformHeader";
-import { PlatformBreadcrumb } from "@/components/PlatformBreadcrumb";
-import { pickByLocale } from "@/lib/locale-match";
-import { canLaunchUniversalApp, getUniversalAppLaunchPath } from "@/lib/universal-apps/directory";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -19,29 +15,11 @@ interface Props {
   params: Promise<{ id: string; locale: string }>;
 }
 
-/**
- * The app's own copy in the visitor's language, when its hosted page was
- * published in that language. `App` itself is single-language (TODO.md D2), so
- * the hosted page is the only place per-locale copy exists today.
- */
-async function loadPublicVariants(hostedPageSlug: string | null, organizationId: string) {
-  if (!hostedPageSlug) return [];
-  const variants = await db.hostedPage.findMany({
-    where: { slug: hostedPageSlug, organizationId, ...publicPageWhere() },
-    select: { locale: true, isDefault: true, title: true, tagline: true, metaDescription: true, template: true, content: true },
-    orderBy: [{ slug: "asc" }, { locale: "asc" }],
-  });
-  return variants;
-}
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, locale } = await params;
-  const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: publicRootSelect, orderBy: [{ slug: "asc" }, { locale: "asc" }] });
-  const app = await db.app.findFirst({ where: { id, ...publicAppFilter(roots) } });
-  if (!app) return { robots: { index: false } };
-
-  const variants = await loadPublicVariants(app.hostedPageSlug, app.organizationId);
-  const localized = pickByLocale(variants, locale);
+  const data = await loadPublicAppDetail(id, locale);
+  if (!data) return { robots: { index: false } };
+  const { app, localized } = data;
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
   const title = `${localized?.title || app.name} - AppAI`;
   const description = localized?.metaDescription || localized?.tagline || app.tagline || undefined;
@@ -74,19 +52,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function AppDetailPage({ params }: Props) {
   const { id, locale } = await params;
   const [t, ta] = await Promise.all([getTranslations("appDetail"), getTranslations("apps")]);
-  const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: publicRootSelect, orderBy: [{ slug: "asc" }, { locale: "asc" }] });
-  const app = await db.app.findFirst({ where: { id, ...publicAppFilter(roots) } });
-
-  if (!app) {
-    notFound();
-  }
-
+  const data = await loadPublicAppDetail(id, locale);
+  if (!data) notFound();
+  const { app, localized, universalLaunchPath, directoryKind: kind, isPersonalProfile } = data;
   const tb = await getTranslations("breadcrumbs");
-  const variants = await loadPublicVariants(app.hostedPageSlug, app.organizationId);
-  const localized = pickByLocale(variants, locale);
   const name = localized?.title || app.name;
-  const kind = appDirectoryKind(app, variants);
-  const directory = isPersonalDirectoryProfile(variants)
+  const directory = isPersonalProfile
     ? { name: getDirectoryCopy(locale).personalPages, href: "/websites?type=personal" }
     : kind ? { name: tb(kind), href: `/${kind}` } : null;
   const trail = [
@@ -100,24 +71,6 @@ export default async function AppDetailPage({ params }: Props) {
     : app.category;
 
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
-  // Only offer "Launch" when a production runtime is actually active.
-  const releases = app.appType
-    ? await db.appRelease.findMany({
-        where: { appId: app.id },
-        orderBy: { createdAt: "desc" },
-        select: {
-          status: true,
-          deployments: {
-            where: { environment: "PRODUCTION" },
-            orderBy: { createdAt: "desc" },
-            select: { environment: true, status: true },
-          },
-        },
-      })
-    : [];
-  const universalLaunchPath = canLaunchUniversalApp(app, releases)
-    ? getUniversalAppLaunchPath(app)
-    : null;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",

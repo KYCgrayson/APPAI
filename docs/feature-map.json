@@ -17,6 +17,7 @@
         "tests/breadcrumbs-render.test.ts",
         "src/components/AppCard.tsx",
         "src/components/ui/**",
+        "src/lib/public-directory.ts",
         "src/lib/directory-copy.ts",
         "src/lib/directory-kind.ts",
         "src/lib/publisher-label.ts",
@@ -27,15 +28,18 @@
         "scripts/dev-frontend.sh",
         "scripts/qa-header-harness.cjs",
         "scripts/qa-platform-directory.cjs",
+        "scripts/qa-public-directory-cache.cjs",
         "scripts/qa-seed-personal-site.cjs",
         "tests/account-directory-contract.test.ts",
         "tests/directory-*.test.ts",
+        "tests/helpers/public-directory-cache.mjs",
+        "tests/helpers/public-directory-production.cjs",
         "tests/platform-header-render.test.ts",
         "tests/publisher-label.test.ts",
         "tests/helpers/render-html.mjs",
         "src/lib/hosted-page-visibility.ts"
       ],
-      "docs": ["docs/apps/platform-directory-personal-site-*.md"]
+      "docs": ["docs/apps/platform-directory-personal-site-*.md", "docs/apps/public-directory-cache-qa.md"]
     },
     {
       "id": "page-publishing",

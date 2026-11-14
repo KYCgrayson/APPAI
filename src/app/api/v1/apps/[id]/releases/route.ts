@@ -1,3 +1,4 @@
+import { revalidateSeoIndexes } from "@/lib/revalidate-seo";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { del } from "@vercel/blob";
@@ -89,6 +90,7 @@ export async function POST(request: NextRequest, routeContext: RouteContext) {
       });
       return { app, release };
     });
+    revalidateSeoIndexes();
     return NextResponse.json({ appId: result.app.appType, releaseId: result.release.id, version: result.release.version, status: result.release.status, sourceType: result.release.sourceType }, { status: 202 });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return NextResponse.json({ error: "RELEASE_VERSION_EXISTS" }, { status: 409 });
