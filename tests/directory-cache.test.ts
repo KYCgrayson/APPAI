@@ -193,3 +193,43 @@ test("visibility mutations invalidate after transaction commit, including existi
     assert.match(source, /withPageWrite/);
   }
 });
+
+
+test("cached detail breadcrumbs match directory membership and survive the JSON cache round trip", async () => {
+  for (const [template, content, kind, personal] of [
+    ["APP_LANDING", {}, "websites", false],
+    ["APP_LANDING", { sections: [{ type: "iframe-tool", data: {} }] }, "tools", false],
+    ["APP_LANDING", { nested: [{ text: "https://apps.apple.com/app/fixture" }] }, "apps", false],
+    ["PERSON", {}, null, true],
+    ["GAME", { sections: [{ type: "download", data: {} }] }, null, false],
+  ] as const) {
+    reset();
+    // A translated variant must not override the default root's classification.
+    fixtureDb.rows[0].template = template;
+    fixtureDb.rows[0].content = content;
+    for (const locale of ["en", "zh-TW"]) {
+      const directory = await loadPublicDirectory(locale);
+      const first = await loadPublicAppDetail("cached", locale);
+      assert.ok(first);
+      assert.equal(first.directoryKind, kind);
+      assert.equal(first.isPersonalProfile, personal);
+      assert.equal(directory.entries.some(entry => entry.app.id === "cached"), kind !== null);
+      assert.equal(directory.profiles.length > 0, personal);
+      const props = { params: Promise.resolve({ id: "cached", locale }) };
+      const coldHtml = await renderHtml(await detail.default(props));
+      const writes = state.writes.length;
+      assert.deepEqual(await loadPublicAppDetail("cached", locale), first);
+      assert.equal(await renderHtml(await detail.default(props)), coldHtml);
+      assert.equal(state.writes.length, writes);
+      const schemas = [...coldHtml.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/g)].map(match => JSON.parse(match[1]));
+      const crumbs = schemas.find(schema => schema["@type"] === "BreadcrumbList").itemListElement;
+      assert.equal(crumbs.length, kind || personal ? 3 : 2);
+      if (kind || personal) {
+        const href = new URL(crumbs[1].item);
+        assert.equal(href.pathname, `${locale === "en" ? "" : "/zh-TW"}/${personal ? "websites" : kind}`);
+        assert.equal(href.search, personal ? "?type=personal" : "");
+      }
+    }
+    for (const write of state.writes) assert.doesNotMatch(write.json, /"(?:content|createdAt|updatedAt|users|session)":/);
+  }
+});

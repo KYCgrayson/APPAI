@@ -3,10 +3,9 @@ import { db } from "@/lib/db";
 import { publicPageWhere, publicAppFilter, publicRootSelect } from "@/lib/hosted-page-visibility";
 import { publisherLabel } from "@/lib/publisher-label";
 import { chineseFallback } from "@/lib/zh-convert";
-import { normalizeHostedContent } from "@/lib/hosted-content";
 import { groupByKey, pickByLocale } from "@/lib/locale-match";
 import { canLaunchUniversalApp, getUniversalAppLaunchPath } from "@/lib/universal-apps/directory";
-import { inferDirectoryKind, type DirectoryKind } from "@/lib/directory-kind";
+import { appDirectoryKind, isPersonalDirectoryProfile, type DirectoryKind } from "@/lib/directory-kind";
 
 const cacheOptions = { revalidate: 3600, tags: ["public-directory"] };
 // Bound entries independently of catalog size. Content is used for classification
@@ -83,34 +82,15 @@ const loadDirectoryBatch = unstable_cache(async (
   const directoryApps = apps.filter((app) => {
     if (personalOnly) return false;
     const variants = app.hostedPageSlug ? variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) ?? [] : [];
-    // Games have their own catalog and /games/{slug} routes. A legacy tool/app
-    // tag or download section must never put one back in these directories.
-    if (app.tags.includes("appai:kind:game") || variants.some((page) => page.template === "GAME")) return false;
-    if ((variants.find((page) => page.isDefault) ?? variants[0])?.template === "PERSON") return false;
+    const pageKind = appDirectoryKind(app, variants);
+    if (!pageKind) return false;
     if (!kind) return true;
-    const page = app.hostedPageSlug
-      ? variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`)?.find((candidate) => candidate.isDefault)
-        ?? variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`)?.[0]
-      : undefined;
-    if (!app.appType && app.hostedPageSlug && !page) return false;
-    const content = normalizeHostedContent(page?.content);
-    const pageKind = inferDirectoryKind({
-      tags: app.tags,
-      appType: app.appType,
-      hostedPageSlug: app.hostedPageSlug,
-      template: page?.template,
-      content: page?.content,
-      url: app.url,
-      iosUrl: app.iosUrl,
-      androidUrl: app.androidUrl,
-      sectionTypes: content?.sections?.map((section) => section.type ?? ""),
-    });
     return pageKind === kind;
   });
 
   const personalProfiles = (!kind || (kind === "websites" && personalOnly))
     ? apps.map((app) => app.hostedPageSlug ? variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) ?? [] : [])
-      .filter((variants) => (variants.find((page) => page.isDefault) ?? variants[0])?.template === "PERSON")
+      .filter(isPersonalDirectoryProfile)
       .map((variants) => localizedVariant(variants.filter((page) => page.template === "PERSON")))
       .filter((page) => page !== undefined)
     : [];
@@ -125,7 +105,7 @@ const loadDirectoryBatch = unstable_cache(async (
     profiles: personalProfiles.map(profile => ({ ...profile, publisher: publishers.get(profile.organizationId) ?? null })),
     nextOffset: apps.length === DIRECTORY_BATCH_SIZE ? offset + DIRECTORY_BATCH_SIZE : null,
   };
-}, ["public-directory-batch-v1"], cacheOptions);
+}, ["public-directory-batch-v2"], cacheOptions);
 
 export async function loadPublicDirectory(locale: string, kind?: DirectoryKind, category = "ALL", personalOnly = false) {
   const first = await loadDirectoryBatch(locale, kind ?? null, personalOnly ? "ALL" : category || "ALL", personalOnly, 0);
@@ -187,7 +167,7 @@ export const loadPublicAppDetail = unstable_cache(async (id: string, locale: str
   const app = project(row, select);
   const variants = app.hostedPageSlug ? await db.hostedPage.findMany({
     where: { slug: app.hostedPageSlug, organizationId: app.organizationId, ...publicPageWhere() },
-    select: { locale: true, isDefault: true, title: true, tagline: true, metaDescription: true },
+    select: { locale: true, isDefault: true, title: true, tagline: true, metaDescription: true, template: true, content: true },
     orderBy: [{ slug: "asc" }, { locale: "asc" }],
   }) : [];
   const localized = pickByLocale(variants.map(variant => project(variant, {
@@ -197,5 +177,8 @@ export const loadPublicAppDetail = unstable_cache(async (id: string, locale: str
     where: { appId: app.id }, orderBy: { createdAt: "desc" },
     select: { status: true, deployments: { where: { environment: "PRODUCTION" }, orderBy: { createdAt: "desc" }, select: { environment: true, status: true } } },
   }) : [];
-  return { app, localized, universalLaunchPath: canLaunchUniversalApp(app, releases) ? getUniversalAppLaunchPath(app) : null };
-}, ["public-directory-detail-v1"], cacheOptions);
+  // Classify on the miss; the breadcrumb needs only these JSON-safe results,
+  // never the full published content or request/session data.
+  return { app, localized, directoryKind: appDirectoryKind(app, variants),
+    isPersonalProfile: isPersonalDirectoryProfile(variants), universalLaunchPath: canLaunchUniversalApp(app, releases) ? getUniversalAppLaunchPath(app) : null };
+}, ["public-directory-detail-v2"], cacheOptions);

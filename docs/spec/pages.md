@@ -104,7 +104,15 @@ Every section supports `id` (anchor for `#links`). Use kit backgroundColors when
 
 ### Auto-Generated Features
 
-Every page automatically gets: sticky header (with logo, title, language switcher, download button), footer (privacy/terms links), dynamic favicon (from hero logo), breadcrumb navigation on sub-pages, alternating section backgrounds, responsive mobile layout, SEO meta tags, JSON-LD structured data.
+Every page automatically gets: sticky header (with logo, title, language switcher, download button), footer (nonempty privacy/terms links), dynamic favicon (from hero logo), breadcrumb navigation on sub-pages, alternating section backgrounds, responsive mobile layout, SEO meta tags, JSON-LD structured data.
+
+| Hosted navigation | Visitor behavior |
+|---|---|
+| Site name/logo | Links to the site's root in the current locale when available. |
+| Child and policy pages | Exactly one 44×44 Home button with a 24px house icon at the far left, before the logo/name, on desktop and mobile (including 404s under a public root). Its accessible label and tooltip are localized; no duplicate Home appears in the nav or drawer. Theme-adjusted icon colour meets at least 3:1 contrast on the header, with visible hover/focus states. Root headers stay unchanged; remaining nav entries keep their order. |
+| AppAI | Subordinate header utility link (mobile drawer) and footer link to the platform home `/`. |
+| Privacy/terms | Header, drawer, footer and explicit nav omit links to empty or whitespace-only built-in policies. |
+| Unavailable hosted URL | Localized 404 with AppAI home and a site Home link only when the root is public; valid hosted routes retain the shared header/footer. |
 
 ## How to Work with the User
 
@@ -231,6 +239,25 @@ The canonical compliance setup:
 - Child `my-app-delete-account`: account deletion instructions/form only if the app has user accounts
 
 ---
+
+### Hosted breadcrumbs
+
+AppAI supplies a small, low-emphasis, single-line breadcrumb below the hosted header on every root and subpage. Publisher branding stays primary. Do not add a second breadcrumb in publisher sections.
+
+| Page | Visible trail |
+|---|---|
+| Root `/p/{slug}[/{locale}]` | AppAI › category › site name |
+| Child (including FAQ/contact) | AppAI › category › site name › child title |
+| Privacy / terms | AppAI › category › site name › localised policy title |
+| Missing page under a public root | AppAI › category › site name › localised “Page not found” |
+| Fullscreen iframe tool | AppAI › category › site name › tool heading, above the frame or access gate |
+| Site without a public directory listing | Omit category: AppAI › site name [› page title] |
+
+Category follows the approved App's existing directory classification from published root variants (Websites, Tools, Apps or Games), with the shared public-visibility/organisation predicate. Never link to a directory that does not list the site; unapproved Apps, foreign-organisation bindings and separate personal-profile views supply no category crumb. Draft translations never supply classification signals.
+
+AppAI links to platform home; category links to `/websites`, `/tools`, `/apps` or `/games`. Pick the platform locale from the hosted content locale with `pickByLocale` across the nine platform locales, falling back to English. AppAI/category labels come from `hosted-navigation-copy.ts` with hosted locale matching, independently of platform message catalogs. The site name links to its hosted URL in the current content locale (default/fallback locale rules still apply).
+
+The last item is plain text with `aria-current="page"`; every ancestor is a link. Long labels keep full text in `title`, truncate with an ellipsis, and scroll horizontally on mobile without wrapping. Visible trails and `BreadcrumbList` JSON-LD use the same items and absolute URLs, including AppAI/category on roots, policies, tools and known-root 404s. Hidden or unknown roots expose no site breadcrumb. The root header is unchanged; the house icon appears only on non-root pages.
 
 ## Managing Pages (CRUD)
 

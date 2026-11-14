@@ -1,3 +1,4 @@
+import { AuthBreadcrumb } from "@/components/AuthBreadcrumb";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { robots: { index: false, follow: true } };
@@ -22,7 +23,8 @@ export default async function LoginPage({
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
+      <div className="relative max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
+        <AuthBreadcrumb page="signIn" />
         <img src="/appai-logo2.png" alt="AppAI" className="w-16 h-16 rounded-xl mx-auto mb-4" />
         <h1 className="text-3xl font-bold mb-2">AppAI</h1>
         <p className="text-gray-600 mb-8">{t("signInDescription")}</p>

@@ -1,3 +1,5 @@
+import { getPlatformLocale } from "@/lib/platform-locale";
+import { ManagementBreadcrumb } from "@/components/ManagementBreadcrumb";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin";
@@ -9,6 +11,8 @@ export default async function AdminLayout({
 }) {
   const admin = await requireAdmin();
   if (!admin) redirect("/dashboard");
+
+  const locale = await getPlatformLocale();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -56,6 +60,7 @@ export default async function AdminLayout({
           </div>
         </div>
       </nav>
+      <ManagementBreadcrumb area="admin" homeHref={locale === "en" ? "/" : `/${locale}/`} />
       <main className="max-w-7xl mx-auto py-8 px-6">{children}</main>
     </div>
   );

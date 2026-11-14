@@ -1,5 +1,9 @@
 import { publicPageWhere } from "@/lib/hosted-page-visibility";
 import { normalizeHostedContent, contentString } from "@/lib/hosted-content";
+import { Breadcrumb } from "@/components/Breadcrumb";
+import { breadcrumbJsonLd } from "@/lib/breadcrumbs";
+import { hostedBreadcrumbs } from "@/lib/hosted-breadcrumbs";
+import { hostedNavigationCopy } from "@/lib/hosted-navigation-copy";
 import { serializeJsonLd } from "@/lib/json-ld";
 import { resolvePage, resolveChildPage } from "@/lib/hosted-page-resolver";
 import { hostedPageUrl, hostedAlternates, hasExternalCanonical } from "@/lib/hosted-page-urls";
@@ -36,24 +40,6 @@ function extractLogos(page: { content: unknown; headerLogo: string | null; heroI
   return {
     headerLogo: page.headerLogo || defaultLogo,
     heroLogo: defaultLogo,
-  };
-}
-
-interface BreadcrumbEntry {
-  name: string;
-  url: string;
-}
-
-function buildBreadcrumbList(baseUrl: string, entries: BreadcrumbEntry[]) {
-  if (entries.length === 0) return null;
-  return {
-    "@type": "BreadcrumbList",
-    itemListElement: entries.map((entry, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      name: entry.name,
-      item: entry.url.startsWith("http") ? entry.url : `${baseUrl}${entry.url}`,
-    })),
   };
 }
 
@@ -169,6 +155,16 @@ export default async function HostedPage({ params }: Props) {
     if (!check.ok || !check.url) notFound();
 
     const themeColor = rootPage.themeColor || "#000000";
+    const toolTrail = await hostedBreadcrumbs(rootPage, [rootPage], rootPage.locale, {
+      name: data.heading || rootPage.title, href: `/p/${rootPage.slug}/tools/${toolOrder}`,
+    });
+    const toolBreadcrumb = <>
+      <Breadcrumb items={toolTrail} label={hostedNavigationCopy(rootPage.locale).breadcrumb}
+        themeColor={themeColor} dark={rootPage.darkMode} className="shrink-0 px-4 py-2 sm:px-6" />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd({
+        "@context": "https://schema.org", ...breadcrumbJsonLd(toolTrail, PLATFORM_ORIGIN),
+      }) }} />
+    </>;
 
     // The fullscreen view renders the same section, so it answers to the same
     // gate — and says the same thing about it. Without this it is a way around
@@ -176,6 +172,8 @@ export default async function HostedPage({ params }: Props) {
     const decision = decideSectionAccess(data.access, { isLoggedIn, isAdmin });
     if (decision !== "render") {
       return (
+        <>
+        {toolBreadcrumb}
         <LoginGate
           mode={decision}
           redirectTo={`/p/${rootPage.slug}/tools/${toolOrder}`}
@@ -184,6 +182,7 @@ export default async function HostedPage({ params }: Props) {
           themeColor={themeColor}
           locale={rootPage.locale}
         />
+        </>
       );
     }
 
@@ -219,6 +218,7 @@ export default async function HostedPage({ params }: Props) {
         allowFullscreen={data.allowFullscreen}
         darkMode={rootPage.darkMode}
         identity={identity}
+        navigation={toolBreadcrumb}
       >
         {/* Without this the fullscreen view has no header and no footer: no way
             back to the directory, and no signal about whether you are signed in
@@ -284,19 +284,23 @@ export default async function HostedPage({ params }: Props) {
     where: { slug, organizationId: rootPage.organizationId, ...publicPageWhere() },
     orderBy: { locale: "asc" },
   })];
-  const rootUrl = hostedPageUrl(rootPage, roots, baseUrl)!;
   const pageUrl = (!subpage && page.canonicalUrl) || hostedPageUrl(page, roots, baseUrl, subpage)
     || (childSlug ? `${baseUrl}${buildPagePath(slug, explicitLocale || rootPage.locale, childSlug, !explicitLocale)}` : null);
   if (!pageUrl) notFound();
   const legal = subpage ? hostedLegalCopy(page.locale, subpage, page.title) : null;
 
+  const trail = await hostedBreadcrumbs(rootPage, roots, page.locale, childSlug || subpage ? {
+    name: legal?.heading ?? page.title,
+    href: hostedPageUrl(page, roots, baseUrl, subpage) ?? pageUrl,
+  } : undefined);
+  const breadcrumb = breadcrumbJsonLd(trail, baseUrl);
+  const visibleBreadcrumb = trail.length > 0 ? <Breadcrumb items={trail}
+    label={hostedNavigationCopy(page.locale).breadcrumb} themeColor={rootPage.themeColor}
+    dark={!subpage && page.darkMode} className="px-4 py-2 sm:px-6" /> : null;
+
   // Privacy subpage
   if (subpage === "privacy") {
     if (!page.privacyPolicy) notFound();
-    const privacyBreadcrumb = buildBreadcrumbList(baseUrl, [
-      { name: rootPage.title, url: rootUrl },
-      { name: legal!.heading, url: pageUrl },
-    ]);
     const privacyLd = {
       "@context": "https://schema.org",
       "@graph": [
@@ -311,7 +315,7 @@ export default async function HostedPage({ params }: Props) {
           isPartOf: { "@id": `${PLATFORM_ORIGIN}/#website` },
           publisher: { "@id": `${PLATFORM_ORIGIN}/#org` },
         },
-        privacyBreadcrumb,
+        breadcrumb,
       ].filter(Boolean),
     };
     return (
@@ -320,12 +324,8 @@ export default async function HostedPage({ params }: Props) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(privacyLd) }}
         />
+        {visibleBreadcrumb}
         <div className="max-w-3xl mx-auto py-10 md:py-16 px-4 sm:px-6">
-          <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6 md:mb-8 flex-wrap">
-            <a href={buildPagePath(slug, page.locale, null, page.isDefault)} className="hover:text-gray-900 truncate max-w-[60%]">{page.title}</a>
-            <span className="text-gray-300">/</span>
-            <span className="text-gray-900">{legal!.heading}</span>
-          </nav>
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 break-words">{legal!.heading}</h1>
           <p className="text-gray-500 mb-6 md:mb-8 break-words">{page.title}</p>
           <div className="prose prose-base md:prose-lg max-w-none whitespace-pre-wrap break-words text-gray-700">
@@ -339,10 +339,6 @@ export default async function HostedPage({ params }: Props) {
   // Terms subpage
   if (subpage === "terms") {
     if (!page.termsOfService) notFound();
-    const termsBreadcrumb = buildBreadcrumbList(baseUrl, [
-      { name: rootPage.title, url: rootUrl },
-      { name: legal!.heading, url: pageUrl },
-    ]);
     const termsLd = {
       "@context": "https://schema.org",
       "@graph": [
@@ -357,7 +353,7 @@ export default async function HostedPage({ params }: Props) {
           isPartOf: { "@id": `${PLATFORM_ORIGIN}/#website` },
           publisher: { "@id": `${PLATFORM_ORIGIN}/#org` },
         },
-        termsBreadcrumb,
+        breadcrumb,
       ].filter(Boolean),
     };
     return (
@@ -366,12 +362,8 @@ export default async function HostedPage({ params }: Props) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(termsLd) }}
         />
+        {visibleBreadcrumb}
         <div className="max-w-3xl mx-auto py-10 md:py-16 px-4 sm:px-6">
-          <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6 md:mb-8 flex-wrap">
-            <a href={buildPagePath(slug, page.locale, null, page.isDefault)} className="hover:text-gray-900 truncate max-w-[60%]">{page.title}</a>
-            <span className="text-gray-300">/</span>
-            <span className="text-gray-900">{legal!.heading}</span>
-          </nav>
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 break-words">{legal!.heading}</h1>
           <p className="text-gray-500 mb-6 md:mb-8 break-words">{page.title}</p>
           <div className="prose prose-base md:prose-lg max-w-none whitespace-pre-wrap break-words text-gray-700">
@@ -382,14 +374,6 @@ export default async function HostedPage({ params }: Props) {
     );
   }
 
-  // Main landing page — build breadcrumb only when we're on a child page
-  // (root pages are top-level, no breadcrumb needed).
-  const breadcrumb = childSlug
-    ? buildBreadcrumbList(baseUrl, [
-        { name: rootPage.title, url: rootUrl },
-        { name: page.title, url: pageUrl },
-      ])
-    : null;
   const jsonLd = buildJsonLd(page, pageUrl, baseUrl, breadcrumb);
 
   return (
@@ -398,6 +382,7 @@ export default async function HostedPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
+      {visibleBreadcrumb}
       {page.customCss && <style>{page.customCss}</style>}
       <PageRenderer page={{ ...page, videoPageUrl: hostedPageUrl(page, roots, baseUrl) || pageUrl }} isLoggedIn={isLoggedIn} isAdmin={isAdmin} userId={userId} />
     </>

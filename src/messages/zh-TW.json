@@ -194,5 +194,16 @@
       "title": "AI 網站、作品集與介紹頁 | AppAI",
       "description": "探索以 AI 打造並發布於 AppAI 的網站、個人作品集與專案介紹頁，為你的下一個作品尋找靈感。"
     }
+  },
+  "breadcrumbs": {
+    "label": "導覽路徑",
+    "apps": "應用程式",
+    "websites": "網站",
+    "tools": "工具",
+    "games": "遊戲",
+    "signIn": "登入",
+    "signOut": "登出",
+    "feedback": "意見回饋",
+    "deviceAuth": "裝置授權"
   }
 }

@@ -36,7 +36,10 @@ const count = () => fs.existsSync(log) ? fs.readFileSync(log, 'utf8').trim().spl
   try {
     const results = [];
     for (const [name, url] of [['home-en', '/'], ['home-zh-TW', '/zh-TW'], ['apps', '/apps'],
-      ['tools', '/tools'], ['websites', '/websites'], ['app-detail', '/apps/fixture-native']]) {
+      ['tools', '/tools'], ['websites', '/websites'], ['app-detail', '/apps/fixture-native'],
+      ['apps-kind', '/apps?kind=apps'], ['personal', '/websites?type=personal'],
+      ['tools-category', '/tools?category=OTHER'], ['apps-zh-CN', '/zh-CN/apps'],
+      ['tool-detail-zh-TW', '/zh-TW/apps/fixture-tool'], ['person-detail', '/apps/fixture-person']]) {
       const counts = [];
       for (let i = 0; i < 20; i++) {
         const before = count(); const response = await request(url); counts.push(count()-before);

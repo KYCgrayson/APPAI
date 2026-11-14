@@ -1,3 +1,6 @@
+import { getDirectoryCopy } from "@/lib/directory-copy";
+import { breadcrumbJsonLd } from "@/lib/breadcrumbs";
+import { PlatformBreadcrumb } from "@/components/PlatformBreadcrumb";
 import { loadPublicAppDetail } from "@/lib/public-directory";
 import { platformUrl, platformAlternates, platformOpenGraphLocale, DEFAULT_SHARE_IMAGE } from "@/lib/platform-seo";
 import { serializeJsonLd } from "@/lib/json-ld";
@@ -51,8 +54,17 @@ export default async function AppDetailPage({ params }: Props) {
   const [t, ta] = await Promise.all([getTranslations("appDetail"), getTranslations("apps")]);
   const data = await loadPublicAppDetail(id, locale);
   if (!data) notFound();
-  const { app, localized, universalLaunchPath } = data;
+  const { app, localized, universalLaunchPath, directoryKind: kind, isPersonalProfile } = data;
+  const tb = await getTranslations("breadcrumbs");
   const name = localized?.title || app.name;
+  const directory = isPersonalProfile
+    ? { name: getDirectoryCopy(locale).personalPages, href: "/websites?type=personal" }
+    : kind ? { name: tb(kind), href: `/${kind}` } : null;
+  const trail = [
+    { name: "AppAI", href: "/" },
+    ...(directory ? [directory] : []),
+    { name, href: `/apps/${id}` },
+  ];
   const tagline = localized?.tagline || app.tagline;
   const categoryLabel = ta.has(`categories.${app.category}`)
     ? ta(`categories.${app.category}`)
@@ -84,9 +96,17 @@ export default async function AppDetailPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd({
+        "@context": "https://schema.org",
+        ...breadcrumbJsonLd(trail.map(item => {
+          const url = new URL(item.href, baseUrl);
+          return { ...item, href: platformUrl(url.pathname, locale, baseUrl) + url.search };
+        }), baseUrl),
+      }) }} />
       <PlatformHeader />
 
-      <div className="max-w-3xl mx-auto px-6 py-12">
+      <div className="max-w-3xl mx-auto px-6 pt-4 pb-12">
+        <PlatformBreadcrumb items={trail} dark={false} />
         <div className="flex items-start gap-6 mb-8">
           {app.logoUrl ? (
             <img

@@ -108,3 +108,59 @@ render parity but cannot establish pixel/layout parity. The referenced
 `runs/2026-11-13-appai-neon-compute.md` was absent from this checkout; the supplied
 brief supplied the scope. No production database or Neon/Vercel configuration
 was accessed.
+
+
+## Merge with breadcrumb/header main — 2026-11-14
+
+Resolved both overlapping files by keeping `loadPublicDirectory` and
+`loadPublicAppDetail` as their only public data sources. Preserved main's
+PlatformBreadcrumb layout and app-detail BreadcrumbList JSON-LD. Directory
+classification now calls shared `appDirectoryKind`/`isPersonalDirectoryProfile`
+inside the batch cache; Chinese fallback, publisher labels, canonical URLs,
+launchability and personal-page filtering remain intact. Detail misses select
+`template` and `content` for classification, then return only `directoryKind`
+and `isPersonalProfile` alongside the existing projected DTO. Batch/detail
+cache versions were bumped to v2; all output-changing parameters remain in
+cache arguments. Full content, Dates and session data are not cached.
+
+Breadcrumb audit: `PlatformBreadcrumb`, `Breadcrumb` and `breadcrumbJsonLd`
+perform no DB reads. Detail category membership uses the cached classification.
+`hostedBreadcrumbs` performs two direct public reads, but only `/p/` and hosted
+404 paths call it; the shared not-found boundary gates those reads on `/p/`.
+These hosted routes remain outside #92-A's scope. No additional breadcrumb DB
+query is reachable from the home, directory or app-detail paths.
+
+Mock production build (`npm run build -- --webpack`) and the real production
+request-handler harness passed. No real database or hosting settings were used.
+Expanded route coverage includes kind/category/personal filters and additional
+locales and detail classifications:
+
+| Route | Requests | Reads on first request | Reads on requests 2–20 |
+| --- | ---: | ---: | ---: |
+| `/` | 20 | 5 | 0 |
+| `/zh-TW` | 20 | 5 | 0 |
+| `/apps` | 20 | 5 | 0 |
+| `/tools` | 20 | 5 | 0 |
+| `/websites` | 20 | 5 | 0 |
+| `/apps/fixture-native` | 20 | 8 | 0 |
+| `/apps?kind=apps` | 20 | 5 | 0 |
+| `/websites?type=personal` | 20 | 5 | 0 |
+| `/tools?category=OTHER` | 20 | 5 | 0 |
+| `/zh-CN/apps` | 20 | 5 | 0 |
+| `/zh-TW/apps/fixture-tool` | 20 | 6 | 0 |
+| `/apps/fixture-person` | 20 | 6 | 0 |
+
+All 240 responses were HTTP 200. Mock admin unapprove then removed the listing
+from the very next home en/zh-TW and apps responses; detail returned HTTP 404.
+`npm test`: 736 passed, 6 opt-in tests skipped, 0 failures. `npx tsc --noEmit`
+passed. `npm run lint`: 0 errors, 32 warnings. `npm run feature-map:check`
+passed (742 tracked files). Added coverage checks cached detail categories,
+personal/game exclusions, localized breadcrumb URLs and JSON round trips.
+Independent Codex static review found no regressions; this is not an Opus review.
+
+The Git sandbox rejected creating the worktree's `index.lock` during `git add`
+(`Operation not permitted`). Working files have no conflict markers, but the
+index remains unmerged and the merge commit could not be completed. No push.
+The ops checkout is outside this session's writable roots; its inbox/run-log
+update could not be applied. Pending run-log/inbox text and machine-readable
+production evidence are saved under `/private/tmp/92a-merge-qa/`.

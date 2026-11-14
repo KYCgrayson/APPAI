@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from "react";
 
+import { hostedNavigationCopy } from "@/lib/hosted-navigation-copy";
+
 interface MenuLink {
   label: string;
   href: string;
   external?: boolean;
+  isCurrent?: boolean;
 }
 
 interface LocaleOption {
@@ -25,6 +28,9 @@ interface Props {
   /** Optional download CTA (App Store / Play Store) rendered prominently. */
   download?: { label: string; href: string };
   themeColor: string;
+  labels?: ReturnType<typeof hostedNavigationCopy>;
+  /** Only non-root headers use the tighter mobile layout and 44px trigger. */
+  compact?: boolean;
 }
 
 /**
@@ -39,6 +45,8 @@ export function MobileMenu({
   utilityLinks,
   download,
   themeColor,
+  labels = hostedNavigationCopy("en"),
+  compact = false,
 }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -66,10 +74,12 @@ export function MobileMenu({
     <>
       <button
         type="button"
-        aria-label={open ? "Close menu" : "Open menu"}
+        aria-label={open ? labels.closeMenu : labels.openMenu}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center justify-center w-10 h-10 -mr-2 rounded-md text-gray-700 hover:bg-gray-100"
+        className={compact
+          ? "inline-flex items-center justify-center w-11 h-11 md:w-10 md:h-10 md:-mr-2 rounded-md text-gray-700 hover:bg-gray-100"
+          : "inline-flex items-center justify-center w-10 h-10 -mr-2 rounded-md text-gray-700 hover:bg-gray-100"}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -102,7 +112,7 @@ export function MobileMenu({
         <>
           <button
             type="button"
-            aria-label="Close menu"
+            aria-label={labels.closeMenu}
             onClick={() => setOpen(false)}
             className="fixed inset-0 top-[57px] z-40 bg-black/20"
           />
@@ -118,6 +128,7 @@ export function MobileMenu({
                       href={item.href}
                       target={item.external ? "_blank" : undefined}
                       rel={item.external ? "noopener noreferrer" : undefined}
+                      aria-current={item.isCurrent ? "page" : undefined}
                       onClick={() => setOpen(false)}
                       className="block px-6 py-4 text-base font-medium border-b border-gray-100 text-gray-900 hover:bg-gray-50"
                     >
@@ -131,7 +142,7 @@ export function MobileMenu({
             {locales.length > 1 && (
               <div className="px-6 py-4 border-b border-gray-100">
                 <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
-                  Language
+                  {labels.language}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {locales.map((l) => (
@@ -160,6 +171,7 @@ export function MobileMenu({
                       href={item.href}
                       target={item.external ? "_blank" : undefined}
                       rel={item.external ? "noopener noreferrer" : undefined}
+                      aria-current={item.isCurrent ? "page" : undefined}
                       onClick={() => setOpen(false)}
                       className="block px-6 py-3 text-sm text-gray-600 hover:bg-gray-50"
                     >

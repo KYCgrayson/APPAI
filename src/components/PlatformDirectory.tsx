@@ -5,6 +5,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { AppCard } from "@/components/AppCard";
 import { PlatformHeader } from "@/components/PlatformHeader";
+import { PlatformBreadcrumb } from "@/components/PlatformBreadcrumb";
 import { getExternalCanonical } from "@/lib/canonical";
 import { UNIVERSAL_APP_CATEGORIES } from "@/lib/universal-apps/manifest";
 import { getDirectoryCopy } from "@/lib/directory-copy";
@@ -37,7 +38,8 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
       <PlatformHeader currentSection={kind ?? "apps"} />
-      <main className="max-w-6xl mx-auto px-6 py-8">
+      <main className="max-w-6xl mx-auto px-6 pt-4 pb-8">
+        <PlatformBreadcrumb section={kind ?? "apps"} dark />
         <div className="mb-8">
           <p className="text-sm uppercase tracking-widest text-cyan-400">{copy.label}</p>
           <h1 className="mt-2 text-3xl font-bold text-white">

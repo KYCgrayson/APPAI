@@ -194,5 +194,16 @@
       "title": "AIで作るウェブサイト・ポートフォリオ | AppAI",
       "description": "AIで作られたウェブサイト、個人ポートフォリオ、プロジェクトのランディングページをAppAIで探しましょう。"
     }
+  },
+  "breadcrumbs": {
+    "label": "パンくずリスト",
+    "apps": "アプリ",
+    "websites": "ウェブサイト",
+    "tools": "ツール",
+    "games": "ゲーム",
+    "signIn": "ログイン",
+    "signOut": "ログアウト",
+    "feedback": "フィードバック",
+    "deviceAuth": "デバイス認証"
   }
 }
