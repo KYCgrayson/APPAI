@@ -1,3 +1,4 @@
+import { PROJECT_CARD_HREF_PATTERN, EDITORIAL_IMAGE_PATTERN } from "./hosted-editorial-links.ts";
 import { SOCIAL_PLATFORMS } from "./sanitize.ts";
 import example0 from "../../docs/examples/app-landing.example.json" with { type: "json" };
 import example1 from "../../docs/examples/saas-landing.example.json" with { type: "json" };
@@ -29,6 +30,8 @@ export interface SectionFieldDef {
   maxLength?: number;
   minLength?: number;
   maxItems?: number;
+  minItems?: number;
+  valueItems?: Omit<SectionFieldDef, "name" | "required">; // scalar array entries
   allowStringItems?: boolean; // backward-compatible URL string arrays
   items?: SectionFieldDef[];  // for array types
   fields?: SectionFieldDef[]; // for object types
@@ -311,8 +314,9 @@ export const SECTION_DEFS: SectionDef[] = [
   {
     type: "project-cards",
     name: "Project Cards",
-    description: "Two-column editorial project grid with optional app icons, phone or web screenshots and project links.",
+    description: "Editorial project grid (default) or single-column post feed with meta and one or two image tiles. Background remains the profile-header default.",
     fields: [
+      { name: "layout", type: "string", required: false, enum: ["grid", "feed"], description: "Default grid. Feed is a centered single-column post stream." },
       { name: "subheading", type: "string", required: false, description: "Optional supporting text below the heading." },
       { name: "heading", type: "string", required: false, description: "Optional section heading above the content." },
       { name: "eyebrow", type: "string", required: false, description: "Short accent label above the heading." },
@@ -320,18 +324,28 @@ export const SECTION_DEFS: SectionDef[] = [
         name: "items", type: "array", required: false, description: "Ordered content items; each requires a non-empty name or title.",
         items: [
           { name: "name", type: "string", required: true, description: "Display name used as the profile h1 or project title." },
+          { name: "href", type: "url", required: false, maxLength: 2048, pattern: PROJECT_CARD_HREF_PATTERN, description: "Title and description link in either layout. HTTPS without credentials, /p/... with optional ?t=time/#anchor, #anchor, or ?t=time#anchor. Time uses the video contract (0–86400 seconds, m:ss or h:mm:ss)." },
+          { name: "meta", type: "array", required: false, maxItems: 3, valueItems: { type: "string", minLength: 1, pattern: "^\\s*\\S(?:[\\s\\S]{0,38}\\S)?\\s*$", description: "1–40 characters after trimming." }, description: "Up to three strings, 1–40 characters each after trimming, joined by · above the title. Feed uses category only when meta is absent." },
+          { name: "featured", type: "boolean", required: false, description: "Feed only; only the first true item is enlarged. Later true values and all grid values are ignored." },
+          { name: "media", type: "array", required: false, minItems: 1, maxItems: 2, description: "Feed only; ignored in grid. One or two image tiles. If absent, screenshot becomes one 16:9 tile. Featured tiles stack full-width; other pairs stay side by side at all widths.", items: [
+            { name: "url", type: "url", required: true, pattern: EDITORIAL_IMAGE_PATTERN, description: "HTTPS image URL without credentials, like screenshot.url; no file extension requirement." },
+            { name: "alt", type: "string", required: true, description: "Accessible image description; empty for decorative images. Linked decorative images use label or the item name as their accessible link name." },
+            { name: "href", type: "url", required: false, maxLength: 2048, pattern: PROJECT_CARD_HREF_PATTERN, description: "Same safe destinations as item.href; separate from the title link." },
+            { name: "label", type: "string", required: false, maxLength: 24, description: "Optional corner badge, e.g. 6 key moments." },
+            { name: "aspect", type: "string", required: false, enum: ["16:9", "1:1", "4:5"], description: "Reserved tile aspect ratio; default 16:9." },
+          ] },
           { name: "category", type: "string", required: false, description: "Short project category shown above its name." },
-          { name: "description", type: "string", required: false, description: "Plain-text summary displayed below the title." },
+          { name: "description", type: "string", required: false, description: "Plain-text summary; feed preserves line breaks and never clamps text. Links to href when supplied." },
           {
-            name: "icon", type: "object", required: false, description: "Optional square project icon image.",
+            name: "icon", type: "object", required: false, description: "Optional square project icon; small beside the meta row in feed.",
             fields: [
               { name: "url", type: "url", required: true, description: "HTTPS image URL." },
               { name: "alt", type: "string", required: true, description: "Accessible image description; empty for decorative images" },
             ],
           },
-          { name: "monogram", type: "string", required: false, description: "1–2 characters displayed when no project icon is supplied." },
+          { name: "monogram", type: "string", required: false, description: "1–2 characters displayed when no project icon is supplied; small beside feed metadata." },
           {
-            name: "screenshot", type: "object", required: false, description: "Project screenshot displayed in a phone or web frame.",
+            name: "screenshot", type: "object", required: false, description: "Grid: phone/web frame. Feed: one 16:9 image tile when media is absent; kind/width/height do not change the feed ratio.",
             fields: [
               { name: "url", type: "url", required: true, description: "HTTPS image URL." },
               { name: "alt", type: "string", required: true, description: "Accessible image description; empty for decorative images" },

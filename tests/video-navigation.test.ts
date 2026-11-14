@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { editorialLink } from "../src/lib/hosted-editorial-links.ts";
 import { registerVideoNavigation } from "../src/lib/video-navigation.ts";
 
 class FakeElement {
@@ -48,6 +49,13 @@ test("delegated same-page links, initial/unknown hashes and back/forward target 
     assert.deepEqual(calls.at(-1), ["first", 60, true]);
     assert.equal(click("?t=45").defaultPrevented, true);
     assert.deepEqual(calls.at(-1), ["first", 45, true]);
+    // Feed title/tile links use this same delegated listener; fake seeks never play media.
+    for (const href of ["?t=1:30#second", "/p/fictional?t=90#second"]) {
+      const link = editorialLink(href, "https://appai.info", "project-card");
+      assert.ok(link); assert.equal(link.external, false);
+      assert.equal(click(link.href).defaultPrevented, true);
+      assert.deepEqual(calls.at(-1), ["second", 90, true]);
+    }
     const count = calls.length;
     for (const event of [click("https://evil.test/p/fictional?t=90"), click("?t=90", { ctrlKey: true }), click("?t=90", {}, "_blank"), click("/p/other?t=90"), click("#first")]) assert.equal(event.defaultPrevented, false);
     assert.equal(calls.length, count);

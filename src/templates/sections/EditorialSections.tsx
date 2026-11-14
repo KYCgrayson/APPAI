@@ -1,6 +1,8 @@
 /* eslint-disable @next/next/no-img-element -- Publisher images use arbitrary HTTPS hosts. */
-import type { CSSProperties, ReactNode } from "react";
-import { editorialLink } from "@/lib/hosted-editorial-links";
+import { Fragment, type CSSProperties, type ReactNode } from "react";
+import { editorialImageUrl, editorialLink } from "@/lib/hosted-editorial-links";
+import { projectCardMediaSchema, type ProjectCardMedia } from "@/lib/project-cards";
+import { PLATFORM_ORIGIN } from "@/lib/platform-identity";
 import { Prose } from "../shared/Prose";
 import { ScreenshotFrame } from "./ScreenshotFrame";
 import { ProjectReveal } from "./ProjectReveal";
@@ -58,13 +60,14 @@ function Shell({ data, themeColor, darkMode = false, children }: Props<Base> & {
 function Heading({ data, typographyActive = false }: { data: Base; typographyActive?: boolean }) {
   return <>{data.eyebrow && <p data-typography-role={typographyActive ? "caption" : undefined} className={styles.eyebrow}>{data.eyebrow}</p>}{data.heading && <h2 data-typography-role={typographyActive ? "heading" : undefined} className={styles.heading}>{data.heading}</h2>}{data.subheading && <p data-typography-role={typographyActive ? "body" : undefined} className={styles.description}>{data.subheading}</p>}</>;
 }
-function Links({ items }: { items?: Link[] }) {
+function Links({ items, inline = false }: { items?: Link[]; inline?: boolean }) {
   const origin = process.env.NEXTAUTH_URL || "https://appai.info";
   const valid = links(items).flatMap((item) => {
     const link = editorialLink(item.url, origin);
     return link && !link.href.startsWith("#") ? [{ ...item, ...link }] : [];
   });
   if (!valid?.length) return null;
+  if (inline) return <div className={styles.feedLinks}>{valid.map((item, i) => <Fragment key={i}>{i > 0 && <span aria-hidden="true"> · </span>}<a href={item.href} target={item.external ? "_blank" : undefined} rel={item.external ? "noreferrer" : undefined}>{item.label}</a></Fragment>)}</div>;
   return <div className={styles.links}>{valid.map((item, i) => (
     <a key={i} href={item.href} target={item.external ? "_blank" : undefined} rel={item.external ? "noreferrer" : undefined}>{item.label}</a>
   ))}</div>;
@@ -89,8 +92,12 @@ export function ProfileHeaderSection(props: (Props<Base & {
     </div>
   </Shell>;
 }
-export function ProjectCardsSection(props: (Props<Base & { items?: {
+function CardLink({ link, children }: { link: ReturnType<typeof editorialLink>; children: ReactNode }) {
+  return link ? <a href={link.href} target={link.external ? "_blank" : undefined} rel={link.external ? "noreferrer" : undefined}>{children}</a> : <>{children}</>;
+}
+export function ProjectCardsSection(props: (Props<Base & { layout?: "grid" | "feed"; items?: {
   name: string; category?: string; description?: string; icon?: Image; monogram?: string;
+  href?: string; meta?: string[]; media?: ProjectCardMedia[]; featured?: boolean;
   screenshot?: Image & { kind: "phone" | "web"; width?: number; height?: number }; links?: Link[];
 }[] }>) & { typographyActive?: boolean }) {
   const raw = record(props.data);
@@ -98,15 +105,49 @@ export function ProjectCardsSection(props: (Props<Base & { items?: {
     const item = record(value);
     const screenshot = record(item.screenshot);
     return { name: text(item.name), category: text(item.category), description: text(item.description),
+      href: editorialLink(typeof item.href === "string" ? item.href : undefined, process.env.NEXTAUTH_URL || PLATFORM_ORIGIN, "project-card"),
+      meta: Array.isArray(item.meta) ? item.meta.filter((v): v is string => typeof v === "string").map(v => v.trim()).filter(Boolean).slice(0, 3) : undefined,
+      featured: item.featured === true,
+      media: Array.isArray(item.media) ? item.media.slice(0, 2).flatMap(value => { const parsed = projectCardMediaSchema.safeParse(value); return parsed.success ? [parsed.data] : []; }) : undefined,
       icon: image(item.icon), monogram: text(item.monogram), links: links(item.links),
       screenshot: { ...image(screenshot), kind: screenshot.kind === "phone" ? "phone" : "web",
         width: dimension(screenshot.width), height: dimension(screenshot.height) } };
   }).filter((item) => !!item.name) : [] };
+  if (raw.layout === "feed") {
+    const featured = data.items.findIndex(item => item.featured);
+    const Title = data.heading ? "h3" : "h2";
+    return <Shell {...props} data={data}><div className={styles.feed}>
+      <Heading typographyActive={props.typographyActive} data={data} />
+      {data.items.map((item, i) => {
+        const meta = item.meta ?? (item.category ? [item.category] : []);
+        const media: ProjectCardMedia[] = item.media ?? (editorialImageUrl(item.screenshot.url) ? [{ url: item.screenshot.url, alt: item.screenshot.alt || "" }] : []);
+        return <article key={i} className={styles.feedCard} data-featured={i === featured || undefined}>
+          {(item.icon.url || item.monogram || meta.length > 0) && <div className={styles.feedMeta} data-typography-role={props.typographyActive ? "caption" : undefined}>
+            {editorialImageUrl(item.icon.url) ? <img className={styles.feedIcon} src={item.icon.url} alt={item.icon.alt || ""} width={28} height={28} loading={i === 0 ? "eager" : "lazy"} decoding="async" /> : item.monogram ? <span className={styles.feedIcon} aria-hidden="true">{Array.from(item.monogram).slice(0, 2).join("")}</span> : null}
+            {meta.length > 0 && <p>{meta.join(" · ")}</p>}
+          </div>}
+          <Title className={styles.feedTitle} data-typography-role={props.typographyActive ? "heading" : undefined}><CardLink link={item.href}>{item.name}</CardLink></Title>
+          {item.description && <p className={styles.feedDescription} data-typography-role={props.typographyActive ? "card" : undefined}><CardLink link={item.href}>{item.description}</CardLink></p>}
+          {media.length > 0 && <div className={styles.feedMedia} data-count={media.length}>{media.map((tile, tileIndex) => {
+            const link = editorialLink(tile.href, process.env.NEXTAUTH_URL || PLATFORM_ORIGIN, "project-card");
+            const Tag = link ? "a" : "figure";
+            return <Tag key={tileIndex} className={styles.feedTile} href={link?.href} target={link?.external ? "_blank" : undefined} rel={link?.external ? "noreferrer" : undefined}
+              aria-label={link && !tile.alt.trim() && !tile.label?.trim() ? item.name : undefined}
+              style={{ aspectRatio: (tile.aspect || "16:9").replace(":", " / ") }}>
+              <img src={tile.url} alt={tile.alt} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
+              {tile.label && <span className={styles.feedBadge}>{tile.label}</span>}
+            </Tag>;
+          })}</div>}
+          <Links items={item.links} inline />
+        </article>;
+      })}
+    </div></Shell>;
+  }
   return <Shell {...props} data={data}><Heading typographyActive={props.typographyActive} data={data} />{!!data.items?.length && <ProjectReveal>{data.items.map((item, i) => <article key={i} className={styles.card}>
     <div className={styles.identity}>{item.icon?.url ? <img className={styles.icon} src={item.icon.url} alt={item.icon.alt || ""} width={64} height={64} loading="lazy" decoding="async" /> : item.monogram ? <span className={styles.icon}>{Array.from(item.monogram).slice(0, 2).join("")}</span> : null}
-      <div>{item.category && <p data-typography-role={props.typographyActive ? "caption" : undefined} className={styles.eyebrow}>{item.category}</p>}{data.heading ? <h3 data-typography-role={props.typographyActive ? "heading" : undefined} className={styles.projectName}>{item.name}</h3> : <h2 data-typography-role={props.typographyActive ? "heading" : undefined} className={styles.projectName}>{item.name}</h2>}</div>
+      <div>{(item.meta ? item.meta.length > 0 : item.category) && <p data-typography-role={props.typographyActive ? "caption" : undefined} className={styles.eyebrow}>{item.meta ? item.meta.join(" · ") : item.category}</p>}{data.heading ? <h3 data-typography-role={props.typographyActive ? "heading" : undefined} className={styles.projectName}><CardLink link={item.href}>{item.name}</CardLink></h3> : <h2 data-typography-role={props.typographyActive ? "heading" : undefined} className={styles.projectName}><CardLink link={item.href}>{item.name}</CardLink></h2>}</div>
     </div>
-    {item.description && <p data-typography-role={props.typographyActive ? "card" : undefined} className={styles.description}>{item.description}</p>}
+    {item.description && <p data-typography-role={props.typographyActive ? "card" : undefined} className={styles.description}><CardLink link={item.href}>{item.description}</CardLink></p>}
     {item.screenshot?.url && <ScreenshotFrame image={item.screenshot} />}
     <Links items={item.links} />
   </article>)}</ProjectReveal>}</Shell>;

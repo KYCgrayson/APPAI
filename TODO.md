@@ -1,5 +1,14 @@
 # TODO — AppAI Project Roadmap
 
+## Project card feed (#91, PR-6a)
+
+- [x] Optional feed/grid layout, title/description href, trimmed metadata, 1–2 image tiles, accessible labels and first-only featured cards. Preserve original grid markup with fixed pre-change fixtures; keep editorial backgrounds and existing fields.
+- [x] Reuse editorial safe-link policy; validate new fields and indexed paths on create/upsert, full PUT, merged page/section PATCH, dry-run and preview. Keep same-page time links intact through sanitization and the delegated seek handler.
+- [x] Update registry/JSON Schema, existing SEO ItemList/OG and llms consumers; document fictional episode preview payload, mappings and limits. Update feature maps and regenerate spec.
+- [x] Final checks: TypeScript passes; lint 0 errors (33 existing warnings); full tests 741 passed / 7 optional skipped. Spec builds; overview stays 105 lines. Feature map passes with new files included in a temporary index (real index unchanged). Independent cold review passed after tightening URL schema authority/port patterns.
+- [x] Build attempted: default Turbopack blocked by sandbox port binding; Webpack compiled and typechecked, then `/llms.txt` prerender stopped because `DATABASE_URL` is absent. No env files, database writes, commits or pushes.
+- [ ] Actual 375/768/1280px browser layout and before/after screenshots: headless Chrome exits at startup; connected Chrome rejected the local QA file because URL policy allows only HTTP/HTTPS. Optional browser test is supplied; SSR/CSS checks do not replace visual QA. No video/audio playback.
+
 ## Breadcrumbs from AppAI home (owner follow-up to #73, backlog #91)
 
 - [x] Start all requested trails at AppAI, including platform home, auth pages, Dashboard/Admin overviews and game information pages; use the shared single-line Breadcrumb and keep fullscreen game runtime unchanged. Spec endpoints remain plain text.

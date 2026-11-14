@@ -1,0 +1,103 @@
+{
+  "source": "Unmodified branch base, captured before PR-6a implementation; CSS modules use stable local class names.",
+  "fixtures": [
+    {
+      "data": {},
+      "html": "<section class=\"section\" data-dark=\"false\" style=\"--accent:rgb(176,70,31);background-color:#f6f5f0\"><div class=\"inner\"></div></section>"
+    },
+    {
+      "data": {
+        "items": [
+          {
+            "name": "Paper Lantern",
+            "description": "A fictional notebook."
+          }
+        ]
+      },
+      "html": "<section class=\"section\" data-dark=\"false\" style=\"--accent:rgb(176,70,31);background-color:#f6f5f0\"><div class=\"inner\"><div class=\"grid border-t border-[var(--rule)] md:grid-cols-2\"><article class=\"card\"><div class=\"identity\"><div><h2 class=\"projectName\">Paper Lantern</h2></div></div><p class=\"description\">A fictional notebook.</p></article></div></div></section>"
+    },
+    {
+      "data": {
+        "heading": "Selected work",
+        "eyebrow": "Tools",
+        "subheading": "Fictional projects",
+        "items": [
+          {
+            "name": "Paper Lantern",
+            "category": "Notes",
+            "description": "First line\nSecond line",
+            "icon": {
+              "url": "https://example.com/icon.png",
+              "alt": ""
+            },
+            "screenshot": {
+              "url": "https://example.com/screen.png",
+              "alt": "Notes screen",
+              "kind": "web",
+              "width": 1440,
+              "height": 900
+            },
+            "links": [
+              {
+                "label": "Details",
+                "url": "/p/paper-lantern"
+              },
+              {
+                "label": "Website",
+                "url": "https://example.com"
+              }
+            ]
+          },
+          {
+            "name": "Cloud Atlas",
+            "monogram": "CA",
+            "screenshot": {
+              "url": "https://example.com/phone.png",
+              "alt": "Phone screen",
+              "kind": "phone"
+            }
+          }
+        ]
+      },
+      "html": "<section class=\"section\" data-dark=\"false\" style=\"--accent:rgb(176,70,31);background-color:#f6f5f0\"><div class=\"inner\"><p class=\"eyebrow\">Tools</p><h2 class=\"heading\">Selected work</h2><p class=\"description\">Fictional projects</p><div class=\"grid border-t border-[var(--rule)] md:grid-cols-2\"><article class=\"card\"><div class=\"identity\"><img class=\"icon\" src=\"https://example.com/icon.png\" alt=\"\" width=\"64\" height=\"64\" loading=\"lazy\" decoding=\"async\"/><div><p class=\"eyebrow\">Notes</p><h3 class=\"projectName\">Paper Lantern</h3></div></div><p class=\"description\">First line\nSecond line</p><div class=\"screenshot\"><div class=\"frame web\"><div aria-hidden=\"true\" class=\"chrome\"><span></span> · ·</div><img src=\"https://example.com/screen.png\" alt=\"Notes screen\" width=\"1440\" height=\"900\" style=\"aspect-ratio:1440 / 900\" loading=\"lazy\" decoding=\"async\"/></div></div><div class=\"links\"><a href=\"/p/paper-lantern\">Details</a><a href=\"https://example.com\" target=\"_blank\" rel=\"noreferrer\">Website</a></div></article><article class=\"card\"><div class=\"identity\"><span class=\"icon\">CA</span><div><h3 class=\"projectName\">Cloud Atlas</h3></div></div><div class=\"screenshot\"><div class=\"frame phone\"><img src=\"https://example.com/phone.png\" alt=\"Phone screen\" width=\"390\" height=\"844\" loading=\"lazy\" decoding=\"async\"/></div></div></article></div></div></section>"
+    },
+    {
+      "darkMode": true,
+      "typographyActive": true,
+      "data": {
+        "heading": "Archive",
+        "items": [
+          {
+            "name": "Quiet Harbour",
+            "category": "Journal",
+            "description": "A fictional journal.",
+            "monogram": "QH"
+          }
+        ]
+      },
+      "html": "<section class=\"section\" data-dark=\"true\" style=\"--accent:rgb(216,110,71);background-color:#182322\"><div class=\"inner\"><h2 data-typography-role=\"heading\" class=\"heading\">Archive</h2><div class=\"grid border-t border-[var(--rule)] md:grid-cols-2\"><article class=\"card\"><div class=\"identity\"><span class=\"icon\">QH</span><div><p data-typography-role=\"caption\" class=\"eyebrow\">Journal</p><h3 data-typography-role=\"heading\" class=\"projectName\">Quiet Harbour</h3></div></div><p data-typography-role=\"card\" class=\"description\">A fictional journal.</p></article></div></div></section>"
+    },
+    {
+      "data": {
+        "backgroundColor": "#fff8ed",
+        "items": [
+          null,
+          {
+            "name": "  "
+          },
+          {
+            "name": "  Cedar  ",
+            "description": "  Trimmed  ",
+            "links": [
+              {
+                "label": "  Read  ",
+                "url": "/p/cedar"
+              }
+            ]
+          }
+        ]
+      },
+      "html": "<section class=\"section\" data-dark=\"false\" style=\"--accent:rgb(176,70,31);background-color:#fff8ed\"><div class=\"inner\"><div class=\"grid border-t border-[var(--rule)] md:grid-cols-2\"><article class=\"card\"><div class=\"identity\"><div><h2 class=\"projectName\">Cedar</h2></div></div><p class=\"description\">Trimmed</p><div class=\"links\"><a href=\"/p/cedar\">Read</a></div></article></div></div></section>"
+    }
+  ]
+}

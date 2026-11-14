@@ -1,3 +1,4 @@
+import { editorialImageUrl, projectCardUrl } from "./hosted-editorial-links.ts";
 import { gameSectionSchema } from "./game-section.ts";
 import { DAYS, isBusinessHours, type BusinessHours } from "./business-hours.ts";
 import { normalizeHostedContent } from "./hosted-content.ts";
@@ -23,10 +24,10 @@ export function safeHttpUrl(value: unknown, baseUrl?: string): string | undefine
 export function hostedOgImage(page: any): string | undefined {
   const sections: any[] = normalizeHostedContent(page.content).sections;
   const profile = sections.find((s: any) => s.type === "profile-header")?.data;
-  const project = sections.filter((s: any) => s.type === "project-cards").flatMap((s: any) => s.data?.items || []).find((item: any) => safeHttpUrl(item?.screenshot?.url) || safeHttpUrl(item?.icon?.url));
+  const project = sections.filter((s: any) => s.type === "project-cards").flatMap((s: any) => (s.data?.items || []).map((item: any) => ({ ...item, feedImage: s.data?.layout === "feed" && Array.isArray(item?.media) ? item.media.find((tile: any) => editorialImageUrl(tile?.url))?.url : undefined }))).find((item: any) => item.feedImage || safeHttpUrl(item?.screenshot?.url) || safeHttpUrl(item?.icon?.url));
   const game = sections.find((s: any) => s.type === "game")?.data;
   const screenshot = sections.find((s: any) => s.type === "screenshots")?.data?.images?.[0];
-  return [page.ogImage, page.heroImage, page.template === "GAME" ? game?.cover?.url : undefined, profile?.avatar?.url, project?.screenshot?.url, project?.icon?.url,
+  return [page.ogImage, page.heroImage, page.template === "GAME" ? game?.cover?.url : undefined, profile?.avatar?.url, project?.feedImage, project?.screenshot?.url, project?.icon?.url,
     typeof screenshot === "string" ? screenshot : screenshot?.url, game?.cover?.url].map(value => safeHttpUrl(value)).find(Boolean);
 }
 
@@ -103,9 +104,10 @@ export function buildJsonLd(
   if (breadcrumb) graph.push(breadcrumb);
   for (const section of (content?.sections || []).filter((s: any) => s.type === "project-cards").slice(0, 20)) {
     const items = (Array.isArray(section.data?.items) ? section.data.items : []).slice(0, 100).flatMap((item: any) => {
-      const itemUrl = safeHttpUrl(item?.links?.[0]?.url, baseUrl);
+      const itemUrl = projectCardUrl(item?.href, url) || safeHttpUrl(item?.links?.[0]?.url, baseUrl);
       if (!itemUrl || !clean(item?.name)) return [];
-      const image = safeHttpUrl(item.icon?.url) || safeHttpUrl(item.screenshot?.url);
+      const mediaImage = section.data?.layout === "feed" && Array.isArray(item.media) ? item.media.find((tile: any) => editorialImageUrl(tile?.url))?.url : undefined;
+      const image = mediaImage || safeHttpUrl(item.icon?.url) || safeHttpUrl(item.screenshot?.url);
       return [{ "@type": "ListItem", name: clean(item.name), url: itemUrl,
         ...(clean(item.description) ? { description: clean(item.description) } : {}), ...(image ? { image } : {}) }];
     }).map((item: any, i: number) => ({ ...item, position: i + 1 }));

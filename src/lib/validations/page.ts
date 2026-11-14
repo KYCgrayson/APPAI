@@ -1,3 +1,4 @@
+import { projectCardsContentIssues } from "../project-cards.ts";
 import { normalizeVideoContent } from "../video-data.ts";
 import { gameContentIssues, gameSlugReserved } from "../game-section.ts";
 import { isBusinessHours } from "../business-hours.ts";
@@ -27,6 +28,7 @@ const typographyFields = {
 };
 const makeContentSchema = (partial = false, existingContent?: unknown) => z.object(typographyFields).catchall(z.any()).superRefine((content, ctx) => {
   for (const issue of normalizeVideoContent(content, partial, existingContent).issues) ctx.addIssue({ ...issue });
+  for (const issue of projectCardsContentIssues(content)) ctx.addIssue(issue);
   for (const issue of gameContentIssues(content, partial)) ctx.addIssue(issue);
   if (!Array.isArray(content.sections)) return;
   content.sections.forEach((section, index) => {

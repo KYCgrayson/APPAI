@@ -731,6 +731,73 @@ Use for a card wall or summary wall: a responsive grid of items, each with a nam
 ```
 Required: each item's `name`; image objects require `url`, `alt`; screenshot requires `kind`: `phone|web`, optional positive `width`/`height` in px; monogram 1–2 characters; links follow profile-header rules. Icon, monogram, screenshot and links may all be omitted.
 
+#### Feed layout (optional)
+
+Use `layout: "feed"` for a podcast episode archive, video digest, changelog or blog index. Default/`"grid"` retains the existing two-column project grid; no new fields are required. Background defaults stay the same as `profile-header` (including dark mode).
+
+| Field | Contract |
+|---|---|
+| `data.layout` | `"grid"` (default) or `"feed"`; any other value is a validation error. |
+| `items[].href` | Optional title **and description** link in both layouts; ≤2048 characters. See the destination table below. |
+| `items[].meta` | Optional array of 0–3 strings; each 1–40 characters **after trim**. Joined by ` · ` above the title in both layouts. An empty array hides metadata. |
+| `items[].media` | Optional array of **1–2** `{url, alt, href?, label?, aspect?}` tiles. Validated in both layouts; **only rendered in feed**, ignored in grid. An empty array is invalid; omit instead. |
+| `media[].url` / `alt` | HTTPS image URL without credentials (like screenshot URLs; no extension requirement). `alt` is required, but `""` is allowed for decorative images. A linked decorative tile uses its label or item name as the accessible link name. |
+| `media[].href` | Optional independent tile link; same rules as item `href`. Without it the tile is a plain figure. |
+| `media[].label` | Optional publisher-written corner badge, ≤24 characters, e.g. `"6 key moments"` or `"▶ 5:12"`. |
+| `media[].aspect` | `"16:9"` (default), `"1:1"` or `"4:5"`. The box reserves space before the image loads; images fill/crop to fit. |
+| `items[].featured` | Optional boolean, **feed only**. Only the first `true` item is enlarged: larger title, each tile full width and stacked. Later `true` values and all grid values are ignored. |
+| `items[].description` | Still plain text; feed preserves internal line breaks with `white-space: pre-line` and never clamps text. |
+
+| `href` destination | Accepted? |
+|---|---|
+| `https://example.com/episode` | Yes, absolute HTTPS without credentials. External origins open a new tab. |
+| `/p/paper-observatory`, `/p/paper-observatory/episode?t=90#video` | Yes, hosted paths (letters/digits/hyphens per segment), optional `?t=time` and/or `#anchor`. |
+| `#moments`, `?t=1:30#video` | Yes, same-page anchors and time links; time links retain the delegated video seek behavior. |
+| `javascript:`, `data:`, `http:`, `//example.com`, credentials, other relative paths | No; rejected before writing, including in preview. |
+
+Anchors start with an ASCII letter and contain letters, digits, `_` or `-`. Time uses the video contract: integer seconds 0–86400, `m:ss` (0–59 minutes) or `h:mm:ss` up to `24:00:00`. Bare `?t=90` is not a card destination: include `#video`. Hosted paths accept only the optional `t` query; absolute HTTPS URLs may have other query parameters.
+
+| Existing field | Feed mapping |
+|---|---|
+| `name` | Post title (still required); linked when `href` is supplied. |
+| `icon` / `monogram` | Small beside the metadata row; icon takes precedence. |
+| `category` | First/only metadata entry **only when `meta` is absent**. |
+| `screenshot` | One `16:9` media tile **only when `media` is absent**; `alt` retained. Phone/web framing and screenshot dimensions apply only to grid. |
+| `links` | Existing destinations/rules, displayed after media as small text links separated by ` · `. |
+
+Feed is centered at max-width 680px with hairline dividers. Normal two-tile rows stay side by side at mobile/tablet/desktop widths; one tile fills the row. First-card images load eagerly; later cards' images are lazy. Title, description and tile links are separate anchors, so cards never nest interactive links. Existing ItemList JSON-LD and `llms.txt` use `href` when present; feed media can supply the OG/list image.
+
+Fictional preview body — POST to `/api/v1/pages/preview` (same shape as page creation; this does not publish):
+```json
+{
+  "slug": "paper-observatory",
+  "title": "The Paper Observatory",
+  "template": "PERSON",
+  "locale": "en",
+  "themeColor": "#b0461f",
+  "content": {
+    "sections": [{
+      "type": "project-cards", "order": 0,
+      "data": {
+        "layout": "feed", "heading": "Episode feed",
+        "items": [{
+          "name": "How small ideas grow",
+          "href": "/p/paper-observatory/episode-12?t=90#video",
+          "meta": ["Episode 12", "8 min"],
+          "description": "A fictional conversation about curiosity.\nThree questions to take into the week.",
+          "media": [
+            {"url": "https://example.com/episode-12.png", "alt": "Paper landscape episode artwork", "href": "/p/paper-observatory/episode-12#moments", "label": "6 key moments"},
+            {"url": "https://example.com/episode-12-sketch.png", "alt": "Sketch of three discussion topics", "href": "/p/paper-observatory/episode-12?t=90#video", "label": "▶ 5:12", "aspect": "1:1"}
+          ],
+          "links": [{"label": "Episode notes", "url": "/p/paper-observatory/episode-12"}]
+        }]
+      }
+    }]
+  }
+}
+```
+The example URLs and episode are fictional. Replace image URLs with real HTTPS images and publish the linked episode separately; a same-page seek link needs a video section with the matching id. Image availability and MIME type are not fetched/verified by preview. The existing plain-text sanitizer still removes HTML tags.
+
 ### entries
 ```json
 {"type":"entries","order":2,"data":{"heading":"Focus","eyebrow":"Now","intro":"Optional Markdown.","items":[{"title":"Useful tools","description":"Fictional work in progress."}],"links":[{"label":"Website","url":"https://example.com"}]}}

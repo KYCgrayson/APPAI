@@ -1,3 +1,6 @@
+import { projectCardUrl } from "@/lib/hosted-editorial-links";
+import { normalizeHostedContent, isRecord } from "@/lib/hosted-content";
+import { buildPagePath } from "@/lib/parse-page-segments";
 import { publicPageWhere } from "@/lib/hosted-page-visibility";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -44,12 +47,22 @@ export async function GET() {
     updatedAt: Date;
     locales: string[];
     sectionTypes: string[];
+    feedItems: string[];
   };
   const slugMap = new Map<string, PageInfo>();
   for (const page of pages) {
+    const pageUrl = `${baseUrl}${buildPagePath(page.slug, page.locale, null, page.isDefault)}`;
+    const plain = (value: unknown) => typeof value === "string" ? value.replace(/[\r\n\t]+/g, " ").trim() : "";
+    const feedItems = normalizeHostedContent(page.content).sections.filter(section => section.type === "project-cards" && section.data.layout === "feed").flatMap(section => Array.isArray(section.data.items) ? section.data.items : []).slice(0, 20).flatMap(item => {
+      if (!isRecord(item) || !plain(item.name)) return [];
+      const links = Array.isArray(item.links) ? item.links : [];
+      const url = projectCardUrl(item.href, pageUrl) || projectCardUrl(links[0]?.url, pageUrl);
+      return [`  - ${url ? `${url} — ` : ""}${plain(item.name)}${plain(item.description) ? `: ${plain(item.description)}` : ""}`];
+    });
     const existing = slugMap.get(page.slug);
     if (existing) {
       existing.locales.push(page.locale);
+      if (page.isDefault) existing.feedItems = feedItems;
       if (page.updatedAt > existing.updatedAt) existing.updatedAt = page.updatedAt;
     } else {
       const sections = (page.content as { sections?: Array<{ type?: string }> })?.sections || [];
@@ -63,6 +76,7 @@ export async function GET() {
         updatedAt: page.updatedAt,
         locales: [page.locale],
         sectionTypes,
+        feedItems,
       });
     }
   }
@@ -76,7 +90,7 @@ export async function GET() {
           const sectionsPart = p.sectionTypes.length
             ? ` [sections: ${p.sectionTypes.join(", ")}]`
             : "";
-          return `- ${baseUrl}/p/${p.slug} — ${p.title}${taglinePart} (updated ${date}, locales: ${p.locales.join(", ")})${sectionsPart}`;
+          return `- ${baseUrl}/p/${p.slug} — ${p.title}${taglinePart} (updated ${date}, locales: ${p.locales.join(", ")})${sectionsPart}${p.feedItems.length ? `\n${p.feedItems.join("\n")}` : ""}`;
         })
         .join("\n")}\n`
     : "";

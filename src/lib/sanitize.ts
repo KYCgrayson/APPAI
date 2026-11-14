@@ -1,3 +1,5 @@
+import { editorialLink } from "./hosted-editorial-links.ts";
+import { PLATFORM_ORIGIN } from "./platform-identity.ts";
 import { normalizeVideoContent } from "./video-data.ts";
 import { storeGamesListing } from "./game-section.ts";
 import { isBusinessHours } from "./business-hours.ts";
@@ -20,6 +22,7 @@ export function sanitizeUrl(url: string): string {
 
   const trimmed = url.trim();
   if (trimmed === "") return "#";
+  if (trimmed.startsWith("?t=") && editorialLink(trimmed, PLATFORM_ORIGIN)) return trimmed;
 
   if (ALLOWED_URL_PROTOCOLS.test(trimmed)) {
     return trimmed;
