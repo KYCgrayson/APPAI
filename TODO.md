@@ -16,6 +16,12 @@
 - [x] Build attempted: default Turbopack blocked by sandbox port binding; Webpack compiled and typechecked, then `/llms.txt` prerender stopped because `DATABASE_URL` is absent. No media playback, dependencies, env changes, commits or pushes.
 - [ ] Actual 375/768/1280px browser layout and before/after screenshots remain pending: existing headless Chrome exits at startup in this environment. Re-run `GALLERY_BROWSER_TESTS=1 GALLERY_QA_DIR=/tmp/appai-gallery-qa node --experimental-strip-types --test tests/gallery-browser.test.ts` in an environment allowing Chrome. The test blocks HTTP(S), uses fictional inline artwork and no media playback; SSR/CSS checks do not substitute for visual QA.
 
+## Public auth session allowlist (2026-11-15)
+
+- [x] Audit session consumers and return only user id/name/email/image, expiry, Organization and role through a pure helper; preserve the database lookup and missing-user defaults.
+- [x] Add regression coverage for adapter credential leakage, exact keys, input immutability and nullable fields; update both feature maps.
+- [x] Local verification: 753 tests pass (7 optional skips), TypeScript and changed-file lint pass, and independent Opus review passes (5/5). Webpack build compiles and prerenders 89/89 pages; default Turbopack is blocked by sandbox port binding.
+
 ## Project card feed (#91, PR-6a)
 
 - [x] Optional feed/grid layout, title/description href, trimmed metadata, 1–2 image tiles, accessible labels and first-only featured cards. Preserve original grid markup with fixed pre-change fixtures; keep editorial backgrounds and existing fields.
