@@ -1,0 +1,183 @@
+{
+  "source": "HEAD 0a4645200f0ec570a79e5339488b2b1462937864 (GallerySection before PR-6b)",
+  "fixtures": [
+    {
+      "data": {
+        "items": []
+      },
+      "themeColor": "#2563eb",
+      "typographyActive": false,
+      "html": ""
+    },
+    {
+      "data": {
+        "items": []
+      },
+      "themeColor": "#2563eb",
+      "typographyActive": true,
+      "html": ""
+    },
+    {
+      "data": {
+        "items": [
+          {
+            "url": "https://example.com/sketch.jpg",
+            "caption": "Workshop sketch"
+          },
+          {
+            "url": "https://example.com/table.jpg",
+            "type": "image"
+          },
+          {
+            "url": "https://example.com/recap.mp4",
+            "type": "video",
+            "caption": "Workshop recap"
+          },
+          {
+            "url": "https://example.com/demo.mp4",
+            "type": "video"
+          }
+        ]
+      },
+      "themeColor": "#2563eb",
+      "typographyActive": false,
+      "html": "<link rel=\"preload\" as=\"image\" href=\"https://example.com/sketch.jpg\"/><link rel=\"preload\" as=\"image\" href=\"https://example.com/table.jpg\"/><section class=\"py-12 md:py-20 px-4 sm:px-6\"><div class=\"max-w-6xl mx-auto\"><h2 class=\"text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16\" style=\"color:#2563eb\">Gallery</h2><div class=\"columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4\"><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><img src=\"https://example.com/sketch.jpg\" alt=\"Workshop sketch\" class=\"w-full\"/><p class=\"text-sm text-gray-500 p-3\">Workshop sketch</p></div><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><img src=\"https://example.com/table.jpg\" alt=\"Gallery item 2\" class=\"w-full\"/></div><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><video class=\"w-full\" controls=\"\"><source src=\"https://example.com/recap.mp4\"/></video><p class=\"text-sm text-gray-500 p-3\">Workshop recap</p></div><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><video class=\"w-full\" controls=\"\"><source src=\"https://example.com/demo.mp4\"/></video></div></div></div></section>"
+    },
+    {
+      "data": {
+        "items": [
+          {
+            "url": "https://example.com/sketch.jpg",
+            "caption": "Workshop sketch"
+          },
+          {
+            "url": "https://example.com/table.jpg",
+            "type": "image"
+          },
+          {
+            "url": "https://example.com/recap.mp4",
+            "type": "video",
+            "caption": "Workshop recap"
+          },
+          {
+            "url": "https://example.com/demo.mp4",
+            "type": "video"
+          }
+        ]
+      },
+      "themeColor": "#2563eb",
+      "typographyActive": true,
+      "html": "<link rel=\"preload\" as=\"image\" href=\"https://example.com/sketch.jpg\"/><link rel=\"preload\" as=\"image\" href=\"https://example.com/table.jpg\"/><section class=\"py-12 md:py-20 px-4 sm:px-6\"><div class=\"max-w-6xl mx-auto\"><h2 data-typography-role=\"heading\" class=\"text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16\" style=\"color:#2563eb\">Gallery</h2><div class=\"columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4\"><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><img src=\"https://example.com/sketch.jpg\" alt=\"Workshop sketch\" class=\"w-full\"/><p data-typography-role=\"caption\" class=\"text-sm text-gray-500 p-3\">Workshop sketch</p></div><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><img src=\"https://example.com/table.jpg\" alt=\"Gallery item 2\" class=\"w-full\"/></div><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><video class=\"w-full\" controls=\"\"><source src=\"https://example.com/recap.mp4\"/></video><p data-typography-role=\"caption\" class=\"text-sm text-gray-500 p-3\">Workshop recap</p></div><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><video class=\"w-full\" controls=\"\"><source src=\"https://example.com/demo.mp4\"/></video></div></div></div></section>"
+    },
+    {
+      "data": {
+        "heading": "Workshop recap",
+        "subheading": "Fictional studio notes",
+        "items": [
+          {
+            "url": "https://example.com/sketch.jpg",
+            "caption": "Workshop sketch"
+          },
+          {
+            "url": "https://example.com/table.jpg",
+            "type": "image"
+          },
+          {
+            "url": "https://example.com/recap.mp4",
+            "type": "video",
+            "caption": "Workshop recap"
+          },
+          {
+            "url": "https://example.com/demo.mp4",
+            "type": "video"
+          }
+        ]
+      },
+      "themeColor": "#2563eb",
+      "typographyActive": false,
+      "html": "<link rel=\"preload\" as=\"image\" href=\"https://example.com/sketch.jpg\"/><link rel=\"preload\" as=\"image\" href=\"https://example.com/table.jpg\"/><section class=\"py-12 md:py-20 px-4 sm:px-6\"><div class=\"max-w-6xl mx-auto\"><h2 class=\"text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16\" style=\"color:#2563eb\">Workshop recap</h2><p class=\"text-center mb-6\">Fictional studio notes</p><div class=\"columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4\"><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><img src=\"https://example.com/sketch.jpg\" alt=\"Workshop sketch\" class=\"w-full\"/><p class=\"text-sm text-gray-500 p-3\">Workshop sketch</p></div><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><img src=\"https://example.com/table.jpg\" alt=\"Gallery item 2\" class=\"w-full\"/></div><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><video class=\"w-full\" controls=\"\"><source src=\"https://example.com/recap.mp4\"/></video><p class=\"text-sm text-gray-500 p-3\">Workshop recap</p></div><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><video class=\"w-full\" controls=\"\"><source src=\"https://example.com/demo.mp4\"/></video></div></div></div></section>"
+    },
+    {
+      "data": {
+        "heading": "Workshop recap",
+        "subheading": "Fictional studio notes",
+        "items": [
+          {
+            "url": "https://example.com/sketch.jpg",
+            "caption": "Workshop sketch"
+          },
+          {
+            "url": "https://example.com/table.jpg",
+            "type": "image"
+          },
+          {
+            "url": "https://example.com/recap.mp4",
+            "type": "video",
+            "caption": "Workshop recap"
+          },
+          {
+            "url": "https://example.com/demo.mp4",
+            "type": "video"
+          }
+        ]
+      },
+      "themeColor": "#2563eb",
+      "typographyActive": true,
+      "html": "<link rel=\"preload\" as=\"image\" href=\"https://example.com/sketch.jpg\"/><link rel=\"preload\" as=\"image\" href=\"https://example.com/table.jpg\"/><section class=\"py-12 md:py-20 px-4 sm:px-6\"><div class=\"max-w-6xl mx-auto\"><h2 data-typography-role=\"heading\" class=\"text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16\" style=\"color:#2563eb\">Workshop recap</h2><p class=\"text-center mb-6\">Fictional studio notes</p><div class=\"columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4\"><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><img src=\"https://example.com/sketch.jpg\" alt=\"Workshop sketch\" class=\"w-full\"/><p data-typography-role=\"caption\" class=\"text-sm text-gray-500 p-3\">Workshop sketch</p></div><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><img src=\"https://example.com/table.jpg\" alt=\"Gallery item 2\" class=\"w-full\"/></div><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><video class=\"w-full\" controls=\"\"><source src=\"https://example.com/recap.mp4\"/></video><p data-typography-role=\"caption\" class=\"text-sm text-gray-500 p-3\">Workshop recap</p></div><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><video class=\"w-full\" controls=\"\"><source src=\"https://example.com/demo.mp4\"/></video></div></div></div></section>"
+    },
+    {
+      "data": {
+        "heading": "",
+        "items": [
+          {
+            "url": "https://example.com/sketch.jpg",
+            "caption": "Workshop sketch"
+          },
+          {
+            "url": "https://example.com/table.jpg",
+            "type": "image"
+          },
+          {
+            "url": "https://example.com/recap.mp4",
+            "type": "video",
+            "caption": "Workshop recap"
+          },
+          {
+            "url": "https://example.com/demo.mp4",
+            "type": "video"
+          }
+        ]
+      },
+      "themeColor": "#2563eb",
+      "typographyActive": false,
+      "html": "<link rel=\"preload\" as=\"image\" href=\"https://example.com/sketch.jpg\"/><link rel=\"preload\" as=\"image\" href=\"https://example.com/table.jpg\"/><section class=\"py-12 md:py-20 px-4 sm:px-6\"><div class=\"max-w-6xl mx-auto\"><h2 class=\"text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16\" style=\"color:#2563eb\"></h2><div class=\"columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4\"><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><img src=\"https://example.com/sketch.jpg\" alt=\"Workshop sketch\" class=\"w-full\"/><p class=\"text-sm text-gray-500 p-3\">Workshop sketch</p></div><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><img src=\"https://example.com/table.jpg\" alt=\"Gallery item 2\" class=\"w-full\"/></div><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><video class=\"w-full\" controls=\"\"><source src=\"https://example.com/recap.mp4\"/></video><p class=\"text-sm text-gray-500 p-3\">Workshop recap</p></div><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><video class=\"w-full\" controls=\"\"><source src=\"https://example.com/demo.mp4\"/></video></div></div></div></section>"
+    },
+    {
+      "data": {
+        "heading": "",
+        "items": [
+          {
+            "url": "https://example.com/sketch.jpg",
+            "caption": "Workshop sketch"
+          },
+          {
+            "url": "https://example.com/table.jpg",
+            "type": "image"
+          },
+          {
+            "url": "https://example.com/recap.mp4",
+            "type": "video",
+            "caption": "Workshop recap"
+          },
+          {
+            "url": "https://example.com/demo.mp4",
+            "type": "video"
+          }
+        ]
+      },
+      "themeColor": "#2563eb",
+      "typographyActive": true,
+      "html": "<link rel=\"preload\" as=\"image\" href=\"https://example.com/sketch.jpg\"/><link rel=\"preload\" as=\"image\" href=\"https://example.com/table.jpg\"/><section class=\"py-12 md:py-20 px-4 sm:px-6\"><div class=\"max-w-6xl mx-auto\"><h2 data-typography-role=\"heading\" class=\"text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-10 md:mb-16\" style=\"color:#2563eb\"></h2><div class=\"columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4\"><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><img src=\"https://example.com/sketch.jpg\" alt=\"Workshop sketch\" class=\"w-full\"/><p data-typography-role=\"caption\" class=\"text-sm text-gray-500 p-3\">Workshop sketch</p></div><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><img src=\"https://example.com/table.jpg\" alt=\"Gallery item 2\" class=\"w-full\"/></div><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><video class=\"w-full\" controls=\"\"><source src=\"https://example.com/recap.mp4\"/></video><p data-typography-role=\"caption\" class=\"text-sm text-gray-500 p-3\">Workshop recap</p></div><div class=\"break-inside-avoid rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow\"><video class=\"w-full\" controls=\"\"><source src=\"https://example.com/demo.mp4\"/></video></div></div></div></section>"
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import { galleryContentIssues } from "./gallery.ts";
 import { projectCardsContentIssues } from "./project-cards.ts";
 import { normalizeVideoContent } from "./video-data.ts";
 import { gamePageWarnings, gamesListingResponse, gameContentIssues } from "./game-section.ts";
@@ -63,7 +64,7 @@ export function checkPagePreview(body: unknown, iconNames: readonly string[] = [
     const section = Array.isArray(rawSections) ? rawSections[Number(index)] : null;
     return section && typeof section === "object" && "type" in section ? `${match}(${section.type})` : match;
   });
-  const errors = [...projectCardsContentIssues(sanitizedContent), ...gameContentIssues(sanitizedContent), ...normalizeVideoContent(sanitizedContent, false, context.existingContent).issues].map(e => ({ path: ["content", ...e.path].map(String).join("."), message: e.message }));
+  const errors = [...galleryContentIssues(sanitizedContent), ...projectCardsContentIssues(sanitizedContent), ...gameContentIssues(sanitizedContent), ...normalizeVideoContent(sanitizedContent, false, context.existingContent).issues].map(e => ({ path: ["content", ...e.path].map(String).join("."), message: e.message }));
   return { valid: errors.length === 0, errors, warnings, ...gamesListingResponse(sanitizedContent), sanitizedContent, typography: computedTypography.desktop, typographyMobile: computedTypography.mobile, next: errors.length ? "Fix errors and dry-run again." : pagePreviewNext(parsed.data, context) };
 }
 
@@ -105,7 +106,7 @@ function checkFields(value: unknown, fields: SectionFieldDef[], path: string, wa
       continue;
     }
     if (field.type === "video-time") continue; // validated/normalized by the shared video contract
-    const expected = ["url", "markdown"].includes(field.type) ? "string" : field.type;
+    const expected = ["url", "markdown"].includes(field.type) ? "string" : field.type === "integer" ? "number" : field.type;
     if (expected === "array" ? !Array.isArray(item) : typeof item !== expected || (expected === "object" && Array.isArray(item))) {
       warnings.push({ path: location, message: `Expected ${expected} for ${field.name}.` });
       continue;

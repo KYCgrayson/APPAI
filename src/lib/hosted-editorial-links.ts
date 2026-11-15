@@ -6,7 +6,7 @@ const time = VIDEO_TIME_PATTERN.slice(1, -1);
 // empty authorities, credentials and nonnumeric/out-of-range ports.
 const authority = "(?:\\[[0-9a-fA-F:.]+\\]|[^\\s/?#:@<>\\[\\]\\\\]+)(?::(?:[0-9]{1,4}|[0-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?";
 // The stricter card policy shares parsing and external-link behavior with prose.
-export const PROJECT_CARD_HREF_PATTERN = `^(?!.*[\\s<>\\\\])(?:https://${authority}(?:[/?#].*)?|/p/[a-zA-Z0-9-]+(?:/[a-zA-Z0-9-]+)*/?(?:\\?t=${time})?(?:${anchor})?|${anchor}|\\?t=${time}${anchor})$`;
+export const PROJECT_CARD_HREF_PATTERN = `^(?!.*[\\s<>\\\\])(?:[hH][tT][tT][pP][sS]://${authority}(?:[/?#].*)?|/p/[a-zA-Z0-9-]+(?:/[a-zA-Z0-9-]+)*/?(?:\\?t=${time})?(?:${anchor})?|${anchor}|\\?t=${time}${anchor})$`;
 export const EDITORIAL_IMAGE_PATTERN = `^https://${authority}(?:[/?#][^\\s<>\\\\]*)?$`;
 
 export function editorialImageUrl(value: unknown): value is string {
@@ -30,7 +30,9 @@ export function editorialLink(href: string | undefined, origin: string, policy: 
     const sameOrigin = url.origin === new URL(origin).origin;
     if (policy === "project-card" && (url.protocol !== "https:" || url.username || url.password)) return undefined;
     if (url.protocol !== "https:" && !(sameOrigin && url.protocol === "http:")) return undefined;
-    return { href, external: !sameOrigin };
+    // Only normalize the scheme for the strict card/gallery policy. Preserve
+    // path, query, host spelling and the existing prose policy byte for byte.
+    return { href: policy === "project-card" ? href.replace(/^https:/i, "https:") : href, external: !sameOrigin };
   } catch {
     return undefined;
   }

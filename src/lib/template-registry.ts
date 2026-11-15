@@ -1,4 +1,5 @@
 import { PROJECT_CARD_HREF_PATTERN, EDITORIAL_IMAGE_PATTERN } from "./hosted-editorial-links.ts";
+import { GALLERY_ASPECTS, GALLERY_BADGE_PATTERN } from "./gallery.ts";
 import { SOCIAL_PLATFORMS } from "./sanitize.ts";
 import example0 from "../../docs/examples/app-landing.example.json" with { type: "json" };
 import example1 from "../../docs/examples/saas-landing.example.json" with { type: "json" };
@@ -22,7 +23,7 @@ import gameExample from "../../docs/examples/game.example.json" with { type: "js
 
 export interface SectionFieldDef {
   name: string;
-  type: "string" | "url" | "markdown" | "boolean" | "number" | "array" | "object" | "video-time";
+  type: "string" | "url" | "markdown" | "boolean" | "number" | "integer" | "array" | "object" | "video-time";
   required: boolean;
   description: string;
   enum?: readonly string[];
@@ -31,6 +32,9 @@ export interface SectionFieldDef {
   minLength?: number;
   maxItems?: number;
   minItems?: number;
+  minimum?: number;
+  maximum?: number;
+  itemNot?: { properties: Record<string, { const: string }>; required: string[] }; // forbidden array-item combination
   valueItems?: Omit<SectionFieldDef, "name" | "required">; // scalar array entries
   allowStringItems?: boolean; // backward-compatible URL string arrays
   items?: SectionFieldDef[];  // for array types
@@ -536,16 +540,23 @@ export const SECTION_DEFS: SectionDef[] = [
   {
     type: "gallery",
     name: "Gallery",
-    description: "Image/video gallery grid for showcasing work, products, or portfolio items.",
+    description: "Image/video masonry (default) or ordered grid, with optional image links and corner badges.",
     fields: [
       { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
       { name: "heading", type: "string", required: false, description: "Optional section heading." },
+      { name: "layout", type: "string", required: false, enum: ["masonry", "grid"], description: "Default masonry preserves legacy markup; grid fills ordered rows left to right." },
+      { name: "aspect", type: "string", required: false, enum: GALLERY_ASPECTS, description: "Grid media aspect ratio (default 16:9); images cover the box. Ignored in masonry." },
+      { name: "columns", type: "integer", required: false, minimum: 2, maximum: 4, description: "Grid desktop columns (default 3); mobile 2, tablet min(columns, 3). Ignored in masonry." },
       {
         name: "items", type: "array", required: true, description: "List of gallery items",
+        itemNot: { properties: { type: { const: "video" } }, required: ["type", "href"] },
         items: [
           { name: "url", type: "url", required: true, description: "Image or video URL" },
           { name: "caption", type: "string", required: false, description: "Caption text" },
           { name: "type", type: "string", required: false, description: "'image' or 'video' (default: 'image')" },
+          { name: "href", type: "string", required: false, maxLength: 2048, pattern: PROJECT_CARD_HREF_PATTERN, description: "Image only: HTTPS without credentials (scheme case-insensitive, stored lowercase), /p/... with optional ?t=time/#anchor, #anchor, or ?t=time#anchor. Same safe-link policy as project-cards; forbidden on video items." },
+          { name: "badge", type: "string", required: false, pattern: GALLERY_BADGE_PATTERN, description: "Corner pill, 1–12 characters after trimming. Included in the link name; visually truncates at 40% width." },
+          { name: "alt", type: "string", required: false, maxLength: 200, description: "Image alternative text; when absent, caption then Gallery item N remains the fallback." },
         ],
       },
     ],

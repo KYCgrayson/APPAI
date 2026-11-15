@@ -7,6 +7,15 @@
 
 # TODO — AppAI Project Roadmap
 
+## Gallery links and ordered grids (#91, PR-6b)
+
+- [x] Add optional safe image href, informative 1–12-character badge, explicit alt, and ordered grid with reserved 16:9/1:1/4:3/4:5 boxes and responsive 2–4 desktop columns. Keep old masonry markup byte-identical with mixed image/video fixtures.
+- [x] Reuse PR-6a href rules; accept case-insensitive HTTPS and store only the scheme lowercase for both galleries and project cards. Reject video+href, unsafe schemes and invalid metadata on all writes, merged patches, preview and dryRun, before and after sanitization.
+- [x] Update registry/JSON Schema, feature maps and section spec with a fictional workshop video + time-badged gallery preview. Keep the Gallery heading fallback and existing SEO/llms scope unchanged.
+- [x] Final checks: TypeScript passes; lint 0 errors (31 existing warnings); full tests 765 passed / 8 optional skipped. Spec regenerated (overview 105 lines); feature map passes with new files included in a temporary index, leaving the real index unchanged. Independent cold review passed after fixing test typing and restoring the badge tooltip; final masonry structure adjustment also reviewed.
+- [x] Build attempted: default Turbopack blocked by sandbox port binding; Webpack compiled and typechecked, then `/llms.txt` prerender stopped because `DATABASE_URL` is absent. No media playback, dependencies, env changes, commits or pushes.
+- [ ] Actual 375/768/1280px browser layout and before/after screenshots remain pending: existing headless Chrome exits at startup in this environment. Re-run `GALLERY_BROWSER_TESTS=1 GALLERY_QA_DIR=/tmp/appai-gallery-qa node --experimental-strip-types --test tests/gallery-browser.test.ts` in an environment allowing Chrome. The test blocks HTTP(S), uses fictional inline artwork and no media playback; SSR/CSS checks do not substitute for visual QA.
+
 ## Project card feed (#91, PR-6a)
 
 - [x] Optional feed/grid layout, title/description href, trimmed metadata, 1–2 image tiles, accessible labels and first-only featured cards. Preserve original grid markup with fixed pre-change fixtures; keep editorial backgrounds and existing fields.

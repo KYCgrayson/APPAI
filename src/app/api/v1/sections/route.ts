@@ -18,6 +18,8 @@ type JsonSchema = {
   minItems?: number;
   enum?: readonly string[];
   pattern?: string;
+  const?: string;
+  not?: JsonSchema;
   anyOf?: JsonSchema[];
   description?: string;
   properties?: Record<string, JsonSchema>;
@@ -47,7 +49,8 @@ function fieldToJsonSchema(field: SectionFieldDef): JsonSchema {
       base.description = field.description;
       break;
     case "number":
-      base.type = "number";
+    case "integer":
+      base.type = field.type;
       base.description = field.description;
       break;
     case "array":
@@ -62,6 +65,7 @@ function fieldToJsonSchema(field: SectionFieldDef): JsonSchema {
           if (item.required) req.push(item.name);
         }
         base.items = { type: "object", properties: props, ...(req.length > 0 ? { required: req } : {}) };
+        if (field.itemNot) base.items.not = field.itemNot;
         if (field.allowStringItems) base.items = { anyOf: [{ type: "string" }, base.items] };
       }
       break;
@@ -80,7 +84,7 @@ function fieldToJsonSchema(field: SectionFieldDef): JsonSchema {
       }
       break;
   }
-  for (const key of ["maxLength", "minLength", "maxItems", "minItems"] as const) if (field[key] !== undefined) base[key] = field[key];
+  for (const key of ["maxLength", "minLength", "maxItems", "minItems", "minimum", "maximum"] as const) if (field[key] !== undefined) base[key] = field[key];
   if (field.enum) base.enum = field.enum;
   if (field.pattern) base.pattern = field.pattern;
   return base;
