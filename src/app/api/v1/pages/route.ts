@@ -1,3 +1,4 @@
+import { galleryContentIssues } from "@/lib/gallery";
 import { projectCardsContentIssues } from "@/lib/project-cards";
 import { withPageWrite, updateLivePage, PageWriteConflict, type PageApiActor } from "@/lib/page-write-guard";
 import type { PageStore } from "@/lib/page-management";
@@ -123,7 +124,7 @@ async function postPage(request: NextRequest, db: PageStore, authResult: PageApi
 
       const upsertWarnings: SanitizeWarning[] = [];
       data.content = sanitizePageContent(data.content, undefined, upsertWarnings, existing.content) as Record<string, unknown>;
-      const gameIssues = [...projectCardsContentIssues(data.content), ...gameContentIssues(data.content), ...normalizeVideoContent(data.content, false, existing.content).issues];
+      const gameIssues = [...galleryContentIssues(data.content), ...projectCardsContentIssues(data.content), ...gameContentIssues(data.content), ...normalizeVideoContent(data.content, false, existing.content).issues];
       if (gameIssues.length) throw new z.ZodError(gameIssues);
 
       // parentSlug is intentionally excluded from upsert mutations: reparenting
@@ -201,7 +202,7 @@ async function postPage(request: NextRequest, db: PageStore, authResult: PageApi
     const contentWarnings: SanitizeWarning[] = [];
     data.content = sanitizePageContent(data.content, undefined, contentWarnings) as Record<string, unknown>;
 
-    const gameIssues = [...projectCardsContentIssues(data.content), ...gameContentIssues(data.content), ...normalizeVideoContent(data.content).issues];
+    const gameIssues = [...galleryContentIssues(data.content), ...projectCardsContentIssues(data.content), ...gameContentIssues(data.content), ...normalizeVideoContent(data.content).issues];
     if (gameIssues.length) throw new z.ZodError(gameIssues);
 
     // parentSlug is set explicitly below from the validated `parentSlug`

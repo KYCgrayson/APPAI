@@ -750,7 +750,7 @@ Use `layout: "feed"` for a podcast episode archive, video digest, changelog or b
 
 | `href` destination | Accepted? |
 |---|---|
-| `https://example.com/episode` | Yes, absolute HTTPS without credentials. External origins open a new tab. |
+| `https://example.com/episode` | Yes, absolute HTTPS without credentials. Scheme is case-insensitive (`HTTPS://` accepted) and stored lowercase; other URL bytes stay unchanged. External origins open a new tab. |
 | `/p/paper-observatory`, `/p/paper-observatory/episode?t=90#video` | Yes, hosted paths (letters/digits/hyphens per segment), optional `?t=time` and/or `#anchor`. |
 | `#moments`, `?t=1:30#video` | Yes, same-page anchors and time links; time links retain the delegated video seek behavior. |
 | `javascript:`, `data:`, `http:`, `//example.com`, credentials, other relative paths | No; rejected before writing, including in preview. |
@@ -941,13 +941,47 @@ For menus and service price lists, put the price in `price` on each `features.it
 ```
 
 ### gallery
+
+Default masonry preserves existing image/video/caption markup. All fields below are optional; `url`, `caption` and `type` keep their existing behavior. Use an ordered grid for workshop moments or an event album.
+
+| Field | Contract |
+|---|---|
+| `data.layout` | `"masonry"` (default) or `"grid"`; other values error. Grid fills rows left→right, then down. |
+| `data.aspect` | `"16:9"` (default), `"1:1"`, `"4:3"`, `"4:5"`; grid reserves uniform media boxes and images crop with `object-fit: cover`. Ignored in masonry. |
+| `data.columns` | Integer 2–4, default 3 desktop (≥1024px); mobile always 2, tablet (≥768px) min(columns, 3). Ignored in masonry. |
+| `items[].href` | Image only; ≤2048 characters. Exactly the project-cards destination rules above: HTTPS without credentials, `/p/...` with optional `?t=time`/`#anchor`, `#anchor`, or `?t=time#anchor`. HTTPS scheme is case-insensitive and stored lowercase. Every case of `javascript:`, `data:`, `http:`, protocol-relative URLs and other relative paths is rejected. **Video + href errors** because native video has controls. |
+| `items[].badge` | String, 1–12 characters after trim; stored trimmed. Informative corner pill, opaque dark background/white text in either theme; max 40% width with ellipsis. Full text stays in the accessible link name and tooltip. |
+| `items[].alt` | String ≤200 characters (explicit `""` allowed for decorative images). When absent, keep caption, then `"Gallery item N"` fallback. Supply real descriptions for meaningful images. |
+
+Aspect/columns values are validated when supplied, even though masonry ignores their layout effect. Each linked image tile and caption share one anchor with a theme-colour keyboard focus outline and subtle hover shadow; badge text prefixes its accessible name. Unlinked masonry tiles keep the image/video and caption directly in the original container; a badge adds only its overlay span. Grid adds a reserved media box. Grid captions sit below the image, clamp to two lines and tiles stretch to equal heights within each row. SSR eagerly loads at most the first **desktop** row (2–4 images); subsequent images are lazy. Native grid video uses `preload="none"`. Masonry loading behavior stays unchanged.
+
+Fictional workshop preview body — POST to `/api/v1/pages/preview`, or create with `?dryRun=true` (neither publishes):
 ```json
-{ "type": "gallery", "order": 9, "data": {
-    "items": [
-      { "url": "https://example.com/work1.jpg", "caption": "Project Alpha", "type": "image" }
+{
+  "slug": "paper-bridge-workshop",
+  "title": "Paper Bridge Workshop",
+  "template": "PERSON",
+  "locale": "en",
+  "themeColor": "#2563eb",
+  "content": {
+    "sections": [
+      { "type": "video", "order": 0, "data": {
+        "id": "video", "heading": "Workshop recap",
+        "url": "https://example.com/workshop-recap.mp4"
+      } },
+      { "type": "gallery", "order": 1, "data": {
+        "heading": "Key moments", "layout": "grid", "aspect": "16:9", "columns": 3,
+        "items": [
+          { "url": "https://example.com/workshop-sketch.jpg", "alt": "A sketch of the paper bridge", "caption": "Sketching the idea", "href": "?t=30#video", "badge": "0:30" },
+          { "url": "https://example.com/workshop-prototype.jpg", "alt": "A folded paper bridge on a table", "caption": "The first prototype", "href": "?t=104#video", "badge": "1:44" },
+          { "url": "https://example.com/workshop-test.jpg", "alt": "Paper weights resting on the bridge", "caption": "Testing the span", "href": "?t=180#video", "badge": "3:00" }
+        ]
+      } }
     ]
-}}
+  }
+}
 ```
+Limits: these fictional media URLs must be replaced; preview does not fetch them. `data.id: "video"` sets the video section's authored anchor. Same-page time links use the existing delegated seek handler without navigation; provider/player restrictions still apply. The default `"Gallery"` heading fallback is unchanged. Plain-text sanitization removes HTML tags; badges emptied by it are rejected with indexed field paths. Gallery does not currently emit ImageGallery/ItemList JSON-LD or per-item `llms.txt` entries, so this change adds none. No publisher-specific strings or platform translations are needed.
 
 ### team
 ```json

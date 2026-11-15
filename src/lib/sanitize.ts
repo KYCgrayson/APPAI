@@ -139,6 +139,20 @@ export function sanitizeContent(
       if (key === "data" && value && typeof value === "object" && !Array.isArray(value)) {
         const data = sanitizeContent(value, key, warnings, fieldPath) as Record<string, unknown>;
         const section = obj as Record<string, unknown>;
+        if ((section.type === "gallery" || section.type === "project-cards") && Array.isArray(data.items)) {
+          const normalizeHref = (item: Record<string, unknown>) => {
+            const link = editorialLink(typeof item.href === "string" ? item.href : undefined, PLATFORM_ORIGIN, "project-card");
+            return link ? { ...item, href: link.href } : item;
+          };
+          data.items = data.items.map(item => {
+            if (!item || typeof item !== "object" || Array.isArray(item)) return item;
+            const normalized = normalizeHref(item);
+            if (section.type === "gallery" && typeof normalized.badge === "string") normalized.badge = normalized.badge.trim();
+            if (section.type === "project-cards" && Array.isArray(normalized.media)) normalized.media = normalized.media.map(tile =>
+              tile && typeof tile === "object" && !Array.isArray(tile) ? normalizeHref(tile) : tile);
+            return normalized;
+          });
+        }
         if (section.type === "contact" && "hours" in value) {
           const hours = (value as Record<string, unknown>).hours;
           data.hours = Array.isArray(hours) ? hours.filter(isBusinessHours).map(item => ({

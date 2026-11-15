@@ -71,3 +71,20 @@ test("the fictional documented preview payload passes the same preview helper", 
   const result = checkPagePreview(JSON.parse(example));
   assert.equal(result.valid, true, JSON.stringify(result.errors));
 });
+
+test("scheme-case fix accepts only HTTPS variants, normalizes stored item/media schemes and preserves all other bytes", () => {
+  for (const scheme of ["https", "HTTPS", "hTtPs"]) {
+    const href = `${scheme}://Example.com/Case?Q=A#ID`;
+    assert.deepEqual(item({ href, media: [{ ...media, href }] }), []);
+    assert.ok(new RegExp(PROJECT_CARD_HREF_PATTERN).test(href));
+    assert.equal(editorialLink(href, origin, "project-card")?.href, "https://Example.com/Case?Q=A#ID");
+    const saved = sanitizePageContent(content({ items: [{ name: "Episode", href, media: [{ ...media, href }] }] }));
+    assert.equal(JSON.stringify(saved).split("https://Example.com/Case?Q=A#ID").length - 1, 2);
+    assert.equal(editorialLink(href, origin)?.href, href, "the broader prose policy stays unchanged");
+  }
+  for (const href of ["HTTP://example.com", "hTtP://appai.info/p/x", "JAVASCRIPT:alert(1)", "JaVaScRiPt:alert(1)", "DATA:text/html,x", "DaTa:text/html,x", "HTTPS://user@example.com", "/P/x", "/p/x?T=90#video"]) {
+    assert.equal(editorialLink(href, origin, "project-card"), undefined);
+    assert.ok(item({ href }).length);
+    assert.ok(item({ media: [{ ...media, href }] }).length);
+  }
+});

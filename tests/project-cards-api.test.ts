@@ -95,3 +95,16 @@ test("every path also rejects metadata emptied by the plain-text sanitizer", asy
   }
   assert.equal(gameApiFixture.writes, before);
 });
+
+test("all card write paths store lowercase HTTPS schemes in item and media hrefs", async () => {
+  gameApiFixture.page = null; gameApiFixture.apps = [];
+  const value = { ...data, items: [{ ...data.items[0], href: "HTTPS://Example.com/Case?Q=A#ID", media: [{ ...data.items[0].media[0], href: "hTtPs://Example.com/Media?Q=A#ID" }] }] };
+  for (const call of calls(value)) {
+    const response = await call(); const body = await response.json();
+    assert.ok([200, 201].includes(response.status), JSON.stringify(body)); assert.notEqual(body.valid, false);
+    const saved = body.content ?? body.sanitizedContent ?? { sections: [body.section] };
+    const item = saved.sections.find((s: { type: string }) => s.type === "project-cards").data.items[0];
+    assert.equal(item.href, "https://Example.com/Case?Q=A#ID");
+    assert.equal(item.media[0].href, "https://Example.com/Media?Q=A#ID");
+  }
+});

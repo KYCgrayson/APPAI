@@ -2,6 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { editorialLink } from "../src/lib/hosted-editorial-links.ts";
 import { registerVideoNavigation } from "../src/lib/video-navigation.ts";
+import { createElement } from "react";
+import { registerHostedRenderLoader } from "./helpers/hosted-render-loader.mjs";
+import { renderHtml } from "./helpers/render-html.mjs";
 
 class FakeElement {
   order: number;
@@ -56,6 +59,17 @@ test("delegated same-page links, initial/unknown hashes and back/forward target 
       assert.equal(click(link.href).defaultPrevented, true);
       assert.deepEqual(calls.at(-1), ["second", 90, true]);
     }
+    // Exercise actual gallery output through PR-1's delegated handler, with
+    // fake seek callbacks only: no player, audio or network is involved.
+    const loader = registerHostedRenderLoader();
+    try {
+      const { GallerySection } = await import("../src/templates/sections/GallerySection.tsx");
+      const html = await renderHtml(createElement(GallerySection, { themeColor: "#2563eb", data: { layout: "grid", items: [{ url: "https://example.com/frame.png", href: "?t=104#second", badge: "1:44", caption: "Workshop prototype" }] } }));
+      const href = html.match(/<a\b[^>]*href="([^"]+)"/)![1];
+      assert.equal(click(href).defaultPrevented, true);
+      assert.deepEqual(calls.at(-1), ["second", 104, true]);
+      assert.equal(window.location.href, "https://appai.info/p/fictional?t=104#second");
+    } finally { loader.deregister(); }
     const count = calls.length;
     for (const event of [click("https://evil.test/p/fictional?t=90"), click("?t=90", { ctrlKey: true }), click("?t=90", {}, "_blank"), click("/p/other?t=90"), click("#first")]) assert.equal(event.defaultPrevented, false);
     assert.equal(calls.length, count);

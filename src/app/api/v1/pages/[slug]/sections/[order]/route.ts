@@ -1,3 +1,4 @@
+import { galleryContentIssues } from "@/lib/gallery";
 import { projectCardsContentIssues } from "@/lib/project-cards";
 import { withPageWrite, updateLivePage, type PageApiActor } from "@/lib/page-write-guard";
 import type { PageStore } from "@/lib/page-management";
@@ -96,11 +97,11 @@ async function patchPage(
   // Merge + sanitize
   const merged = { ...sections[idx].data, ...patchData };
   const candidate = { ...content, sections: sections.map((section, i) => i === idx ? { ...section, data: merged } : {}) };
-  const issues = [...projectCardsContentIssues(candidate), ...gameContentIssues(candidate), ...normalizeVideoContent(candidate, false, page.content).issues];
+  const issues = [...galleryContentIssues(candidate), ...projectCardsContentIssues(candidate), ...gameContentIssues(candidate), ...normalizeVideoContent(candidate, false, page.content).issues];
   if (issues.length) return NextResponse.json({ error: "Validation failed", details: issues }, { status: 400 });
   const warnings: SanitizeWarning[] = [];
   const savedContent = sanitizePageContent(candidate, undefined, warnings, page.content);
-  const sanitizedIssues = [...projectCardsContentIssues(savedContent), ...gameContentIssues(savedContent), ...normalizeVideoContent(savedContent, false, page.content).issues];
+  const sanitizedIssues = [...galleryContentIssues(savedContent), ...projectCardsContentIssues(savedContent), ...gameContentIssues(savedContent), ...normalizeVideoContent(savedContent, false, page.content).issues];
   if (sanitizedIssues.length) return NextResponse.json({ error: "Validation failed", details: sanitizedIssues }, { status: 400 });
   savedContent.sections = sections.map((section, i) => i === idx ? (savedContent.sections as typeof sections)[i] : section);
   // Report legacy warnings without revalidating or rewriting untouched sections.
