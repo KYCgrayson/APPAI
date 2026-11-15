@@ -58,6 +58,7 @@ Watch out: a section change can also require registry, validation and sanitizati
 ### auth — Accounts, device authorization and API keys
 
 Google sign-in creates the user's Organization; browser sessions, API keys and device authorization support the dashboard and publishing clients. Shared Organization context and request guards also serve Universal Apps.
+Public session shaping: [auth-session.ts](../src/lib/auth-session.ts) allowlists user id/name/email/image, expiry, Organization and role; adapter session credentials and private user columns never enter the callback response. [Regression tests](../tests/auth-session.test.ts) cover the exact payload, missing-user defaults and input immutability.
 Compact auth navigation: [AuthBreadcrumb.tsx](../src/components/AuthBreadcrumb.tsx) is positioned inside existing padding, with no added page scroll height; tests compare all auth-state classes against #73 and inspect compiled CSS.
 Entry files: [auth.ts](../src/lib/auth.ts), [api-auth.ts](../src/lib/api-auth.ts), [device approval UI](../src/app/[locale]/auth/device/page.tsx), [device-approval.ts](../src/lib/device-approval.ts), [device initiation](../src/app/api/v1/auth/device/route.ts), [organization-context.ts](../src/lib/organization-context.ts).
 Watch out: browser sessions and Organization-scoped bearer keys are separate authentication paths; device approval is a human action.

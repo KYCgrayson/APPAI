@@ -3,6 +3,7 @@ import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "./db";
 import { isAdminEmail } from "./admin";
+import { publicSession } from "./auth-session";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(db),
@@ -14,16 +15,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   callbacks: {
     async session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id;
-        const dbUser = await db.user.findUnique({
-          where: { id: user.id },
-          select: { organizationId: true, role: true },
-        });
-        session.organizationId = dbUser?.organizationId ?? null;
-        session.role = dbUser?.role ?? "USER";
-      }
-      return session;
+      const dbUser = await db.user.findUnique({
+        where: { id: user.id },
+        select: { organizationId: true, role: true },
+      });
+      return publicSession(session, user, dbUser);
     },
   },
   events: {
