@@ -56,11 +56,11 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) return NextResponse.json(result);
   const data = parsed.data;
   const { warnings, sanitizedContent: sanitized } = result;
-  const rootDefault = await db.hostedPage.findFirst({
-    where: { slug: data.parentSlug || data.slug, organizationId: authResult.organizationId, parentSlug: null, isDefault: true },
+  const pageDefault = await db.hostedPage.findFirst({
+    where: { slug: data.slug, organizationId: authResult.organizationId, parentSlug: data.parentSlug ?? null, isDefault: true },
     select: { locale: true },
   });
-  result.next = pagePreviewNext(data, { origin: request.nextUrl.origin, exists: !!existing, isDefault: rootDefault ? rootDefault.locale === data.locale : true });
+  result.next = pagePreviewNext(data, { origin: request.nextUrl.origin, exists: !!existing, isDefault: pageDefault ? pageDefault.locale === data.locale : true });
   if (existing && existing.organizationId !== authResult.organizationId) {
     return NextResponse.json({ valid: false, errors: [{ path: "slug", message: `Slug "${data.slug}" is already used for locale "${data.locale || "en"}" by another organization.` }], warnings, sanitizedContent: sanitized, next: "Fix errors and dry-run again." });
   }

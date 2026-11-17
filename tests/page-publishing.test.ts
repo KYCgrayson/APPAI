@@ -64,7 +64,7 @@ test('each preset is a copyable, clean full POST body matching its served file',
     const warnings: Parameters<typeof sanitizeContent>[2] = [];
     sanitizeContent(data.content, undefined, warnings);
     assert.deepEqual(warnings, []);
-    assert.deepEqual(checkPagePreview(file).warnings.filter(w => !/^Replace demo (screenshot|cover):/.test(w.message)).map(w => w.message), Array.from({ length: JSON.stringify(file).split('placeholder-logo.png').length - 1 }, () => 'Replace demo logo: supply the user’s logo, or create a square 512×512 PNG with its own background; upload local files with POST /api/v1/upload and replace this value with the returned url before publishing.').concat(...(preset.id === 'iframe-tool' ? ['Replace demo value: replace with your deployed tool URL.'] : [])), preset.id);
+    assert.deepEqual(checkPagePreview(file).warnings.filter(w => !/^Replace demo (screenshot|cover|store URL):/.test(w.message) && w.path !== 'privacyPolicy').map(w => w.message), Array.from({ length: JSON.stringify(file).split('placeholder-logo.png').length - 1 }, () => 'Replace demo logo: supply the user’s logo, or create a square 512×512 PNG with its own background; upload local files with POST /api/v1/upload and replace this value with the returned url before publishing.').concat(...(preset.id === 'iframe-tool' ? ['Replace demo value: replace with your deployed tool URL.'] : [])), preset.id);
   }
 });
 test('bundled logo is a small 512 square PNG; alias delegates before publishing', () => {
@@ -112,7 +112,7 @@ test('section discovery exposes icons and comma-list filtering in both formats',
   assert.match(route, /enriched.length === 0.*total: 0, validTypes:/);
 });
 test('features and contact accept custom heading and subheading', () => {
-  const result = checkPagePreview({ slug: 'business', title: 'Business', themeColor: '#047857', fontFamily: 'Lato', content: { logo: url, sections: [
+  const result = checkPagePreview({ slug: 'business', title: 'Business', privacyPolicy: 'Supplied policy.', themeColor: '#047857', fontFamily: 'Lato', content: { logo: url, sections: [
     { type: 'features', data: { heading: 'Services', subheading: 'How we help', items: [{ title: 'Design', description: 'Accessible websites.' }] } },
     { type: 'contact', data: { heading: 'Visit us', subheading: 'Say hello', email: 'hello@example.com' } },
   ] } });
@@ -184,7 +184,7 @@ test('placeholder logo detection accepts mixed-case schemes and hosts but preser
 });
 
 test('preview warns on raw omitted styling even when schema supplies defaults', () => {
-  const base = { slug: 'styled', title: 'Styled', content: { logo: url } };
+  const base = { slug: 'styled', title: 'Styled', privacyPolicy: 'Supplied policy.', content: { logo: url } };
   for (const missing of ['themeColor', 'fontFamily']) {
     const body: Record<string, unknown> = { ...base, themeColor: '#047857', fontFamily: 'Lato' };
     delete body[missing];
@@ -238,13 +238,13 @@ test('preview next makes the first root locale default and respects an existing 
     assert.ok(pagePreviewNext({ slug: 'bakery', locale }).endsWith(`/p/bakery`));
     assert.ok(checkPagePreview({ slug: 'bakery', title: 'Bakery', locale }).next.endsWith(`/p/bakery`));
     assert.ok(pagePreviewNext({ slug: 'bakery', locale }, { isDefault: false }).endsWith(`/p/bakery/${locale}`));
-    assert.ok(pagePreviewNext({ slug: 'bakery-contact', parentSlug: 'bakery', locale }).endsWith(`/p/bakery/${locale}/bakery-contact`));
+    assert.ok(pagePreviewNext({ slug: 'bakery-contact', parentSlug: 'bakery', locale }, { isDefault: false }).endsWith(`/p/bakery/${locale}/bakery-contact`));
   }
   assert.ok(pagePreviewNext({ slug: 'bakery', locale: 'en' }).endsWith('/p/bakery'));
   assert.ok(pagePreviewNext({ slug: 'bakery', locale: 'ja' }, { isDefault: true }).endsWith('/p/bakery'));
   assert.ok(pagePreviewNext({ slug: 'bakery', locale: 'en' }, { isDefault: false }).endsWith('/p/bakery/en'));
   const route = readFileSync(new URL('../src/app/api/v1/pages/preview/route.ts', import.meta.url), 'utf8');
-  assert.match(route, /rootDefault \? rootDefault.locale === data.locale : true/);
+  assert.match(route, /pageDefault \? pageDefault.locale === data.locale : true/);
 });
 
 test('hearth is a light warm kit mirrored in the theme spec with readable white CTA text', () => {

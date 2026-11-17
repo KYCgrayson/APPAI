@@ -110,7 +110,8 @@ test("spec-only GAME body passes dry-run and the new topic route serves it", asy
   const body = JSON.parse(doc.match(/```json\n([\s\S]*?)\n```/)![1]);
   const result = checkPagePreview(body);
   assert.equal(result.valid, true);
-  assert.ok(result.warnings.every(w => /Replace demo/.test(w.message)), JSON.stringify(result.warnings));
+  assert.ok(result.warnings.some(w => w.path === "privacyPolicy"));
+  assert.ok(result.warnings.every(w => /Replace demo/.test(w.message) || w.path === "privacyPolicy"), JSON.stringify(result.warnings));
   assert.match(doc, /Implemented for AppAI's own puzzle build/);
   assert.match(doc, /External leaderboard integration is \*\*planned, not implemented\*\*/);
   const { registerHostedRenderLoader } = await import("./helpers/hosted-render-loader.mjs");
@@ -128,6 +129,7 @@ test("spec-only GAME body passes dry-run and the new topic route serves it", asy
     assert.deepEqual(await exampleResponse.json(), worked);
     const ready = structuredClone(worked);
     ready.content.logo = "https://assets.example.org/real-game-logo.png";
+    ready.privacyPolicy = "The owner's supplied privacy policy.";
     assert.deepEqual(checkPagePreview(ready).warnings, []);
   } finally { hooks.deregister(); }
 });

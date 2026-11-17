@@ -50,6 +50,7 @@
         "src/app/api/v1/upload/**",
         "src/app/dashboard/pages/**",
         "src/lib/validations/page.ts",
+        "tests/page-preview-contract.test.ts",
         "src/lib/project-cards.ts",
         "src/lib/gallery.ts",
         "tests/gallery-*.test.ts",
