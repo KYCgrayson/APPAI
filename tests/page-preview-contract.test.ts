@@ -65,7 +65,7 @@ test("dry-run warns on missing or blank root privacyPolicy, while children inher
 });
 
 test("placeholder store URLs warn at their exact fields without rejecting real store listings", () => {
-  for (const url of ["https://apps.apple.com/app/id000000000", "https://apps.apple.com/us/app/demo/id123456789", "https://itunes.apple.com/app/id123", "https://play.google.com/store/apps/details?id=com.example.app", "https://play.google.com/store/apps/details?id=com.demo.app", "https://example.com/store"]) {
+  for (const url of ["https://apps.apple.com/app/id000000000", "https://apps.apple.com/us/app/demo/id123456789", "https://itunes.apple.com/app/id000", "https://play.google.com/store/apps/details?id=com.example.app", "https://play.google.com/store/apps/details?id=com.demo.app", "https://example.com/store"]) {
     const content = { appStoreUrl: url, sections: [{ type: "download", data: { appStoreUrl: url, playStoreUrl: url } }, { type: "hero", data: { headline: "Fixture", ctaUrl: url } }] };
     const payload = { slug: "store-fixture", title: "Fixture", content };
     const before = JSON.stringify(payload);
@@ -77,7 +77,7 @@ test("placeholder store URLs warn at their exact fields without rejecting real s
     if (!url.includes("example.com")) assert.ok(warnings.some(w => w.path === "content.sections[1](hero).data.ctaUrl"), url);
     assert.equal(JSON.stringify(payload), before);
   }
-  for (const url of ["https://apps.apple.com/us/app/notes/id987654321", "https://play.google.com/store/apps/details?id=org.studio.notes", "https://play.google.com/store/apps/details?id=com.democracy.reader", "https://example.com/real-store-redirect"]) {
+  for (const url of ["https://apps.apple.com/us/app/notes/id987654321", "https://apps.apple.com/app/demo-maker/id123", "https://itunes.apple.com/app/id123", "https://apps.apple.com/app/example-editor/id123456789", "https://play.google.com/store/apps/details?id=com.demo.maker", "https://play.google.com/store/apps/details?id=com.studio.demoapp", "https://play.google.com/store/apps/details?id=org.studio.notes", "https://play.google.com/store/apps/details?id=com.democracy.reader", "https://example.com/real-store-redirect"]) {
     const result = checkPagePreview({ slug: "real-fixture", title: "Fixture", content: { sections: [{ type: "hero", data: { headline: "Fixture", ctaUrl: url } }] } });
     assert.ok(!result.warnings.some(w => /Replace demo store URL/.test(w.message)), url);
   }
@@ -89,7 +89,8 @@ test("section discovery exposes iframe-tool access in both formats and official 
   const field = sections.find((s: { type: string }) => s.type === "iframe-tool").fields.find((f: { name: string }) => f.name === "access");
   assert.deepEqual(field.enum, ["login", "admin"]);
   assert.equal(field.required, false);
-  assert.match(sections.find((s: { type: string }) => s.type === "embed").description, /official Instagram embed iframe/);
+  const embedDescription = sections.find((s: { type: string }) => s.type === "embed").description;
+  for (const provider of [/official Instagram embed iframe/, /Facebook/, /Threads/]) assert.match(embedDescription, provider);
   const schema = await (await definitions.GET(new NextRequest("https://example.test/api/v1/sections?type=iframe-tool&format=jsonschema"))).json();
   assert.deepEqual(schema.sections["iframe-tool"].properties.access.enum, ["login", "admin"]);
   assert.equal(schema.sections["iframe-tool"].properties.access.type, "string");

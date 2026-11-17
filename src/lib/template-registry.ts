@@ -808,7 +808,7 @@ export const SECTION_DEFS: SectionDef[] = [
   {
     type: "embed",
     name: "Embed",
-    description: "Embed content from TikTok, Loom, YouTube, Vimeo, Spotify, CodePen, Figma, or Instagram. Auto-detects the provider from the URL and renders a sandboxed iframe with the right aspect ratio. Instagram uses the official Instagram embed iframe at https://www.instagram.com/p/{id}/embed or /reel/{id}/embed for public, embeddable posts. X (Twitter) renders as a linked preview card. Use this when showing a short-form video, design prototype, music track, code demo, or tutorial recording.",
+    description: "Embed content from TikTok, Loom, YouTube, Vimeo, Spotify, CodePen, Figma, Instagram, Facebook, or Threads. Auto-detects the provider from the URL and renders a sandboxed iframe with the right aspect ratio. Instagram uses the official Instagram embed iframe at https://www.instagram.com/p/{id}/embed or /reel/{id}/embed for public, embeddable posts. X (Twitter) renders as a linked preview card. Use this when showing a short-form video, design prototype, music track, code demo, or tutorial recording.",
     fields: [
       { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
       { name: "heading", type: "string", required: false, description: "Optional section heading." },

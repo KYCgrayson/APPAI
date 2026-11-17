@@ -157,9 +157,11 @@ function isPlaceholderStoreUrl(value: string, path: string): boolean {
     const google = host === "play.google.com";
     if (!apple && !google) return /\.(?:appStoreUrl|playStoreUrl)$/.test(path)
       && /^(?:www\.)?example\.(?:com|org|net)$/.test(host);
-    const id = google ? url.searchParams.get("id") || "" : url.pathname;
-    return /(?:^|[./_-])(?:demo|example|placeholder|your[-_]?app)(?=$|[./_-])/i.test(id)
-      || (apple && /\/id(?:0+|123(?:4567890?)?)(?:\/|$)/.test(id));
+    // App names may legitimately contain "demo". Match whole placeholder names,
+    // and only use all-zero Apple IDs (short but real IDs are not placeholders).
+    if (apple) return url.pathname.split("/").some(segment => /^(?:demo|example|placeholder|your[-_]?app|id0+)$/i.test(segment));
+    const id = url.searchParams.get("id") || "";
+    return /^(?:demo|example|placeholder|your[-_]?app|(?:com|org|net)\.(?:demo|example|placeholder|yourapp)(?:\.app)?)$/i.test(id);
   } catch { return false; }
 }
 

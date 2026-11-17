@@ -1,7 +1,7 @@
 import { loadHostedRootVariants, loadHostedChildVariants } from "@/lib/public-hosted-page";
 import { hostedPagePath, isUnavailableHostedPolicyLink } from "@/lib/hosted-page-urls";
 import { hostedNavigationCopy, hostedLinkFocus } from "@/lib/hosted-navigation-copy";
-import { proseThemeVariables, readableTextColor } from "@/lib/prose-theme";
+import { proseThemeVariables, readableTextColor, hostedChromeTheme } from "@/lib/prose-theme";
 import "@/templates/shared/hosted-chrome.css";
 import { PLATFORM_ORIGIN } from "@/lib/platform-identity";
 import { normalizeHostedContent, contentString } from "@/lib/hosted-content";
@@ -59,12 +59,16 @@ export default async function HostedPageLayout({ params, children }: Props) {
   const variantHref = (variant: typeof variants[number]) =>
     hostedPagePath(variant, rootVariants, parsed.subpage)!;
 
-  const themeColor = page.themeColor || "#000000";
+  // Policy documents render in light mode; children own their visual mode.
+  const renderedPage = childPage ?? page;
+  const darkMode = !parsed.subpage && !!renderedPage.darkMode;
+  const themeColor = (darkMode ? renderedPage.themeColor : page.themeColor) || "#000000";
   const content = normalizeHostedContent(page.content);
-  const defaultLogo = contentString(content.logo)
-    || contentString(content.sections.find(s => s.type === "hero")?.data.logo)
-    || page.heroImage;
-  const logo = page.headerLogo || defaultLogo;
+  const primaryLogo = contentString(content.logo)
+    || contentString(content.sections.find(s => s.type === "hero")?.data.logo);
+  const logo = darkMode
+    ? primaryLogo || page.headerLogo || page.heroImage
+    : page.headerLogo || primaryLogo || page.heroImage;
   const downloadSection = content.sections.find(s => s.type === "download");
   const appStoreUrl = contentString(downloadSection?.data.appStoreUrl) || contentString(content.appStoreUrl);
   const playStoreUrl = contentString(downloadSection?.data.playStoreUrl) || contentString(content.playStoreUrl);
@@ -207,7 +211,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
   );
 
   return (
-    <div lang={locale} dir={locale === "ar" || locale === "he" ? "rtl" : "ltr"} className="min-h-screen bg-white flex flex-col" data-hosted-dark={page.darkMode ? "true" : undefined}>
+    <div lang={locale} dir={locale === "ar" || locale === "he" ? "rtl" : "ltr"} className="min-h-screen bg-white flex flex-col" data-hosted-dark={darkMode ? "true" : undefined} style={darkMode ? hostedChromeTheme(normalizeHostedContent(renderedPage.content).sections) : undefined}>
       <PageViewTracker
         pageId={page.id}
         slug={page.slug}
@@ -244,7 +248,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
             <div className="flex min-w-0 shrink items-center gap-1 md:gap-2 md:shrink-0 group-data-[cramped=true]/chrome:!shrink">
               <a href={rootHref} aria-label={navigation.home} title={navigation.home}
                 className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 transition-colors hover:bg-gray-100 ${hostedLinkFocus}`}
-                style={{ color: proseThemeVariables(themeColor)?.[page.darkMode ? "--page-theme-link-dark" : "--page-theme-link-light"] ?? (page.darkMode ? "#ffffff" : "#000000") }}>
+                style={{ color: darkMode ? "#f3f4f6" : proseThemeVariables(themeColor)?.["--page-theme-link-light"] ?? "#000000" }}>
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z" />
                 </svg>
@@ -322,7 +326,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hidden md:inline text-sm text-white px-4 py-1.5 rounded-full font-medium whitespace-nowrap group-data-[cramped=true]/chrome:!hidden"
-                style={{ backgroundColor: themeColor, ...(page.darkMode ? { color: readableTextColor(themeColor) } : {}) }}
+                style={{ backgroundColor: themeColor, ...(darkMode ? { color: readableTextColor(themeColor) } : {}) }}
               >
                 {labels.download}
               </a>
@@ -364,7 +368,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 utilityLinks={mobileUtilityLinks}
                 download={hasDownload ? { label: labels.download, href: (appStoreUrl || playStoreUrl) as string } : undefined}
                 themeColor={themeColor}
-                darkMode={page.darkMode}
+                darkMode={darkMode}
                 labels={isRootPage ? undefined : navigation}
                 compact={!isRootPage}
               />

@@ -36,3 +36,23 @@ export function proseThemeVariables(themeColor: unknown) {
     "--page-theme-link-dark": readableLink(rgb, true),
   };
 }
+
+/** Use the page's first dark section surfaces, never arbitrary CSS or a bright CTA.
+ * The luminance ceiling keeps even muted #d1d5db chrome text above AA (4.5:1).
+ */
+export function hostedChromeTheme(sections: readonly { order?: number; data: Record<string, unknown> }[]) {
+  const surfaces = sections
+    .slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map(section => section.data.backgroundColor)
+    .filter((value): value is string => {
+      if (typeof value !== "string" || !/^#[0-9a-f]{6}$/i.test(value)) return false;
+      return luminance([1, 3, 5].map(index => parseInt(value.slice(index, index + 2), 16))) <= 0.1;
+    });
+  const background = surfaces[0] ?? "#111827";
+  return {
+    backgroundColor: background,
+    "--hosted-chrome-bg": background,
+    "--hosted-chrome-link": "#f3f4f6",
+    "--hosted-chrome-surface": surfaces.find(color => color !== background) ?? background,
+  };
+}

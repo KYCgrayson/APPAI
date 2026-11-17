@@ -16,11 +16,14 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 **Agents MUST provide a logo for every root page:** square PNG, 512×512 recommended, 1024×1024 accepted, app-icon style with its own background color. Set `content.logo` (or hero `data.logo` / `headerLogo`) to an HTTPS URL or same-origin `/path`. For local files, upload with `POST /api/v1/upload` and use the returned URL. Missing or non-HTTPS logos produce `warnings` on create/upsert, PUT, PATCH and dry-run. Child pages inherit the root header logo and need no separate logo. `heroImage` does not count for directory cards or the missing-logo warning; the header still falls back to it. Dry-run warns to replace the placeholder with the real logo and `https://color-bench-demo.pages.dev` with your deployed tool URL wherever that value appears.
 
+Header/footer follow the displayed page: children use their own `darkMode`; privacy/terms documents use light chrome. Dark chrome and empty page space use the first dark section background (with a safe dark fallback); drawer surfaces use the next distinct dark background. A separate dark-coloured `headerLogo` for light headers will not override an existing primary logo on dark chrome.
+
 Create a simple SVG with a solid background and initial/shape, then convert: `rsvg-convert -w 512 -h 512 logo.svg -o logo.png`; on macOS `qlmanage -t -s 512 -o . logo.svg` then `sips -s format png -z 512 512 logo.svg.png --out logo.png`; or ImageMagick. Upload the resulting PNG.
 
 | Context | Uses | Fallback |
 |---------|------|----------|
-| Header / Favicon | `headerLogo` | primary logo |
+| Light header / Favicon | `headerLogo` | `content.logo` → hero `data.logo` → `heroImage` |
+| Dark header | root `content.logo` → hero `data.logo` | `headerLogo` → `heroImage` |
 | Hero section | hero `data.logo` | primary logo |
 | App cards | `headerLogo` → `content.logo` → hero `data.logo` | -- |
 

@@ -4,7 +4,7 @@
 - [x] Automatic dark CTA contrast; dark header/footer/mobile chrome; smaller lower-left DEMO ribbon. Preserve 80 light HTML baselines plus policy/light-child content under dark roots.
 - [x] Fix dry-run child default-locale paths; warn on missing root privacy policies and placeholder store links; expose iframe-tool access and correct Instagram schema copy.
 - [x] Unify price guidance, remove public Tools internal paths, document the unchanged POST draft default, rebuild the generated spec.
-- [ ] Browser computed-style/geometry and before/after screenshots: local Chrome startup and computer access are blocked in this environment. Run `DARK_STYLE_BROWSER_TESTS=1 npm test` where Chrome is available.
+- [x] Round 1 browser computed-style/geometry tests passed with `DARK_STYLE_BROWSER_TESTS=1` (independent browser check). Round 2 adds short-page, mixed-mode and active-language checks; its Chrome run is tracked separately in the round 2 run log.
 
 ## Hosted-page data cache (#92-B, 2026-11-17)
 

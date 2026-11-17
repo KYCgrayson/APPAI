@@ -258,11 +258,14 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 **Agents MUST provide a logo for every root page:** square PNG, 512×512 recommended, 1024×1024 accepted, app-icon style with its own background color. Set `content.logo` (or hero `data.logo` / `headerLogo`) to an HTTPS URL or same-origin `/path`. For local files, upload with `POST /api/v1/upload` and use the returned URL. Missing or non-HTTPS logos produce `warnings` on create/upsert, PUT, PATCH and dry-run. Child pages inherit the root header logo and need no separate logo. `heroImage` does not count for directory cards or the missing-logo warning; the header still falls back to it. Dry-run warns to replace the placeholder with the real logo and `https://color-bench-demo.pages.dev` with your deployed tool URL wherever that value appears.
 
+Header/footer follow the displayed page: children use their own `darkMode`; privacy/terms documents use light chrome. Dark chrome and empty page space use the first dark section background (with a safe dark fallback); drawer surfaces use the next distinct dark background. A separate dark-coloured `headerLogo` for light headers will not override an existing primary logo on dark chrome.
+
 Create a simple SVG with a solid background and initial/shape, then convert: `rsvg-convert -w 512 -h 512 logo.svg -o logo.png`; on macOS `qlmanage -t -s 512 -o . logo.svg` then `sips -s format png -z 512 512 logo.svg.png --out logo.png`; or ImageMagick. Upload the resulting PNG.
 
 | Context | Uses | Fallback |
 |---------|------|----------|
-| Header / Favicon | `headerLogo` | primary logo |
+| Light header / Favicon | `headerLogo` | `content.logo` → hero `data.logo` → `heroImage` |
+| Dark header | root `content.logo` → hero `data.logo` | `headerLogo` → `heroImage` |
 | Hero section | hero `data.logo` | primary logo |
 | App cards | `headerLogo` → `content.logo` → hero `data.logo` | -- |
 
@@ -414,7 +417,7 @@ This platform gives you full control over visual design. Every parameter below i
 | `themeColorSecondary` | Hex color — optional accent for secondary buttons. Auto-generated from themeColor if omitted. |
 | `darkMode` | Boolean — renders entire page with dark backgrounds and light text. All sections adapt automatically. |
 | `fontFamily` | Google Fonts name, loaded automatically per locale variant. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants. |
-| `headerLogo` | URL — separate logo for the header (follows `darkMode`). |
+| `headerLogo` | URL — logo for light headers. Dark headers prefer root `content.logo` → hero `data.logo` → `headerLogo` → `heroImage`; light headers prefer `headerLogo` first. |
 | `ogImage` | URL — Open Graph image for social sharing. Fallback order: ogImage → heroImage → profile-header avatar → screenshot or icon of the first project item that has one → first screenshots image (valid HTTP(S) URLs only). |
 
 PERSON pages are live at `/p/{slug}` when published with `isPublished: true`, but appear in the AppAI directory only after AppAI review. POST defaults to `isPublished: false` (a draft).
@@ -587,7 +590,7 @@ curl -X POST https://appai.info/api/v1/pages \
 | `textSize` | No | Top level or `content.textSize`; `xs`, `sm`, `md` (default), `lg`, `xl`, `2xl`, `3xl`, `4xl`. |
 | `textContrast` | No | Top level or `content.textContrast`; `low`, `normal` (default), `high`. |
 | `typography` | No | Top level or `content.typography`; optional role overrides `{caption, card, body, heading, display}`, each using textSize steps. Top-level settings win and persist under content; `{}` clears overrides. |
-| `headerLogo` | No | Separate logo URL for the header (follows `darkMode`) |
+| `headerLogo` | No | Logo URL for light headers; dark headers prefer root `content.logo` / hero `data.logo`, falling back to `headerLogo` when neither exists |
 | `content` | Yes | `{ "sections": [{ "type": "...", "order": N, "data": {...} }] }` |
 | `privacyPolicy` | No | Markdown text |
 | `termsOfService` | No | Markdown text |
