@@ -17,8 +17,8 @@ logic**:
 - **Backend calls** go through the generic connector proxy: set the section's
   `apiBase` to `"/api/connect/{connector}"`. The proxy injects server auth +
   the caller's identity, records usage, and enforces quota. Connectors are
-  owner-defined in `src/lib/connectors/registry.ts` (they hold secrets, so
-  they are not agent-writable); you reference one by name.
+  maintained by the AppAI platform owner (they hold secrets, so
+  agents cannot create or edit them); reference an available connector by name.
 - **Login gating**: add `"access": "login"` to the section's `data`. Anonymous
   visitors get a platform sign-in prompt in place of the section. `"access":
   "admin"` is the same gate one step further: signing in is not enough, the
@@ -38,8 +38,9 @@ logic**:
   passes a 3xx straight through for exactly this.
 
 If a tool needs a genuinely new backend, the **owner** adds one connector
-entry; every reuse after that is pure section config. See
-`docs/interactive-tools-architecture.md`.
+entry; every reuse after that is pure section config. Ask the platform owner
+to make the backend available; until then, use an existing connector or a
+[Wrapped tool](https://appai.info/spec/tools#iframe-tool) on your own host.
 
 ### Identity: what each rung can learn about the visitor
 

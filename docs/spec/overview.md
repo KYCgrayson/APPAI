@@ -45,7 +45,7 @@ Hosted Pages are always published in four locales: English (`en`), Traditional C
 3. **[Pages](https://appai.info/spec/pages):** pick a preset. `GET /api/v1/presets` returns copyable full POST bodies in `example`, section recipes, and named `styles`. Build a complete first draft.
 4. **[Sections](https://appai.info/spec/sections):** use the section schemas and icons. Find schemas with `GET /api/v1/sections?type=features,contact` (comma list supported).
 5. **[Dry-run](https://appai.info/spec/api#dry-run):** `POST /api/v1/pages?dryRun=true` (identical to `POST /api/v1/pages/preview`) with the full body. Review `{valid, errors, warnings, sanitizedContent, next}`; fix errors and unknown section/field warnings before publishing. To update an existing page, use `?dryRun=true&upsert=true` then `POST ?upsert=true`; omitting `upsert=true` in preview produces an existing-page warning. Nothing is saved. `dryRun` accepts true/1/yes or false/0/no case-insensitively; other non-empty values return 400.
-6. **Publish:** `POST /api/v1/pages` with the same body. To update an existing page, use `POST /api/v1/pages?upsert=true` after `?dryRun=true&upsert=true`. Use `PATCH /api/v1/pages/{slug}?locale=xx` for partial updates.
+6. **Publish:** `POST /api/v1/pages` with the same body and `isPublished: true`. POST defaults to `isPublished: false` (a draft, not publicly reachable). To publish a saved draft, `PATCH /api/v1/pages/{slug}?locale=xx` with `{"isPublished":true}`. To replace an existing page, use `POST /api/v1/pages?upsert=true` after `?dryRun=true&upsert=true` and include `isPublished: true`.
 7. **Open:** `https://appai.info/p/{slug}` and check desktop/mobile layout.
 
 | Type | Preset id | Example POST body |

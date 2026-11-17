@@ -194,7 +194,7 @@ SEO: server-rendered `VideoObject` uses the first nonblank name from caption →
 
 For menus and service price lists, put the price in `price` on each `features.items` entry (string, e.g. "NT$140"); it renders next to the title.
 
-`heading` and `subheading` are optional. For a few priced services without feature lists, use `features` with the price in each description; use `pricing` only for plans/tiers with feature lists (each plan requires `features[]`).
+`heading` and `subheading` are optional. For a few priced services without feature lists, use `features` with the `price` field on each item; use `pricing` only for plans/tiers with feature lists (each plan requires `features[]`).
 ```json
 { "type": "features", "order": 3, "data": {
     "heading": "Optional section title",

@@ -1,3 +1,11 @@
+## Dark style kits and dry-run leftovers (ops #41, 2026-11-18)
+
+- [x] Audit current behavior before edits; retain existing about dark text, root locale URLs, style/topic links and distinct kit moods.
+- [x] Automatic dark CTA contrast; dark header/footer/mobile chrome; smaller lower-left DEMO ribbon. Preserve 80 light HTML baselines plus policy/light-child content under dark roots.
+- [x] Fix dry-run child default-locale paths; warn on missing root privacy policies and placeholder store links; expose iframe-tool access and correct Instagram schema copy.
+- [x] Unify price guidance, remove public Tools internal paths, document the unchanged POST draft default, rebuild the generated spec.
+- [ ] Browser computed-style/geometry and before/after screenshots: local Chrome startup and computer access are blocked in this environment. Run `DARK_STYLE_BROWSER_TESTS=1 npm test` where Chrome is available.
+
 ## Hosted-page data cache (#92-B, 2026-11-17)
 
 - [x] Cache every public `/p` render read with `hosted-page`, one-day TTL, allowlisted DTOs, null caching and Date round trips; keep request-time auth, LoginGate, iframe identity and language redirects.
