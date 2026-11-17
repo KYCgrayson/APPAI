@@ -1,9 +1,7 @@
-import { db } from "@/lib/db";
+import { loadHostedMembership } from "./public-hosted-page";
 import { hostedPagePath, type HostedUrlPage } from "./hosted-page-urls.ts";
 import { pickByLocale } from "./locale-match.ts";
 import { locales } from "../i18n/routing.ts";
-import { publicAppFilter, publicPageWhere } from "./hosted-page-visibility.ts";
-import { appDirectoryKind, isPersonalDirectoryProfile } from "./directory-kind.ts";
 import { getDirectoryCopy } from "./directory-copy.ts";
 import { hostedNavigationCopy } from "./hosted-navigation-copy.ts";
 import type { BreadcrumbItem } from "./breadcrumbs.ts";
@@ -17,16 +15,9 @@ export async function hostedBreadcrumbs(root: NamedPage, roots: readonly NamedPa
   const platformLocale = pickByLocale(platformLocales, locale)!.locale;
   const prefix = platformLocale === "en" ? "" : `/${platformLocale}`;
   const copy = hostedNavigationCopy(locale);
-  // Read all public variants so a translated root cannot change its category.
-  const variants = await db.hostedPage.findMany({
-    where: { slug: root.slug, organizationId: root.organizationId, ...publicPageWhere() },
-    orderBy: [{ slug: "asc" }, { locale: "asc" }],
-  });
-  const app = await db.app.findFirst({ where: {
-    hostedPageSlug: root.slug, organizationId: root.organizationId, ...publicAppFilter(variants),
-  }, orderBy: [{ createdAt: "desc" }, { id: "desc" }] });
-  const kind = app ? appDirectoryKind(app, variants) : null;
-  const category = app && isPersonalDirectoryProfile(variants)
+  const membership = await loadHostedMembership(root.organizationId, root.slug);
+  const kind = membership?.kind;
+  const category = membership?.personal
     ? { name: getDirectoryCopy(platformLocale).personalPages, href: `${prefix}/websites?type=personal` }
     : kind ? { name: copy[kind], href: `${prefix}/${kind}` } : null;
   return [

@@ -106,6 +106,12 @@
         "tests/prose-theme.test.ts",
         "src/components/AppAIBadge.tsx",
         "src/lib/hosted-content.ts",
+        "src/lib/public-hosted-page.ts",
+        "src/lib/hosted-page-cache.ts",
+        "tests/hosted-page-cache*.test.ts",
+        "tests/helpers/hosted-page-production.cjs",
+        "scripts/qa-hosted-page-cache.cjs",
+        "scripts/compare-hosted-page-dom.py",
         "src/lib/hosted-breadcrumbs.ts",
         "src/lib/breadcrumbs.ts",
         "src/lib/hosted-editorial-links.ts",
@@ -141,7 +147,7 @@
         "tests/helpers/hosted-*.mjs",
         "tests/helpers/typography-api-loader.mjs"
       ],
-      "docs": ["PRD_SIMPLE_ORDER_SECTION.md"]
+      "docs": ["PRD_SIMPLE_ORDER_SECTION.md", "docs/apps/hosted-page-cache-qa.md"]
     },
     {
       "id": "auth",

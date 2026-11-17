@@ -1,4 +1,4 @@
-import { publicPageWhere } from "@/lib/hosted-page-visibility";
+import { loadHostedRootVariants, loadHostedChildVariants } from "@/lib/public-hosted-page";
 import { hostedPagePath, isUnavailableHostedPolicyLink } from "@/lib/hosted-page-urls";
 import { hostedNavigationCopy, hostedLinkFocus } from "@/lib/hosted-navigation-copy";
 import { proseThemeVariables } from "@/lib/prose-theme";
@@ -8,7 +8,6 @@ import { resolvePage, resolveChildPage } from "@/lib/hosted-page-resolver";
 import { withChineseLocales, chineseScript } from "@/lib/zh-convert";
 import Link from "next/link";
 
-import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { AccountControls } from "@/components/AccountControls";
 import { parsePageSegments } from "@/lib/parse-page-segments";
@@ -47,14 +46,10 @@ export default async function HostedPageLayout({ params, children }: Props) {
   const locale = childPage?.locale ?? page.locale;
   const labels = hostedChromeLabels(locale);
   const navigation = hostedNavigationCopy(locale);
-  const rootVariants = await db.hostedPage.findMany({
-    where: { slug, organizationId: page.organizationId, ...publicPageWhere() },
-    orderBy: [{ isDefault: "desc" }, { locale: "asc" }],
-  });
-  const childVariants = parsed.childSlug ? await db.hostedPage.findMany({
-    where: { organizationId: page.organizationId, parentSlug: slug, slug: parsed.childSlug, ...publicPageWhere(rootVariants) },
-    orderBy: { locale: "asc" },
-  }) : [];
+  const rootVariants = [...await loadHostedRootVariants(slug, page.organizationId)]
+    .sort((a, b) => Number(b.isDefault) - Number(a.isDefault));
+  const childVariants = parsed.childSlug
+    ? await loadHostedChildVariants(page.organizationId, slug, parsed.childSlug) : [];
   const variants = parsed.childSlug
     ? childVariants.filter(variant => hostedPagePath(variant, rootVariants))
     : parsed.subpage

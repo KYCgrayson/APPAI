@@ -1,3 +1,11 @@
+## Hosted-page data cache (#92-B, 2026-11-17)
+
+- [x] Cache every public `/p` render read with `hosted-page`, one-day TTL, allowlisted DTOs, null caching and Date round trips; keep request-time auth, LoginGate, iframe identity and language redirects.
+- [x] Expire the tag unconditionally through `revalidateSeoIndexes`; retain existing tags and paths. Single entries above 1.8 MB bypass storage with a warning, including TTL refresh fallback.
+- [x] Fictional production-handler QA: 15 routes × 20 anonymous GETs; requests 2–20 have zero reads. Real mutation and logged-in/anonymous isolation checks pass. Main `89e872d` DOM/JSON-LD parity verified. See `docs/apps/hosted-page-cache-qa.md`.
+- [x] Preserve anonymous PageView tracking, simple-order notification handling and the iframe session renewal API.
+- [ ] Independent owner-side Opus acceptance, listening HTTP/browser screenshot QA, then owner approval for merge/deployment. This sandbox prevents local port binding and Chrome startup; no commit or deployment performed.
+
 ## Public directory data cache (#92-A, 2026-11-13)
 
 - [x] Cache public home, directories and App detail/metadata for one hour with immediate shared visibility invalidation; retain dynamic rendering and #91 visibility predicates.

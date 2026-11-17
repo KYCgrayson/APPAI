@@ -114,6 +114,7 @@ test("root/child resolution converts only published, organization-scoped variant
     { slug: "example", parentSlug: null, organizationId: "fixture-org", locale: "zh-CN", title: "Draft", isDefault: false, isPublished: false },
     { slug: "child", parentSlug: "example", organizationId: "fixture-org", locale: "zh-TW", title: "網站", isDefault: true, isPublished: true },
   ];
+  fixtureDb.rows = fixtureDb.rows.map(row => ({ createdAt: new Date("2026-11-13T00:00Z"), updatedAt: new Date("2026-11-13T00:00Z"), ...row }));
   const root = await resolvePage("example", "zh-CN");
   assert.equal(root?.title, "网站");
   assert.equal(root?.autoConverted, true);
@@ -387,7 +388,7 @@ test("external hosted canonical is also the schema identity", async () => {
   const { fixtureDb } = await import("./helpers/hosted-render-loader.mjs");
   const { default: HostedPage, generateMetadata } = await import("../src/app/p/[...segments]/page.tsx");
   fixtureDb.rows = [{ organizationId: "fixture-org", slug: "canonical-site", parentSlug: null,
-    locale: "en", title: "Example", isDefault: true, isPublished: true, content: {}, canonicalUrl: "https://example.org/official" }];
+    locale: "en", title: "Example", isDefault: true, isPublished: true, createdAt: new Date("2026-11-13T00:00Z"), updatedAt: new Date("2026-11-13T00:00Z"), content: {}, canonicalUrl: "https://example.org/official" }];
   const params = Promise.resolve({ segments: ["canonical-site", "en"] });
   assert.equal((await generateMetadata({ params })).alternates?.languages, undefined);
   const html = (await stream(await HostedPage({ params }))).html;

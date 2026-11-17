@@ -10,7 +10,7 @@ const SEO_PATHS = ["/sitemap.xml", "/llms.txt", "/llms-full.txt"];
 
 export function revalidateSeoIndexes(slug?: string) {
   let refreshed = true;
-  for (const tag of ["seo-sitemap", "public-directory"]) {
+  for (const tag of ["seo-sitemap", "public-directory", "hosted-page"]) {
     try {
       revalidateTag(tag, { expire: 0 });
     } catch (error) {
