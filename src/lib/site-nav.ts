@@ -1,6 +1,5 @@
-import { publicPageWhere, publicRootSelect } from "./hosted-page-visibility";
-import { chineseFallback, chineseSourceLocales } from "./zh-convert";
-import { db } from "@/lib/db";
+import { chineseFallback } from "./zh-convert";
+import { loadHostedSiblingRows } from "./public-hosted-page";
 import { sanitizeUrl } from "@/lib/sanitize";
 import { hostedNavigationCopy } from "./hosted-navigation-copy.ts";
 
@@ -35,29 +34,7 @@ export async function loadSiblings(
   organizationId: string,
   locale: string,
 ): Promise<SiblingRow[]> {
-  const roots = await db.hostedPage.findMany({
-    where: { ...publicPageWhere(), organizationId, slug: parentSlug }, select: publicRootSelect,
-    orderBy: [{ slug: "asc" }, { locale: "asc" }],
-  });
-  const rows = await db.hostedPage.findMany({
-    where: {
-      organizationId,
-      parentSlug,
-      AND: [publicPageWhere(roots)],
-      hideFromNav: false,
-      OR: [{ locale }, { locale: { in: chineseSourceLocales(locale) } }, { isDefault: true }],
-    },
-    select: {
-      slug: true,
-      locale: true,
-      title: true,
-      isDefault: true,
-      hideFromNav: true,
-      navOrder: true,
-      createdAt: true,
-    },
-    orderBy: [{ slug: "asc" }, { locale: "asc" }],
-  });
+  const rows = await loadHostedSiblingRows(organizationId, parentSlug, locale);
 
   const grouped = new Map<string, SiblingRow[]>();
   for (const row of rows) grouped.set(row.slug, [...(grouped.get(row.slug) ?? []), row]);

@@ -32,8 +32,9 @@ const request = (action: string) => new NextRequest("https://example.test/api/ad
 
 test("all public loaders use tagged one-hour data cache, with complete arguments and compact JSON DTOs", async () => {
   reset();
-  assert.equal(state.registrations.length, 3);
-  for (const registration of state.registrations) assert.deepEqual(registration.options, { revalidate: 3600, tags: ["public-directory"] });
+  const registrations = state.registrations.filter(r => r.options.tags.includes("public-directory"));
+  assert.equal(registrations.length, 3);
+  for (const registration of registrations) assert.deepEqual(registration.options, { revalidate: 3600, tags: ["public-directory"] });
   const calls = [() => loadPublicHome("en"), () => loadPublicDirectory("en"), () => loadPublicAppDetail("cached", "en")];
   for (const call of calls) {
     const first = await call();
@@ -109,7 +110,7 @@ test("SEO invalidation immediately expires public-directory even if sitemap inva
   const errors = t.mock.method(console, "error", () => {});
   try { assert.equal(revalidateSeoIndexes("all"), false); }
   finally { state.failTag = ""; errors.mock.restore(); }
-  assert.deepEqual(state.invalidations, [["seo-sitemap", { expire: 0 }], ["public-directory", { expire: 0 }]]);
+  assert.deepEqual(state.invalidations, [["seo-sitemap", { expire: 0 }], ["public-directory", { expire: 0 }], ["hosted-page", { expire: 0 }]]);
   assert.equal((await loadPublicHome("en")).featuredApps.length, 0);
 });
 
@@ -123,7 +124,7 @@ test("all four admin actions invalidate after successful write; unapprove remove
       assert.ok(await loadPublicAppDetail("cached", "en"));
       const response = await admin.PATCH(request(action));
       assert.equal(response.status, 200);
-      assert.deepEqual(state.invalidations, [["seo-sitemap", { expire: 0 }], ["public-directory", { expire: 0 }]]);
+      assert.deepEqual(state.invalidations, [["seo-sitemap", { expire: 0 }], ["public-directory", { expire: 0 }], ["hosted-page", { expire: 0 }]]);
       if (action === "unapprove") {
         assert.doesNotMatch(await renderHtml(await home()), /English fixture/);
         assert.doesNotMatch(await renderHtml(await PlatformDirectory({})), /English fixture/);
@@ -156,7 +157,7 @@ test("admin role changes expire the public directory after a successful write", 
       }));
       assert.equal(response.status, 200);
       assert.deepEqual(writes.at(-1), { where: { id: "fixture-user" }, data: { role } });
-      assert.deepEqual(state.invalidations, [["seo-sitemap", { expire: 0 }], ["public-directory", { expire: 0 }]]);
+      assert.deepEqual(state.invalidations, [["seo-sitemap", { expire: 0 }], ["public-directory", { expire: 0 }], ["hosted-page", { expire: 0 }]]);
       assert.equal(state.entries.size, 0);
     }
     assert.equal(writes.length, 2);

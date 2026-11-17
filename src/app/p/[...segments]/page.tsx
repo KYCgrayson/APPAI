@@ -1,4 +1,4 @@
-import { publicPageWhere } from "@/lib/hosted-page-visibility";
+import { loadHostedRoot, loadHostedRootVariants, loadHostedChildVariants } from "@/lib/public-hosted-page";
 import { normalizeHostedContent, contentString } from "@/lib/hosted-content";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { breadcrumbJsonLd } from "@/lib/breadcrumbs";
@@ -13,7 +13,6 @@ import { buildJsonLd, hostedOgImage } from "@/lib/hosted-page-seo";
 import { notFound, redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
-import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { AppAIBadge } from "@/components/AppAIBadge";
 import { PageRenderer } from "@/templates/shared/PageRenderer";
@@ -53,11 +52,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   // Tool fullscreen: minimal metadata, noindex (the parent page is the canonical SEO target).
   if (parsed.toolOrder !== null) {
-    const rootPage = await db.hostedPage.findFirst({
-      where: { slug: parsed.slug, ...publicPageWhere() },
-      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }, { id: "asc" }],
-      select: { title: true, content: true },
-    });
+    const rootPage = await loadHostedRoot(parsed.slug, null);
     const sections = normalizeHostedContent(rootPage?.content).sections;
     const section = sections.find((s) => s.order === parsed.toolOrder);
     const data = (section?.data ?? {}) as { heading?: string; description?: string };
@@ -79,14 +74,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
   const { headerLogo: logoUrl } = extractLogos(page);
 
-  const roots = await db.hostedPage.findMany({
-    where: { slug, organizationId: rootPage.organizationId, ...publicPageWhere() },
-    orderBy: { locale: "asc" },
-  });
-  const variants = childSlug ? await db.hostedPage.findMany({
-    where: { organizationId: rootPage.organizationId, parentSlug: slug, slug: childSlug, ...publicPageWhere(roots) },
-    orderBy: { locale: "asc" },
-  }) : roots;
+  const roots = await loadHostedRootVariants(slug, rootPage.organizationId);
+  const variants = childSlug ? await loadHostedChildVariants(rootPage.organizationId, slug, childSlug) : roots;
   const legal = subpage ? hostedLegalCopy(page.locale, subpage, page.title) : null;
   const title = legal?.title || page.metaTitle || page.title;
   const description = legal?.description || page.metaDescription || page.tagline || undefined;
@@ -142,10 +131,7 @@ export default async function HostedPage({ params }: Props) {
   // Iframe-tool fullscreen view: /p/{slug}/tools/{order}.
   // Renders just the iframe at viewport size, no site chrome (handled by layout).
   if (toolOrder !== null) {
-    const rootPage = await db.hostedPage.findFirst({
-      where: { slug, ...publicPageWhere() },
-      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }, { id: "asc" }],
-    });
+    const rootPage = await loadHostedRoot(slug, null);
     if (!rootPage) notFound();
     const sections = normalizeHostedContent(rootPage?.content).sections;
     const section = sections.find((s) => s.order === toolOrder);
@@ -249,11 +235,7 @@ export default async function HostedPage({ params }: Props) {
       const preferred = parseAcceptLanguage(acceptLang);
 
       if (preferred.length > 0) {
-        const variants = await db.hostedPage.findMany({
-          where: { slug, ...publicPageWhere() },
-          select: { locale: true, isDefault: true },
-          orderBy: { locale: "asc" },
-        });
+        const variants = await loadHostedRootVariants(slug, null);
 
         if (variants.length > 1) {
           const available = variants.map((v) => v.locale);
@@ -280,10 +262,7 @@ export default async function HostedPage({ params }: Props) {
   if (!page) notFound();
 
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
-  const roots = [rootPage, ...await db.hostedPage.findMany({
-    where: { slug, organizationId: rootPage.organizationId, ...publicPageWhere() },
-    orderBy: { locale: "asc" },
-  })];
+  const roots = [rootPage, ...await loadHostedRootVariants(slug, rootPage.organizationId)];
   const pageUrl = (!subpage && page.canonicalUrl) || hostedPageUrl(page, roots, baseUrl, subpage)
     || (childSlug ? `${baseUrl}${buildPagePath(slug, explicitLocale || rootPage.locale, childSlug, !explicitLocale)}` : null);
   if (!pageUrl) notFound();
@@ -388,5 +367,3 @@ export default async function HostedPage({ params }: Props) {
     </>
   );
 }
-
-export const revalidate = 60;

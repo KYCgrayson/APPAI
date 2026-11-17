@@ -34,7 +34,8 @@ function queryRows(rows, query) {
   }
   if (query.skip !== undefined) result = result.slice(query.skip);
   if (query.take !== undefined) result = result.slice(0, query.take);
-  return result;
+  return query.select ? result.map(row => Object.fromEntries(Object.entries(query.select)
+    .filter(([, selected]) => selected).map(([key]) => [key, row[key]]))) : result;
 }
 export const fixtureDb = {
   /** @type {Array<Record<string, unknown>>} */

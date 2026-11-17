@@ -13,13 +13,16 @@ export function registerPublicDirectoryCache(state) {
         source: `export async function requireAdmin() { return globalThis[Symbol.for('appai.test.directory-cache')].admin ? { id: 'fixture-admin' } : null; }` };
       if (url !== 'fixture:public-directory-cache') return nextLoad(url, context);
       return { format: 'module', shortCircuit: true, source: `
+        import { AsyncLocalStorage } from 'node:async_hooks';
+        const cacheScope = new AsyncLocalStorage();
         const state = globalThis[Symbol.for('appai.test.directory-cache')];
         export function unstable_cache(fn, keys, options) {
           state.registrations.push({keys, options});
           return async (...args) => {
+            if (cacheScope.getStore()) throw new Error("Nested unstable_cache callback");
             const key = JSON.stringify([keys, args]);
             if (state.entries.has(key)) return JSON.parse(state.entries.get(key).json);
-            const result = await fn(...args);
+            const result = await cacheScope.run(true, () => fn(...args));
             const json = JSON.stringify(result);
             state.writes.push({ keys, args, options, bytes: Buffer.byteLength(json), json });
             state.entries.set(key, {json, tags: options.tags});
