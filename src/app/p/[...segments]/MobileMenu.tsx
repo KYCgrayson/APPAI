@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 
 import { hostedNavigationCopy } from "@/lib/hosted-navigation-copy";
+import { readableTextColor } from "@/lib/prose-theme";
 
 interface MenuLink {
   label: string;
@@ -28,6 +29,7 @@ interface Props {
   /** Optional download CTA (App Store / Play Store) rendered prominently. */
   download?: { label: string; href: string };
   themeColor: string;
+  darkMode?: boolean;
   labels?: ReturnType<typeof hostedNavigationCopy>;
   /** Only non-root headers use the tighter mobile layout and 44px trigger. */
   compact?: boolean;
@@ -45,6 +47,7 @@ export function MobileMenu({
   utilityLinks,
   download,
   themeColor,
+  darkMode,
   labels = hostedNavigationCopy("en"),
   compact = false,
 }: Props) {
@@ -190,7 +193,7 @@ export function MobileMenu({
                   rel="noopener noreferrer"
                   onClick={() => setOpen(false)}
                   className="block w-full text-center text-white px-4 py-3 rounded-full text-sm font-semibold"
-                  style={{ backgroundColor: themeColor }}
+                  style={{ backgroundColor: themeColor, ...(darkMode ? { color: readableTextColor(themeColor) } : {}) }}
                 >
                   {download.label}
                 </a>

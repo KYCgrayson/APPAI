@@ -1,0 +1,28 @@
+/* Opt-in hosted chrome only. Keep all light-page markup and styles unchanged. */
+[data-hosted-dark="true"] > :is(header, footer) {
+  background-color: #111827;
+  color: #f3f4f6;
+  border-color: #374151;
+}
+[data-hosted-dark="true"] > :is(header, footer) :is(.bg-white, .bg-gray-50, .bg-gray-100) {
+  background-color: #1f2937;
+}
+[data-hosted-dark="true"] > :is(header, footer) :is(.text-gray-400, .text-gray-500, .text-gray-600, .text-gray-700) {
+  color: #d1d5db;
+}
+[data-hosted-dark="true"] > :is(header, footer) .text-gray-900 {
+  color: #f3f4f6;
+}
+[data-hosted-dark="true"] > :is(header, footer) :is(.border-gray-100, .border-gray-200, .border-gray-300, .border-gray-900) {
+  border-color: #4b5563;
+}
+[data-hosted-dark="true"] > :is(header, footer) :is(.hover\:bg-gray-50, .hover\:bg-gray-100):hover {
+  background-color: #374151;
+}
+[data-hosted-dark="true"] > :is(header, footer) :is(.hover\:text-gray-600, .hover\:text-gray-800, .hover\:text-gray-900, .hover\:text-black):hover {
+  color: #ffffff;
+}
+[data-hosted-dark="true"] > :is(header, footer) .focus-visible\:ring-gray-900:focus-visible {
+  --tw-ring-color: #d1d5db;
+  --tw-ring-offset-color: #111827;
+}

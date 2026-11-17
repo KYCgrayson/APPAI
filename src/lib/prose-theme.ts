@@ -6,6 +6,13 @@ function luminance(rgb: number[]): number {
   }, 0);
 }
 
+/** Black or white, whichever has the greater WCAG contrast on an opaque hex background. */
+export function readableTextColor(background: string): "#000000" | "#ffffff" {
+  const rgb = [1, 3, 5].map(index => parseInt(background.slice(index, index + 2), 16));
+  const light = luminance(rgb);
+  return (light + 0.05) / 0.05 >= 1.05 / (light + 0.05) ? "#000000" : "#ffffff";
+}
+
 function readableLink(rgb: number[], dark: boolean): string {
   // Check the less forgiving alternating section/card background in each mode.
   const background = luminance(dark ? [31, 41, 55] : [249, 250, 251]);

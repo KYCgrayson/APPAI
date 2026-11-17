@@ -90,3 +90,5 @@
 .prose.prose-a\:text-white :where(a),
 .prose.prose-headings\:text-white :where(h2, h3, h4),
 .prose.prose-strong\:text-white :where(strong) { color: #fff; }
+/* Dark-kit CTAs choose a readable foreground for their brand background. */
+.prose.prose-inherit-color :where(a, h2, h3, h4, strong) { color: inherit; }
