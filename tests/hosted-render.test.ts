@@ -87,9 +87,14 @@ test("all standard Markdown sections choose readable dark utilities and retain t
       content: { sections: [{ type: "cta", data: { headline: "CTA", subheadline: markdown, buttonText: "Go", buttonUrl: "/" } }] },
     } }));
     assert.equal(cta.errors.length, 0);
-    assert.match(cta.html, /text-white\/80/);
-    for (const variant of ["prose-a:text-white", "prose-headings:text-white", "prose-strong:text-white"]) {
-      assert.ok(cta.html.includes(variant));
+    if (darkMode) {
+      assert.match(cta.html, /background-color:#7f1d1d;color:#ffffff/);
+      assert.match(cta.html, /prose-inherit-color/);
+    } else {
+      assert.match(cta.html, /text-white\/80/);
+      for (const variant of ["prose-a:text-white", "prose-headings:text-white", "prose-strong:text-white"]) {
+        assert.ok(cta.html.includes(variant));
+      }
     }
   }
 });

@@ -74,7 +74,7 @@ Publish: [send the validated body](https://appai.info/spec#publish-in-one-minute
 
 For an existing slug+locale, dry-run with `POST /api/v1/pages?dryRun=true&upsert=true` (or `POST /api/v1/pages/preview?upsert=true`), then publish with `POST /api/v1/pages?upsert=true`. Without `upsert=true`, preview warns that the page already exists; publishing returns 409. Use `PATCH /api/v1/pages/{slug}?locale=xx` for partial updates.
 
-Publish with `POST /api/v1/pages` using the same body and `isPublished: true` (`?upsert=true` to overwrite an existing page). Open `https://appai.info/p/{slug}` and check desktop/mobile layout.
+Publish with `POST /api/v1/pages` using the same body and `isPublished: true` (`?upsert=true` to overwrite an existing page). POST defaults to `isPublished: false`, so an omitted flag creates a draft. Publish a saved draft with `PATCH /api/v1/pages/{slug}?locale=xx` and `{"isPublished":true}`. Open the locale-specific URL in `next` and check desktop/mobile layout. Dry-run warns about a missing root `privacyPolicy` and demo/placeholder store URLs; replace these before publishing. Child pages use the root's policy.
 
 ## Upload images
 

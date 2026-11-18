@@ -270,7 +270,7 @@ test('section index links every type to its schema and dry-run ends with publica
   assert.match(dryRun, /POST \/api\/v1\/pages\?dryRun=true` \(identical to `POST \/api\/v1\/pages\/preview`\)/);
   assert.ok(positionOf(dryRun, 'Preview without saving') < positionOf(dryRun, 'Publish with'));
   assert.match(dryRun, /Publish with `POST \/api\/v1\/pages` using the same body.*isPublished: true.*\?upsert=true/);
-  assert.match(dryRun, /Open `https:\/\/appai\.info\/p\/\{slug\}`/);
+  assert.match(dryRun, /Open the locale-specific URL in `next`/);
   assert.match(api, /Universal App → return to.*spec\/apps#natural-release-flow/);
   assert.match(docs.get('apps')!, /for the key, then return here for the release steps/);
   assert.equal(nav('i18n').next, 'https://appai.info/spec/tools');
@@ -278,6 +278,26 @@ test('section index links every type to its schema and dry-run ends with publica
     assert.doesNotMatch(content, /(?<![(`])https:\/\/[^\s<>`]+\.(?=\s|$)/);
     assert.doesNotMatch(content, /alias: `POST \/api\/v1\/pages/);
   }
+});
+
+test('ops 41 style and publishing guidance stays unambiguous', () => {
+  assert.match(overview, /choose kits at \[Theme\]\(https:\/\/appai.info\/spec\/theme\)/);
+  const style = docs.get('style')!;
+  const theme = docs.get('theme')!;
+  assert.match(style, /Choose a light or dark kit in \[Theme\]\(https:\/\/appai.info\/spec\/theme\)/);
+  assert.equal(([style, theme].join('\n').match(/Copy `themeColor`, `themeColorSecondary`/g) || []).length, 1);
+  const moods = (kit: string) => theme.split('\n').find(line => line.startsWith(`| ${kit} |`) && !line.includes('#'))!.split('|')[3].split(',').map(word => word.trim());
+  assert.ok(moods('indigo').every(word => !moods('midnight').includes(word)));
+  assert.match(docs.get('sections')!, /use `features` with the `price` field on each item/);
+  assert.doesNotMatch(docs.get('sections')!, /price in each description/);
+  for (const content of [overview, docs.get('api')!, docs.get('pages')!]) {
+    assert.match(content, /(?:defaults to|Default) `isPublished: false`|Default `false`/);
+    assert.match(content, /PATCH \/api\/v1\/pages\/\{slug\}\?locale=xx/);
+    assert.match(content, /\{"isPublished":true\}/);
+  }
+  assert.match(quickstart, /POST defaults to isPublished: false/);
+  assert.doesNotMatch(quickstart, /page is live instantly/);
+  assert.doesNotMatch(docs.get('tools')!, /(?:docs\/|src\/|\.md\b)/);
 });
 
 test('dry-run links forward to publish under one preview heading', () => {

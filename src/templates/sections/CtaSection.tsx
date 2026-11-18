@@ -1,5 +1,6 @@
 import { sanitizeUrl } from "@/lib/sanitize";
 import { Prose } from "@/templates/shared/Prose";
+import { readableTextColor } from "@/lib/prose-theme";
 
 interface Props {
   data: {
@@ -10,29 +11,31 @@ interface Props {
     rel?: string; // e.g. "nofollow", "sponsored", "nofollow sponsored"
   };
   themeColor: string;
+  darkMode?: boolean;
 }
 
-export function CtaSection({ data, themeColor, typographyActive = false }: Props & { typographyActive?: boolean }) {
+export function CtaSection({ data, themeColor, darkMode, typographyActive = false }: Props & { typographyActive?: boolean }) {
+  const textColor = darkMode ? readableTextColor(themeColor) : undefined;
   const safeUrl = sanitizeUrl(data.buttonUrl);
   const isExternal = /^https?:\/\//i.test(safeUrl);
   const relParts = isExternal ? ["noopener", "noreferrer"] : [];
   if (typeof data.rel === "string") relParts.push(...data.rel.split(/\s+/).filter(Boolean));
   const relAttr = relParts.length > 0 ? Array.from(new Set(relParts)).join(" ") : undefined;
   return (
-    <section className="py-12 md:py-20 px-4 sm:px-6" style={{ backgroundColor: themeColor }}>
+    <section className="py-12 md:py-20 px-4 sm:px-6" style={{ backgroundColor: themeColor, ...(darkMode ? { color: textColor } : {}) }}>
       <div className="max-w-3xl mx-auto text-center">
-        <h2 data-typography-role={typographyActive ? "heading" : undefined} className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+        <h2 data-typography-role={typographyActive ? "heading" : undefined} className={`text-3xl md:text-4xl lg:text-5xl font-bold ${darkMode ? "text-inherit" : "text-white"} mb-4`}>
           {data.headline}
         </h2>
         {data.subheadline && (
-          <Prose typographyRole={typographyActive ? "body" : undefined} className="prose prose-sm md:prose-base max-w-none text-white/80 mb-8 prose-a:text-white prose-headings:text-white prose-strong:text-white">{data.subheadline}</Prose>
+          <Prose typographyRole={typographyActive ? "body" : undefined} className={darkMode ? "prose prose-sm md:prose-base max-w-none text-inherit mb-8 prose-inherit-color" : "prose prose-sm md:prose-base max-w-none text-white/80 mb-8 prose-a:text-white prose-headings:text-white prose-strong:text-white"}>{data.subheadline}</Prose>
         )}
         <a data-typography-role={typographyActive ? "card" : undefined}
           href={safeUrl}
           target={isExternal ? "_blank" : undefined}
           rel={relAttr}
           className="inline-block px-8 py-4 rounded-full bg-white font-semibold text-lg transition-transform hover:scale-105"
-          style={{ color: themeColor }}
+          style={{ color: themeColor, ...(darkMode ? { backgroundColor: textColor } : {}) }}
         >
           {data.buttonText}
         </a>

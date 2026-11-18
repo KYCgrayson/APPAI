@@ -97,12 +97,12 @@ test("every Home locale labels the first header control, including the open draw
   }
 });
 
-test("Home uses the contrast-adjusted theme colour on the white header in both page modes", async () => {
+test("Home uses a safe foreground for the header's page mode", async () => {
   for (const themeColor of ["#000000", "#facc15", "#ffffff", "#123456"]) for (const darkMode of [false, true]) {
     seed("en", false);
     for (const row of fixtureDb.rows) Object.assign(row, { themeColor, darkMode });
     const home = anchors(header(await render("en", "site-contact")))[0];
-    assert.ok(home.attributes.includes(`color:${proseThemeVariables(themeColor)!["--page-theme-link-light"]}`));
+    assert.ok(home.attributes.includes(`color:${darkMode ? "#f3f4f6" : proseThemeVariables(themeColor)!["--page-theme-link-light"]}`));
     assert.match(home.attributes, /rounded-lg border border-gray-200 bg-gray-50/);
     assert.match(home.attributes, /hover:bg-gray-100/);
     assert.match(home.attributes, /focus-visible:ring-2 focus-visible:ring-gray-900 focus-visible:ring-offset-2/);

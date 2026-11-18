@@ -251,9 +251,9 @@ test("shared breadcrumbs retain AA contrast for theme colours in both modes", as
   for (const dark of [false, true]) for (const red of [0, 64, 128, 192, 255]) for (const green of [0, 64, 128, 192, 255]) for (const blue of [0, 64, 128, 192, 255]) {
     const themeColor = `#${[red, green, blue].map(value => value.toString(16).padStart(2, "0")).join("")}`;
     const html = await renderHtml(Breadcrumb({ items: [{ name: "Root", href: "/" }, { name: "Page", href: "/page" }], label: "Breadcrumb", dark, themeColor }));
-    const background = html.match(/background-color:(#[a-f\d]{6})/)![1];
+    const background = html.match(/background-color:(?:var\(--hosted-chrome-bg, )?(#[a-f\d]{6})/)![1];
     assert.ok(contrast(html.match(/;color:(#[a-f\d]{6})/)![1], background) >= 4.5);
-    assert.ok(contrast(html.match(/--breadcrumb-link:(#[a-f\d]{6})/)![1], background) >= 4.5, `${themeColor}, dark=${dark}`);
+    assert.ok(contrast(html.match(/--breadcrumb-link:(?:var\(--hosted-chrome-link, )?(#[a-f\d]{6})/)![1], background) >= 4.5, `${themeColor}, dark=${dark}`);
   }
 });
 

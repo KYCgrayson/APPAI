@@ -46,7 +46,7 @@ Hosted Pages are always published in four locales: English (`en`), Traditional C
 3. **[Pages](https://appai.info/spec/pages):** pick a preset. `GET /api/v1/presets` returns copyable full POST bodies in `example`, section recipes, and named `styles`. Build a complete first draft.
 4. **[Sections](https://appai.info/spec/sections):** use the section schemas and icons. Find schemas with `GET /api/v1/sections?type=features,contact` (comma list supported).
 5. **[Dry-run](https://appai.info/spec/api#dry-run):** `POST /api/v1/pages?dryRun=true` (identical to `POST /api/v1/pages/preview`) with the full body. Review `{valid, errors, warnings, sanitizedContent, next}`; fix errors and unknown section/field warnings before publishing. To update an existing page, use `?dryRun=true&upsert=true` then `POST ?upsert=true`; omitting `upsert=true` in preview produces an existing-page warning. Nothing is saved. `dryRun` accepts true/1/yes or false/0/no case-insensitively; other non-empty values return 400.
-6. **Publish:** `POST /api/v1/pages` with the same body. To update an existing page, use `POST /api/v1/pages?upsert=true` after `?dryRun=true&upsert=true`. Use `PATCH /api/v1/pages/{slug}?locale=xx` for partial updates.
+6. **Publish:** `POST /api/v1/pages` with the same body and `isPublished: true`. POST defaults to `isPublished: false` (a draft, not publicly reachable). To publish a saved draft, `PATCH /api/v1/pages/{slug}?locale=xx` with `{"isPublished":true}`. To replace an existing page, use `POST /api/v1/pages?upsert=true` after `?dryRun=true&upsert=true` and include `isPublished: true`.
 7. **Open:** `https://appai.info/p/{slug}` and check desktop/mobile layout.
 
 | Type | Preset id | Example POST body |
@@ -181,7 +181,7 @@ Publish: [send the validated body](https://appai.info/spec#publish-in-one-minute
 
 For an existing slug+locale, dry-run with `POST /api/v1/pages?dryRun=true&upsert=true` (or `POST /api/v1/pages/preview?upsert=true`), then publish with `POST /api/v1/pages?upsert=true`. Without `upsert=true`, preview warns that the page already exists; publishing returns 409. Use `PATCH /api/v1/pages/{slug}?locale=xx` for partial updates.
 
-Publish with `POST /api/v1/pages` using the same body and `isPublished: true` (`?upsert=true` to overwrite an existing page). Open `https://appai.info/p/{slug}` and check desktop/mobile layout.
+Publish with `POST /api/v1/pages` using the same body and `isPublished: true` (`?upsert=true` to overwrite an existing page). POST defaults to `isPublished: false`, so an omitted flag creates a draft. Publish a saved draft with `PATCH /api/v1/pages/{slug}?locale=xx` and `{"isPublished":true}`. Open the locale-specific URL in `next` and check desktop/mobile layout. Dry-run warns about a missing root `privacyPolicy` and demo/placeholder store URLs; replace these before publishing. Child pages use the root's policy.
 
 ## Upload images
 
@@ -258,11 +258,14 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 **Agents MUST provide a logo for every root page:** square PNG, 512×512 recommended, 1024×1024 accepted, app-icon style with its own background color. Set `content.logo` (or hero `data.logo` / `headerLogo`) to an HTTPS URL or same-origin `/path`. For local files, upload with `POST /api/v1/upload` and use the returned URL. Missing or non-HTTPS logos produce `warnings` on create/upsert, PUT, PATCH and dry-run. Child pages inherit the root header logo and need no separate logo. `heroImage` does not count for directory cards or the missing-logo warning; the header still falls back to it. Dry-run warns to replace the placeholder with the real logo and `https://color-bench-demo.pages.dev` with your deployed tool URL wherever that value appears.
 
+Header/footer follow the displayed page: children use their own `darkMode`; privacy/terms documents use light chrome. Dark chrome and empty page space use the first dark section background (with a safe dark fallback); drawer surfaces use the next distinct dark background. A separate dark-coloured `headerLogo` for light headers will not override an existing primary logo on dark chrome.
+
 Create a simple SVG with a solid background and initial/shape, then convert: `rsvg-convert -w 512 -h 512 logo.svg -o logo.png`; on macOS `qlmanage -t -s 512 -o . logo.svg` then `sips -s format png -z 512 512 logo.svg.png --out logo.png`; or ImageMagick. Upload the resulting PNG.
 
 | Context | Uses | Fallback |
 |---------|------|----------|
-| Header / Favicon | `headerLogo` | primary logo |
+| Light header / Favicon | `headerLogo` | `content.logo` → hero `data.logo` → `heroImage` |
+| Dark header | root `content.logo` → hero `data.logo` | `headerLogo` → `heroImage` |
 | Hero section | hero `data.logo` | primary logo |
 | App cards | `headerLogo` → `content.logo` → hero `data.logo` | -- |
 
@@ -306,7 +309,7 @@ Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto 
 
 - **Section backgrounds:** Sections except `cta` can have a custom `backgroundColor`. Use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`.
 - **Hero backgrounds:** `backgroundColor` (solid color), `backgroundImage`, or `backgroundVideo`. Dark backgrounds auto-switch text to white.
-- **Dark mode:** Set `darkMode: true` at page level. All sections, cards, borders adapt automatically.
+- **Dark mode:** Set `darkMode: true` at page level. Sections, cards, borders, the header, mobile menu and footer adapt automatically. CTA text and buttons automatically choose contrasting colors for `themeColor`; no extra agent configuration is needed.
 - **Icons:** Three formats — Ionicons name (e.g. `globe-outline`), emoji, or image URL. Use one of `icons` (`GET /api/v1/sections`) or any emoji
 - **Markdown:** Supported in: `about.text`, `faq.items[].answer`, `testimonials.items[].quote`, `team.items[].bio`, `schedule.items[].description`, `pricing.items[].description`, `cta.subheadline`, `form.description`
 
@@ -414,10 +417,10 @@ This platform gives you full control over visual design. Every parameter below i
 | `themeColorSecondary` | Hex color — optional accent for secondary buttons. Auto-generated from themeColor if omitted. |
 | `darkMode` | Boolean — renders entire page with dark backgrounds and light text. All sections adapt automatically. |
 | `fontFamily` | Google Fonts name, loaded automatically per locale variant. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants. |
-| `headerLogo` | URL — separate logo for the light header (when hero logo is white/light). |
+| `headerLogo` | URL — logo for light headers. Dark headers prefer root `content.logo` → hero `data.logo` → `headerLogo` → `heroImage`; light headers prefer `headerLogo` first. |
 | `ogImage` | URL — Open Graph image for social sharing. Fallback order: ogImage → heroImage → profile-header avatar → screenshot or icon of the first project item that has one → first screenshots image (valid HTTP(S) URLs only). |
 
-PERSON pages are live at `/p/{slug}` immediately but appear in the AppAI directory only after AppAI review.
+PERSON pages are live at `/p/{slug}` when published with `isPublished: true`, but appear in the AppAI directory only after AppAI review. POST defaults to `isPublished: false` (a draft).
 
 ### Public visibility and App bindings
 
@@ -587,13 +590,13 @@ curl -X POST https://appai.info/api/v1/pages \
 | `textSize` | No | Top level or `content.textSize`; `xs`, `sm`, `md` (default), `lg`, `xl`, `2xl`, `3xl`, `4xl`. |
 | `textContrast` | No | Top level or `content.textContrast`; `low`, `normal` (default), `high`. |
 | `typography` | No | Top level or `content.typography`; optional role overrides `{caption, card, body, heading, display}`, each using textSize steps. Top-level settings win and persist under content; `{}` clears overrides. |
-| `headerLogo` | No | Separate logo URL for light header |
+| `headerLogo` | No | Logo URL for light headers; dark headers prefer root `content.logo` / hero `data.logo`, falling back to `headerLogo` when neither exists |
 | `content` | Yes | `{ "sections": [{ "type": "...", "order": N, "data": {...} }] }` |
 | `privacyPolicy` | No | Markdown text |
 | `termsOfService` | No | Markdown text |
 | `ogImage` | No | URL for social sharing image |
 | `canonicalUrl` | No | Full URL of the app's main site. Sends SEO credit there instead of appai.info, and marks the page as a satellite landing: header shows "Official site: {host}", footer becomes "Landing page · Hosted on AppAI · {host}", `/apps` directory card gets a "Landing page" tag. Set it only when the tool/app has its own primary marketing site (e.g. a custom domain homepage); do NOT set it to the *.vercel.app tool URL embedded in iframe-tool. |
-| `isPublished` | No | Set `true` to publish immediately |
+| `isPublished` | No | Default `false` (draft, not publicly reachable). Set `true` to publish immediately, or later `PATCH /api/v1/pages/{slug}?locale=xx` with `{"isPublished":true}`. |
 | `parentSlug` | No | Root slug for a child page (same 2–100 character slug rules); omitted/null creates a root |
 | `hideFromNav` | No | `true` to keep the page off the auto-generated site nav (still reachable by URL). Use for Delete Account, or compliance-only pages already linked from the footer. |
 | `navOrder` | No | Integer. Controls nav ordering; smaller numbers appear first. Nulls sort last by `createdAt`. |
@@ -883,7 +886,7 @@ SEO: server-rendered `VideoObject` uses the first nonblank name from caption →
 
 For menus and service price lists, put the price in `price` on each `features.items` entry (string, e.g. "NT$140"); it renders next to the title.
 
-`heading` and `subheading` are optional. For a few priced services without feature lists, use `features` with the price in each description; use `pricing` only for plans/tiers with feature lists (each plan requires `features[]`).
+`heading` and `subheading` are optional. For a few priced services without feature lists, use `features` with the `price` field on each item; use `pricing` only for plans/tiers with feature lists (each plan requires `features[]`).
 ```json
 { "type": "features", "order": 3, "data": {
     "heading": "Optional section title",
@@ -1220,8 +1223,8 @@ logic**:
 - **Backend calls** go through the generic connector proxy: set the section's
   `apiBase` to `"/api/connect/{connector}"`. The proxy injects server auth +
   the caller's identity, records usage, and enforces quota. Connectors are
-  owner-defined in `src/lib/connectors/registry.ts` (they hold secrets, so
-  they are not agent-writable); you reference one by name.
+  maintained by the AppAI platform owner (they hold secrets, so
+  agents cannot create or edit them); reference an available connector by name.
 - **Login gating**: add `"access": "login"` to the section's `data`. Anonymous
   visitors get a platform sign-in prompt in place of the section. `"access":
   "admin"` is the same gate one step further: signing in is not enough, the
@@ -1241,8 +1244,9 @@ logic**:
   passes a 3xx straight through for exactly this.
 
 If a tool needs a genuinely new backend, the **owner** adds one connector
-entry; every reuse after that is pure section config. See
-`docs/interactive-tools-architecture.md`.
+entry; every reuse after that is pure section config. Ask the platform owner
+to make the backend available; until then, use an existing connector or a
+[Wrapped tool](https://appai.info/spec/tools#iframe-tool) on your own host.
 
 ### Identity: what each rung can learn about the visitor
 

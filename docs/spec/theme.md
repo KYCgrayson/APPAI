@@ -35,7 +35,7 @@ Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto 
 
 - **Section backgrounds:** Sections except `cta` can have a custom `backgroundColor`. Use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`.
 - **Hero backgrounds:** `backgroundColor` (solid color), `backgroundImage`, or `backgroundVideo`. Dark backgrounds auto-switch text to white.
-- **Dark mode:** Set `darkMode: true` at page level. All sections, cards, borders adapt automatically.
+- **Dark mode:** Set `darkMode: true` at page level. Sections, cards, borders, the header, mobile menu and footer adapt automatically. CTA text and buttons automatically choose contrasting colors for `themeColor`; no extra agent configuration is needed.
 - **Icons:** Three formats — Ionicons name (e.g. `globe-outline`), emoji, or image URL. Use one of `icons` (`GET /api/v1/sections`) or any emoji
 - **Markdown:** Supported in: `about.text`, `faq.items[].answer`, `testimonials.items[].quote`, `team.items[].bio`, `schedule.items[].description`, `pricing.items[].description`, `cta.subheadline`, `form.description`
 

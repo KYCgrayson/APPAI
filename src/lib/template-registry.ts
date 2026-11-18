@@ -794,6 +794,7 @@ export const SECTION_DEFS: SectionDef[] = [
     name: "Iframe Tool",
     description: "Embed any tool you (or an agent) deployed to a free static host as an interactive section on the page. Use this for vibe-coded tools — wheel spinners, calculators, mini-games, drawing pads, visualizations — that the agent built and pushed to Vercel / Cloudflare Pages / Netlify / GitHub Pages. AppAI wraps it in a multi-language SEO landing page. The iframe is sandboxed (no top-nav, isolated origin) and auto-resizes when the tool sends a postMessage(`{type:'resize', height}`). The locale, theme color, and dark-mode flag are appended to the iframe URL as query params (`?locale=...&color=...&theme=dark`) so the tool can match the host page. Set `identity: true` to also hand the tool a verifiable AppAI identity. Each section also gets a standalone fullscreen URL at /p/{slug}/tools/{order}.",
     fields: [
+      { name: "access", type: "string", required: false, enum: ["login", "admin"], description: "Omit for public access. 'login' requires an AppAI sign-in; 'admin' requires an AppAI administrator. Access gates the section; it does not enable identity handoff (set identity: true separately)." },
       { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
       { name: "heading", type: "string", required: true, description: "Section heading. Required because iframes are invisible to search engines — this text is what gets indexed. Minimum 5 characters." },
       { name: "description", type: "string", required: true, description: "Short paragraph describing what the tool does. Required for SEO. Minimum 30 characters." },
@@ -807,7 +808,7 @@ export const SECTION_DEFS: SectionDef[] = [
   {
     type: "embed",
     name: "Embed",
-    description: "Embed content from TikTok, Loom, YouTube, Vimeo, Spotify, CodePen, or Figma. Auto-detects the provider from the URL and renders a sandboxed iframe with the right aspect ratio. X (Twitter) and Instagram render as linked preview cards (their iframe policy blocks direct embedding). Use this when showing a short-form video, design prototype, music track, code demo, or tutorial recording.",
+    description: "Embed content from TikTok, Loom, YouTube, Vimeo, Spotify, CodePen, Figma, Instagram, Facebook, or Threads. Auto-detects the provider from the URL and renders a sandboxed iframe with the right aspect ratio. Instagram uses the official Instagram embed iframe at https://www.instagram.com/p/{id}/embed or /reel/{id}/embed for public, embeddable posts. X (Twitter) renders as a linked preview card. Use this when showing a short-form video, design prototype, music track, code demo, or tutorial recording.",
     fields: [
       { name: "subheading", type: "string", required: false, description: "Optional section subheading." },
       { name: "heading", type: "string", required: false, description: "Optional section heading." },

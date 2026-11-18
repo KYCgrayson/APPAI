@@ -25,6 +25,9 @@ export function checkPagePreview(body: unknown, iconNames: readonly string[] = [
   warnings.push(...pageLogoWarnings({ ...parsed.data, content: sanitizedContent }));
   warnings.push(...pageHeadingWarnings(sanitizedContent, parsed.data.template));
   warnings.push(...gamePageWarnings({ ...parsed.data, content: sanitizedContent }));
+  if (!parsed.data.parentSlug && !parsed.data.privacyPolicy?.trim()) {
+    warnings.push({ path: "privacyPolicy", message: "Missing privacyPolicy for this root locale. Ask the owner what data the app collects, stores or sends, then supply the policy before publishing. See /spec/pages#compliance-pages." });
+  }
   // Step 3: Extra content-level checks (non-blocking, informational)
   const rawSections = sanitizedContent.sections;
   const sections = Array.isArray(rawSections) ? rawSections.filter(section => section && typeof section === "object" && !Array.isArray(section)) as Array<{ type: string; data: Record<string, unknown> }> : [];
@@ -121,8 +124,8 @@ function checkFields(value: unknown, fields: SectionFieldDef[], path: string, wa
 }
 
 export function pagePreviewNext(page: { slug: string; locale?: string; parentSlug?: string | null }, context: { origin?: string; isDefault?: boolean; exists?: boolean } = {}) {
-  const path = buildPagePath(page.parentSlug || page.slug, page.locale || "en", null, context.isDefault ?? (page.parentSlug ? (page.locale || "en") === "en" : true)) + (page.parentSlug ? `/${page.slug}` : "");
-  return `Review warnings, then POST the same body to /api/v1/pages${context.exists ? "?upsert=true" : ""} and open ${context.origin || ""}${path}`;
+  const path = buildPagePath(page.parentSlug || page.slug, page.locale || "en", null, context.isDefault ?? true) + (page.parentSlug ? `/${page.slug}` : "");
+  return `Review warnings, then POST the same body with isPublished: true to /api/v1/pages${context.exists ? "?upsert=true" : ""} and open ${context.origin || ""}${path}`;
 }
 
 export function parseDryRun(value: string | null): boolean | "invalid" {
@@ -133,6 +136,7 @@ export function parseDryRun(value: string | null): boolean | "invalid" {
 }
 
 function demoValueWarnings(value: unknown, path: string, warnings: SanitizeWarning[]) {
+  if (typeof value === "string" && isPlaceholderStoreUrl(value, path)) warnings.push({ path, message: "Replace demo store URL: use the app's real App Store or Google Play listing before publishing." });
   if (value === "https://color-bench-demo.pages.dev") warnings.push({ path, message: "Replace demo value: replace with your deployed tool URL." });
   if (typeof value === "string" && /^(?:[hH][tT][tT][pP][sS]?:\/\/[^/]+)?\/spec\/examples\/placeholder-logo\.png(?:[?#].*)?$/.test(value)) warnings.push({ path, message: "Replace demo logo: supply the user’s logo, or create a square 512×512 PNG with its own background; upload local files with POST /api/v1/upload and replace this value with the returned url before publishing." });
   if (typeof value === "string" && /(?:^|\/)placeholder-screen[^/?#]*\.(?:svg|png|webp|jpg)(?:[?#].*)?$/i.test(value)) warnings.push({ path, message: path.includes("(game).data.cover.")
@@ -143,6 +147,22 @@ function demoValueWarnings(value: unknown, path: string, warnings: SanitizeWarni
     demoValueWarnings(child, `${path}[${index}]${type ? `(${type})` : ""}`, warnings);
   });
   else if (value && typeof value === "object") for (const [key, child] of Object.entries(value)) demoValueWarnings(child, path ? `${path}.${key}` : key, warnings);
+}
+
+function isPlaceholderStoreUrl(value: string, path: string): boolean {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    const apple = ["apps.apple.com", "itunes.apple.com"].includes(host);
+    const google = host === "play.google.com";
+    if (!apple && !google) return /\.(?:appStoreUrl|playStoreUrl)$/.test(path)
+      && /^(?:www\.)?example\.(?:com|org|net)$/.test(host);
+    // App names may legitimately contain "demo". Match whole placeholder names,
+    // and only use all-zero Apple IDs (short but real IDs are not placeholders).
+    if (apple) return url.pathname.split("/").some(segment => /^(?:demo|example|placeholder|your[-_]?app|id0+)$/i.test(segment));
+    const id = url.searchParams.get("id") || "";
+    return /^(?:demo|example|placeholder|your[-_]?app|(?:com|org|net)\.(?:demo|example|placeholder|yourapp)(?:\.app)?)$/i.test(id);
+  } catch { return false; }
 }
 
 /** Prefer matching names, then use Levenshtein distance for deterministic typo suggestions. */

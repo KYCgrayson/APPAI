@@ -37,10 +37,10 @@ This platform gives you full control over visual design. Every parameter below i
 | `themeColorSecondary` | Hex color — optional accent for secondary buttons. Auto-generated from themeColor if omitted. |
 | `darkMode` | Boolean — renders entire page with dark backgrounds and light text. All sections adapt automatically. |
 | `fontFamily` | Google Fonts name, loaded automatically per locale variant. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW`, and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and the kit’s suggested backgroundColors the same across variants. |
-| `headerLogo` | URL — separate logo for the light header (when hero logo is white/light). |
+| `headerLogo` | URL — logo for light headers. Dark headers prefer root `content.logo` → hero `data.logo` → `headerLogo` → `heroImage`; light headers prefer `headerLogo` first. |
 | `ogImage` | URL — Open Graph image for social sharing. Fallback order: ogImage → heroImage → profile-header avatar → screenshot or icon of the first project item that has one → first screenshots image (valid HTTP(S) URLs only). |
 
-PERSON pages are live at `/p/{slug}` immediately but appear in the AppAI directory only after AppAI review.
+PERSON pages are live at `/p/{slug}` when published with `isPublished: true`, but appear in the AppAI directory only after AppAI review. POST defaults to `isPublished: false` (a draft).
 
 ### Public visibility and App bindings
 
@@ -210,13 +210,13 @@ curl -X POST https://appai.info/api/v1/pages \
 | `textSize` | No | Top level or `content.textSize`; `xs`, `sm`, `md` (default), `lg`, `xl`, `2xl`, `3xl`, `4xl`. |
 | `textContrast` | No | Top level or `content.textContrast`; `low`, `normal` (default), `high`. |
 | `typography` | No | Top level or `content.typography`; optional role overrides `{caption, card, body, heading, display}`, each using textSize steps. Top-level settings win and persist under content; `{}` clears overrides. |
-| `headerLogo` | No | Separate logo URL for light header |
+| `headerLogo` | No | Logo URL for light headers; dark headers prefer root `content.logo` / hero `data.logo`, falling back to `headerLogo` when neither exists |
 | `content` | Yes | `{ "sections": [{ "type": "...", "order": N, "data": {...} }] }` |
 | `privacyPolicy` | No | Markdown text |
 | `termsOfService` | No | Markdown text |
 | `ogImage` | No | URL for social sharing image |
 | `canonicalUrl` | No | Full URL of the app's main site. Sends SEO credit there instead of appai.info, and marks the page as a satellite landing: header shows "Official site: {host}", footer becomes "Landing page · Hosted on AppAI · {host}", `/apps` directory card gets a "Landing page" tag. Set it only when the tool/app has its own primary marketing site (e.g. a custom domain homepage); do NOT set it to the *.vercel.app tool URL embedded in iframe-tool. |
-| `isPublished` | No | Set `true` to publish immediately |
+| `isPublished` | No | Default `false` (draft, not publicly reachable). Set `true` to publish immediately, or later `PATCH /api/v1/pages/{slug}?locale=xx` with `{"isPublished":true}`. |
 | `parentSlug` | No | Root slug for a child page (same 2–100 character slug rules); omitted/null creates a root |
 | `hideFromNav` | No | `true` to keep the page off the auto-generated site nav (still reachable by URL). Use for Delete Account, or compliance-only pages already linked from the footer. |
 | `navOrder` | No | Integer. Controls nav ordering; smaller numbers appear first. Nulls sort last by `createdAt`. |
