@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { renderHtml } from "./helpers/render-html.mjs";
 import { fixtureDb, registerHostedHeaders, registerHostedRenderLoader, registerHostedNavigationState } from "./helpers/hosted-render-loader.mjs";
-import { normalizeRootHeaderAdditions, registerMainHostedBaseline } from "./helpers/hosted-chrome-regression.mjs";
+import { stripVisitorChromeAttributes, normalizeRootHeaderAdditions, registerMainHostedBaseline } from "./helpers/hosted-chrome-regression.mjs";
 
 const loader = registerHostedRenderLoader();
 const headers = registerHostedHeaders();
@@ -122,7 +122,7 @@ test("root headers render identically to main, including mobile and desktop clas
         const context = `${locale}, logo=${logo}, nav=${nav}, signedIn=${signedIn}, open=${open}`;
         const params = Promise.resolve({ segments: path(locale).slice(3).split("/") });
         const currentHeader = header(await renderHtml(await Layout({ params, children: null })));
-        assert.equal(currentHeader, header(await renderHtml(await Pr71Layout({ params, children: null }))), `#71 main: ${context}`);
+        assert.equal(stripVisitorChromeAttributes(currentHeader), header(await renderHtml(await Pr71Layout({ params, children: null }))), `#71 main: ${context}`);
         assert.ok(!anchors(currentHeader).some(link => link.icon), "root has no Home icon");
         const actual = normalizeRootHeaderAdditions(currentHeader);
         const expected = header(await renderHtml(await MainLayout({ params, children: null })));

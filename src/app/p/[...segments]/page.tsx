@@ -274,6 +274,7 @@ export default async function HostedPage({ params }: Props) {
 
   const trail = await hostedBreadcrumbs(rootPage, roots, page.locale, childSlug || subpage ? {
     name: legal?.heading ?? page.title,
+    chromeLabel: subpage === "privacy" ? "privacyPolicy" : subpage === "terms" ? "termsOfService" : undefined,
     href: hostedPageUrl(page, roots, baseUrl, subpage) ?? pageUrl,
   } : undefined);
   const breadcrumb = breadcrumbJsonLd(trail, baseUrl);

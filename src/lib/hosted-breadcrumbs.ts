@@ -17,11 +17,11 @@ export async function hostedBreadcrumbs(root: NamedPage, roots: readonly NamedPa
   const copy = hostedNavigationCopy(locale);
   const membership = await loadHostedMembership(root.organizationId, root.slug);
   const kind = membership?.kind;
-  const category = membership?.personal
-    ? { name: getDirectoryCopy(platformLocale).personalPages, href: `${prefix}/websites?type=personal` }
-    : kind ? { name: copy[kind], href: `${prefix}/${kind}` } : null;
+  const category: BreadcrumbItem | null = membership?.personal
+    ? { name: getDirectoryCopy(platformLocale).personalPages, chromeLabel: "personalPages", href: `${prefix}/websites?type=personal` }
+    : kind ? { name: copy[kind], chromeLabel: kind, href: `${prefix}/${kind}` } : null;
   return [
-    { name: copy.appai, href: `${prefix}/` },
+    { name: copy.appai, chromeLabel: "appai", href: `${prefix}/` },
     ...(category ? [category] : []),
     { name: localizedRoot.title, href: hostedPagePath(localizedRoot, roots)! },
     ...(current ? [current] : []),

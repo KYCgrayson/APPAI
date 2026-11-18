@@ -7,7 +7,7 @@ import { hostedChromeBrowser } from "./helpers/hosted-chrome-browser.mjs";
 import { renderHtml } from "./helpers/render-html.mjs";
 import { page, app } from "./fixtures/pr5-pages.ts";
 import { fixtureDb, registerHostedRenderLoader, registerHostedHeaders, registerDirectoryFixtures, registerBreadcrumbNavigation, registerAuthRenderState } from "./helpers/hosted-render-loader.mjs";
-import { registerMainHostedBaseline } from "./helpers/hosted-chrome-regression.mjs";
+import { stripVisitorChromeAttributes, registerMainHostedBaseline } from "./helpers/hosted-chrome-regression.mjs";
 import { hostedNavigationCopy } from "../src/lib/hosted-navigation-copy.ts";
 import { getDirectoryCopy } from "../src/lib/directory-copy.ts";
 import { locales } from "../src/i18n/routing.ts";
@@ -361,7 +361,7 @@ test("hosted root output differs from shipped #73 only by its breadcrumb row and
       const main = await renderHtml(await MainLayout({ params, children: await MainPage({ params }) }));
       const nav = /<nav\b[^>]*data-breadcrumb="hosted"[^>]*>[\s\S]*?<\/nav>/g;
       assert.equal([...current.matchAll(nav)].length, 1);
-      assert.equal(current.match(/<header\b[\s\S]*?<\/header>/)![0], main.match(/<header\b[\s\S]*?<\/header>/)![0]);
+      assert.equal(stripVisitorChromeAttributes(current.match(/<header\b[\s\S]*?<\/header>/)![0]), main.match(/<header\b[\s\S]*?<\/header>/)![0]);
       assert.doesNotMatch(current.match(/<header\b[\s\S]*?<\/header>/)![0], /<svg[^>]*class="[^"]*lucide-house/);
       const normalized = current.replace(nav, "").replace(/(<script type="application\/ld\+json">)([\s\S]*?)(<\/script>)/g, (script: string, open: string, json: string, close: string) => {
         const data = JSON.parse(json);
@@ -370,7 +370,7 @@ test("hosted root output differs from shipped #73 only by its breadcrumb row and
         data["@graph"] = data["@graph"].filter((item: { "@type": string }) => item["@type"] !== "BreadcrumbList");
         return open + JSON.stringify(data) + close;
       });
-      assert.equal(normalized, main, `${locale}/${template}`);
+      assert.equal(stripVisitorChromeAttributes(normalized), main, `${locale}/${template}`);
     }
   } finally { baseline.deregister(); }
 });

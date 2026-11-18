@@ -1,4 +1,6 @@
-export type BreadcrumbItem = { name: string; href: string };
+import type { HostedChromeLabel } from "./hosted-chrome-labels.ts";
+
+export type BreadcrumbItem = { name: string; href: string; chromeLabel?: HostedChromeLabel };
 
 /** The same items drive visible navigation and structured data. */
 export function breadcrumbJsonLd(items: readonly BreadcrumbItem[], origin: string) {

@@ -18,6 +18,8 @@ import { PageViewTracker } from "@/components/PageViewTracker";
 import { getExternalCanonical } from "@/lib/canonical";
 import { loadSiblings, buildNav, resolveNavHref, hostedChromeLabels } from "@/lib/site-nav";
 import { MobileMenu } from "./MobileMenu";
+import { VisitorChrome } from "./VisitorChrome";
+import type { HostedChromeLabel } from "@/lib/hosted-chrome-labels";
 import { AdaptiveChrome } from "./AdaptiveChrome";
 
 interface Props {
@@ -132,28 +134,30 @@ export default async function HostedPageLayout({ params, children }: Props) {
   // server keeps the client component pure-JSX.
   const mobileNavLinks = navItems.map((item) => {
     const { href, external } = resolveNavHref(item.target, slug, localeSegment);
-    return { label: item.label, href, external, isCurrent: isCurrentHref(href) };
+    return { label: item.label, href, external, isCurrent: isCurrentHref(href),
+      chromeLabel: !Array.isArray(content.nav) && isHomeHref(href) ? "home" as const : undefined };
   });
-  const mobileUtilityLinks: { label: string; href: string; external?: boolean; isCurrent?: boolean }[] = [
-    { label: navigation.appai, href: "/" },
+  const mobileUtilityLinks: { label: string; href: string; external?: boolean; isCurrent?: boolean; chromeLabel?: HostedChromeLabel; chromeSuffix?: string }[] = [
+    { label: navigation.appai, href: "/", chromeLabel: "appai" },
   ];
   if (externalCanonical) {
     mobileUtilityLinks.push({
       label: `${labels.officialSite}: ${externalCanonical.host}`,
+      chromeLabel: "officialSite", chromeSuffix: `: ${externalCanonical.host}`,
       href: externalCanonical.url,
       external: true,
     });
   }
   if (privacyHref) {
     mobileUtilityLinks.push({
-      label: labels.privacy,
+      label: labels.privacy, chromeLabel: "privacy",
       href: privacyHref,
       isCurrent: isCurrentHref(privacyHref),
     });
   }
   if (termsHref) {
     mobileUtilityLinks.push({
-      label: labels.terms,
+      label: labels.terms, chromeLabel: "terms",
       href: termsHref,
       isCurrent: isCurrentHref(termsHref),
     });
@@ -161,14 +165,14 @@ export default async function HostedPageLayout({ params, children }: Props) {
   // The drawer is the only chrome left on narrow screens, so the account
   // actions have to be reachable from it too.
   if (session?.user) {
-    mobileUtilityLinks.push({ label: labels.dashboard, href: "/dashboard" });
+    mobileUtilityLinks.push({ label: labels.dashboard, href: "/dashboard", chromeLabel: "dashboard" });
     mobileUtilityLinks.push({
-      label: labels.signOut,
+      label: labels.signOut, chromeLabel: "signOut",
       href: `/logout?callbackUrl=${encodeURIComponent(currentPath)}`,
     });
   } else {
     mobileUtilityLinks.push({
-      label: labels.signIn,
+      label: labels.signIn, chromeLabel: "signIn",
       href: `/login?callbackUrl=${encodeURIComponent(currentPath)}`,
     });
   }
@@ -190,6 +194,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
   );
   const accountControls = (
     <AccountControls
+      hostedChrome
       user={session?.user}
       isAdmin={
         ((session as unknown as { role?: string })?.role ?? "USER") ===
@@ -206,7 +211,8 @@ export default async function HostedPageLayout({ params, children }: Props) {
   );
 
   return (
-    <div lang={locale} dir={locale === "ar" || locale === "he" ? "rtl" : "ltr"} className="min-h-screen bg-white flex flex-col" data-hosted-dark={darkMode ? "true" : undefined} style={darkMode ? hostedChromeTheme(normalizeHostedContent(renderedPage.content).sections) : undefined}>
+    <div data-chrome-locale={locale} lang={locale} dir={locale === "ar" || locale === "he" ? "rtl" : "ltr"} className="min-h-screen bg-white flex flex-col" data-hosted-dark={darkMode ? "true" : undefined} style={darkMode ? hostedChromeTheme(normalizeHostedContent(renderedPage.content).sections) : undefined}>
+      <VisitorChrome locale={locale} />
       <PageViewTracker
         pageId={page.id}
         slug={page.slug}
@@ -241,7 +247,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
         <AdaptiveChrome compact={!isRootPage}>
           {isRootPage ? branding : (
             <div className="flex min-w-0 shrink items-center gap-1 md:gap-2 md:shrink-0 group-data-[cramped=true]/chrome:!shrink">
-              <a href={rootHref} aria-label={navigation.home} title={navigation.home}
+              <a href={rootHref} aria-label={navigation.home} title={navigation.home} data-chrome-aria-label="home" data-chrome-title="home"
                 className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 transition-colors hover:bg-gray-100 ${hostedLinkFocus}`}
                 style={{ color: darkMode ? "#f3f4f6" : proseThemeVariables(themeColor)?.["--page-theme-link-light"] ?? "#000000" }}>
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -260,6 +266,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 return (
                   <a
                     key={i}
+                    data-chrome-label={!Array.isArray(content.nav) && isHomeHref(href) ? "home" : undefined}
                     href={href}
                     target={external ? "_blank" : undefined}
                     rel={external ? "noopener noreferrer" : undefined}
@@ -276,7 +283,7 @@ export default async function HostedPageLayout({ params, children }: Props) {
           <div className={isRootPage
             ? "flex items-center gap-4 ml-auto flex-shrink-0"
             : "flex items-center gap-1 md:gap-4 ml-auto flex-shrink-0"}>
-            <Link href="/" className={`hidden md:inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm text-gray-600 hover:text-gray-900 group-data-[cramped=true]/chrome:!hidden ${hostedLinkFocus}`}>
+            <Link data-chrome-label="appai" href="/" className={`hidden md:inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm text-gray-600 hover:text-gray-900 group-data-[cramped=true]/chrome:!hidden ${hostedLinkFocus}`}>
               {/* eslint-disable-next-line @next/next/no-img-element -- Platform logo. */}
               <img src="/appai-logo2.png" alt="" className="h-4 w-4 rounded" />
               {navigation.appai}
@@ -300,23 +307,25 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 target="_blank"
                 rel="noopener"
                 className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline whitespace-nowrap group-data-[cramped=true]/chrome:!hidden"
+                data-chrome-label="officialSite" data-chrome-title="officialSite" data-chrome-suffix={`: ${externalCanonical.host}`}
                 title={`${labels.officialSite}: ${externalCanonical.host}`}
               >
                 {labels.officialSite}: {externalCanonical.host}
               </a>
             )}
             {privacyHref && (
-              <a href={privacyHref} aria-current={isCurrentHref(privacyHref) ? "page" : undefined} className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline whitespace-nowrap group-data-[cramped=true]/chrome:!hidden">
+              <a data-chrome-label="privacy" href={privacyHref} aria-current={isCurrentHref(privacyHref) ? "page" : undefined} className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline whitespace-nowrap group-data-[cramped=true]/chrome:!hidden">
                 {labels.privacy}
               </a>
             )}
             {termsHref && (
-              <a href={termsHref} aria-current={isCurrentHref(termsHref) ? "page" : undefined} className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline whitespace-nowrap group-data-[cramped=true]/chrome:!hidden">
+              <a data-chrome-label="terms" href={termsHref} aria-current={isCurrentHref(termsHref) ? "page" : undefined} className="text-sm text-gray-500 hover:text-gray-900 hidden md:inline whitespace-nowrap group-data-[cramped=true]/chrome:!hidden">
                 {labels.terms}
               </a>
             )}
             {hasDownload && (
               <a
+                data-chrome-label="download"
                 href={appStoreUrl || playStoreUrl}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -335,9 +344,13 @@ export default async function HostedPageLayout({ params, children }: Props) {
                 below 400px an account/sign-in icon leaves room for Home and
                 longer localized sign-in labels. */}
             {!isRootPage && (
-              <Link href={session?.user ? "/dashboard" : `/login?callbackUrl=${encodeURIComponent(currentPath)}`}
+              <Link
+                href={session?.user ? "/dashboard" : `/login?callbackUrl=${encodeURIComponent(currentPath)}`}
                 title={session?.user ? session.user.name || session.user.email || labels.account : labels.signIn}
                 aria-label={session?.user ? `${labels.account}: ${session.user.name || session.user.email || labels.account}` : labels.signIn}
+                data-chrome-aria-label={session?.user ? (session.user.name || session.user.email ? "account" : "accountDescription") : "signIn"}
+                data-chrome-title={session?.user ? (session.user.name || session.user.email ? undefined : "account") : "signIn"}
+                data-chrome-suffix={session?.user && (session.user.name || session.user.email) ? `: ${session.user.name || session.user.email}` : undefined}
                 className={`inline-flex h-11 w-11 items-center justify-center rounded-md text-gray-700 min-[400px]:hidden ${hostedLinkFocus}`}>
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                   <circle cx="12" cy="8" r="4" />
@@ -385,12 +398,12 @@ export default async function HostedPageLayout({ params, children }: Props) {
         {(privacyHref || termsHref) && (
           <div className="flex justify-center gap-6 mb-4 text-sm text-gray-500">
             {privacyHref && (
-              <a href={privacyHref} className="hover:text-gray-800">
+              <a data-chrome-label="privacyPolicy" href={privacyHref} className="hover:text-gray-800">
                 {labels.privacyPolicy}
               </a>
             )}
             {termsHref && (
-              <a href={termsHref} className="hover:text-gray-800">
+              <a data-chrome-label="termsOfService" href={termsHref} className="hover:text-gray-800">
                 {labels.termsOfService}
               </a>
             )}
@@ -404,11 +417,11 @@ export default async function HostedPageLayout({ params, children }: Props) {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/appai-logo2.png" alt="" aria-hidden className="h-4 w-4 rounded" />
-            <span className="font-medium">{navigation.appai}</span>
+            <span data-chrome-label="appai" className="font-medium">{navigation.appai}</span>
           </Link>
           {externalCanonical && (
             <div className="mt-3 inline-flex w-full flex-wrap justify-center items-center gap-x-2 text-gray-400">
-              <span>{labels.landingPage}</span>
+              <span data-chrome-label="landingPage">{labels.landingPage}</span>
               <span aria-hidden>·</span>
               <a href={externalCanonical.url} target="_blank" rel="noopener" className="hover:text-gray-600">
                 {externalCanonical.host}
