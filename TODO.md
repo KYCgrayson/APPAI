@@ -1,9 +1,20 @@
 ## Video digest site recipe (#91 / #108, docs only)
 
 - [x] Document an index feed/grid and video children, in-page moments, Markdown key points/tables/sources, optional heading colour, owner-removal preflight, external subscriptions and publisher-owned daily updates.
-- [x] Preserve the four-default-locale policy: current single-locale behavior does not grant a video-digest publishing exception.
+- [x] Language: publish only the content language the user chose (e.g. a Chinese-only newsletter); four defaults otherwise.
 - [x] Add three fictional request bodies and regression tests against the API's shared preview validator; link examples from the public repo without changing server routes or the served-example allowlist.
 - [x] Verify TypeScript, lint (0 errors, 31 existing warnings), full tests (845 passed, 12 skipped), feature map including new files and regenerated agent spec (overview: 107 lines). Fix the legacy-anchor test's false match on `video-digest-site-recipe`; independent review passed, including 22/22 example/spec checks.
+
+## Diagram explanations (#91 PR-2)
+
+- [x] Reuse stats/features for numbers and schedule/entries for timelines; add only compare, steps, layers and cycle diagrams.
+- [x] Share strict indexed validation and normalization across create/upsert, PUT, merged page/section PATCH, preview and dry-run; publish the discriminated contract through the section registry/JSON Schema.
+- [x] Render accessible standalone CSS diagrams, localized cycle repeat copy, safe optional sources/moment links, known icons, focused layers and AA light/dark accents; preserve non-diagram page HTML.
+- [x] Document all bounds and a fictional four-kind payload; update both feature maps and regenerate AGENT_INSTRUCTIONS.md.
+- [x] Final checks: TypeScript passes; lint 0 errors (31 existing warnings); full suite 970 passed / 13 optional skipped (983 total), including 128 passing diagram checks. Independent Codex review found a legacy subheading issue, now fixed and covered; schema/runtime length and URL parsing differences are documented.
+- [x] Spec regenerated; feature map passes with a temporary index containing all new paths (real staging is blocked by worktree index.lock permissions).
+- [ ] Commit and owner acceptance: this sandbox cannot write the worktree Git metadata; no commit or push was possible.
+- [ ] Browser screenshots/computed geometry: muted local Chrome exits at startup. Re-run `DIAGRAM_BROWSER_TESTS=1 DIAGRAM_QA_DIR=/tmp/appai-diagram-qa node --experimental-strip-types --test tests/diagram-browser.test.ts` where Chrome can run. Static before/after HTML is generated before launch; tests block external requests and never play media.
 
 ## Single-locale hosted pages (#91 PR-3)
 

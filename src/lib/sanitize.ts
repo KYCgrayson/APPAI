@@ -1,3 +1,4 @@
+import { normalizeDiagramData } from "./diagram.ts";
 import { heroMediaWarnings } from "./hero-media.ts";
 import { editorialLink } from "./hosted-editorial-links.ts";
 import { PLATFORM_ORIGIN } from "./platform-identity.ts";
@@ -170,7 +171,7 @@ export function sanitizeContent(
             return feature;
           });
         }
-        result[key] = data;
+        result[key] = section.type === "diagram" ? normalizeDiagramData(data) ?? data : data;
       } else result[key] = sanitizeContent(value, key, warnings, fieldPath);
     }
     return result;

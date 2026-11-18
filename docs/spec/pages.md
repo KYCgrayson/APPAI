@@ -173,7 +173,7 @@ Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/pub
 | Subscribe | Link a hero button (`ctaText` / `ctaUrl`) or `links` item to the user's own newsletter. AppAI does not collect email for subscriptions. |
 | Public content and rights | Only publish public videos; the publisher is responsible for rights to text and thumbnails. Verify visibility and permissions before each publish. |
 
-A `diagram` section (compare/steps/layers/cycle) is coming; until then use Markdown tables.
+For a picture of an idea, use a [`diagram`](https://appai.info/spec/sections#diagram) section (`compare`, `steps`, `layers`, `cycle`); its `link` can jump to a video moment (`?t=90#<video-id>`). Use Markdown tables for plain tabular data.
 
 Fictional request bodies in the public repo: [root index](https://github.com/KYCgrayson/APPAI/blob/main/docs/examples/video-digest.example.json), [YouTube child with moments](https://github.com/KYCgrayson/APPAI/blob/main/docs/examples/video-digest-youtube.example.json), [minimal mp4 child without chapters](https://github.com/KYCgrayson/APPAI/blob/main/docs/examples/video-digest-mp4.example.json). Send each object separately; these are English samples; publish them in the language the user chose. Replace fictional media/source/newsletter URLs and the logo, and confirm data practices before writing the real `privacyPolicy`; preview does not fetch media or verify rights. [Dry-run](https://appai.info/spec/api#preview-without-saving) every body with `?upsert=true`, require `valid: true` and no warnings, then publish root variants before children with `isPublished: true`.
 

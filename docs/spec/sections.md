@@ -3,7 +3,7 @@ Covers section schemas and icons; interactive tool schemas remain on /spec/tools
 Previous: [Pages](https://appai.info/spec/pages) · Next: [Multi-language & multi-page](https://appai.info/spec/i18n)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
-Optional heading/subheading: pricing, faq, features, screenshots, download (heading overrides ctaText), video, testimonials, gallery, team, schedule, sponsors, stats, contact, links, about, action, form, media-downloader, tool, pdf-viewer, embed, iframe-tool, video-subtitle, simple-order, project-cards, entries. Hero/cta use headline/subheadline; profile-header uses name/tagline; entries also supports intro. Omitted fields preserve existing rendering.
+Optional heading/subheading: pricing, faq, features, screenshots, download (heading overrides ctaText), video, testimonials, gallery, team, schedule, sponsors, stats, contact, links, about, action, form, media-downloader, tool, pdf-viewer, embed, iframe-tool, video-subtitle, simple-order, project-cards, entries, diagram. Hero/cta use headline/subheadline; profile-header uses name/tagline; entries also supports intro. Omitted fields preserve existing rendering.
 
 Give both store URLs; the page picks the right one per device. Hero primary button = the store the user listed first. Set hero ctaUrl/ctaSecondaryUrl to the store URLs in that order; recognized apps.apple.com and play.google.com URLs render badges in every hero variant. Both badges render server-side; iOS emphasizes App Store first, Android Google Play first; desktop keeps both. Badge dimensions stay fixed during client reordering.
 
@@ -11,7 +11,7 @@ After [dry-run](https://appai.info/spec/api#preview-without-saving), follow the 
 
 ## Icons
 
-Three formats, all render correctly. Mix freely within a page.
+Three formats, all render correctly in sections using SmartIcon. Mix freely within a page. Exception: `diagram.items[].icon` accepts only a bundled icon name; unknown names, emoji and image URLs are omitted.
 
 **Ionicons (recommended):** Use built-in icon names or any emoji; discover names via `GET /api/v1/sections`. Bundled names:
 logo-line, logo-threads, logo-whatsapp, people-outline, time-outline, calendar-outline, camera-outline, color-palette-outline, hand-left-outline, leaf-outline, cafe-outline, cut-outline, bicycle-outline, brush-outline, school-outline, globe-outline, logo-github, logo-twitter, logo-linkedin, logo-youtube, logo-instagram, logo-discord, logo-tiktok, logo-facebook, logo-reddit, logo-medium, logo-mastodon, mail-outline, call-outline, location-outline, chatbubble-outline, chatbubbles-outline, send-outline, download-outline, cloud-download-outline, cloud-upload-outline, play-circle-outline, arrow-forward-outline, arrow-back-outline, open-outline, link-outline, copy-outline, share-outline, checkmark-circle, checkmark-circle-outline, close-circle, alert-circle, information-circle, lock-closed, lock-open, eye-outline, eye-off-outline, sparkles-outline, rocket-outline, star-outline, star, heart-outline, heart, flash-outline, shield-checkmark-outline, shield-outline, ribbon-outline, trophy-outline, gift-outline, menu-outline, close-outline, search-outline, settings-outline, options-outline, ellipsis-horizontal, ellipsis-vertical, chevron-down, chevron-up, chevron-forward, chevron-back, add-outline, remove-outline, code-slash-outline, terminal-outline, hardware-chip-outline, server-outline, cloud-outline
@@ -261,6 +261,67 @@ For menus and service price lists, put the price in `price` on each `features.it
     ]
 }}
 ```
+
+### diagram
+
+Standalone explanations rendered on the server using text and CSS. No images, canvas, client JavaScript or video dependency. Choose an existing section first:
+
+| Need | Existing section | New diagram kind? |
+|---|---|---|
+| Numbers / KPIs | `stats` value + label; `features` can explain each metric | No |
+| Timeline / milestones | `schedule` time + title + description; `entries` can hold ordered narrative milestones | No |
+| Comparison, procedure, layered model, repeating loop | `diagram` with `compare`, `steps`, `layers`, `cycle` | Only these four |
+
+| Field | Contract |
+|---|---|
+| `data.items` | Required array, **1–12** diagrams. Empty, missing or oversized arrays are errors. |
+| `data.heading` / `subheading` | Optional nonblank plain text, **1–80** / **1–160** characters. No fallback heading. |
+| `items[].kind` | Required: exactly `compare`, `steps`, `layers` or `cycle`. Unknown kinds are errors, not fallbacks. |
+| `items[].title` | Required nonblank plain text, **1–80** characters. |
+| `items[].takeaway` | Optional nonblank plain text, **1–120** characters. Write the conclusion in the page's language. |
+| `items[].icon` | Optional bundled platform icon name (`GET /api/v1/sections`). Unknown names are omitted; no emoji, image URL or custom SVG. |
+| `items[].sources` | Optional **1–6** `{label, url}` references. Omit instead of `[]`. Each URL must be absolute **HTTPS**, without credentials. |
+| `items[].link` | Optional `{label, url}` related link. Same shared safe-href policy as project-cards/gallery: HTTPS, `/p/...`, `#anchor`, or `?t=90#id` (also `m:ss` / `h:mm:ss`). |
+| All `label` fields | Required nonblank plain text, **1–40** characters, including source/link labels. |
+| `detail` / each `point` | Nonblank plain text, **1–160** characters; `detail` is optional. |
+| All URLs | **≤2048** characters; HTTPS scheme is case-insensitive and stored lowercase. External origins open a new tab. No `http:`, `javascript:`, `data:`, protocol-relative URLs or credentials. |
+
+Text limits use JavaScript string length (UTF-16 code units, including whitespace). HTML tags are stripped on write and lengths/nonblank requirements are checked again; rendering escapes text. Markdown syntax stays literal. No rich-text rendering or truncation. Unknown extra item fields are dropped.
+
+| Kind | Required data | Optional data / layout |
+|---|---|---|
+| `compare` | `columns`: **2–4** `{label, points}`; `points`: **1–6** strings per column | Side-by-side columns |
+| `steps` | `steps`: **2–8** `{label, detail?}` | Numbered boxes with forward arrows |
+| `layers` | `layers`: **2–6** `{label, detail?}` | `focus`: integer, **0 ≤ focus < layers.length**; emphasized band with accessible current-item state |
+| `cycle` | `steps`: **3–6** `{label, detail?}` | Numbered loop with an arrow back to the first step; screen readers hear a localized repeat notice |
+
+At **≤640px**, all diagrams stack in reading order and arrows point down. Text wraps without clipping; light/dark surfaces and contrast-adjusted page-theme accents keep text at AA. The section uses its own neutral light/dark surfaces, including inside a custom background wrapper. Ordered lists preserve step/cycle semantics. The repeat notice uses hosted-page locale matching (including primary-subtag and English fallback), never platform messages.
+
+Each diagram must be complete without following a link. An optional moment link can target a separately authored video section; it never creates or requires a player. Full create/upsert/PUT, merged page/section PATCH, preview and dry-run share the validator, including post-sanitization checks. Errors name the exact field, e.g. `sections[3].data.items[1].kind`. PATCH can update only `heading`; item arrays replace as a whole and each submitted item must be complete. Discovery: `GET /api/v1/sections?type=diagram`; `format=jsonschema` exposes per-kind bounds and the focus dependency. JSON Schema counts Unicode code points for `maxLength`; the API applies the documented UTF-16 limit and parses URL host semantics in addition to the published URL pattern. Dry-run is authoritative for these checks.
+
+Fictional four-kind example (works without a video):
+
+```json
+{ "type": "diagram", "order": 1, "data": {
+  "heading": "A paper workshop",
+  "items": [
+    { "kind": "compare", "title": "Choose a material", "icon": "leaf-outline",
+      "columns": [{ "label": "Paper", "points": ["Quick to fold", "Easy to recycle"] }, { "label": "Cardboard", "points": ["Supports larger models"] }],
+      "takeaway": "Choose the material that fits the model.",
+      "sources": [{ "label": "Workshop notes", "url": "https://example.com/workshop" }] },
+    { "kind": "steps", "title": "Build a prototype",
+      "steps": [{ "label": "Sketch", "detail": "Draw a small bridge." }, { "label": "Fold" }, { "label": "Test" }],
+      "link": { "label": "Project page", "url": "/p/paper-workshop" } },
+    { "kind": "layers", "title": "Inside the model", "focus": 1,
+      "layers": [{ "label": "Deck" }, { "label": "Supports", "detail": "The load-bearing layer." }, { "label": "Base" }] },
+    { "kind": "cycle", "title": "Improve the design",
+      "steps": [{ "label": "Observe" }, { "label": "Adjust" }, { "label": "Retest" }],
+      "takeaway": "Repeat the experiment after each change." }
+  ]
+} }
+```
+
+To add an optional moment jump, use `"link": {"label": "Related moment", "url": "?t=90#workshop-video"}` and a separate video section with `data.id: "workshop-video"`.
 
 ### gallery
 
