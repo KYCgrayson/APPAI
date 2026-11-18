@@ -3,6 +3,11 @@ import { registerHooks } from 'node:module';
 import ts from 'typescript';
 import { serializeJsonLd } from '../../src/lib/json-ld.ts';
 
+/** The only SSR deltas allowed by browser-language chrome enhancement. */
+export function stripVisitorChromeAttributes(html) {
+  return html.replace(/ data-chrome-(?:locale|label|aria-label|title|suffix|content)="[^"]*"/g, '');
+}
+
 /** Load main's actual source in a separate module namespace, using fixture DB/auth. */
 export function registerMainHostedBaseline(ref = 'main', fixtureImports = []) {
   const root = new URL('../../', import.meta.url);
@@ -48,7 +53,7 @@ export function registerMainHostedBaseline(ref = 'main', fixtureImports = []) {
 
 /** Root diffs may remove AppAI and aria-current only; never rewrite classes. */
 export function normalizeRootHeaderAdditions(header) {
-  return header.replace(/ aria-current="page"/g, '')
+  return stripVisitorChromeAttributes(header).replace(/ aria-current="page"/g, '')
     .replace(/<a\b[^>]*class="hidden md:inline-flex min-h-11[^>]*href="\/"[^>]*>[\s\S]*?<\/a>/, '')
     .replace(/<li><a\b[^>]*href="\/"[^>]*>AppAI<\/a><\/li>/, '');
 }
@@ -94,6 +99,7 @@ export function normalizeHostedNavigationChanges(html, url) {
  * Dedicated #73 root comparisons allow only the row and matching JSON-LD.
  */
 export function normalizeHostedBreadcrumbChanges(html, url) {
+  html = stripVisitorChromeAttributes(html);
   const trail = html.match(/<nav\b[^>]*data-breadcrumb="hosted"[^>]*>[\s\S]*?<\/nav>/)?.[0];
   if (!trail) return html;
   const names = [...trail.matchAll(/title="([^"]*)"/g)].map(match => match[1]).slice(-2);

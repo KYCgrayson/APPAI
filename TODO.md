@@ -1,3 +1,9 @@
+## Hosted chrome browser language (#91)
+
+- [x] Preserve page-locale server HTML/cache behaviour; enhance marked platform labels using browser languages after hydration, including late-mounted mobile menus and accessible labels.
+- [x] Keep publisher content, content language choices, icons, URLs, SEO and CSP unchanged; cover locale matching and byte-identical SSR apart from declared data attributes.
+- [ ] Run `HOSTED_CHROME_LOCALE_BROWSER_TESTS=1` outside the restricted sandbox: Chrome exits at startup here; capture before/after screenshots and verify real hydration/drawer interaction.
+
 ## Video digest site recipe (#91 / #108, docs only)
 
 - [x] Document an index feed/grid and video children, in-page moments, Markdown key points/tables/sources, optional heading colour, owner-removal preflight, external subscriptions and publisher-owned daily updates.
