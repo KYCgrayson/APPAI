@@ -6,7 +6,7 @@ import { join } from 'node:path';
 // Uses an existing Chrome installation; never downloads a browser or package.
 export async function hostedChromeBrowser(binary) {
   const profile = await mkdtemp(join(tmpdir(), 'appai-hosted-chrome-'));
-  const chrome = spawn(binary, ['--headless=new', '--remote-debugging-pipe', '--no-first-run',
+  const chrome = spawn(binary, ['--headless=new', '--mute-audio', '--remote-debugging-pipe', '--no-first-run',
     '--no-default-browser-check', '--disable-background-networking', '--disable-extensions',
     `--user-data-dir=${profile}`, 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe', 'pipe', 'pipe'] });
   let sequence = 0;

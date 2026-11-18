@@ -1,3 +1,4 @@
+import { diagramContentIssues } from "./diagram.ts";
 import { galleryContentIssues } from "./gallery.ts";
 import { projectCardsContentIssues } from "./project-cards.ts";
 import { normalizeVideoContent } from "./video-data.ts";
@@ -67,7 +68,7 @@ export function checkPagePreview(body: unknown, iconNames: readonly string[] = [
     const section = Array.isArray(rawSections) ? rawSections[Number(index)] : null;
     return section && typeof section === "object" && "type" in section ? `${match}(${section.type})` : match;
   });
-  const errors = [...galleryContentIssues(sanitizedContent), ...projectCardsContentIssues(sanitizedContent), ...gameContentIssues(sanitizedContent), ...normalizeVideoContent(sanitizedContent, false, context.existingContent).issues].map(e => ({ path: ["content", ...e.path].map(String).join("."), message: e.message }));
+  const errors = [...diagramContentIssues(sanitizedContent), ...galleryContentIssues(sanitizedContent), ...projectCardsContentIssues(sanitizedContent), ...gameContentIssues(sanitizedContent), ...normalizeVideoContent(sanitizedContent, false, context.existingContent).issues].map(e => ({ path: ["content", ...e.path].map(String).join("."), message: e.message }));
   return { valid: errors.length === 0, errors, warnings, ...gamesListingResponse(sanitizedContent), sanitizedContent, typography: computedTypography.desktop, typographyMobile: computedTypography.mobile, next: errors.length ? "Fix errors and dry-run again." : pagePreviewNext(parsed.data, context) };
 }
 

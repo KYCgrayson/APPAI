@@ -1,3 +1,4 @@
+import { diagramJsonSchema, DIAGRAM_KINDS } from "./diagram.ts";
 import { PROJECT_CARD_HREF_PATTERN, EDITORIAL_IMAGE_PATTERN } from "./hosted-editorial-links.ts";
 import { GALLERY_ASPECTS, GALLERY_BADGE_PATTERN } from "./gallery.ts";
 import { SOCIAL_PLATFORMS } from "./sanitize.ts";
@@ -61,6 +62,8 @@ export const COMMON_SECTION_FIELDS: SectionFieldDef[] = [
 export const COMMON_SECTION_FIELD: SectionFieldDef = COMMON_SECTION_FIELDS[0];
 
 export interface SectionDef {
+  /** Exact data contract when fields vary by a discriminator. */
+  dataSchema?: ReturnType<typeof diagramJsonSchema>;
   type: string;
   name: string;
   description: string;
@@ -78,9 +81,42 @@ export interface PresetDef {
   sections: string[]; // section types in default order
 }
 
+const diagramNodeFields: SectionFieldDef[] = [
+  { name: "label", type: "string", required: true, minLength: 1, maxLength: 40, description: "Plain-text label." },
+  { name: "detail", type: "string", required: false, minLength: 1, maxLength: 160, description: "Optional plain-text explanation." },
+];
+
 // --- All Available Sections ---
 
 export const SECTION_DEFS: SectionDef[] = [
+  {
+    type: "diagram",
+    name: "Diagram",
+    description: "Standalone CSS diagrams: compare, steps, layers or cycle. Plain text only; no video required. Use stats for numbers and schedule for timelines.",
+    dataSchema: diagramJsonSchema(),
+    fields: [
+      { name: "heading", type: "string", required: false, minLength: 1, maxLength: 80, description: "Optional plain-text section heading." },
+      { name: "subheading", type: "string", required: false, minLength: 1, maxLength: 160, description: "Optional plain-text supporting text." },
+      { name: "items", type: "array", required: true, minItems: 1, maxItems: 12, description: "Diagrams; see dataSchema / format=jsonschema for the exact per-kind contract. All supplied arrays must be nonempty.", items: [
+        { name: "kind", type: "string", required: true, enum: DIAGRAM_KINDS, description: "Exactly compare, steps, layers or cycle." },
+        { name: "title", type: "string", required: true, minLength: 1, maxLength: 80, description: "Plain-text diagram title." },
+        { name: "takeaway", type: "string", required: false, minLength: 1, maxLength: 120, description: "Optional plain-text conclusion." },
+        { name: "icon", type: "string", required: false, description: "Existing platform icon name only; unknown names are omitted. No emoji or image URLs." },
+        { name: "columns", type: "array", required: false, minItems: 2, maxItems: 4, items: [diagramNodeFields[0], { name: "points", type: "array", required: true, minItems: 1, maxItems: 6, description: "Plain-text comparison points.", valueItems: { type: "string", minLength: 1, maxLength: 160, description: "Plain-text point." } }], description: "compare only: 2–4 columns, each with label (1–40 characters) and points (1–6 strings of 1–160 characters)." },
+        { name: "steps", type: "array", required: false, minItems: 2, maxItems: 8, items: diagramNodeFields, description: "steps: 2–8; cycle: 3–6. Each has label (1–40 characters), optional detail (1–160)." },
+        { name: "layers", type: "array", required: false, minItems: 2, maxItems: 6, items: diagramNodeFields, description: "layers only: 2–6 bands, each with label (1–40 characters), optional detail (1–160)." },
+        { name: "focus", type: "integer", required: false, minimum: 0, maximum: 5, description: "layers only: zero-based index strictly below layers.length." },
+        { name: "sources", type: "array", required: false, minItems: 1, maxItems: 6, description: "Optional HTTPS sources without credentials. Omit instead of [].", items: [
+          { name: "label", type: "string", required: true, minLength: 1, maxLength: 40, description: "Plain-text source label." },
+          { name: "url", type: "url", required: true, maxLength: 2048, description: "HTTPS only, without credentials." },
+        ] },
+        { name: "link", type: "object", required: false, description: "Optional related page or video moment. Same strict safe-href helper as project-cards/gallery.", fields: [
+          { name: "label", type: "string", required: true, minLength: 1, maxLength: 40, description: "Plain-text link label." },
+          { name: "url", type: "url", required: true, maxLength: 2048, pattern: PROJECT_CARD_HREF_PATTERN, description: "HTTPS, /p/..., #anchor or ?t=time#anchor; HTTPS scheme stored lowercase." },
+        ] },
+      ] },
+    ],
+  },
 {
   "type": "game",
   "name": "Game",

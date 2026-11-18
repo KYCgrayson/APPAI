@@ -1,3 +1,4 @@
+import { diagramContentIssues } from "@/lib/diagram";
 import { galleryContentIssues } from "@/lib/gallery";
 import { projectCardsContentIssues } from "@/lib/project-cards";
 import { withPageWrite, updateLivePage, PageWriteConflict, type PageApiActor } from "@/lib/page-write-guard";
@@ -164,7 +165,7 @@ async function putPage(
     data.content = sanitizePageContent(data.content ?? page.content, undefined, putWarnings, page.content);
 
     const effective = { ...page, ...data };
-    const gameIssues = [...galleryContentIssues(effective.content), ...projectCardsContentIssues(effective.content), ...gameContentIssues(effective.content), ...normalizeVideoContent(effective.content, false, page.content).issues];
+    const gameIssues = [...diagramContentIssues(effective.content), ...galleryContentIssues(effective.content), ...projectCardsContentIssues(effective.content), ...gameContentIssues(effective.content), ...normalizeVideoContent(effective.content, false, page.content).issues];
     if (gameIssues.length) throw new z.ZodError(gameIssues);
     if (gameSlugReserved(effective)) return errorResponse("This game slug is reserved; choose a distinct slug.", 400);
 
@@ -256,7 +257,7 @@ async function patchPage(
     // mergeContent retains object identity for untouched sections. Validate only
     // changed sections, with their final merged data and original field indices.
     const touchedContent = { ...merged, ...(Array.isArray(merged?.sections) ? { sections: merged.sections.map(section => previous.includes(section) ? {} : section) } : {}) };
-    const issues = [...galleryContentIssues(touchedContent), ...projectCardsContentIssues(touchedContent), ...gameContentIssues(touchedContent), ...normalizeVideoContent(touchedContent, false, page.content).issues];
+    const issues = [...diagramContentIssues(touchedContent), ...galleryContentIssues(touchedContent), ...projectCardsContentIssues(touchedContent), ...gameContentIssues(touchedContent), ...normalizeVideoContent(touchedContent, false, page.content).issues];
     if (issues.length) throw new z.ZodError(issues);
     const sanitized = sanitizePageContent(
       mergedContent,
@@ -266,7 +267,7 @@ async function patchPage(
     );
     if (Array.isArray(merged?.sections) && Array.isArray(sanitized.sections)) {
       const sanitizedTouched = { ...sanitized, sections: merged.sections.map((section, i) => previous.includes(section) ? {} : (sanitized.sections as unknown[])[i]) };
-      const sanitizedIssues = [...galleryContentIssues(sanitizedTouched), ...projectCardsContentIssues(sanitizedTouched), ...gameContentIssues(sanitizedTouched), ...normalizeVideoContent(sanitizedTouched, false, page.content).issues];
+      const sanitizedIssues = [...diagramContentIssues(sanitizedTouched), ...galleryContentIssues(sanitizedTouched), ...projectCardsContentIssues(sanitizedTouched), ...gameContentIssues(sanitizedTouched), ...normalizeVideoContent(sanitizedTouched, false, page.content).issues];
       if (sanitizedIssues.length) throw new z.ZodError(sanitizedIssues);
       sanitized.sections = merged.sections.map((section, i) => previous.includes(section) ? section : (sanitized.sections as unknown[])[i]);
     }
