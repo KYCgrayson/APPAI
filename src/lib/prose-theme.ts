@@ -1,3 +1,10 @@
+/** Opaque hex only; unknown CSS colours need the caller's fallback. */
+export function normalizeOpaqueHex(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const normalized = value.trim().replace(/^#([\da-f])([\da-f])([\da-f])$/i, "#$1$1$2$2$3$3");
+  return /^#[\da-f]{6}$/i.test(normalized) ? normalized : undefined;
+}
+
 function luminance(rgb: number[]): number {
   return rgb.reduce((sum, channel, index) => {
     const s = channel / 255;

@@ -171,8 +171,10 @@ function renderSection(
     section.type === "video" && Array.isArray(section.data?.moments) && section.data.moments.length ? `video-${index}` : undefined
   );
 
-  const headingStyle = asPageContent(page.content).headingColor === "dark"
-    ? { "--page-heading-neutral": sectionHeadingColor(section.type, data, darkMode, themeColor) } as React.CSSProperties : undefined;
+  const neutralHeadings = asPageContent(page.content).headingColor === "dark";
+  const headingColor = neutralHeadings ? sectionHeadingColor(section.type, data, darkMode, themeColor) : undefined;
+  const headingFallback = neutralHeadings && !headingColor ? "theme" : undefined;
+  const headingStyle = headingColor ? { "--page-heading-neutral": headingColor } as React.CSSProperties : undefined;
 
   let content;
   switch (section.type) {
@@ -238,7 +240,7 @@ function renderSection(
       break;
     case "cta":
       // CTA already has its own background color
-      return <div key={index} id={section.data?.id || section.id || undefined} style={headingStyle}><CtaSection {...props} /></div>;
+      return <div key={index} id={section.data?.id || section.id || undefined} data-heading-color={headingFallback} style={headingStyle}><CtaSection {...props} /></div>;
     case "links":
       content = <LinksSection {...props} />;
       break;
@@ -328,11 +330,11 @@ function renderSection(
 
   // Hero section handles its own background
   if (section.type === "hero") {
-    return <div key={index} id={sectionId} style={headingStyle}>{content}</div>;
+    return <div key={index} id={sectionId} data-heading-color={headingFallback} style={headingStyle}>{content}</div>;
   }
 
   return (
-    <div key={index} id={sectionId} style={headingStyle ? { ...headingStyle, ...(bg ? { backgroundColor: bg } : {}) } : bg ? { backgroundColor: bg } : undefined}>
+    <div key={index} id={sectionId} data-heading-color={headingFallback} style={headingStyle ? { ...headingStyle, ...(bg ? { backgroundColor: bg } : {}) } : bg ? { backgroundColor: bg } : undefined}>
       {content}
     </div>
   );

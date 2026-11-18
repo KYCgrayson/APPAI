@@ -259,7 +259,7 @@ Set `content.headingColor` to `"dark"` for neutral headings; omit it or use `"th
 {"themeColor":"#0369A1","darkMode":false,"content":{"headingColor":"dark","sections":[{"type":"hero","data":{"headline":"Ocean studio"}},{"type":"about","data":{"heading":"Our work","text":"Built with care."}}]}}
 ```
 
-This affects rendered H1–H6 headings, including Markdown, while links, buttons and accents retain their theme colours. Normal light/dark surfaces use near-black/light text respectively. Explicit hex backgrounds and theme-filled CTA/download sections select neutral black/white for AA contrast; centered hero media keeps white headings over its dark overlay. Custom CSS and externally embedded documents are outside this setting.
+This affects rendered H1–H6 headings, including Markdown, while links, buttons and accents retain their theme colours. Normal light/dark surfaces use near-black/light text respectively. Explicit `#rgb`/`#rrggbb` backgrounds and theme-filled CTA/download sections select neutral black/white for AA contrast; centered hero media keeps white headings over its dark overlay. Unparsed explicit colours (such as names, `rgb(...)` or alpha hex) retain that section’s theme heading behaviour instead of forcing neutral headings. Custom CSS and externally embedded documents are outside this setting.
 
 ### Logo
 
@@ -268,7 +268,7 @@ Pages without a logo show a generated letter tile and are listed after pages wit
 
 **“no logo” means you make one.** If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with `POST /api/v1/upload`, then publish. Agents MUST supply a logo. Non-blocking platform warnings are a fallback, not permission to skip it.
 
-**Agents MUST provide a logo for every root page:** square PNG, 512×512 recommended, 1024×1024 accepted, app-icon style with its own background color. Set `content.logo` (or hero `data.logo` / `headerLogo`) to an HTTPS URL or same-origin `/path`. For local files, upload with `POST /api/v1/upload` and use the returned URL. Missing or non-HTTPS logos produce `warnings` on create/upsert, PUT, PATCH and dry-run. Child pages inherit the root header logo and need no separate logo. `heroImage` does not count for directory cards or the missing-logo warning; the header still falls back to it. Dry-run warns to replace the placeholder with the real logo and `https://color-bench-demo.pages.dev` with your deployed tool URL wherever that value appears.
+**Agents MUST provide a logo for every root page:** square PNG, 512×512 recommended, 1024×1024 accepted, app-icon style with its own background color. Set `content.logo` (or hero `data.logo` / `headerLogo`) to an HTTPS URL or same-origin `/path`. For local files, upload with `POST /api/v1/upload` and use the returned URL. Missing or non-HTTPS logos produce `warnings` on create/upsert, PUT, PATCH and dry-run. Child pages inherit the root header logo and need no separate logo. Their favicon uses their own valid logo when supplied, otherwise the root header logo (including its dark-mode preference); a child `heroImage` photo does not replace it. OG/Twitter images remain independent. `heroImage` does not count for directory cards or the missing-logo warning; the header still falls back to it. Dry-run warns to replace the placeholder with the real logo and `https://color-bench-demo.pages.dev` with your deployed tool URL wherever that value appears.
 
 Header/footer follow the displayed page: children use their own `darkMode`; privacy/terms documents use light chrome. Dark chrome and empty page space use the first dark section background (with a safe dark fallback); drawer surfaces use the next distinct dark background. A separate dark-coloured `headerLogo` for light headers will not override an existing primary logo on dark chrome.
 
@@ -498,7 +498,7 @@ Every section supports `id` (anchor for `#links`). Use kit backgroundColors when
 
 ### Auto-Generated Features
 
-Every page automatically gets: sticky header (with logo, title, language switcher, download button), footer (nonempty privacy/terms links), dynamic favicon (from hero logo), breadcrumb navigation on sub-pages, alternating section backgrounds, responsive mobile layout, SEO meta tags, JSON-LD structured data.
+Every page automatically gets: sticky header (with logo, title, language switcher, download button), footer (nonempty privacy/terms links), dynamic favicon (from page logo; children without a logo use root header branding), breadcrumb navigation on sub-pages, alternating section backgrounds, responsive mobile layout, SEO meta tags, JSON-LD structured data.
 
 | Hosted navigation | Visitor behavior |
 |---|---|
@@ -830,6 +830,8 @@ Required: each item's `title`; all top-level fields optional; links require `lab
 | `centered` + `backgroundVideo` | Video takes precedence over `backgroundImage`; remove the video to show the image |
 | `split` + `backgroundImage` | Right-side image; `backgroundVideo` is ignored |
 | `minimal` | Text/logo/CTA only; both background media fields are ignored |
+
+For `minimal` and `split`, text contrast follows `backgroundColor`/`darkMode`, never the ignored or side media. CSS background URLs safely encode parentheses, whitespace and quotes.
 
 Use `data.backgroundImage`, not `image`/`imageUrl`/`backgroundUrl`, and an HTTPS URL or same-origin `/path`. These rules are identical on root and child pages. POST/upsert, PUT, PATCH and dry-run return field-specific `warnings` for ignored media, common wrong image fields and non-HTTPS/non-root-relative sources. Preview does not fetch images: a syntactically valid URL may still return 404, deny hotlinking or point to a web page. Next Image host rules do not apply to hero CSS backgrounds/native images; hosted CSP allows HTTPS image hosts. Use a `video` section for a YouTube watch URL.
 

@@ -35,17 +35,24 @@ function isColorDark(hex: string): boolean {
   return (r * 299 + g * 587 + b * 114) / 1000 < 128;
 }
 
+function backgroundImageUrl(value: string): string {
+  // Keep ordinary URLs byte-identical; encode characters forbidden in bare CSS url().
+  const url = sanitizeUrl(value).replace(/[\s()"'\\\u0000-\u001f\u007f]/g, char =>
+    encodeURIComponent(char) !== char ? encodeURIComponent(char) : `%${char.charCodeAt(0).toString(16).padStart(2, "0").toUpperCase()}`);
+  return `url(${url})`;
+}
+
 export function HeroSection({ data, themeColor, themeColorSecondary, darkMode, typographyActive = false, renderVersion = 1 }: Props & { typographyActive?: boolean; renderVersion?: number }) {
   const urls = renderVersion >= 2 ? [data.ctaUrl, data.ctaSecondaryUrl] : [];
   const appStoreUrl = urls.find(url => url && /^https:\/\/apps\.apple\.com\//i.test(url));
   const playStoreUrl = urls.find(url => url && /^https:\/\/play\.google\.com\//i.test(url));
   const storeBadges = appStoreUrl || playStoreUrl ? <StoreBadges firstStore={data.ctaUrl === playStoreUrl ? "play" : "app"} appStoreUrl={appStoreUrl} playStoreUrl={playStoreUrl} typographyActive={typographyActive} /> : null;
   const hasMedia = data.backgroundImage || data.backgroundVideo;
-  const hasBg = hasMedia || data.backgroundColor;
+  const variant = data.variant || "centered";
+  const hasBg = (variant !== "minimal" && variant !== "split" && hasMedia) || data.backgroundColor;
   const isDark = hasBg
     ? (data.backgroundColor ? isColorDark(data.backgroundColor) : true)
     : (darkMode ?? false);
-  const variant = data.variant || "centered";
   const heightClass = HEIGHT_MAP[data.heroHeight || "large"];
 
   if (variant === "split") {
@@ -147,7 +154,7 @@ export function HeroSection({ data, themeColor, themeColorSecondary, darkMode, t
       className={`relative ${heightClass} flex items-center justify-center text-center px-4 sm:px-6 py-16`}
       style={{
         backgroundColor: !hasMedia ? data.backgroundColor || (darkMode ? "#111827" : undefined) : undefined,
-        backgroundImage: !data.backgroundVideo && data.backgroundImage ? `url(${sanitizeUrl(data.backgroundImage)})` : undefined,
+        backgroundImage: !data.backgroundVideo && data.backgroundImage ? backgroundImageUrl(data.backgroundImage) : undefined,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}

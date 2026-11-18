@@ -106,7 +106,7 @@ Every section supports `id` (anchor for `#links`). Use kit backgroundColors when
 
 ### Auto-Generated Features
 
-Every page automatically gets: sticky header (with logo, title, language switcher, download button), footer (nonempty privacy/terms links), dynamic favicon (from hero logo), breadcrumb navigation on sub-pages, alternating section backgrounds, responsive mobile layout, SEO meta tags, JSON-LD structured data.
+Every page automatically gets: sticky header (with logo, title, language switcher, download button), footer (nonempty privacy/terms links), dynamic favicon (from page logo; children without a logo use root header branding), breadcrumb navigation on sub-pages, alternating section backgrounds, responsive mobile layout, SEO meta tags, JSON-LD structured data.
 
 | Hosted navigation | Visitor behavior |
 |---|---|

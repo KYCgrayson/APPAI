@@ -2,6 +2,8 @@
 
 Base: `548b0ea`, branch `claude/91-pr4-small-bugs`. Fictional in-memory data only; no database, migrations, production requests, push or PR. Implementation and independent review: Codex (GPT-6 family). This document records reproduction, verification and remaining limits.
 
+> Sections 1–4 and the first verification table record round 1. The round 2 corrections and current results are recorded at the end.
+
 ## 1. Child hero background image
 
 **Verdict: reproduced input/variant mismatch; no child-only rendering bug found.** The original page payload was not supplied, so its exact variant and remote image availability are not proven.
@@ -70,3 +72,35 @@ Final local run (2026-11-18 11:05 Asia/Taipei):
 `git add` and `git commit -am '#91: fix hosted branding, add neutral headings and retry video playback'` were both rejected creating the worktree index.lock outside the writable sandbox. All changes, including generated output and new tests, remain uncommitted. No bundles, alternate index/repository, or repository copies were made. No push/PR/merge/deploy occurred.
 
 The ops inbox/run directory is outside the permitted writable roots, so the required ops append/run log could not be written here. No ops pull/commit/push was attempted; this task explicitly prohibits pushing. This QA document retains the local handoff. Next: from an authorized environment, stage the new files, rerun the stock feature-map check and the three browser checks, capture the screenshots, commit with `#91:` and append the ops handoff. Publishing remains a separate owner decision.
+
+
+## Round 2 — independent-review fixes (2026-11-18 11:15 Asia/Taipei)
+
+Start: `claude/91-pr4-small-bugs`, HEAD `5c75d0a`, clean worktree. Implemented and tested by Codex (GPT-6 family); independent read-only review by a separate Codex agent without implementation history. No DB, keys, network publication, commit, push, PR, merge or deployment. All round 2 changes remain uncommitted.
+
+| Item | Change | Regression evidence |
+|---|---|---|
+| Hero text on ignored/side media | Minimal/split derive text darkness only from backgroundColor/darkMode. Centered retains its previous logic. This corrects a real rendering defect missed in round 1; the original reported page's payload remains unavailable. | 54 direct comparisons with round 1 across 3 variants × 2 modes × 3 backgrounds × 3 media cases. Only the 4 broken light minimal/split image/video cases change text colours. Centered image HTML and ordinary URLs remain byte-identical. |
+| CSS image URLs | Percent-encode CSS url delimiters, whitespace, backslashes and control characters; keep ordinary URLs verbatim. | Parentheses, spaces, both quote types, backslashes, Unicode whitespace and pre-encoded URLs; optional browser checks assert parsed backgroundImage. |
+| Neutral heading contrast | Share opaque #rgb/#rrggbb normalization with directory tiles. Unknown explicit surfaces mark their section as theme, excluding its headings from neutral CSS; includes Hero and CTA early-return wrappers. | Short-hex black/white and mixed-case/trimmed inputs; names, rgb(), alpha hex and CSS variables; both modes and about/hero/cta/download paths. Optional computed CSS comparisons check unknown surfaces against theme mode. |
+| Child favicon | Valid own child logo wins; otherwise reuse the root header's logo selector with the child's chrome mode. Never use the child's heroImage as favicon. | 40 root-fallback cases across child modes, locale-free/explicit en routes, child photos and 5 root-logo sources; own header/content/hero logo overrides. Root mode deliberately differs from child mode. All metadata except icons compared byte-for-byte with round 1; header image matches inherited icon. |
+
+Existing 56 default/theme HTML comparisons against `548b0ea` and the suite's historical light-page baselines pass. OG/Twitter, canonical, alternates and JSON-LD remain unchanged. Cache source/options are untouched. Public style/pages/sections docs and generated AGENT_INSTRUCTIONS.md are synchronized. No source/test files were added or removed; the feature-map description was refreshed.
+
+| Command | Round 2 result |
+|---|---|
+| `npm run spec:build` | Passed; generated spec synchronized |
+| `npm run typecheck` | Passed |
+| `npm test` | 839 tests: 827 passed, 0 failed, 12 optional tests skipped |
+| `npm run lint` | Passed; 0 errors, 31 warnings |
+| `npm run feature-map:check` | Passed; 19 features, 683 mapped, 94 ignored, 777 tracked files |
+| `git diff --check` | Passed |
+| `DARK_STYLE_BROWSER_TESTS=1 SMALL_BUGS_QA_DIR=/tmp/appai-91-r2-qa node --experimental-strip-types --test tests/hosted-small-bugs.test.ts` | 13 non-browser tests passed; both browser tests failed at Chrome startup (`Chrome exited null`), before any browser assertions or screenshots |
+
+The optional headless Chrome attempt blocked external requests and had no audio/video playback. No browser remained running after the attempt. Computed CSS, visual layout and before/after screenshots remain unverified; no screenshots are claimed. The browser regression is checked in for an environment where Chrome can start. No live assets or production pages were requested.
+
+Independent review initially identified an invalid child/privacy test URL; the fixture now uses supported explicit-locale and locale-free child routes. Its rerun passed all 13 non-browser tests with 2 browser skips and found no outstanding production-code defect. Final local checks also fixed fixture-only TypeScript casts and removed an unused ESLint suppression.
+
+Ops handoff: `~/GitHub/ops/inbox/codex.md` and `ops/runs/` are outside this sandbox's writable roots. No ops write/pull/commit/push was attempted. This document retains the required run details and the append-ready inbox entry below; copy it and this round-2 record to ops from an authorized environment. Next: independent owner review and optional browser QA. Keep all changes uncommitted under this task's instructions.
+
+`- 2026-11-18 11:15｜APPAI｜#91 PR-4｜Round 2 修正 Hero 文字對比、CSS 圖片 URL、短 hex／未知背景標題回退、子頁 favicon；五個指定檢查通過；Chrome 啟動失敗，截圖待驗；變更未提交｜HEAD 5c75d0a；docs/apps/hosted-small-bugs-qa.md（Round 2）`

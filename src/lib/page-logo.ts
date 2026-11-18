@@ -23,6 +23,12 @@ export function extractLogoFromContent(value: unknown, headerLogo?: unknown): st
   return logoCandidates(value, headerLogo).find(isLogoUrl)?.trim() || null;
 }
 
+/** Header branding uses the root, preferring its primary logo in dark chrome. */
+export function hostedHeaderLogo(page: LogoPage & { heroImage?: string | null }, dark: boolean): string | null {
+  return (dark ? extractLogoFromContent(page.content) : null)
+    || extractLogoFromContent(page.content, page.headerLogo) || page.heroImage || null;
+}
+
 export function pageLogoWarnings(page: LogoPage): SanitizeWarning[] {
   // Child pages render the root page's header and have no separate directory card.
   if (page.parentSlug) return [];

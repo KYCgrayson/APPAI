@@ -1,4 +1,4 @@
-import { extractLogoFromContent, isLogoUrl } from "@/lib/page-logo";
+import { extractLogoFromContent, hostedHeaderLogo, isLogoUrl } from "@/lib/page-logo";
 import { inheritHeadingColor } from "@/lib/heading-color";
 import { loadHostedRoot, loadHostedRootVariants, loadHostedChildVariants } from "@/lib/public-hosted-page";
 import { normalizeHostedContent } from "@/lib/hosted-content";
@@ -73,7 +73,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!page) return {};
 
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
-  const { headerLogo: logoUrl } = extractLogos(page);
+  const logoUrl = childSlug
+    ? extractLogoFromContent(normalizeHostedContent(page.content), page.headerLogo)
+      || hostedHeaderLogo({ ...rootPage, content: normalizeHostedContent(rootPage.content) }, !subpage && !!page.darkMode)
+    : extractLogos(page).headerLogo;
 
   const roots = await loadHostedRootVariants(slug, rootPage.organizationId);
   const variants = childSlug ? await loadHostedChildVariants(rootPage.organizationId, slug, childSlug) : roots;

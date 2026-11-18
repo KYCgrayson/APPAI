@@ -1,5 +1,5 @@
 import { isRecord } from "./hosted-content.ts";
-import { readableTextColor } from "./prose-theme.ts";
+import { normalizeOpaqueHex, readableTextColor } from "./prose-theme.ts";
 
 /** Inherit only this presentation setting, never copy root sections/SEO into children. */
 export function inheritHeadingColor(content: unknown, rootContent: unknown): unknown {
@@ -13,13 +13,16 @@ export function inheritHeadingColor(content: unknown, rootContent: unknown): unk
 export const neutralHeadingCss = [
   '[data-heading-color="dark"] :is(.bg-white,.bg-gray-50,.bg-gray-100,.bg-gray-200,.bg-amber-50,.bg-green-50,.bg-red-50){--page-heading-neutral:#111827}',
   '[data-heading-color="dark"] :is(.bg-black,.bg-gray-700,.bg-gray-800,.bg-gray-900,.bg-gray-950){--page-heading-neutral:#f9fafb}',
-  '[data-heading-color="dark"] :is(h1,h2,h3,h4,h5,h6){color:var(--page-heading-neutral)!important}',
+  '[data-heading-color="dark"] :is(h1,h2,h3,h4,h5,h6):not([data-heading-color="theme"] *){color:var(--page-heading-neutral)!important}',
 ].join("");
 
 /** Neutral on normal surfaces; black/white on explicit colour surfaces keeps AA. */
 export function sectionHeadingColor(type: string, data: Record<string, unknown>, dark: boolean, theme: string) {
   if (type === "hero" && (!data.variant || data.variant === "centered") && (data.backgroundImage || data.backgroundVideo)) return "#ffffff";
   const background = type === "cta" || type === "download" ? theme : data.backgroundColor;
-  return typeof background === "string" && /^#[0-9a-f]{6}$/i.test(background)
-    ? readableTextColor(background) : dark ? "#f9fafb" : "#111827";
+  const hex = normalizeOpaqueHex(background);
+  if (hex) return readableTextColor(hex);
+  // Unknown explicit surfaces must retain the section's original theme styling.
+  if (background) return undefined;
+  return dark ? "#f9fafb" : "#111827";
 }

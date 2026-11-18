@@ -14,7 +14,11 @@ import { sanitizePageContent } from '../src/lib/sanitize.ts';
 
 const hooks = [registerHostedRenderLoader(), registerHostedHeaders(), registerHostedNavigationState({ open: false, user: null }), registerDirectoryFixtures({ translated: true })];
 const baseline = registerMainHostedBaseline('548b0ea', ['@/i18n/navigation']);
-test.after(() => { baseline.deregister(); hooks.reverse().forEach(h => h.deregister()); });
+const round1 = registerMainHostedBaseline('5c75d0a', ['@/i18n/navigation']);
+test.after(() => { round1.deregister(); baseline.deregister(); hooks.reverse().forEach(h => h.deregister()); });
+const { HeroSection } = await import('../src/templates/app-landing/sections/HeroSection.tsx');
+const { HeroSection: Round1Hero } = await import(round1.moduleUrl('src/templates/app-landing/sections/HeroSection.tsx'));
+const { generateMetadata: round1Metadata } = await import(round1.moduleUrl('src/app/p/[...segments]/page.tsx'));
 const { PageRenderer } = await import('../src/templates/shared/PageRenderer.tsx');
 const { PageRenderer: BeforeRenderer } = await import(baseline.moduleUrl('src/templates/shared/PageRenderer.tsx'));
 const { default: Layout } = await import('../src/app/p/[...segments]/layout.tsx');
@@ -175,12 +179,12 @@ test('neutral heading palette meets AA on default, kit and explicit surfaces', a
   const rgb = (hex: string) => 'rgb(' + hex.slice(1).match(/../g)!.map(c => parseInt(c, 16)).join(',') + ')';
   for (const kit of PAGE_STYLES) {
     const color = sectionHeadingColor('about', {}, kit.darkMode, kit.themeColor);
-    for (const bg of kit.darkMode ? ['#111827', '#1f2937', ...kit.backgroundColors] : ['#ffffff', '#f9fafb', ...kit.backgroundColors]) assert.ok(contrast(rgb(color), rgb(bg)) >= 4.5);
-    for (const type of ['cta', 'download']) assert.ok(contrast(rgb(sectionHeadingColor(type, {}, kit.darkMode, kit.themeColor)), rgb(kit.themeColor)) >= 4.5);
+    for (const bg of kit.darkMode ? ['#111827', '#1f2937', ...kit.backgroundColors] : ['#ffffff', '#f9fafb', ...kit.backgroundColors]) assert.ok(contrast(rgb(color!), rgb(bg)) >= 4.5);
+    for (const type of ['cta', 'download']) assert.ok(contrast(rgb(sectionHeadingColor(type, {}, kit.darkMode, kit.themeColor)!), rgb(kit.themeColor)) >= 4.5);
   }
   for (let r = 0; r < 256; r += 17) for (let g = 0; g < 256; g += 17) for (let b = 0; b < 256; b += 17) {
     const backgroundColor = '#' + [r, g, b].map(c => c.toString(16).padStart(2, '0')).join('');
-    assert.ok(contrast(rgb(sectionHeadingColor('about', { backgroundColor }, false, '#000000')), rgb(backgroundColor)) >= 4.5);
+    assert.ok(contrast(rgb(sectionHeadingColor('about', { backgroundColor }, false, '#000000')!), rgb(backgroundColor)) >= 4.5);
   }
 });
 
@@ -198,4 +202,142 @@ test('neutral heading styles reach CTA/media and reset at built-in card surfaces
     assert.match(html, /\.bg-gray-800[^}]*--page-heading-neutral:#f9fafb/);
     assert.ok(html.includes(darkMode ? 'bg-gray-800' : 'bg-white'));
   }
+});
+
+test('hero media changes only broken light minimal/split text; centered output is byte-identical to round 1', async () => {
+  for (const variant of ['minimal', 'split', 'centered'] as const) for (const darkMode of [false, true]) {
+    for (const backgroundColor of [undefined, '#000000', '#ffffff']) for (const media of [{}, { backgroundImage: image }, { backgroundVideo: 'https://example.com/video.mp4' }]) {
+      const props = { themeColor: '#0077bb', darkMode, data: { headline: 'Readable headline', subheadline: 'Readable description', variant, backgroundColor, ...media } };
+      const before = await renderHtml(createElement(Round1Hero, props));
+      const after = await renderHtml(createElement(HeroSection, props));
+      const broken = variant !== 'centered' && !darkMode && !backgroundColor && Object.keys(media).length > 0;
+      assert.equal(after, broken ? before.replace('color:#fff', 'color:#0077bb').replace('text-gray-300', 'text-gray-600') : before);
+      if (broken) {
+        assert.match(after, /<h1[^>]*style="color:#0077bb"/);
+        assert.match(after, /<p[^>]*text-gray-600/);
+      }
+    }
+  }
+});
+
+const cssUrlCases = [
+  ['https://example.com/File:Foo_(bar).jpg', 'https://example.com/File:Foo_%28bar%29.jpg'],
+  ['https://example.com/a b.jpg', 'https://example.com/a%20b.jpg'],
+  ['https://example.com/a"b\'c.jpg', 'https://example.com/a%22b%27c.jpg'],
+  ['https://example.com/a\\b.jpg', 'https://example.com/a%5Cb.jpg'],
+  ['https://example.com/a\u00a0b.jpg', 'https://example.com/a%C2%A0b.jpg'],
+  ['https://example.com/already%20encoded.jpg?size=large', 'https://example.com/already%20encoded.jpg?size=large'],
+];
+
+test('hero CSS URLs encode delimiters/whitespace without changing ordinary or already encoded URLs', async () => {
+  for (const [url, encoded] of cssUrlCases) {
+    const html = await renderHtml(createElement(HeroSection, { themeColor: '#0077bb', data: { backgroundImage: url } }));
+    assert.ok(html.includes(`background-image:url(${encoded})`), html);
+  }
+  const props = { themeColor: '#0077bb', data: { backgroundImage: image } };
+  assert.equal(await renderHtml(createElement(HeroSection, props)), await renderHtml(createElement(Round1Hero, props)));
+});
+
+test('neutral headings normalize short hex and opt out to theme styling for unknown explicit colours', async () => {
+  const { sectionHeadingColor } = await import('../src/lib/heading-color.ts');
+  for (const [backgroundColor, expected] of [['#000', '#ffffff'], ['#fff', '#000000'], [' #AbC ', '#000000']]) {
+    assert.equal(sectionHeadingColor('about', { backgroundColor }, false, '#0077bb'), expected);
+  }
+  for (const backgroundColor of ['black', 'rgb(0, 0, 0)', '#0008', 'var(--custom-bg)']) {
+    for (const darkMode of [false, true]) {
+      assert.equal(sectionHeadingColor('about', { backgroundColor }, darkMode, '#0077bb'), undefined);
+      const html = await renderHtml(createElement(PageRenderer, { page: page('unknown', { darkMode, themeColor: '#0077bb', content: {
+        headingColor: 'dark', sections: [{ type: 'about', data: { heading: 'Theme heading', text: '## Markdown heading', backgroundColor } }],
+      } }) }));
+      assert.ok(html.includes(`data-heading-color="theme" style="background-color:${backgroundColor}"`));
+      assert.ok(html.includes(':not([data-heading-color="theme"] *)'));
+      for (const type of ['hero', 'cta', 'download']) {
+        const sectionHtml = await renderHtml(createElement(PageRenderer, { page: page('unknown', {
+          darkMode, themeColor: backgroundColor, content: { headingColor: 'dark', renderVersion: 2,
+            sections: [{ type, data: { headline: 'Heading', heading: 'Heading', backgroundColor } }] },
+        }) }));
+        assert.ok(sectionHtml.includes('<div data-heading-color="theme"'), `${type}: ${sectionHtml}`);
+      }
+    }
+  }
+});
+
+test('child favicon falls back to root header branding, never child hero photos; all other metadata stays byte-identical', async () => {
+  for (const darkMode of [false, true]) for (const explicitLocale of [false, true]) for (const heroImage of [null, image]) {
+    for (const rootLogo of ['header', 'content', 'hero-logo', 'hero-image', 'none']) {
+      const { root, child } = fixture(undefined, undefined, darkMode);
+      root.darkMode = !darkMode;
+      root.content = { logo: rootLogo === 'content' || rootLogo === 'header' ? '/root-primary.svg' : undefined,
+        sections: rootLogo === 'hero-logo' ? [{ type: 'hero', data: { logo: '/root-hero.svg' } }] : [] } as never;
+      root.headerLogo = (rootLogo === 'header' ? '/root-header.svg' : 'http://invalid.example/logo.svg') as never;
+      root.heroImage = (rootLogo === 'hero-image' ? '/root-legacy.jpg' : null) as never;
+      child.content = { sections: [{ type: 'hero', data: { headline: 'Child' } }] } as never;
+      child.heroImage = heroImage as never;
+      const params = { params: Promise.resolve({ segments: ['ocean', ...(explicitLocale ? ['en'] : []), 'episode'] }) };
+      const expected = rootLogo === 'header' ? darkMode ? '/root-primary.svg' : '/root-header.svg'
+        : rootLogo === 'content' ? '/root-primary.svg' : rootLogo === 'hero-logo' ? '/root-hero.svg' : rootLogo === 'hero-image' ? '/root-legacy.jpg' : null;
+      const actual = await generateMetadata(params);
+      const before = await round1Metadata(params);
+      assert.deepEqual(actual.icons, expected ? { icon: expected, apple: expected } : undefined);
+      assert.equal(JSON.stringify({ ...actual, icons: undefined }), JSON.stringify({ ...before, icons: undefined }));
+      if (expected) {
+        const header = (await renderHtml(await Layout({ ...params, children: 'Body' }))).match(/<header[\s\S]*?<\/header>/)![0];
+        assert.ok(header.includes(`src="${expected}"`));
+      }
+      for (const own of ['header', 'content', 'hero']) {
+        child.headerLogo = (own === 'header' ? '/child.svg' : null) as never;
+        child.content = { logo: own === 'content' ? '/child.svg' : undefined, sections: own === 'hero' ? [{ type: 'hero', data: { logo: '/child.svg' } }] : [] } as never;
+        assert.deepEqual((await generateMetadata(params)).icons, { icon: '/child.svg', apple: '/child.svg' });
+      }
+    }
+  }
+});
+
+test('round 2 browser: hero contrast, CSS URL parsing, unknown-surface theme fallback and screenshots', {
+  skip: process.env.DARK_STYLE_BROWSER_TESTS !== '1' ? 'Opt in with DARK_STYLE_BROWSER_TESTS=1' : false,
+}, async () => {
+  const require = createRequire(import.meta.url);
+  const cssPath = new URL('../src/app/globals.css', import.meta.url).pathname;
+  const source = readFileSync(cssPath, 'utf8').replace('@import "tailwindcss";', '@import "tailwindcss" source(none);\n@source "../";');
+  const css = (await require('postcss')([require('@tailwindcss/postcss')({ optimize: true })]).process(source, { from: cssPath })).css;
+  const browser = await hostedChromeBrowser(process.env.HOSTED_CHROME_BINARY || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome');
+  try {
+    await browser.send('Network.enable');
+    await browser.send('Network.setBlockedURLs', { urls: ['http://*', 'https://*'] });
+    await browser.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 900, deviceScaleFactor: 1, mobile: false });
+    const show = async (html: string) => browser.send('Page.setDocumentContent', {
+      frameId: (await browser.send('Page.getFrameTree')).frameTree.frame.id,
+      html: `<!doctype html><html><head><style>${css}</style></head><body style="background:white">${html}</body></html>`,
+    });
+    for (const variant of ['minimal', 'split'] as const) for (const before of [true, false]) {
+      const html = await renderHtml(createElement(before ? Round1Hero : HeroSection, { themeColor: '#0077bb', data: {
+        variant, headline: 'Readable headline', subheadline: 'Readable description', backgroundImage: image,
+      } }));
+      await show(html);
+      const colors = await browser.evaluate("[getComputedStyle(document.querySelector('h1')).color, getComputedStyle(document.querySelector('p')).color]");
+      for (const color of colors) assert.equal(contrast(color, 'rgb(255,255,255)') >= 4.5, !before);
+      const dir = process.env.SMALL_BUGS_QA_DIR;
+      if (dir) {
+        mkdirSync(dir, { recursive: true });
+        const shot = await browser.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true });
+        writeFileSync(`${dir}/round2-${variant}-${before ? 'before' : 'after'}-375.png`, Buffer.from(shot.data, 'base64'));
+      }
+    }
+    for (const [url, encoded] of cssUrlCases) {
+      await show(await renderHtml(createElement(HeroSection, { themeColor: '#0077bb', data: { backgroundImage: url } })));
+      assert.equal(await browser.evaluate("getComputedStyle(document.querySelector('section')).backgroundImage"), `url("${encoded}")`);
+    }
+    for (const backgroundColor of ['#000', '#fff', 'black', 'rgb(0, 0, 0)']) {
+      const results: string[][] = [];
+      for (const headingColor of ['theme', 'dark']) {
+        await show(await renderHtml(createElement(PageRenderer, { page: page('contrast', { themeColor: '#0077bb', content: {
+          headingColor, sections: [{ type: 'about', data: { heading: 'Theme heading', text: '## Markdown heading', backgroundColor } }],
+        } }) })));
+        results.push(await browser.evaluate("[...document.querySelectorAll('h1,h2,h3')].map(el => getComputedStyle(el).color)"));
+      }
+      if (backgroundColor.startsWith('#')) {
+        for (const color of results[1]) assert.ok(contrast(color, backgroundColor === '#000' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') >= 4.5);
+      } else assert.deepEqual(results[1], results[0], 'unparsed backgrounds retain theme heading colours');
+    }
+  } finally { await browser.close(); }
 });
