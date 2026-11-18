@@ -1,0 +1,102 @@
+{
+  "slug": "paper-lantern-digest",
+  "template": "PORTFOLIO",
+  "locale": "en",
+  "title": "Paper Lantern Digest",
+  "tagline": "Fictional workshop videos, summarized with moments and sources.",
+  "metaDescription": "A fictional video digest index with timestamped workshop notes and links to original sources.",
+  "themeColor": "#0369A1",
+  "themeColorSecondary": "#0F766E",
+  "fontFamily": "Manrope",
+  "darkMode": false,
+  "isPublished": false,
+  "privacyPolicy": "Fictional sample only. Replace with an owner-confirmed policy describing hosted-page visits, remote image/video providers and the external newsletter before publishing.",
+  "content": {
+    "logo": "https://example.com/paper-lantern/logo.png",
+    "headingColor": "dark",
+    "sections": [
+      {
+        "type": "hero",
+        "order": 0,
+        "data": {
+          "headline": "Paper Lantern Digest",
+          "subheadline": "Fictional workshop videos, summarized with moments and sources.",
+          "variant": "minimal",
+          "heroHeight": "small",
+          "ctaText": "Subscribe to the newsletter",
+          "ctaUrl": "https://example.com/paper-lantern/newsletter",
+          "backgroundColor": "#FFFFFF"
+        }
+      },
+      {
+        "type": "project-cards",
+        "order": 1,
+        "data": {
+          "id": "latest-videos",
+          "heading": "Latest videos",
+          "layout": "feed",
+          "items": [
+            {
+              "name": "Fold a paper lantern",
+              "href": "/p/paper-lantern-digest/paper-lantern-digest-folds",
+              "meta": ["2026-01-15", "4 min"],
+              "description": "A fictional workshop: fold the base, join the panels and compare the results.",
+              "featured": true,
+              "media": [
+                {
+                  "url": "https://example.com/paper-lantern/folds.jpg",
+                  "alt": "Fictional folded paper lantern on a worktable",
+                  "href": "/p/paper-lantern-digest/paper-lantern-digest-folds",
+                  "label": "3 key moments",
+                  "aspect": "16:9"
+                }
+              ]
+            },
+            {
+              "name": "One fold, one idea",
+              "href": "/p/paper-lantern-digest/paper-lantern-digest-one-fold",
+              "meta": ["2026-01-14", "45 sec"],
+              "description": "A fictional short demonstration with a brief summary and no chapters.",
+              "media": [
+                {
+                  "url": "https://example.com/paper-lantern/one-fold.jpg",
+                  "alt": "Fictional sheet of paper folded into a standing shape",
+                  "href": "/p/paper-lantern-digest/paper-lantern-digest-one-fold",
+                  "label": "0:45"
+                }
+              ]
+            }
+          ],
+          "backgroundColor": "#F0F9FF"
+        }
+      },
+      {
+        "type": "gallery",
+        "order": 2,
+        "data": {
+          "heading": "Browse thumbnails",
+          "layout": "grid",
+          "aspect": "16:9",
+          "columns": 2,
+          "items": [
+            {
+              "url": "https://example.com/paper-lantern/folds.jpg",
+              "alt": "Fictional folded paper lantern on a worktable",
+              "caption": "Fold a paper lantern",
+              "href": "/p/paper-lantern-digest/paper-lantern-digest-folds",
+              "badge": "4:00"
+            },
+            {
+              "url": "https://example.com/paper-lantern/one-fold.jpg",
+              "alt": "Fictional sheet of paper folded into a standing shape",
+              "caption": "One fold, one idea",
+              "href": "/p/paper-lantern-digest/paper-lantern-digest-one-fold",
+              "badge": "0:45"
+            }
+          ],
+          "backgroundColor": "#FFFFFF"
+        }
+      }
+    ]
+  }
+}

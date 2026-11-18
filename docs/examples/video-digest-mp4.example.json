@@ -1,0 +1,43 @@
+{
+  "slug": "paper-lantern-digest-one-fold",
+  "parentSlug": "paper-lantern-digest",
+  "template": "PRODUCT_SHOWCASE",
+  "locale": "en",
+  "title": "One fold, one idea",
+  "fontFamily": "Manrope",
+  "hideFromNav": true,
+  "isPublished": false,
+  "content": {
+    "sections": [
+      {
+        "type": "hero",
+        "order": 0,
+        "data": {
+          "headline": "One fold, one idea",
+          "subheadline": "A fictional short demonstration with no chapters.",
+          "variant": "minimal",
+          "heroHeight": "small",
+          "backgroundColor": "#FFFFFF"
+        }
+      },
+      {
+        "type": "video",
+        "order": 1,
+        "data": {
+          "url": "https://example.com/paper-lantern/one-fold.mp4",
+          "caption": "A fictional 45-second folding demonstration.",
+          "backgroundColor": "#F0F9FF"
+        }
+      },
+      {
+        "type": "about",
+        "order": 2,
+        "data": {
+          "heading": "Summary and source",
+          "text": "One careful crease lets the paper stand on its own. This fictional short needs no chapter list.\n\nSource: [original public mp4 — fictional URL](https://example.com/paper-lantern/one-fold.mp4). Replace this URL with a public video you have permission to use.",
+          "backgroundColor": "#FFFFFF"
+        }
+      }
+    ]
+  }
+}

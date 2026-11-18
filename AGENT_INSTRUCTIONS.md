@@ -37,9 +37,11 @@ Two limits worth knowing up front, so you never promise them:
 
 Use the [topic pages](https://appai.info/spec#topic-pages) for details on the rung you picked.
 
+Hosted Page use case: [Video digest site](https://appai.info/spec/pages#video-digest-site-recipe) — an index, video children, timestamp jumps and sources.
+
 ## Publish in one minute
 
-Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.
+Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four. Exception: when the user says their content is in a specific language (for example a newsletter or video digest written in Traditional Chinese), publish only the language(s) the user chose and do not translate it into the four; AppAI already handles single-locale pages (no switcher, correct canonical and `hreflang`), and a missing `zh-TW`/`zh-CN` twin is auto-converted with `noindex`.
 
 1. **[Authorization & API](https://appai.info/spec/api):** Show the user verification_uri_complete: open it in the user's own browser if you can, and always print it. Also print the returned `user_code` so the user can compare it with the approval page. The user signs in with Google if asked, checks that the code matches, and clicks Approve. Never approve it yourself. The agent receives the key — nothing to copy or paste. Use the [device flow](https://appai.info/spec/api#authentication); send `Authorization: Bearer appai_sk_YOUR_KEY` on API requests.
 2. **MUST READ before publishing — [Style & logo](https://appai.info/spec/style):** open it for logo rules; choose kits at [Theme](https://appai.info/spec/theme), then pick [text size](https://appai.info/spec/typography). Dry-run warns (with this link) when `themeColor` or `fontFamily` is missing. If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with `POST /api/v1/upload`, then publish. Agents MUST supply a logo. Non-blocking platform warnings are a fallback, not permission to skip it. Add a real logo — square 512×512 PNG with its own background in `content.logo`, uploaded with `POST /api/v1/upload` (rules: [Logo](https://appai.info/spec/style#logo)). Copy `themeColor`, `themeColorSecondary`, `fontFamily` (Chinese variants: `Noto Sans TC`/`Noto Sans SC`), `darkMode` from a style kit; use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`. Use the kit’s `fontFamily` for `en` and `es`, `Noto Sans TC` for `zh-TW` and `Noto Sans SC` for `zh-CN`; for other CJK languages chosen by the user, choose the matching font (e.g. `Noto Sans JP` for Japanese). Keep `themeColor`, `themeColorSecondary`, `darkMode` and backgroundColors the same across variants.
@@ -524,6 +526,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 | User intent | Page shape |
 |---|---|
 | **Personal website / portfolio of a person** | template `PERSON` only for the person’s own root page, never project pages; `profile-header` + `project-cards` + `entries`. |
+| **Video channel / video digest site** | Hosted Page: root index with `project-cards` feed + one child page per video (`video` + Markdown `about`); see the [Video digest site recipe](https://appai.info/spec/pages#video-digest-site-recipe). |
 | **Local shop / small business (bakery, cafe, salon, studio)** | Preset `company-service`, template `COMPANY_PROFILE`: hero → features (products/services) → about (how to order) → about (pickup details, if supplied) → optional video/embed → contact (address, structured hours and socials) → optional cta. Optional video/embed goes after about sections and before contact. No pricing/testimonials required; use only supplied facts. |
 | **Landing page for an app/product** | Hero + features + pricing + testimonials + faq + cta. Standard SaaS template. |
 | **Host a vibe-coded tool** | Hero (short tagline) + `iframe-tool` (the tool itself) + 1-2 supporting sections (about / faq). The tool is the page. |
@@ -546,9 +549,31 @@ Data uses `{slug, logo?: "./logo.svg" or HTTPS URL, page?: {themeColor, themeCol
 Project cards can use existing links or `page: {slug, as: "child"|"root", linkLabel, template?, entries?}`; roots count toward the plan limit. Top-level `logo` becomes `content.logo` on every person root locale; child pages inherit it. The root `logo`, `avatar`/`icon`/`screenshot` object `url`s and `images` array strings or `{url}` items [upload once](https://appai.info/spec/api#upload-images): relative .png/.jpg/.jpeg/.gif/.webp/.svg paths must resolve inside the real data directory; absolute paths, .env* segments and symlink escapes are refused, and links pass through. `page` allows only themeColor/themeColorSecondary/fontFamily/darkMode; each locale may override fontFamily, defaulting to Noto Sans TC for zh-TW, Noto Sans SC for zh-CN, and page.fontFamily otherwise (for root, child and root-type project payloads); themeColor/themeColorSecondary/darkMode stay identical; locales need sections arrays and project-cards need items arrays; publish en first, then zh-TW, zh-CN and es (see [default selection](https://appai.info/spec/i18n#multi-language-details)). Compute every locale's root and project URLs first: roots `/p/{root}[/{locale}]`, child projects `/p/{root}[/{locale}]/{slug}`, root-type projects `/p/{slug}[/{locale}]`. Publish complete, published person root locale variants with those card links, then child projects, then root-type projects, all with `?upsert=true`; no unpublished intermediate state or second pass. [Dry-run preview](https://appai.info/spec/api#preview-without-saving) does not check parents, so its order does not matter.
 Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/publish-person-site.mjs), with [fictional input](https://appai.info/spec/examples/person-site.example.json); [placeholder.svg](https://appai.info/spec/examples/placeholder.svg) and [placeholder-screen.svg](https://appai.info/spec/examples/placeholder-screen.svg) are included; [`--dry-run`](https://appai.info/spec/api#preview-without-saving) replaces relative images with HTTPS placeholders and validates every payload using only the preview endpoint, without uploading or saving anything.
 
+### Video digest site recipe
+
+**Hosted Page capability:** an index plus one child per video, using existing sections; no backend or new page format needed. Use `template: "PORTFOLIO"` for the index and `"PRODUCT_SHOWCASE"` for video children; `PERSON` is reserved for a person's own root.
+
+| Part | Build with existing fields |
+|---|---|
+| Root index | One `hero` for the site title and a [root logo](https://appai.info/spec/style#logo); [`project-cards`](https://appai.info/spec/sections#project-cards) with `data.layout: "feed"`. Order `items` newest first yourself; AppAI preserves array order. Use `name`, `href` to the child, `meta` for date/duration, `description` for a short digest, `media` for 1–2 thumbnails with `url`, `alt`, optional `href`/`label`; only the first `featured: true` item is enlarged. |
+| Optional thumbnail grid | [`gallery`](https://appai.info/spec/sections#gallery) with `data.layout: "grid"`, `aspect: "16:9"`; image items use `url`, `alt`, `href` to the child and `badge` for duration (e.g. `"4:00"`). |
+| One child per video | Set `parentSlug` to the root slug and prefix each child slug with it: root `paper-lantern-digest` → child `paper-lantern-digest-folds` at `/p/paper-lantern-digest/paper-lantern-digest-folds`. Set `hideFromNav: true` for a large archive reached through the index; see [multi-page details](https://appai.info/spec/i18n#multi-page-site-details). |
+| Player and timestamp jumps | One [`video`](https://appai.info/spec/sections#video) with a stable `data.id` (e.g. `"episode-video"`), public `url` and optional `moments: [{t: 90, title: "Fold the base", text: "Optional Markdown"}]`; moments seek in-page. In key-point Markdown, `[▶ 1:30](?t=90#episode-video)` targets that same id (`?t=90#<video-id>`). Omit `moments` when there are no chapters. |
+| Summary, key points and sources | [`about`](https://appai.info/spec/sections#about) `data.text` supports Markdown headings, lists and tables; link each key point to its timestamp and cite the original video plus supporting source URLs. Supply video `uploadDate`, `duration` and `thumbnail` only when known. |
+| Thumbnail hero and headings | Optional [`hero`](https://appai.info/spec/sections#hero) `data.backgroundImage` may use an HTTPS video thumbnail with `variant: "centered"` or `"split"`. Optional page setting `content.headingColor: "dark"` gives near-black headings on light pages and light headings on dark pages; children inherit it, or opt out with `"theme"`. |
+| Language | Publish in the language the user chose for the digest (for example only `zh-TW`); do not translate it into the four defaults. If the user names no language, publish the four defaults. See [single-locale behavior](https://appai.info/spec/i18n#multi-language-details). |
+| Daily updates | The publisher's own scheduler prepares each digest and re-runs `POST /api/v1/pages?upsert=true` with stable slugs and complete bodies; keep the root feed newest first. AppAI does not fetch YouTube or run the publisher's schedule. |
+| Owner removal | Follow [Respect owner removal before publishing](https://appai.info/spec/pages#respect-owner-removal-before-publishing) on every run, including removed roots, removed children and a removal `409` after preflight. |
+| Subscribe | Link a hero button (`ctaText` / `ctaUrl`) or `links` item to the user's own newsletter. AppAI does not collect email for subscriptions. |
+| Public content and rights | Only publish public videos; the publisher is responsible for rights to text and thumbnails. Verify visibility and permissions before each publish. |
+
+For a picture of an idea, use a [`diagram`](https://appai.info/spec/sections#diagram) section (`compare`, `steps`, `layers`, `cycle`); its `link` can jump to a video moment (`?t=90#<video-id>`). Use Markdown tables for plain tabular data.
+
+Fictional request bodies in the public repo: [root index](https://github.com/KYCgrayson/APPAI/blob/main/docs/examples/video-digest.example.json), [YouTube child with moments](https://github.com/KYCgrayson/APPAI/blob/main/docs/examples/video-digest-youtube.example.json), [minimal mp4 child without chapters](https://github.com/KYCgrayson/APPAI/blob/main/docs/examples/video-digest-mp4.example.json). Send each object separately; these are English samples; publish them in the language the user chose. Replace fictional media/source/newsletter URLs and the logo, and confirm data practices before writing the real `privacyPolicy`; preview does not fetch media or verify rights. [Dry-run](https://appai.info/spec/api#preview-without-saving) every body with `?upsert=true`, require `valid: true` and no warnings, then publish root variants before children with `isPublished: true`.
+
 ### What to decide yourself (do NOT ask the user)
 
-- Languages: always publish the four default locales — English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Other languages are asked about; see [When to ask the user](https://appai.info/spec/pages#when-to-ask-the-user).
+- Languages: always publish the four default locales — English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Other languages are asked about; see [When to ask the user](https://appai.info/spec/pages#when-to-ask-the-user). If the user says the content is in a specific language (for example a one-language newsletter), publish only that language.
 - Which template/sections to use (infer from the product type)
 - themeColor (copy together with themeColorSecondary, fontFamily (Chinese variants: Noto Sans TC/SC) and darkMode from a kit in [Theme](https://appai.info/spec/theme))
 - Section ordering for app/product landing pages: hero → stats → features → pricing → testimonials → faq → cta, omitting unsupported sections. Use `cta` only on landing-type pages: app, product, SaaS, company/service, event and hiring. Do not add it to PERSON/profile, link-in-bio, portfolio, card-wall or wrapped-tool pages.
@@ -561,7 +586,7 @@ Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/pub
 
 - Product-specific content you cannot infer (pricing details, specific features they want to highlight)
 - Branding preferences they haven't mentioned (if they have a specific logo or color)
-- Languages beyond the four defaults. Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.
+- Languages beyond the four defaults. Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four. Exception: when the user says their content is in a specific language (for example a newsletter or video digest written in Traditional Chinese), publish only the language(s) the user chose and do not translate it into the four; AppAI already handles single-locale pages (no switcher, correct canonical and `hreflang`), and a missing `zh-TW`/`zh-CN` twin is auto-converted with `noindex`.
 - What data the app or service collects, stores, or sends (including photos, analytics, and accounts), before writing `privacyPolicy`. Never guess. See [Compliance Pages](https://appai.info/spec/pages#compliance-pages).
 - Any genuine design tradeoff where both options are valid
 
@@ -718,7 +743,7 @@ Covers section schemas and icons; interactive tool schemas remain on /spec/tools
 Previous: [Pages](https://appai.info/spec/pages) · Next: [Multi-language & multi-page](https://appai.info/spec/i18n)
 API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
-Optional heading/subheading: pricing, faq, features, screenshots, download (heading overrides ctaText), video, testimonials, gallery, team, schedule, sponsors, stats, contact, links, about, action, form, media-downloader, tool, pdf-viewer, embed, iframe-tool, video-subtitle, simple-order, project-cards, entries. Hero/cta use headline/subheadline; profile-header uses name/tagline; entries also supports intro. Omitted fields preserve existing rendering.
+Optional heading/subheading: pricing, faq, features, screenshots, download (heading overrides ctaText), video, testimonials, gallery, team, schedule, sponsors, stats, contact, links, about, action, form, media-downloader, tool, pdf-viewer, embed, iframe-tool, video-subtitle, simple-order, project-cards, entries, diagram. Hero/cta use headline/subheadline; profile-header uses name/tagline; entries also supports intro. Omitted fields preserve existing rendering.
 
 Give both store URLs; the page picks the right one per device. Hero primary button = the store the user listed first. Set hero ctaUrl/ctaSecondaryUrl to the store URLs in that order; recognized apps.apple.com and play.google.com URLs render badges in every hero variant. Both badges render server-side; iOS emphasizes App Store first, Android Google Play first; desktop keeps both. Badge dimensions stay fixed during client reordering.
 
@@ -726,7 +751,7 @@ After [dry-run](https://appai.info/spec/api#preview-without-saving), follow the 
 
 ## Icons
 
-Three formats, all render correctly. Mix freely within a page.
+Three formats, all render correctly in sections using SmartIcon. Mix freely within a page. Exception: `diagram.items[].icon` accepts only a bundled icon name; unknown names, emoji and image URLs are omitted.
 
 **Ionicons (recommended):** Use built-in icon names or any emoji; discover names via `GET /api/v1/sections`. Bundled names:
 logo-line, logo-threads, logo-whatsapp, people-outline, time-outline, calendar-outline, camera-outline, color-palette-outline, hand-left-outline, leaf-outline, cafe-outline, cut-outline, bicycle-outline, brush-outline, school-outline, globe-outline, logo-github, logo-twitter, logo-linkedin, logo-youtube, logo-instagram, logo-discord, logo-tiktok, logo-facebook, logo-reddit, logo-medium, logo-mastodon, mail-outline, call-outline, location-outline, chatbubble-outline, chatbubbles-outline, send-outline, download-outline, cloud-download-outline, cloud-upload-outline, play-circle-outline, arrow-forward-outline, arrow-back-outline, open-outline, link-outline, copy-outline, share-outline, checkmark-circle, checkmark-circle-outline, close-circle, alert-circle, information-circle, lock-closed, lock-open, eye-outline, eye-off-outline, sparkles-outline, rocket-outline, star-outline, star, heart-outline, heart, flash-outline, shield-checkmark-outline, shield-outline, ribbon-outline, trophy-outline, gift-outline, menu-outline, close-outline, search-outline, settings-outline, options-outline, ellipsis-horizontal, ellipsis-vertical, chevron-down, chevron-up, chevron-forward, chevron-back, add-outline, remove-outline, code-slash-outline, terminal-outline, hardware-chip-outline, server-outline, cloud-outline
@@ -977,6 +1002,67 @@ For menus and service price lists, put the price in `price` on each `features.it
 }}
 ```
 
+### diagram
+
+Standalone explanations rendered on the server using text and CSS. No images, canvas, client JavaScript or video dependency. Choose an existing section first:
+
+| Need | Existing section | New diagram kind? |
+|---|---|---|
+| Numbers / KPIs | `stats` value + label; `features` can explain each metric | No |
+| Timeline / milestones | `schedule` time + title + description; `entries` can hold ordered narrative milestones | No |
+| Comparison, procedure, layered model, repeating loop | `diagram` with `compare`, `steps`, `layers`, `cycle` | Only these four |
+
+| Field | Contract |
+|---|---|
+| `data.items` | Required array, **1–12** diagrams. Empty, missing or oversized arrays are errors. |
+| `data.heading` / `subheading` | Optional nonblank plain text, **1–80** / **1–160** characters. No fallback heading. |
+| `items[].kind` | Required: exactly `compare`, `steps`, `layers` or `cycle`. Unknown kinds are errors, not fallbacks. |
+| `items[].title` | Required nonblank plain text, **1–80** characters. |
+| `items[].takeaway` | Optional nonblank plain text, **1–120** characters. Write the conclusion in the page's language. |
+| `items[].icon` | Optional bundled platform icon name (`GET /api/v1/sections`). Unknown names are omitted; no emoji, image URL or custom SVG. |
+| `items[].sources` | Optional **1–6** `{label, url}` references. Omit instead of `[]`. Each URL must be absolute **HTTPS**, without credentials. |
+| `items[].link` | Optional `{label, url}` related link. Same shared safe-href policy as project-cards/gallery: HTTPS, `/p/...`, `#anchor`, or `?t=90#id` (also `m:ss` / `h:mm:ss`). |
+| All `label` fields | Required nonblank plain text, **1–40** characters, including source/link labels. |
+| `detail` / each `point` | Nonblank plain text, **1–160** characters; `detail` is optional. |
+| All URLs | **≤2048** characters; HTTPS scheme is case-insensitive and stored lowercase. External origins open a new tab. No `http:`, `javascript:`, `data:`, protocol-relative URLs or credentials. |
+
+Text limits use JavaScript string length (UTF-16 code units, including whitespace). HTML tags are stripped on write and lengths/nonblank requirements are checked again; rendering escapes text. Markdown syntax stays literal. No rich-text rendering or truncation. Unknown extra item fields are dropped.
+
+| Kind | Required data | Optional data / layout |
+|---|---|---|
+| `compare` | `columns`: **2–4** `{label, points}`; `points`: **1–6** strings per column | Side-by-side columns |
+| `steps` | `steps`: **2–8** `{label, detail?}` | Numbered boxes with forward arrows |
+| `layers` | `layers`: **2–6** `{label, detail?}` | `focus`: integer, **0 ≤ focus < layers.length**; emphasized band with accessible current-item state |
+| `cycle` | `steps`: **3–6** `{label, detail?}` | Numbered loop with an arrow back to the first step; screen readers hear a localized repeat notice |
+
+At **≤640px**, all diagrams stack in reading order and arrows point down. Text wraps without clipping; light/dark surfaces and contrast-adjusted page-theme accents keep text at AA. The section uses its own neutral light/dark surfaces, including inside a custom background wrapper. Ordered lists preserve step/cycle semantics. The repeat notice uses hosted-page locale matching (including primary-subtag and English fallback), never platform messages.
+
+Each diagram must be complete without following a link. An optional moment link can target a separately authored video section; it never creates or requires a player. Full create/upsert/PUT, merged page/section PATCH, preview and dry-run share the validator, including post-sanitization checks. Errors name the exact field, e.g. `sections[3].data.items[1].kind`. PATCH can update only `heading`; item arrays replace as a whole and each submitted item must be complete. Discovery: `GET /api/v1/sections?type=diagram`; `format=jsonschema` exposes per-kind bounds and the focus dependency. JSON Schema counts Unicode code points for `maxLength`; the API applies the documented UTF-16 limit and parses URL host semantics in addition to the published URL pattern. Dry-run is authoritative for these checks.
+
+Fictional four-kind example (works without a video):
+
+```json
+{ "type": "diagram", "order": 1, "data": {
+  "heading": "A paper workshop",
+  "items": [
+    { "kind": "compare", "title": "Choose a material", "icon": "leaf-outline",
+      "columns": [{ "label": "Paper", "points": ["Quick to fold", "Easy to recycle"] }, { "label": "Cardboard", "points": ["Supports larger models"] }],
+      "takeaway": "Choose the material that fits the model.",
+      "sources": [{ "label": "Workshop notes", "url": "https://example.com/workshop" }] },
+    { "kind": "steps", "title": "Build a prototype",
+      "steps": [{ "label": "Sketch", "detail": "Draw a small bridge." }, { "label": "Fold" }, { "label": "Test" }],
+      "link": { "label": "Project page", "url": "/p/paper-workshop" } },
+    { "kind": "layers", "title": "Inside the model", "focus": 1,
+      "layers": [{ "label": "Deck" }, { "label": "Supports", "detail": "The load-bearing layer." }, { "label": "Base" }] },
+    { "kind": "cycle", "title": "Improve the design",
+      "steps": [{ "label": "Observe" }, { "label": "Adjust" }, { "label": "Retest" }],
+      "takeaway": "Repeat the experiment after each change." }
+  ]
+} }
+```
+
+To add an optional moment jump, use `"link": {"label": "Related moment", "url": "?t=90#workshop-video"}` and a separate video section with `data.id: "workshop-video"`.
+
 ### gallery
 
 Default masonry preserves existing image/video/caption markup. All fields below are optional; `url`, `caption` and `type` keep their existing behavior. Use an ordered grid for workshop moments or an event album.
@@ -1161,7 +1247,7 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 ### Multi-Language (free, automatic)
 
-Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.
+Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four. Exception: when the user says their content is in a specific language (for example a newsletter or video digest written in Traditional Chinese), publish only the language(s) the user chose and do not translate it into the four; AppAI already handles single-locale pages (no switcher, correct canonical and `hreflang`), and a missing `zh-TW`/`zh-CN` twin is auto-converted with `noindex`.
 
 For the four-locale publishing workflow, publish `en` first (see the default-selection rule below), then publish `zh-TW`, `zh-CN`, and `es`. Send each locale as its own POST request with the same slug and `locale`; dry-run every locale body before publishing it. For App Store / Play Store submissions only, publish compliance child pages (`my-app-faq`, `my-app-contact`, `my-app-delete-account` only if the app has user accounts, …) in all four locales with `parentSlug`. Put translated privacy policy and terms in each variant’s `privacyPolicy` / `termsOfService`, not in child pages. Later updates target a locale with `?locale=`, e.g. `PATCH /api/v1/pages/{slug}?locale=zh-TW`.
 
