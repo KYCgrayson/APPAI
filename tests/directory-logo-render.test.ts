@@ -55,6 +55,9 @@ test("all locales and kinds use logo-first cards, including personal and fallbac
     assert.match(html, />👩🏽‍💻<\/div>/);
     assert.doesNotMatch(html, /src="\/photo.jpg"/);
     if (!kind) {
+      const landmarks = [...html.matchAll(/<section aria-label="([^"]+)"/g)].map(match => match[1]);
+      assert.equal(landmarks.length, 2);
+      assert.equal(new Set(landmarks).size, landmarks.length, `${locale}: unique personal landmarks`);
       assert.match(html, /<div class="mt-6"><section aria-label=/, "separate logo groups retain vertical spacing");
       assert.ok(html.indexOf('href="/p/person-logo"') < html.indexOf('href="/p/header"'));
       assert.ok(html.indexOf('href="/p/existing"') < html.indexOf('href="/p/person-letter"'));
@@ -64,6 +67,33 @@ test("all locales and kinds use logo-first cards, including personal and fallbac
     assert.ok(personal.indexOf('href="/p/person-logo"') < personal.indexOf('href="/p/person-letter"'));
     assert.match(personal, /background-color:#123456;color:#ffffff/);
   }
+});
+
+test("invalid App and page logos render tiles and sort after valid fallbacks on directory and home", async () => {
+  fixtures(); fixtureDb.locale = "en";
+  for (const row of fixtureDb.apps) row.logoUrl = "mailto:invalid@example.test";
+  fixtureDb.rows[0].content = { logo: "#", sections: [{ type: "hero", data: { logo: "logo.png" } }] };
+  fixtureDb.rows[0].title = '"Quoted"';
+  fixtureDb.rows[1].headerLogo = "tel:123";
+  fixtureDb.rows[3].headerLogo = "logo.png";
+  fixtureDb.rows[4].headerLogo = "#";
+  const data = await loadPublicDirectory("en");
+  assert.deepEqual(data.entries.map(entry => [entry.app.id, entry.app.logoUrl]), [
+    ["y-header", "/primary.svg"], ["x-hero", "/hero.svg"], ["z-letter", null], ["w-existing", null],
+  ]);
+  assert.deepEqual(data.profiles.map(profile => profile.logoUrl), ["/person.svg", null]);
+  const homeData = await loadPublicHome("en");
+  assert.deepEqual(homeData.recentApps.map(row => row.logoUrl), ["/primary.svg", "/hero.svg", "/person.svg", null, null, null]);
+  for (const html of [await renderHtml(await PlatformDirectory({})), await renderHtml(await home())]) {
+    assert.doesNotMatch(html, /<img[^>]+src="(?:#|mailto:|tel:|logo.png)/);
+    assert.match(html, />Q<\/div>/);
+    assert.ok(html.indexOf('href="/p/hero"') < html.indexOf('href="/p/letter"'));
+  }
+  const directCard = await renderHtml(await AppCard({ href: "/p/invalid", app: {
+    id: "invalid", name: "@handle", tagline: "", category: "OTHER", logoUrl: "#", iosUrl: null, androidUrl: null,
+  } }));
+  assert.doesNotMatch(directCard, /<img/);
+  assert.match(directCard, />h<\/div>/);
 });
 
 test("logo priority crosses the 50-card cache batch boundary and preserves newest/id ordering", async () => {

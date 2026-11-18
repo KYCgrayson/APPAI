@@ -10,6 +10,7 @@ import { PlatformBreadcrumb } from "@/components/PlatformBreadcrumb";
 import { getExternalCanonical } from "@/lib/canonical";
 import { UNIVERSAL_APP_CATEGORIES } from "@/lib/universal-apps/manifest";
 import { getDirectoryCopy } from "@/lib/directory-copy";
+import { isLogoUrl } from "@/lib/page-logo";
 
 type Props = {
   kind?: DirectoryKind;
@@ -27,8 +28,8 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
   // a logo-free profile cannot precede a real logo in the regular cards.
   const groups = entries.length && personalProfiles.length
     ? [true, false].map(hasLogo => ({
-        entries: entries.filter(entry => !!entry.app.logoUrl === hasLogo),
-        personalProfiles: personalProfiles.filter(profile => !!profile.logoUrl === hasLogo),
+        entries: entries.filter(entry => isLogoUrl(entry.app.logoUrl) === hasLogo),
+        personalProfiles: personalProfiles.filter(profile => isLogoUrl(profile.logoUrl) === hasLogo),
       })).filter(group => group.entries.length || group.personalProfiles.length)
     : [{ entries, personalProfiles }];
 
@@ -87,7 +88,7 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
 
         {groups.map(({ entries, personalProfiles }, group) => <div key={group} className={group > 0 ? "mt-6" : undefined}>
         {personalProfiles.length > 0 && (
-          <section aria-label={copy.personalPages} className="mb-10">
+          <section aria-label={groups.length > 1 ? `${copy.personalPages} (${group + 1})` : copy.personalPages} className="mb-10">
             <div className="grid gap-6 md:grid-cols-3">
               {personalProfiles.map((profile) => {
                 const hasLocale = profile.locale === locale;

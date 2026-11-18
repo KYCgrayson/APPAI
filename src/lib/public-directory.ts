@@ -100,7 +100,7 @@ const loadDirectoryBatch = unstable_cache(async (
     entries: directoryApps.map(app => {
       const variant = app.hostedPageSlug ? localizedVariant(variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) ?? []) ?? null : null;
       return {
-        app: { ...project(app, cardSelect), logoUrl: app.logoUrl || variant?.logoUrl || null, themeColor: variant?.themeColor ?? null },
+        app: { ...project(app, cardSelect), logoUrl: directoryLogo(app.logoUrl, { headerLogo: variant?.logoUrl }), themeColor: variant?.themeColor ?? null },
         publisher: publishers.get(app.organizationId) ?? null,
         canonicalUrl: app.hostedPageSlug ? canonicalBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) ?? null : null,
         launchPath: canLaunchUniversalApp(app, releasesByApp.get(app.id)) ? getUniversalAppLaunchPath(app) : null,
@@ -108,7 +108,7 @@ const loadDirectoryBatch = unstable_cache(async (
       };
     }),
     profiles: personalProfiles.map(profile => ({ ...profile,
-      logoUrl: apps.find(app => app.organizationId === profile.organizationId && app.hostedPageSlug === profile.slug)?.logoUrl || profile.logoUrl,
+      logoUrl: directoryLogo(apps.find(app => app.organizationId === profile.organizationId && app.hostedPageSlug === profile.slug)?.logoUrl, { headerLogo: profile.logoUrl }),
       publisher: publishers.get(profile.organizationId) ?? null })),
     nextOffset: apps.length === DIRECTORY_BATCH_SIZE ? offset + DIRECTORY_BATCH_SIZE : null,
   };
@@ -178,7 +178,7 @@ export const loadPublicHome = unstable_cache(async (locale: string) => {
   const localize = (rows: typeof featuredApps) => logosFirst(rows.map(app => {
     const localized = app.hostedPageSlug ? pickByLocale(variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) ?? [], locale) : undefined;
     return { ...project(app, cardSelect), localized,
-      logoUrl: app.logoUrl || localized?.logoUrl || null, themeColor: localized?.themeColor ?? null };
+      logoUrl: directoryLogo(app.logoUrl, { headerLogo: localized?.logoUrl }), themeColor: localized?.themeColor ?? null };
   }), app => app.logoUrl);
   // Keep the curated featured section and existing 6/12 selection limits;
   // stable logo-first ordering applies separately inside each displayed group.

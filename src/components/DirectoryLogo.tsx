@@ -1,9 +1,10 @@
 import { directoryTileColors, firstGrapheme } from "@/lib/directory-logo";
+import { isLogoUrl } from "@/lib/page-logo";
 
 export function DirectoryLogo({ name, logoUrl, themeColor }: {
   name: string; logoUrl?: string | null; themeColor?: string | null;
 }) {
-  if (logoUrl) {
+  if (isLogoUrl(logoUrl)) {
     // Keep existing logo markup exactly as shipped; arbitrary publisher image hosts are supported.
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={logoUrl} alt={name} className="w-12 h-12 rounded-xl object-cover" />;

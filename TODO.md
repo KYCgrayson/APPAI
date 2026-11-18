@@ -302,7 +302,7 @@ Check items off as they are completed. Add new items with date and description.
 - [x] Preserve numeric string section ordering, backend values, URI text conversion, publisher visibility, and non-Chinese card links with regression tests.
 - [x] Run typecheck and unit/render tests.
 - [x] Directory logo fallback uses page branding and complete graphemes with AA contrast; real logos sort first while homepage featured sections keep priority.
-- [ ] Measure 375px overflow in a browser.
+- [x] Measure 375px overflow in a browser.
 - [ ] Confirm production cause of the hosted-page 500 from logs.
 
 - [x] Ops #33 round 2: preserve Apps API logos; preview demo warnings, origin/locale links and dry-run flags; discoverable icons/filtered schemas; custom section headings and varied business examples.

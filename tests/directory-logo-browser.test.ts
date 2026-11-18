@@ -31,7 +31,8 @@ test("directory cards at 375px: no page overflow, real logos and letter tiles ar
     const logo = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" rx="12" fill="#0891b2"/><path d="M12 34L24 12L36 34Z" fill="white"/></svg>');
     const setHtml = async (html: string) => browser!.send("Page.setDocumentContent", {
       frameId: (await browser!.send("Page.getFrameTree")).frameTree.frame.id,
-      html: `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body style="margin:0;font-family:Arial">${html}</body></html>`,
+      // Substitute only after production URL validation/rendering, keeping this fixture fully offline.
+      html: `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body style="margin:0;font-family:Arial">${html.replaceAll('src="/directory-fixture.svg"', `src="${logo}"`)}</body></html>`,
     });
     const screenshot = async (name: string) => {
       if (!process.env.DIRECTORY_LOGO_QA_DIR) return;
@@ -41,8 +42,8 @@ test("directory cards at 375px: no page overflow, real logos and letter tiles ar
     };
     for (const locale of locales) for (const route of ["home", "all", "websites", "tools", "apps", "personal"]) {
       fixtureDb.locale = locale;
-      fixtureDb.apps = [app("z-letter", "letter"), app("y-logo", "logo", { logoUrl: logo }),
-        app("x-person", "person"), app("w-person-logo", "person-logo", { logoUrl: logo })];
+      fixtureDb.apps = [app("z-letter", "letter", { logoUrl: "#" }), app("y-logo", "logo", { logoUrl: "/directory-fixture.svg" }),
+        app("x-person", "person", { logoUrl: "logo.png" }), app("w-person-logo", "person-logo", { logoUrl: "/directory-fixture.svg" })];
       fixtureDb.organizations = [];
       fixtureDb.rows = [page("letter", { title: "👩🏽‍💻 Workshop", tagline: "LongUnbrokenTagline".repeat(20), themeColor: "#fde047" }),
         page("logo", { title: "Existing logo", tagline: "LongUnbrokenTagline".repeat(20) }),
@@ -52,9 +53,12 @@ test("directory cards at 375px: no page overflow, real logos and letter tiles ar
       const props = { kind: route === "personal" ? "websites" as const : ["websites", "tools", "apps"].includes(route) ? route as "websites" | "tools" | "apps" : undefined, personalOnly: route === "personal" };
       await setHtml(await renderHtml(route === "home" ? await home() : await PlatformDirectory(props)));
       const actual = await browser.evaluate(`(() => ({ overflow: document.documentElement.scrollWidth > innerWidth,
+        images: document.querySelectorAll('a[href^="/p/"] img.w-12.h-12').length,
+        tiles: document.querySelectorAll('a[href^="/p/"] div.w-12.h-12').length,
         groupGaps: [...document.querySelectorAll('main > div.mt-6')].map(el => el.getBoundingClientRect().top - el.previousElementSibling.getBoundingClientRect().bottom),
         sizes: [...document.querySelectorAll('a[href^="/p/"] .w-12.h-12')].map(el => ({ width: el.getBoundingClientRect().width, height: el.getBoundingClientRect().height })) }))()`);
       assert.equal(actual.overflow, false, `${locale}/${route}`);
+      assert.ok(actual.images > 0 && actual.tiles > 0, `${locale}/${route}: both valid logos and fallback tiles render`);
       for (const gap of actual.groupGaps) assert.ok(gap >= 24, `${locale}/${route}: logo groups need spacing`);
       assert.ok(actual.sizes.length >= 2, `${locale}/${route}`);
       for (const size of actual.sizes) assert.deepEqual(size, { width: 48, height: 48 }, `${locale}/${route}`);

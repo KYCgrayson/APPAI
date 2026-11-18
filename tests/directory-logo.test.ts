@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { directoryLogo, directoryTileColors, firstGrapheme, logosFirst } from "../src/lib/directory-logo.ts";
+import { extractLogoFromContent, pageLogoUpdate, pageLogoWarnings } from "../src/lib/page-logo.ts";
 
 test("logo choice preserves App logos, then headerLogo, content.logo, hero logos; never photos", () => {
   const page = { headerLogo: "/header.png", content: { logo: "/primary.png", sections: [
@@ -19,11 +20,36 @@ test("logo choice preserves App logos, then headerLogo, content.logo, hero logos
   }
 });
 
+test("invalid logo candidates are skipped consistently for App, page, update and sorting", () => {
+  for (const invalid of ["#", "mailto:logo@example.test", "tel:123", "logo.png", "http://example.test/logo.png",
+    "//example.test/logo.png", "/\\example.test/logo.png", "/bad\npath", "data:image/png;base64,AA", "https://", " "]) {
+    assert.equal(directoryLogo(invalid), null, invalid);
+    assert.equal(extractLogoFromContent({ logo: invalid }, invalid), null, invalid);
+    assert.equal(directoryLogo(invalid, { headerLogo: "/valid.png" }), "/valid.png", invalid);
+    assert.equal(extractLogoFromContent({ logo: "/valid.png" }, invalid), "/valid.png", invalid);
+    assert.equal(extractLogoFromContent({ logo: invalid, sections: [
+      { type: "hero", data: { logo: invalid } }, { type: "hero", data: { logo: "https://example.test/hero.png" } },
+    ] }, invalid), "https://example.test/hero.png", invalid);
+    assert.deepEqual(pageLogoUpdate({ logo: invalid }), {}, invalid);
+    assert.equal(pageLogoWarnings({ content: { logo: invalid } }).length, 1, invalid);
+    assert.deepEqual(logosFirst([invalid, "/valid.png"], value => value), ["/valid.png", invalid]);
+  }
+  assert.equal(extractLogoFromContent({ logo: " https://example.test/logo.png " }), "https://example.test/logo.png");
+});
+
 test("first character is a complete Latin, CJK or emoji grapheme", () => {
   for (const [name, expected] of [["App", "A"], [" hello", "h"], ["éclair", "é"], ["e\u0301clair", "e\u0301"],
     ["網站", "網"], ["𠮷野", "𠮷"], ["👩🏽‍💻 Tools", "👩🏽‍💻"], ["👨‍👩‍👧‍👦 Family", "👨‍👩‍👧‍👦"],
-    ["🇹🇼 Taiwan", "🇹🇼"], ["1️⃣ One", "1️⃣"], ["", "?"], ["  ", "?"]]) {
+    ["🇹🇼 Taiwan", "T"], ["🇹🇼", "🇹🇼"], ["1️⃣ One", "1️⃣"], ["", "?"], ["  ", "?"]]) {
     assert.equal(firstGrapheme(name), expected);
+  }
+});
+
+test("tile skips punctuation and invisible graphemes before letters, numbers or pictographs", () => {
+  for (const [name, expected] of [['"Quoted"', "Q"], ["(株)会社", "株"], ["@handle", "h"],
+    ["\u200bApp", "A"], ["\u2060\ufeff\u200d網站", "網"], ["...42", "4"], ["@👩🏽‍💻 Tools", "👩🏽‍💻"],
+    [" \u200b!?", "!"], ["\u200b\u200d\u2060\ufeff\ufe0f\u034f\u3164\u0000", "?"], ["\u0301", "?"]]) {
+    assert.equal(firstGrapheme(name), expected, JSON.stringify(name));
   }
 });
 
@@ -36,11 +62,14 @@ function luminance(hex: string) {
 }
 
 test("tile uses valid page colour and the higher AA contrast foreground; invalid values use slate", () => {
-  for (const input of [undefined, null, "", "red", "#fff", "#12345600", "#12345g", "var(--brand)", "transparent"]) {
+  for (const input of [undefined, null, "", "red", "#ffff", "#12345600", "#12345g", "var(--brand)", "transparent"]) {
     assert.equal(directoryTileColors(input).backgroundColor, "#334155");
   }
   assert.deepEqual(directoryTileColors("#000000"), { backgroundColor: "#000000", color: "#ffffff" });
   assert.deepEqual(directoryTileColors("#FFFFFF"), { backgroundColor: "#FFFFFF", color: "#000000" });
+  assert.deepEqual(directoryTileColors(" #fff \n"), { backgroundColor: "#ffffff", color: "#000000" });
+  assert.deepEqual(directoryTileColors("\t#AbC "), { backgroundColor: "#AAbbCC", color: "#000000" });
+  assert.deepEqual(directoryTileColors(" #123456 "), { backgroundColor: "#123456", color: "#ffffff" });
   // Exercise saturated colours and the black/white switching boundary.
   for (let r = 0; r <= 255; r += 17) for (let g = 0; g <= 255; g += 17) for (let b = 0; b <= 255; b += 17) {
     const hex = `#${[r, g, b].map(v => v.toString(16).padStart(2, "0")).join("")}`;
