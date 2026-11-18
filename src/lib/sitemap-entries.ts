@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { locales } from "../i18n/routing.ts";
+import { pickByLocale } from "./locale-match.ts";
 import { SPEC_TOPICS } from "./spec-topics.ts";
 import { hostedAlternates, hostedPageUrl, hasExternalCanonical, type HostedUrlPage } from "./hosted-page-urls.ts";
 import { platformAlternates, platformUrl } from "./platform-seo.ts";
@@ -12,7 +13,7 @@ export const SITEMAP_CACHE_BYTE_LIMIT = 1_800_000;
 // Update when public platform content changes; never use the generation time.
 export const PLATFORM_CONTENT_MODIFIED = "2026-11-18T00:00:00.000Z";
 export interface SitemapPage extends HostedUrlPage { updatedAt: Date | string }
-export interface SitemapApp { id: string; updatedAt: Date | string; hostedPageSlug: string | null }
+export interface SitemapApp { organizationId?: string; id: string; updatedAt: Date | string; hostedPageSlug: string | null }
 
 export function splitSitemapEntries(entries: MetadataRoute.Sitemap): MetadataRoute.Sitemap[] {
   const shards: MetadataRoute.Sitemap[] = [[]];
@@ -112,8 +113,14 @@ export function buildSitemapEntries(pages: readonly SitemapPage[], apps: readonl
   }
   for (const app of apps) {
     const path = `/apps/${app.id}`;
-    for (const locale of locales) entries.push({ url: platformUrl(path, locale, origin), lastModified: app.updatedAt, changeFrequency: "weekly", priority: 0.6,
-      alternates: { languages: platformAlternates(path, origin) } });
+    const variants = app.hostedPageSlug ? roots.get(`${app.organizationId}/${app.hostedPageSlug}`) || [] : [];
+    for (const locale of locales) {
+      const localized = pickByLocale(variants, locale);
+      const lastModified = localized && new Date(localized.updatedAt).getTime() > new Date(app.updatedAt).getTime()
+        ? localized.updatedAt : app.updatedAt;
+      entries.push({ url: platformUrl(path, locale, origin), lastModified, changeFrequency: "weekly", priority: 0.6,
+        alternates: { languages: platformAlternates(path, origin) } });
+    }
   }
   return entries.sort((a, b) => a.url.localeCompare(b.url, "en"));
 }

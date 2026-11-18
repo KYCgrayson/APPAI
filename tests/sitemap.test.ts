@@ -82,3 +82,21 @@ test("sitemap serialization escapes XML text and hreflang attributes", () => {
   assert.match(xml, /<lastmod>2025-04-01T12:00:00.000Z<\/lastmod>/);
   assert.match(xml, /<priority>0<\/priority>/);
 });
+
+
+test("app lastmod follows the bound locale variant, fallback and organization without a platform date floor", () => {
+  const jaDate = new Date("2025-05-01");
+  const fallbackDate = new Date("2025-04-20");
+  const appDate = new Date("2025-04-15");
+  const pages = [{ ...root, updatedAt: fallbackDate }, { ...root, locale: "ja-JP", isDefault: false, updatedAt: jaDate },
+    { ...root, organizationId: "other", updatedAt: new Date("2026-12-01") }];
+  const apps = [{ id: "bound", organizationId: "fixture", hostedPageSlug: root.slug, updatedAt: appDate },
+    { id: "standalone", organizationId: "fixture", hostedPageSlug: null, updatedAt: appDate },
+    { id: "newer-app", organizationId: "fixture", hostedPageSlug: root.slug, updatedAt: new Date("2025-06-01") }];
+  const entries = buildSitemapEntries(pages, apps);
+  for (const locale of locales) {
+    assert.equal(entries.find(entry => entry.url === platformUrl("/apps/bound", locale))?.lastModified, locale === "ja" ? jaDate : fallbackDate);
+    assert.equal(entries.find(entry => entry.url === platformUrl("/apps/standalone", locale))?.lastModified, appDate);
+    assert.equal(entries.find(entry => entry.url === platformUrl("/apps/newer-app", locale))?.lastModified, apps[2].updatedAt);
+  }
+});

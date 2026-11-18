@@ -1,13 +1,12 @@
 import { publicPageWhere, publicAppFilter, publicRootSelect } from "./hosted-page-visibility";
 import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
-import { appDirectoryKind, isPersonalDirectoryProfile } from "./directory-kind";
 import { buildSitemapEntries, splitSitemapEntries, type DirectoryUpdates } from "./sitemap-entries";
 
 // Never cache the full directory: a single Next data-cache entry is limited to 2 MB.
 async function loadSitemapEntries() {
   try {
-    const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: { ...publicRootSelect, template: true, content: true, updatedAt: true }, orderBy: [{ slug: "asc" }, { locale: "asc" }] });
+    const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: { ...publicRootSelect, updatedAt: true }, orderBy: [{ slug: "asc" }, { locale: "asc" }] });
     const [pages, apps] = await Promise.all([
       db.hostedPage.findMany({
         where: publicPageWhere(roots),
@@ -15,9 +14,11 @@ async function loadSitemapEntries() {
           updatedAt: true, privacyPolicy: true, termsOfService: true, canonicalUrl: true },
         orderBy: [{ slug: "asc" }, { locale: "asc" }],
       }),
-      db.app.findMany({ where: publicAppFilter(roots), select: { id: true, updatedAt: true, hostedPageSlug: true, organizationId: true, tags: true, appType: true, url: true, iosUrl: true, androidUrl: true }, orderBy: { id: "asc" } }),
+      db.app.findMany({ where: publicAppFilter(roots), select: { id: true, updatedAt: true, hostedPageSlug: true, organizationId: true }, orderBy: { id: "asc" } }),
     ]);
-    const updates: DirectoryUpdates = { "/apps": [], "/websites": [], "/tools": [] };
+    // Share conservative directory timestamps without loading content for classification.
+    const dates: Date[] = [];
+    const updates: DirectoryUpdates = { "/apps": dates, "/websites": dates, "/tools": dates };
     const rootsBySlug = new Map<string, typeof roots>();
     for (const root of roots) {
       const key = `${root.organizationId}/${root.slug}`;
@@ -25,10 +26,7 @@ async function loadSitemapEntries() {
     }
     for (const app of apps) {
       const variants = rootsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) || [];
-      const kind = appDirectoryKind(app, variants);
-      const dates = [app.updatedAt, ...variants.map(page => page.updatedAt)];
-      if (kind || isPersonalDirectoryProfile(variants)) updates["/apps"]!.push(...dates);
-      if (kind === "websites" || kind === "tools") updates[`/${kind}`]!.push(...dates);
+      dates.push(app.updatedAt, ...variants.map(page => page.updatedAt));
     }
     return buildSitemapEntries(pages, apps, undefined, updates);
   } catch (error) {

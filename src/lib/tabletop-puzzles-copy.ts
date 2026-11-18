@@ -18,7 +18,6 @@ export const TABLETOP_PUZZLE_COPY: Record<GamePageLocale, Record<string, PuzzleC
       players: "1", ages: "6+",
       howToPlay: ["Choose a difficulty and read its boat capacity and riverbank rules.", "Select the travelers to board, then tap the boat or Cross. Bring the boat back when needed.", "Get every traveler to the opposite bank without breaking the rules. Undo or restart to try fewer crossings."],
       faq: [
-        {"question": "Can we use a 10–15 minute wait without preparing anything?", "answer": "Yes. Open a puzzle in your browser; no extra props or setup are needed. Choose an easy level, try a few moves and stop when called at the doctor’s office or when food arrives. A 10–15 minute break need not be enough to finish a puzzle."},
         { question: "Is River Crossing a free online game for kids?", answer: "Yes. This river crossing puzzle is free in a phone, tablet or computer browser, with no download or sign-in needed to play. We suggest ages 6+ with help reading the rules." },
         { question: "Can we play this at a restaurant while waiting for food?", answer: "Yes. Share one phone and discuss who should ride next. There is no countdown for the river puzzle, so you can stop when the food arrives." },
         { question: "Is it a quiet waiting room game for parents and kids?", answer: "You can turn off the game's sound and music and work through the boat trips quietly. A parent can read the rules while the child chooses the passengers." },
@@ -37,7 +36,6 @@ export const TABLETOP_PUZZLE_COPY: Record<GamePageLocale, Record<string, PuzzleC
       players: "1", ages: "6+",
       howToPlay: ["Choose a difficulty and check each traveler's crossing time and the lantern's limit.", "Select travelers on the lantern's bank, then tap the lantern or Walk to cross. A pair takes the slower traveler's time.", "Send someone back with the lantern when needed. Get everyone to safety before the fire reaches them or the lantern runs out; Undo lets you revise the plan."],
       faq: [
-        {"question": "Can we use a 10–15 minute wait without preparing anything?", "answer": "Yes. Open a puzzle in your browser; no extra props or setup are needed. Choose an easy level, try a few moves and stop when called at the doctor’s office or when food arrives. A 10–15 minute break need not be enough to finish a puzzle."},
         { question: "Is this the bridge and torch puzzle?", answer: "Yes. Night Bridge uses the familiar bridge-and-torch rules with a lantern: travelers cross together at the slower person's speed, and the light must accompany each crossing. The spreading fire adds urgency to the story; the time budget is spent by crossings, so you can still pause to think." },
         { question: "Can we play Night Bridge while waiting for food at a restaurant?", answer: "You can share one phone and compare crossing plans while seated. Each trip uses the level's time budget, so choose an easy level first and stop when the meal arrives." },
         { question: "Is it a waiting room game for kids and parents?", answer: "It can be a quiet shared puzzle with sound and music turned off. We suggest ages 6+ with an adult helping compare crossing times and read the rules." },
@@ -56,7 +54,6 @@ export const TABLETOP_PUZZLE_COPY: Record<GamePageLocale, Record<string, PuzzleC
       players: "1", ages: "6+",
       howToPlay: ["Choose a difficulty, then check the jug capacities and the target amount.", "Select a jug to fill or empty it. To pour, select the source and then the destination jug.", "Measure the target amount using the available actions. Undo or restart to look for a solution in fewer steps."],
       faq: [
-        {"question": "Can we use a 10–15 minute wait without preparing anything?", "answer": "Yes. Open a puzzle in your browser; no extra props or setup are needed. Choose an easy level, try a few moves and stop when called at the doctor’s office or when food arrives. A 10–15 minute break need not be enough to finish a puzzle."},
         { question: "Is Water Pouring a water jug puzzle?", answer: "Yes. You use jugs with fixed capacities to measure an exact amount. Each pour ends when the source is empty or the destination is full; you cannot stop at an arbitrary mark." },
         { question: "Can we play this at a restaurant while waiting for food?", answer: "Yes. Use one phone to discuss the next fill, empty or pour. There is no countdown, so it is easy to put the game down when food arrives." },
         { question: "Is this a quiet waiting room game for parents and kids?", answer: "Turn off sound and music and compare the amounts together. We suggest ages 6+ with a grown-up helping read the target and jug capacities." },
@@ -75,7 +72,6 @@ export const TABLETOP_PUZZLE_COPY: Record<GamePageLocale, Record<string, PuzzleC
       genre: "過河邏輯謎題", players: "1 人", ages: "6 歲以上",
       howToPlay: ["選擇難度，先讀小船容量與兩岸的規則。", "點選要上船的旅伴，再點小船或「過河」出發；需要時把船帶回來。", "遵守規則把所有旅伴送到對岸，用復原或重來挑戰更少趟數。"],
       faq: [
-        {"question": "只有 10–15 分鐘空檔，需要先準備什麼嗎？", "answer": "不用準備額外道具，開瀏覽器選一題入門謎題就能開始。試幾步、一起想，候診叫號或餐點來了就先停；10–15 分鐘不代表一定能通關。"},
         { question: "過河是適合孩子的免費線上益智遊戲嗎？", answer: "是，手機、平板或電腦開瀏覽器就能免費玩，不用下載或登入。建議 6 歲以上，大人可以陪讀兩岸規則。" },
         { question: "可以在餐廳等餐時和孩子玩過河嗎？", answer: "可以共用一支手機，討論下一趟誰上船。過河沒有倒數計時，餐點來了就能先停。" },
         { question: "適合候診時安靜地玩嗎？", answer: "可以關掉音效和音樂，一起小聲討論船的往返。大人讀規則，孩子選乘客，就能共用同一個畫面。" },
@@ -92,7 +88,6 @@ export const TABLETOP_PUZZLE_COPY: Record<GamePageLocale, Record<string, PuzzleC
       genre: "過橋與火把邏輯謎題", players: "1 人", ages: "6 歲以上",
       howToPlay: ["選擇難度，查看每位旅伴的過橋時間和燈的時限。", "選擇與燈在同一側的旅伴，點燈或步行按鈕過橋；兩人同行按較慢者計時。", "需要時派人把燈帶回，在火追上大家或燈熄滅前全員過橋；用復原調整安排。"],
       faq: [
-        {"question": "只有 10–15 分鐘空檔，需要先準備什麼嗎？", "answer": "不用準備額外道具，開瀏覽器選一題入門謎題就能開始。試幾步、一起想，候診叫號或餐點來了就先停；10–15 分鐘不代表一定能通關。"},
         { question: "夜過橋就是過橋與火把謎題嗎？", answer: "是，這裡用燈呈現經典規則：每趟必須帶燈，結伴過橋按較慢者的時間計算，帶燈返回也要計時。火勢讓故事更緊張，但時間額度只隨過橋扣除，可以停下來慢慢想。" },
         { question: "可以在餐廳等餐時玩夜過橋嗎？", answer: "可以坐著共用一支手機，比較各種過橋順序。每趟會消耗關卡的時間額度，先從入門開始，餐點來了就先停。" },
         { question: "適合親子候診時玩嗎？", answer: "關掉音效和音樂就能安靜討論。建議 6 歲以上，由大人陪讀規則、比較各人的過橋時間。" },
@@ -109,7 +104,6 @@ export const TABLETOP_PUZZLE_COPY: Record<GamePageLocale, Record<string, PuzzleC
       genre: "水壺量水邏輯謎題", players: "1 人", ages: "6 歲以上",
       howToPlay: ["選擇難度，查看水壺容量與目標水量。", "點選水壺後可裝滿或倒空；互倒時先點來源，再點目標水壺。", "使用關卡提供的操作量出指定水量，用復原或重來找出更少步數的解法。"],
       faq: [
-        {"question": "只有 10–15 分鐘空檔，需要先準備什麼嗎？", "answer": "不用準備額外道具，開瀏覽器選一題入門謎題就能開始。試幾步、一起想，候診叫號或餐點來了就先停；10–15 分鐘不代表一定能通關。"},
         { question: "量水是經典的水壺倒水謎題嗎？", answer: "是，用固定容量的水壺量出指定水量。互倒必須倒到來源空了或目標滿了，不能任意停在某個刻度。" },
         { question: "適合在餐廳等餐時和孩子玩嗎？", answer: "可以共用一支手機，討論下一步要裝滿、倒空還是互倒。沒有倒數計時，餐點來了就能先放下。" },
         { question: "候診時可以安靜地一起解嗎？", answer: "可以關掉音效和音樂，一起比較水量。建議 6 歲以上，由大人幫忙讀目標與水壺容量。" },
@@ -128,7 +122,6 @@ export const TABLETOP_PUZZLE_COPY: Record<GamePageLocale, Record<string, PuzzleC
       genre: "过河逻辑谜题", players: "1 人", ages: "6 岁以上",
       howToPlay: ["选择难度，先读小船容量与两岸的规则。", "点选要上船的同伴，再点小船或“过河”出发；需要时把船带回来。", "遵守规则把所有同伴送到对岸，用撤销或重来挑战更少趟数。"],
       faq: [
-        {"question": "只有 10–15 分钟空档，需要先准备什么吗？", "answer": "不用准备额外道具，打开浏览器选一道入门谜题就能开始。试几步、一起想，候诊叫号或餐点来了就先停；10–15 分钟不代表一定能通关。"},
         { question: "过河是适合孩子的免费在线益智游戏吗？", answer: "是，手机、平板或电脑打开浏览器就能免费玩，不用下载或登录。建议 6 岁以上，大人可以陪读两岸规则。" },
         { question: "可以在餐厅等餐时和孩子玩过河吗？", answer: "可以共用一部手机，讨论下一趟谁上船。过河没有倒计时，餐点来了就能先停。" },
         { question: "适合候诊时安静地玩吗？", answer: "可以关掉音效和音乐，一起小声讨论船的往返。大人读规则，孩子选乘客，就能共用同一个画面。" },
@@ -145,7 +138,6 @@ export const TABLETOP_PUZZLE_COPY: Record<GamePageLocale, Record<string, PuzzleC
       genre: "过桥与火把逻辑谜题", players: "1 人", ages: "6 岁以上",
       howToPlay: ["选择难度，查看每位同伴的过桥时间和灯的时限。", "选择与灯在同一侧的同伴，点灯或步行按钮过桥；两人同行按较慢者计时。", "需要时派人把灯带回，在火追上大家或灯熄灭前全员过桥；用撤销调整安排。"],
       faq: [
-        {"question": "只有 10–15 分钟空档，需要先准备什么吗？", "answer": "不用准备额外道具，打开浏览器选一道入门谜题就能开始。试几步、一起想，候诊叫号或餐点来了就先停；10–15 分钟不代表一定能通关。"},
         { question: "夜过桥就是过桥与火把谜题吗？", answer: "是，这里用灯呈现经典规则：每趟必须带灯，结伴过桥按较慢者的时间计算，带灯返回也要计时。火势让故事更紧张，但时间额度只随过桥扣除，可以停下来慢慢想。" },
         { question: "可以在餐厅等餐时玩夜过桥吗？", answer: "可以坐着共用一部手机，比较各种过桥顺序。每趟会消耗关卡的时间额度，先从入门开始，餐点来了就先停。" },
         { question: "适合亲子候诊时玩吗？", answer: "关掉音效和音乐就能安静讨论。建议 6 岁以上，由大人陪读规则、比较各人的过桥时间。" },
@@ -162,7 +154,6 @@ export const TABLETOP_PUZZLE_COPY: Record<GamePageLocale, Record<string, PuzzleC
       genre: "水壶量水逻辑谜题", players: "1 人", ages: "6 岁以上",
       howToPlay: ["选择难度，查看水壶容量与目标水量。", "点选水壶后可装满或倒空；互倒时先点来源，再点目标水壶。", "使用关卡提供的操作量出指定水量，用撤销或重来找出更少步数的解法。"],
       faq: [
-        {"question": "只有 10–15 分钟空档，需要先准备什么吗？", "answer": "不用准备额外道具，打开浏览器选一道入门谜题就能开始。试几步、一起想，候诊叫号或餐点来了就先停；10–15 分钟不代表一定能通关。"},
         { question: "量水是经典的水壶倒水谜题吗？", answer: "是，用固定容量的水壶量出指定水量。互倒必须倒到来源空了或目标满了，不能任意停在某个刻度。" },
         { question: "适合在餐厅等餐时和孩子玩吗？", answer: "可以共用一部手机，讨论下一步要装满、倒空还是互倒。没有倒计时，餐点来了就能先放下。" },
         { question: "候诊时可以安静地一起解吗？", answer: "可以关掉音效和音乐，一起比较水量。建议 6 岁以上，由大人帮忙读目标与水壶容量。" },

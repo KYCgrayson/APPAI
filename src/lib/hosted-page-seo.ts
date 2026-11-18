@@ -12,8 +12,7 @@ import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 
 type TextNode = { type: string; value?: string; children?: TextNode[] };
-function summaryText(value: unknown): string {
-  if (typeof value !== "string") return "";
+function markdownSummary(value: string): string {
   const tree = unified().use(remarkParse).use(remarkGfm).parse(value);
   const text = (node: TextNode): string => {
     if (["html", "image", "imageReference", "definition", "footnoteDefinition"].includes(node.type)) return "";
@@ -21,7 +20,12 @@ function summaryText(value: unknown): string {
     if (node.type === "break") return " ";
     return (node.children || []).map(text).join("") + (["paragraph", "heading", "listItem", "tableCell"].includes(node.type) ? " " : "");
   };
-  const plain = text(tree).replace(/\s+/g, " ").trim();
+  return text(tree);
+}
+
+function summaryText(value: unknown, markdown: boolean): string {
+  if (typeof value !== "string") return "";
+  const plain = (markdown ? markdownSummary(value) : value).replace(/\s+/g, " ").trim();
   const chars = Array.from(plain);
   if (chars.length <= 180) return plain;
   const prefix = chars.slice(0, 179).join("");
@@ -40,7 +44,7 @@ export function resolveHostedDescription(page: { metaDescription?: unknown; tagl
     if (decideSectionAccess(section.data.access, { isLoggedIn: false, isAdmin: false }) !== "render") continue;
     const value = section.type === "hero" ? section.data.subheadline
       : ["profile-header", "entries"].includes(section.type) ? section.data.intro : undefined;
-    const description = summaryText(value);
+    const description = summaryText(value, section.type !== "hero");
     if (description) return description;
   }
   return undefined;

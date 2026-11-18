@@ -90,10 +90,20 @@ test("F2: maintained dates, relevant public updates and no generation-time or in
   fixtureDb.rows = [website, tool, { ...root, id: "draft", slug: "draft", isPublished: false, updatedAt: new Date("2026-12-01") }];
   fixtureDb.apps = [website, tool].map((p, i) => ({ id: `app${i}`, organizationId: p.organizationId, hostedPageSlug: p.slug, updatedAt: root.updatedAt, isApproved: true, tags: [] }));
   const { loadSitemapShard } = await import("../src/lib/sitemap-data.ts");
-  const entries = await loadSitemapShard("0");
+  const pageFindMany = fixtureDb.hostedPage.findMany;
+  const appFindMany = fixtureDb.app.findMany;
+  const queries: { model: string; query: { select: Record<string, boolean> } }[] = [];
+  fixtureDb.hostedPage.findMany = async query => { queries.push({ model: "hostedPage", query }); return pageFindMany(query); };
+  fixtureDb.app.findMany = async query => { queries.push({ model: "app", query }); return appFindMany(query); };
+  let entries;
+  try { entries = await loadSitemapShard("0"); }
+  finally { fixtureDb.hostedPage.findMany = pageFindMany; fixtureDb.app.findMany = appFindMany; }
+  assert.deepEqual(queries.map(({ model }) => model), ["hostedPage", "hostedPage", "app"]);
+  assert.ok(queries.every(({ query }) => !query.select.content && !query.select.template));
+  assert.deepEqual(Object.keys(queries[2].query.select).sort(), ["hostedPageSlug", "id", "organizationId", "updatedAt"]);
   const dates = Object.fromEntries(entries.map(e => [e.url, e.lastModified]));
   for (const locale of locales) {
-    assert.equal(dates[platformUrl("/websites", locale)], website.updatedAt.toISOString());
+    assert.equal(dates[platformUrl("/websites", locale)], tool.updatedAt.toISOString());
     assert.equal(dates[platformUrl("/tools", locale)], tool.updatedAt.toISOString());
     assert.equal(dates[platformUrl("/apps", locale)], tool.updatedAt.toISOString());
     assert.equal(dates[platformUrl("/", locale)], undefined);
@@ -105,10 +115,10 @@ test("F2: maintained dates, relevant public updates and no generation-time or in
 });
 
 test("F3: English and Chinese waiting/small-group copy and exact visible FAQ/schema agreement", async () => {
-  for (const locale of ["en", "zh-TW", "zh-CN"]) {
+  for (const locale of locales) {
     fixtureDb.locale = locale;
     const hub = getGamesCopy(locale);
-    assert.match(hub.metaDescription, locale === "en" ? /restaurant.*queue.*doctor’s office.*small group/ : /餐[廳厅].*排[隊队].*候診|餐厅.*排队.*候诊/);
+    if (["en", "zh-TW", "zh-CN"].includes(locale)) assert.match(hub.metaDescription, locale === "en" ? /restaurant.*queue.*doctor’s office.*small group/ : /餐[廳厅].*排[隊队].*候診|餐厅.*排队.*候诊/);
     for (const slug of [undefined, ...GAMES.map(g => g.slug), TABLETOP_COLLECTION.slug]) {
       const html = await renderHtml(slug ? await gameDetail.default({ params: Promise.resolve({ locale, slug }) }) : await gameHub.default());
       const faq = slug ? getGamePageCopy(locale, slug).faq : getGamesHubFaq(locale);
@@ -116,8 +126,12 @@ test("F3: English and Chinese waiting/small-group copy and exact visible FAQ/sch
       assert.deepEqual(schema.mainEntity, faq.map(({ question, answer }) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })));
       const visible = html.replace(/<script\b[\s\S]*?<\/script>/g, "");
       for (const { question, answer } of faq) { assert.ok(visible.includes(escapeHtml(question))); assert.ok(visible.includes(escapeHtml(answer))); }
-      if (slug === "werewolf") assert.match(getGamePageCopy(locale, slug).intro, /quiet waiting room|不適合安靜的候診室|不适合安静的候诊室/);
-      else assert.ok(faq.some(({ answer }) => answer.includes("10–15")));
+      if (slug === "werewolf" && ["en", "zh-TW", "zh-CN"].includes(locale)) assert.match(getGamePageCopy(locale, slug).intro, /quiet waiting room|不適合安靜的候診室|不适合安静的候诊室/);
+      const puzzle = GAMES.find(game => game.slug === slug)?.puzzle;
+      if (puzzle) assert.ok(faq.every(({ question, answer }) => !`${question} ${answer}`.includes("10–15")));
+      else if ((!slug || slug === TABLETOP_COLLECTION.slug) && ["en", "zh-TW", "zh-CN"].includes(locale)) {
+        assert.ok(faq.some(({ answer }) => answer.includes("10–15")));
+      }
     }
   }
 });
@@ -127,6 +141,8 @@ test("F4: description uses only public visible summaries in display order, prese
   assert.equal(resolveHostedDescription({ ...root, metaDescription: "" }), root.tagline);
   assert.equal(resolveHostedDescription({ ...root, metaDescription: "   " }), root.tagline);
   assert.equal(resolveHostedDescription({ ...root, metaDescription: "  ", tagline: "\n" }), "Public summary");
+  const literalHero = "Use *stars*, [brackets](text), <labels> &amp; underscores_here.";
+  assert.equal(resolveHostedDescription({ content: { sections: [section("hero", { subheadline: literalHero })] } }), literalHero);
   const content = { sections: [section("hero", { subheadline: "SECRET", access: "login" }, -3),
     section("profile-header", { intro: "ADMIN SECRET", access: "admin" }, -2),
     section("project-cards", { intro: "NOT RENDERED", items: [{ name: "News", description: "CARD SECRET" }] }, -1),

@@ -51,3 +51,72 @@ The standalone spec route allowlist was moved to a shared module; old source-tex
 ## Ops inbox line to copy
 
 `- 2026-11-18 13:53｜APPAI｜67｜SEO F1–F9 已實作，離線檢查與獨立審查通過；未提交／未推送；正式 GET 與瀏覽器截圖待可用環境驗證｜claude/67-seo-recheck；docs/apps/seo-recheck-67.md`
+
+## Round 2 — 2026-11-18
+
+Base `58fd72d`, same branch. This section supersedes round 1's directory classification and individual-puzzle FAQ behavior. Implemented by Codex (GPT-6). No DB/production access, network install, commit, push or PR. `.seo-live/` was not read or changed in round 2.
+
+| Request | Result |
+| --- | --- |
+| Neon compute | Chose the cheaper shared-directory-date option: no content/classification query. All three directories use the max of the maintained platform date, approved App timestamps and their same-organization published bound roots. This is deliberately conservative across directory kinds. Unbound roots do not affect these dates. |
+| Shard validation | Syntax/safe-integer check, then cached `loadSitemapIds()`, then `loadSitemapShard()` only for an existing ID. Out-of-range: 404, no page-data load or new shard cache key when IDs are warm. |
+| Direct dependencies | `unified: 11.0.5`, `remark-parse: 11.0.0` exactly match installed and already locked package records. Updated root dependency declarations in both manifests by hand; zero network/install required. |
+| Hero description | Plain-text whitespace/truncation only; Markdown parsing is limited to markdown-capable intro fields. Literal punctuation, links and entities are preserved in hero text. |
+| App lastmod | Per locale, max of App and `pickByLocale()` bound published root variant, scoped by organization; standalone apps retain their timestamp. No extra query and no platform-date floor on app details. |
+| FAQ | English “may not be enough”; repeated 10–15-minute FAQ retained on hub/collection and removed from the three individual puzzles. Six other locales did not contain that duplicate. All nine locales have rendered FAQ/JSON-LD parity coverage. |
+| Raw game URLs | Three raw slugs derived from `OWN_GAME_SLUGS` filtered by catalog `buildSlug`, unchanged headers/rewrites. |
+| Image utility | Uses `fileURLToPath(output)`. |
+| Directory copy | Six locale objects reformatted to match en/zh; text unchanged. |
+
+### Exact sitemap queries after round 2
+
+Every `loadSitemapEntries()` call performs these **three Prisma queries**. Query 1 runs first; queries 2 and 3 run in parallel. No content query is performed.
+
+```ts
+const roots = await db.hostedPage.findMany({
+  where: publicPageWhere(), // { isPublished: true, parentSlug: null }
+  select: {
+    organizationId: true, slug: true, parentSlug: true,
+    isPublished: true, locale: true, isDefault: true, updatedAt: true,
+  },
+  orderBy: [{ slug: "asc" }, { locale: "asc" }],
+});
+const [pages, apps] = await Promise.all([
+  db.hostedPage.findMany({
+    where: publicPageWhere(roots),
+    select: {
+      slug: true, parentSlug: true, organizationId: true, locale: true,
+      isDefault: true, updatedAt: true, privacyPolicy: true,
+      termsOfService: true, canonicalUrl: true,
+    },
+    orderBy: [{ slug: "asc" }, { locale: "asc" }],
+  }),
+  db.app.findMany({
+    where: publicAppFilter(roots),
+    select: { id: true, updatedAt: true, hostedPageSlug: true, organizationId: true },
+    orderBy: { id: "asc" },
+  }),
+]);
+```
+
+The unchanged predicates are defined in `src/lib/hosted-page-visibility.ts`:
+
+- `publicPageWhere(roots)`: `isPublished: true`, and either a root (`parentSlug: null`) or a child matching a published root's organization and slug, with `isDefault: true` or an exact/Chinese-source-compatible root locale.
+- `publicAppFilter(roots)`: `isApproved: true`, and either `hostedPageSlug: null`, `hostedPageSlug: ""`, or a binding whose organization and slug match a published root.
+
+Both ID and shard caches retain `revalidate: 3600`, tag `seo-sitemap`. Warm IDs + invalid shard: **0 DB queries**. Cold IDs + invalid shard: **3 queries to populate the ID cache**, no shard-data query/cache entry. Cold IDs + cold valid shard: **6 queries** (existing separate caches); warm IDs + cold valid shard: **3**; both warm: **0**. No production SQL was executed or captured.
+
+### Round 2 verification and handoff
+
+- `spec:build`, `typecheck`, `lint`, `feature-map:check`: PASS; lint has 0 errors and 31 existing warnings.
+- `npm test`: PASS, 867 tests, 855 passed, 12 opt-in/integration skips, 0 failures. Database environment variables explicitly unset for the run.
+- Regression evidence covers no-content/minimal query projections, three-query load budget, invalid shard cache keys/data reads, organization/locale lastmod and literal hero text. Independent Codex review found no functional blockers; its two requested test improvements (query-budget assertions and observable newer-default fallback) were added and independently rechecked as resolved. Final full suite passed after these changes.
+- Dependency manifest/lock/installed-version consistency: PASS. No install command needed.
+- Screenshot attempt: existing headless Chrome helper exited during startup (`Chrome exited null`); no screenshots or browser visual pass claimed. Actual rendered HTML/FAQ/schema checks pass in all nine locales.
+- Logs: `/private/tmp/appai-67-round2-{spec,typecheck,test,lint,feature-map,targeted}.log`.
+- Spec impact: internal query/metadata corrections and FAQ deduplication; no new external-agent capability or payload contract, so no additional spec fields required. `spec:build` produces no diff.
+- Ops inbox/run writes are unavailable because ops is outside the writable sandbox. No pull/rebase/commit/push was attempted, honoring this task's explicit uncommitted/no-push requirement. This local report is the run/handoff record.
+
+Ops inbox line to copy:
+
+`- 2026-11-18 14:02｜APPAI｜67｜SEO round 2 修正；三個 sitemap 查詢不讀 content、shard 越界 404、依賴與各 nit 完成；指定檢查通過；未提交／未推送｜claude/67-seo-recheck @ 58fd72d；docs/apps/seo-recheck-67.md`

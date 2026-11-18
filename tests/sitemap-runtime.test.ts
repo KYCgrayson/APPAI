@@ -50,9 +50,20 @@ test("runtime sitemap index and new shard IDs stay reachable after the directory
     found.push(...entries);
   }
   assert.deepEqual(found, expected.map(entry => entry.url));
-  const beyond = await readShard(`${urls.length}.xml`);
-  assert.equal(beyond.status, 200);
-  assert.doesNotMatch(await beyond.text(), /<url>/);
+  const beforeWrites = writes.length;
+  const pageFindMany = fixtureDb.hostedPage.findMany;
+  const appFindMany = fixtureDb.app.findMany;
+  fixtureDb.hostedPage.findMany = async () => { throw new Error("Invalid shard queried page data"); };
+  fixtureDb.app.findMany = async () => { throw new Error("Invalid shard queried apps"); };
+  try {
+    for (const id of [`${urls.length}.xml`, "999999.xml", "9007199254740991.xml"]) {
+      assert.equal((await readShard(id)).status, 404);
+    }
+    assert.equal(writes.length, beforeWrites, "invalid shards must not add cache keys");
+  } finally {
+    fixtureDb.hostedPage.findMany = pageFindMany;
+    fixtureDb.app.findMany = appFindMany;
+  }
   for (const id of ["-1.xml", "01.xml", "1.5.xml", "1", "999999999999999999999.xml"]) {
     assert.equal((await readShard(id)).status, 404);
   }

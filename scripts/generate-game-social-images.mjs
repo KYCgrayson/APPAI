@@ -1,6 +1,7 @@
 // Offline build utility. sharp is already supplied by Next.js; no app dependency added.
 // Run: node scripts/generate-game-social-images.mjs
 import sharp from 'sharp';
+import { fileURLToPath } from 'node:url';
 import { readFile } from 'node:fs/promises';
 import { GAMES, TABLETOP_COLLECTION } from '../src/lib/games-catalog.ts';
 
@@ -10,6 +11,6 @@ for (const cover of new Set([...GAMES, TABLETOP_COLLECTION].map(game => game.cov
   await sharp(await readFile(input), { density: 144 })
     .resize(1200, 630, { fit: 'contain', background: '#0f172a' })
     .png({ compressionLevel: 9, adaptiveFiltering: false })
-    .toFile(output.pathname);
+    .toFile(fileURLToPath(output));
   console.log(`${cover.replace(/\.svg$/, '.png')} (1200×630)`);
 }
