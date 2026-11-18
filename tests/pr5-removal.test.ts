@@ -334,3 +334,25 @@ test("API page and App lists have deterministic id order when timestamps tie", a
   assert.deepEqual((await (await pagesRoute.GET(req("/api/v1/pages", undefined, "GET"))).json()).map((row: { id: string }) => row.id), ["c-en", "b-en", "a-en"]);
   assert.deepEqual((await (await appsRoute.GET(req("/api/v1/apps", undefined, "GET"))).json()).map((row: { id: string }) => row.id), ["c", "b", "a"]);
 });
+
+test("#91 first-created locale (including draft) wins; root/child defaults and set-default are independent", async () => {
+  for (const firstLocale of ["en", "zh-TW", "es"]) {
+    const store = reset([]);
+    const create = async (slug: string, locale: string, parentSlug?: string, isPublished = true) => {
+      const response = await pagesRoute.POST(req("/api/v1/pages", { slug, title: "Locale fixture", locale, parentSlug, isPublished }));
+      assert.equal(response.status, 201, JSON.stringify(await response.json()));
+      return store.rows.find(row => row.slug === slug && row.locale === locale)!;
+    };
+    assert.equal((await create("locale-site", firstLocale, undefined, false)).isDefault, true);
+    const laterLocale = firstLocale === "en" ? "es" : "en";
+    assert.equal((await create("locale-site", laterLocale)).isDefault, false, "publishing later does not replace draft default");
+    assert.equal((await create("site-notes", laterLocale, "locale-site")).isDefault, true);
+    assert.equal((await create("site-notes", firstLocale, "locale-site")).isDefault, false);
+    const response = await defaultRoute.POST(req(`/api/v1/pages/locale-site/set-default?locale=${laterLocale}`), ctx("locale-site"));
+    assert.equal(response.status, 200);
+    assert.deepEqual(store.rows.filter(row => row.slug === "locale-site" && row.isDefault).map(row => row.locale), [laterLocale]);
+    assert.deepEqual(store.rows.filter(row => row.slug === "site-notes" && row.isDefault).map(row => row.locale), [laterLocale]);
+    const missing = await defaultRoute.POST(req("/api/v1/pages/locale-site/set-default?locale=ja"), ctx("locale-site"));
+    assert.equal(missing.status, 404);
+  }
+});

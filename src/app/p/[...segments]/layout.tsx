@@ -1,13 +1,13 @@
 import { hostedHeaderLogo } from "@/lib/page-logo";
 import { loadHostedRootVariants, loadHostedChildVariants } from "@/lib/public-hosted-page";
-import { hostedPagePath, isUnavailableHostedPolicyLink } from "@/lib/hosted-page-urls";
+import { hostedPagePath, hostedSwitcherVariants, isUnavailableHostedPolicyLink } from "@/lib/hosted-page-urls";
 import { hostedNavigationCopy, hostedLinkFocus } from "@/lib/hosted-navigation-copy";
 import { proseThemeVariables, readableTextColor, hostedChromeTheme } from "@/lib/prose-theme";
 import "@/templates/shared/hosted-chrome.css";
 import { PLATFORM_ORIGIN } from "@/lib/platform-identity";
 import { normalizeHostedContent, contentString } from "@/lib/hosted-content";
 import { resolvePage, resolveChildPage } from "@/lib/hosted-page-resolver";
-import { withChineseLocales, chineseScript } from "@/lib/zh-convert";
+import { chineseScript } from "@/lib/zh-convert";
 import Link from "next/link";
 
 import { auth } from "@/lib/auth";
@@ -52,11 +52,9 @@ export default async function HostedPageLayout({ params, children }: Props) {
     .sort((a, b) => Number(b.isDefault) - Number(a.isDefault));
   const childVariants = parsed.childSlug
     ? await loadHostedChildVariants(page.organizationId, slug, parsed.childSlug) : [];
-  const variants = parsed.childSlug
-    ? childVariants.filter(variant => hostedPagePath(variant, rootVariants))
-    : parsed.subpage
-      ? rootVariants.filter(variant => hostedPagePath(variant, rootVariants, parsed.subpage))
-      : withChineseLocales(rootVariants).map(variant => ({ ...page, ...variant }));
+  const variants = hostedSwitcherVariants(
+    parsed.childSlug ? childVariants : rootVariants, rootVariants, parsed.subpage,
+  );
   const variantHref = (variant: typeof variants[number]) =>
     hostedPagePath(variant, rootVariants, parsed.subpage)!;
 

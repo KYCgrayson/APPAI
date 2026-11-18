@@ -72,6 +72,7 @@ Watch out: browser sessions and Organization-scoped bearer keys are separate aut
 
 Platform routes use next-intl and nine message catalogs; hosted content resolves publisher-provided locale variants, including Chinese script conversion. Locale helpers bridge these sets and support locale-free app launch pages.
 Entry files: [routing.ts](../src/i18n/routing.ts), [messages](../src/messages/en.json), [middleware.ts](../src/middleware.ts), [locale-match.ts](../src/lib/locale-match.ts), [platform-locale.ts](../src/lib/platform-locale.ts), [hosted-page-resolver.ts](../src/lib/hosted-page-resolver.ts).
+Single-locale contract (#91): [hosted-single-locale.test.ts](../tests/hosted-single-locale.test.ts) covers default routing, HTML language, desktop/open-drawer choices, Chinese conversion, missing locales, metadata and sitemap; it compares multi-locale SEO bytes against main `4a71b1e`. `hostedSwitcherVariants` in [hosted-page-urls.ts](../src/lib/hosted-page-urls.ts) adds reachable Chinese reader choices without adding derived SEO alternates. API first-created and set-default behaviour is covered by `tests/pr5-removal.test.ts`.
 Watch out: `/p/` has its own locale system and `/app/` skips next-intl routing; publisher copy belongs in hosted content rather than platform messages.
 
 ### seo — Metadata, canonical URLs and discovery indexes

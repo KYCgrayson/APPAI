@@ -427,7 +427,7 @@ Run the blocks in order and stop on a failed command; never continue to publishi
 
 The successful creation response is HTTP 201 and includes `gamesListing: "requested"` for this application. It does not mean approved. Open `https://appai.info/p/$APPAI_GAME_SLUG` in a browser (substitute the actual slug); the current route is `/p`, not `/games`.
 
-Publish four variants with the same slug: `en` first (default), then `zh-TW`, `zh-CN`, `es`. Translate title, tagline, metadata, description, how-to, FAQ and cover alt text, previewing each complete body. Use `Noto Sans TC` / `Noto Sans SC` for the Chinese variants. Add other languages chosen by the owner. AppAI's own pages described below have nine locales; external pages have only the translations you publish.
+Publish four variants with the same slug: `en` first, then `zh-TW`, `zh-CN`, `es` (see [default selection](https://appai.info/spec/i18n#multi-language-details)). Translate title, tagline, metadata, description, how-to, FAQ and cover alt text, previewing each complete body. Use `Noto Sans TC` / `Noto Sans SC` for the Chinese variants. Add other languages chosen by the owner. AppAI's own pages described below have nine locales; external pages have only the translations you publish.
 
 For root variants, supply translated `privacyPolicy` and `termsOfService`. These fields are optional in API validation, but AppAI does not automatically write or provide game-specific policies. `/p/{slug}/privacy` and `/p/{slug}/terms` exist only when their respective fields are supplied. Confirm data practices before writing policies; do not copy claims from a different game's deployment. See [Compliance Pages](https://appai.info/spec/pages#compliance-pages).
 

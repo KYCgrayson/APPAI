@@ -1,4 +1,4 @@
-import { chineseSourceLocales } from "./zh-convert.ts";
+import { chineseSourceLocales, oppositeChineseLocale, withChineseLocales } from "./zh-convert.ts";
 import { buildPagePath, parsePageSegments, type Subpage } from "./parse-page-segments.ts";
 import { PLATFORM_ORIGIN } from "./platform-identity.ts";
 
@@ -11,6 +11,20 @@ export interface HostedUrlPage {
   canonicalUrl?: string | null;
   privacyPolicy?: string | null;
   termsOfService?: string | null;
+}
+
+/** Reader choices include derived Chinese scripts; SEO uses stored variants only. */
+export function hostedSwitcherVariants<T extends HostedUrlPage>(variants: readonly T[], roots: readonly HostedUrlPage[], subpage?: Subpage | null): T[] {
+  return withChineseLocales([...variants]).flatMap(variant => {
+    const stored = variants.find(row => row.locale === variant.locale);
+    // Match readPage's source preference, independently of default-first UI order.
+    const source = stored ?? variants.find(row => row.locale === oppositeChineseLocale(variant.locale))
+      ?? [...variants].sort((a, b) => a.locale < b.locale ? -1 : a.locale > b.locale ? 1 : 0)
+        .find(row => chineseSourceLocales(variant.locale).includes(row.locale));
+    if (!source) return [];
+    const choice = stored ?? { ...source, locale: variant.locale, isDefault: false };
+    return hostedPagePath(choice, roots, subpage) ? [choice] : [];
+  });
 }
 
 /** A default child resolves independently of its parent's default locale. */

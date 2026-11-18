@@ -1,5 +1,14 @@
 ## Hosted-page small bugs and heading colour (#91, PR-4)
 
+## Single-locale hosted pages (#91 PR-3)
+
+- [x] Document first-created default selection, draft/public fallback, independent children and unchanged four-locale publishing policy.
+- [x] Keep single-language switches hidden; expose reachable Chinese script choices consistently on roots, children and nonempty policies.
+- [x] Add single-locale routing/HTML language/SEO/sitemap coverage and exact multi-locale comparison against main 4a71b1e.
+- [x] Independent Codex review found no blocking issues; requested edge-case tests added.
+- [ ] Browser screenshots: local headless Chrome exited before capture. No production changes, commits or pushes in this worktree task.
+
+
 - [x] Reproduce hero variant behavior on child routes; warn on ignored media across publish, updates and previews; document HTTPS thumbnail support.
 - [x] Preserve root logos in App detail/admin fallbacks without changing SEO image metadata or directory cache policy.
 - [x] Add content.headingColor theme/dark, child inheritance and API field-path validation; preserve default HTML.
