@@ -1,3 +1,10 @@
+## Platform design rules (ops #22, 2026-11-18; documentation only)
+
+- [x] Add root DESIGN.md with source-backed tokens/components, three benchmark principles, 14 known deviations and an 18-item review checklist; hook CLAUDE.md, hosted style guidance and both feature maps; regenerate AGENT_INSTRUCTIONS.md. No UI/CSS/component changes.
+- [x] Independent source review passed after correcting appendix line references. Spec build, 19 spec documentation tests and lint pass (0 errors, 31 existing warnings). Feature-map inventory including new DESIGN.md passes a read-only in-memory check; no alternate Git index or repository copy was created.
+- [ ] Environment follow-up: linked node_modules lacks opencc-js and has stale Prisma types; typecheck fails, full tests report 760 passed / 49 failed / 10 skipped. No dependencies or database changed.
+- [ ] Stage and commit with `#22:` prefix where Git metadata is writable; sandbox blocks this worktree's index.lock, so the ordinary feature-map check cannot see DESIGN.md yet. No push or PR requested.
+
 ## SEO re-check (ops #67, 2026-11-18)
 
 - [x] Implement audit F1–F9 only: sitemap coverage/dates, waiting-game copy, public description fallback, six directory locales, raw/auth noindex, reproducible PNG social covers, and unknown-price Offer removal.

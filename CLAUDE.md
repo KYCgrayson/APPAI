@@ -84,6 +84,7 @@ without going through a connector or a reviewed Universal App release.
 
 ## Project Docs
 
+- Platform UI work must follow [DESIGN.md](DESIGN.md); reviews must check its numbered review checklist.
 - **TODO.md** — Central todolist and roadmap. All planned features, tasks, and progress are tracked here. Always check and update this file when working on new features or completing tasks.
 - **docs/spec/** — Source of truth for the short `/spec` overview and seven topic pages: api, style, pages, sections, i18n, tools, apps.
 - **AGENT_INSTRUCTIONS.md** — Generated full specification for GitHub readers and `/llms-full.txt`.
