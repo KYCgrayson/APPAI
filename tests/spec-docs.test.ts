@@ -153,7 +153,7 @@ test('every spec topic and heading link resolves across docs, skill, llms and ho
     // Static example assets are handled by their own route, outside topic links.
     const content = text.replace(/https:\/\/appai\.info\/spec\/examples\/[^\s)"`]+/g, '');
     for (const match of content.matchAll(/https:\/\/appai\.info\/spec(?:\/[\w-]+)?(?:#[\w-]+)?/g)) checkLink(match[0], path);
-    assert.doesNotMatch(content, /https:\/\/appai\.info\/spec\/pages#(?:icons|section-reference|profile-header|project-cards|entries|hero|video|features|screenshots|download|pricing|testimonials|faq|gallery|team|schedule|sponsors|stats|cta|links|about|embed|link-rel-seo)\b/);
+    assert.doesNotMatch(content, /https:\/\/appai\.info\/spec\/pages#(?:icons|section-reference|profile-header|project-cards|entries|hero|video|features|screenshots|download|pricing|testimonials|faq|gallery|team|schedule|sponsors|stats|cta|links|about|embed|link-rel-seo)(?![\w-])/);
   }
   const cardArray = homepage.match(/\{\(\[([^{}]*?)\] as const\)\.map\(\(\[kind, topic\]\)/)?.[1];
   assert.ok(cardArray, 'homepage card array');

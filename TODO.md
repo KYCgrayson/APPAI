@@ -1,3 +1,10 @@
+## Video digest site recipe (#91 / #108, docs only)
+
+- [x] Document an index feed/grid and video children, in-page moments, Markdown key points/tables/sources, optional heading colour, owner-removal preflight, external subscriptions and publisher-owned daily updates.
+- [x] Preserve the four-default-locale policy: current single-locale behavior does not grant a video-digest publishing exception.
+- [x] Add three fictional request bodies and regression tests against the API's shared preview validator; link examples from the public repo without changing server routes or the served-example allowlist.
+- [x] Verify TypeScript, lint (0 errors, 31 existing warnings), full tests (845 passed, 12 skipped), feature map including new files and regenerated agent spec (overview: 107 lines). Fix the legacy-anchor test's false match on `video-digest-site-recipe`; independent review passed, including 22/22 example/spec checks.
+
 ## Single-locale hosted pages (#91 PR-3)
 
 - [x] Document first-created default selection, draft/public fallback, independent children and unchanged four-locale publishing policy.

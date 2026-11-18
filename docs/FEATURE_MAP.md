@@ -148,6 +148,7 @@ Watch out: `mcp-server/dist/` is a tracked build copy; edit source and regenerat
 
 Serves the short `/spec`, topic documents, examples and full agent spec; the publishing skill adds reusable workflow guidance. Demo/QA scripts exercise published page designs.
 Entry files: [overview](spec/overview.md), [spec route](../src/app/spec/route.ts), [build-agent-instructions.mjs](../scripts/build-agent-instructions.mjs), [appai-publish skill](../skills/appai-publish/SKILL.md), [personal-site example publisher](examples/publish-person-site.mjs).
+Video digest recipe: [pages](spec/pages.md#video-digest-site-recipe) composes the existing feed, gallery, video and Markdown sections. Fictional POST bodies: [index](examples/video-digest.example.json), [YouTube child](examples/video-digest-youtube.example.json), [mp4 child](examples/video-digest-mp4.example.json); [example tests](../tests/video-digest-example.test.ts) require all three to pass the API's shared preview validator without warnings. Examples are linked from the public repo; the served-example allowlist is unchanged.
 Watch out: edit `docs/spec/`, then run `npm run spec:build`; the root `AGENT_INSTRUCTIONS.md` is generated.
 
 ### admin — Administration and reporting

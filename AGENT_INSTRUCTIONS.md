@@ -37,6 +37,8 @@ Two limits worth knowing up front, so you never promise them:
 
 Use the [topic pages](https://appai.info/spec#topic-pages) for details on the rung you picked.
 
+Hosted Page use case: [Video digest site](https://appai.info/spec/pages#video-digest-site-recipe) — an index, video children, timestamp jumps and sources.
+
 ## Publish in one minute
 
 Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.
@@ -524,6 +526,7 @@ Every page automatically gets: sticky header (with logo, title, language switche
 | User intent | Page shape |
 |---|---|
 | **Personal website / portfolio of a person** | template `PERSON` only for the person’s own root page, never project pages; `profile-header` + `project-cards` + `entries`. |
+| **Video channel / video digest site** | Hosted Page: root index with `project-cards` feed + one child page per video (`video` + Markdown `about`); see the [Video digest site recipe](https://appai.info/spec/pages#video-digest-site-recipe). |
 | **Local shop / small business (bakery, cafe, salon, studio)** | Preset `company-service`, template `COMPANY_PROFILE`: hero → features (products/services) → about (how to order) → about (pickup details, if supplied) → optional video/embed → contact (address, structured hours and socials) → optional cta. Optional video/embed goes after about sections and before contact. No pricing/testimonials required; use only supplied facts. |
 | **Landing page for an app/product** | Hero + features + pricing + testimonials + faq + cta. Standard SaaS template. |
 | **Host a vibe-coded tool** | Hero (short tagline) + `iframe-tool` (the tool itself) + 1-2 supporting sections (about / faq). The tool is the page. |
@@ -545,6 +548,28 @@ Send each object separately; set `locale` for each variant. Project shape: profi
 Data uses `{slug, logo?: "./logo.svg" or HTTPS URL, page?: {themeColor, themeColorSecondary, fontFamily, darkMode}, locales: {en: {title?, metaDescription?, fontFamily?, sections: [...]}}}`; section array order is preserved and `id` becomes `data.id`.
 Project cards can use existing links or `page: {slug, as: "child"|"root", linkLabel, template?, entries?}`; roots count toward the plan limit. Top-level `logo` becomes `content.logo` on every person root locale; child pages inherit it. The root `logo`, `avatar`/`icon`/`screenshot` object `url`s and `images` array strings or `{url}` items [upload once](https://appai.info/spec/api#upload-images): relative .png/.jpg/.jpeg/.gif/.webp/.svg paths must resolve inside the real data directory; absolute paths, .env* segments and symlink escapes are refused, and links pass through. `page` allows only themeColor/themeColorSecondary/fontFamily/darkMode; each locale may override fontFamily, defaulting to Noto Sans TC for zh-TW, Noto Sans SC for zh-CN, and page.fontFamily otherwise (for root, child and root-type project payloads); themeColor/themeColorSecondary/darkMode stay identical; locales need sections arrays and project-cards need items arrays; publish en first, then zh-TW, zh-CN and es (see [default selection](https://appai.info/spec/i18n#multi-language-details)). Compute every locale's root and project URLs first: roots `/p/{root}[/{locale}]`, child projects `/p/{root}[/{locale}]/{slug}`, root-type projects `/p/{slug}[/{locale}]`. Publish complete, published person root locale variants with those card links, then child projects, then root-type projects, all with `?upsert=true`; no unpublished intermediate state or second pass. [Dry-run preview](https://appai.info/spec/api#preview-without-saving) does not check parents, so its order does not matter.
 Node 18+ example: [publish-person-site.mjs](https://appai.info/spec/examples/publish-person-site.mjs), with [fictional input](https://appai.info/spec/examples/person-site.example.json); [placeholder.svg](https://appai.info/spec/examples/placeholder.svg) and [placeholder-screen.svg](https://appai.info/spec/examples/placeholder-screen.svg) are included; [`--dry-run`](https://appai.info/spec/api#preview-without-saving) replaces relative images with HTTPS placeholders and validates every payload using only the preview endpoint, without uploading or saving anything.
+
+### Video digest site recipe
+
+**Hosted Page capability:** an index plus one child per video, using existing sections; no backend or new page format needed. Use `template: "PORTFOLIO"` for the index and `"PRODUCT_SHOWCASE"` for video children; `PERSON` is reserved for a person's own root.
+
+| Part | Build with existing fields |
+|---|---|
+| Root index | One `hero` for the site title and a [root logo](https://appai.info/spec/style#logo); [`project-cards`](https://appai.info/spec/sections#project-cards) with `data.layout: "feed"`. Order `items` newest first yourself; AppAI preserves array order. Use `name`, `href` to the child, `meta` for date/duration, `description` for a short digest, `media` for 1–2 thumbnails with `url`, `alt`, optional `href`/`label`; only the first `featured: true` item is enlarged. |
+| Optional thumbnail grid | [`gallery`](https://appai.info/spec/sections#gallery) with `data.layout: "grid"`, `aspect: "16:9"`; image items use `url`, `alt`, `href` to the child and `badge` for duration (e.g. `"4:00"`). |
+| One child per video | Set `parentSlug` to the root slug and prefix each child slug with it: root `paper-lantern-digest` → child `paper-lantern-digest-folds` at `/p/paper-lantern-digest/paper-lantern-digest-folds`. Set `hideFromNav: true` for a large archive reached through the index; see [multi-page details](https://appai.info/spec/i18n#multi-page-site-details). |
+| Player and timestamp jumps | One [`video`](https://appai.info/spec/sections#video) with a stable `data.id` (e.g. `"episode-video"`), public `url` and optional `moments: [{t: 90, title: "Fold the base", text: "Optional Markdown"}]`; moments seek in-page. In key-point Markdown, `[▶ 1:30](?t=90#episode-video)` targets that same id (`?t=90#<video-id>`). Omit `moments` when there are no chapters. |
+| Summary, key points and sources | [`about`](https://appai.info/spec/sections#about) `data.text` supports Markdown headings, lists and tables; link each key point to its timestamp and cite the original video plus supporting source URLs. Supply video `uploadDate`, `duration` and `thumbnail` only when known. |
+| Thumbnail hero and headings | Optional [`hero`](https://appai.info/spec/sections#hero) `data.backgroundImage` may use an HTTPS video thumbnail with `variant: "centered"` or `"split"`. Optional page setting `content.headingColor: "dark"` gives near-black headings on light pages and light headings on dark pages; children inherit it, or opt out with `"theme"`. |
+| Language | **Publish the default locales** (`en`, `zh-TW`, `zh-CN`, `es`), English first. The [single-locale behavior and default-selection rules](https://appai.info/spec/i18n#multi-language-details) do not grant a video-original-language-only exception; the four-locale publishing policy is unchanged. |
+| Daily updates | The publisher's own scheduler prepares each digest and re-runs `POST /api/v1/pages?upsert=true` with stable slugs and complete bodies; keep the root feed newest first. AppAI does not fetch YouTube or run the publisher's schedule. |
+| Owner removal | Follow [Respect owner removal before publishing](https://appai.info/spec/pages#respect-owner-removal-before-publishing) on every run, including removed roots, removed children and a removal `409` after preflight. |
+| Subscribe | Link a hero button (`ctaText` / `ctaUrl`) or `links` item to the user's own newsletter. AppAI does not collect email for subscriptions. |
+| Public content and rights | Only publish public videos; the publisher is responsible for rights to text and thumbnails. Verify visibility and permissions before each publish. |
+
+A `diagram` section (compare/steps/layers/cycle) is coming; until then use Markdown tables.
+
+Fictional request bodies in the public repo: [root index](https://github.com/KYCgrayson/APPAI/blob/main/docs/examples/video-digest.example.json), [YouTube child with moments](https://github.com/KYCgrayson/APPAI/blob/main/docs/examples/video-digest-youtube.example.json), [minimal mp4 child without chapters](https://github.com/KYCgrayson/APPAI/blob/main/docs/examples/video-digest-mp4.example.json). Send each object separately; these are English samples, so translate copy and locale-specific child links for the four defaults. Replace fictional media/source/newsletter URLs and the logo, and confirm data practices before writing the real `privacyPolicy`; preview does not fetch media or verify rights. [Dry-run](https://appai.info/spec/api#preview-without-saving) every body with `?upsert=true`, require `valid: true` and no warnings, then publish root variants before children with `isPublished: true`.
 
 ### What to decide yourself (do NOT ask the user)
 

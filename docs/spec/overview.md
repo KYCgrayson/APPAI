@@ -36,6 +36,8 @@ Two limits worth knowing up front, so you never promise them:
 
 Use the [topic pages](https://appai.info/spec#topic-pages) for details on the rung you picked.
 
+Hosted Page use case: [Video digest site](https://appai.info/spec/pages#video-digest-site-recipe) — an index, video children, timestamp jumps and sources.
+
 ## Publish in one minute
 
 Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.
