@@ -179,7 +179,7 @@ Publish: [send the validated body](https://appai.info/spec#publish-in-one-minute
 
 ### Preview without saving
 
-**Preview without saving:** `POST /api/v1/pages?dryRun=true` (identical to `POST /api/v1/pages/preview`) — same body; HTTP 200 returns `{valid, errors: [], warnings: [], sanitizedContent, next}`. Always check `valid`; warnings do not block creation. Preview rejects an exact (slug, locale) owned by another organization; it does not check plan limits, parent existence or ownership of the parent root; POST does.
+**Preview without saving:** `POST /api/v1/pages?dryRun=true` (identical to `POST /api/v1/pages/preview`) — same body; HTTP 200 returns `{valid, errors: [], warnings: [], sanitizedContent, next}`. Always check `valid`; warnings do not block creation. A missing effective SEO description produces a `metaDescription` warning; see the [public summary fallback](https://appai.info/spec/pages#creating-a-page). Preview rejects an exact (slug, locale) owned by another organization; it does not check plan limits, parent existence or ownership of the parent root; POST does.
 
 For an existing slug+locale, dry-run with `POST /api/v1/pages?dryRun=true&upsert=true` (or `POST /api/v1/pages/preview?upsert=true`), then publish with `POST /api/v1/pages?upsert=true`. Without `upsert=true`, preview warns that the page already exists; publishing returns 409. Use `PATCH /api/v1/pages/{slug}?locale=xx` for partial updates.
 
@@ -621,7 +621,7 @@ curl -X POST https://appai.info/api/v1/pages \
 | `locale` | No | BCP 47 code (default: `en`). Same slug + different locale = language variant |
 | `title` | Yes | Page title |
 | `tagline` | No | Short description |
-| `metaDescription` | No | SEO description, max 500 characters, stored on this locale variant. Used for HTML, Open Graph and Twitter descriptions; falls back to `tagline` when empty or omitted. |
+| `metaDescription` | No | SEO description, max 500 characters, stored on this locale variant. Used unchanged for HTML, Open Graph, Twitter and primary JSON-LD descriptions. Empty or whitespace-only values fall back to `tagline`, then the first public summary in display order: hero `subheadline`, profile-header `intro` or entries `intro`. Derived summaries strip Markdown, collapse whitespace and end at a sentence or within 180 Unicode characters. Login/admin-gated sections, individual news/project cards and non-rendered fields are never description sources. Preview warns without blocking when no effective description exists. |
 | `themeColor` | No | Hex color (e.g. `#6366F1`) |
 | `themeColorSecondary` | No | Hex accent color |
 | `darkMode` | No | Boolean (default: false) |
@@ -727,6 +727,14 @@ Free plan's three-root limit; restoring one rechecks that limit.
 `publish-person-site.mjs` performs the removal preflight, omits removed pages/cards,
 continues after removal conflicts and prints the skipped slugs. Removal never frees
 its slug. See [the API error contract](https://appai.info/spec/api#owner-removal-and-api-write-blocks).
+
+
+
+### Indexing and product prices
+
+- Sitemaps list each platform locale as its own URL with reciprocal alternates, self-canonical public app detail pages (including apps bound to hosted pages), and the locale-free `/spec` and supported topics. Spec responses remain `text/plain`.
+- An external `canonicalUrl` excludes only that marketing page; its nonempty, published privacy/terms documents keep local canonicals and sitemap entries. Drafts, unreachable children, converted Chinese variants, aliases and game play URLs remain excluded.
+- A download section produces `SoftwareApplication`, but the platform does not infer a third-party product's price from a download link or certify it as free. Public app details and hosted download pages omit unknown-price Offers; there is no new price field.
 
 All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)
 
@@ -1270,7 +1278,7 @@ curl -X POST https://appai.info/api/v1/pages \
 - Language switcher choices are the current page's available stored locales plus reachable auto-converted Chinese scripts; hide the switcher when fewer than two choices exist (desktop and mobile). A `zh-TW`-only page therefore shows TW/CN; an `en`-only or `es`-only page shows none. Non-default child choices require a reachable root in that locale; policies require nonempty policy text in that variant. An auto-converted policy uses its source variant's policy text.
 - Missing explicit locales return **404**, not a silent fallback to another language. The sole language fallback is the existing offline Chinese script conversion. This applies to roots, children and policies.
 - `<html lang>` and JSON-LD `inLanguage` use the rendered content locale, including auto-converted scripts and independently defaulted children; RTL direction is automatic.
-- **SEO:** canonical is the page's own canonical URL (the default has no locale segment; explicit default-locale aliases canonicalize there). Existing publisher `canonicalUrl` overrides remain supported for marketing pages; policies have independent canonicals. `hreflang` lists only reachable, stored, published, indexable variants, including self; `x-default` points to the published default URL when that document exists. Externally canonicalized marketing pages do not advertise hosted alternates. Auto-converted Chinese pages keep self canonicals and `noindex, follow`, and are never advertised as hreflang targets or sitemap entries. Sitemaps list stored indexable URLs only; empty policies, drafts and unreachable children are omitted. This keeps the indexable language cluster reciprocal; see [Google's localized-version guidance](https://developers.google.com/search/docs/specialty/international/localized-versions).
+- **SEO:** canonical is the page's own canonical URL (the default has no locale segment; explicit default-locale aliases canonicalize there). Existing publisher `canonicalUrl` overrides remain supported for marketing pages; policies have independent canonicals. `hreflang` lists only reachable, stored, published, indexable variants, including self; `x-default` points to the published default URL when that document exists. Externally canonicalized marketing pages do not advertise hosted alternates. Auto-converted Chinese pages keep self canonicals and `noindex, follow`, and are never advertised as hreflang targets or sitemap entries. Sitemaps list stored indexable URLs only; empty policies, drafts and unreachable children are omitted. Each of the nine platform locales has its own sitemap entry with the same reciprocal alternates, including public self-canonical app details. External marketing canonicals do not exclude independently canonical local policies. `/spec` and supported topic documents are locale-free text/plain entries. This keeps the indexable language cluster reciprocal; see [Google's localized-version guidance](https://developers.google.com/search/docs/specialty/international/localized-versions).
 
 - Supported: any valid BCP 47 code (`en`, `ja`, `zh-CN`, `zh-TW`, `ko`, `es`, `fr`, `de`, `pt`, `ar`, `hi`, etc.)
 - Manage: add `?locale=xx` to any endpoint. List all: `?variants=true`.
@@ -2262,9 +2270,20 @@ Previously shared own-game room, puzzle/challenge and leaderboard `claim` querie
 |---|---|
 | H1 | One clear game name: `GAME` uses page `title`. Other templates need one hero or named profile-header. |
 | Description | Say what players do, device/players and the short play context. Include how-to-play in the page, outside the iframe. |
-| Cover | Recommended 1200×630 with meaningful alt text; also set `ogImage` if a different sharing image is needed |
+| Cover | Recommended 1200×630 with meaningful alt text; use a PNG/JPEG raster `ogImage` for social sharing, even if the visible cover is SVG |
 | Structured data | Automatic `VideoGame`: name, description, genre, Web browser platform, play mode, player range, age audience, language and hosted page URL. `faq` reuses the `FAQPage` mechanism. No platform free Offer is attached. |
 | FAQ | Answer real parent questions; use only phrases that describe the game accurately, without repeating keywords mechanically |
+
+For English, Traditional Chinese and Simplified Chinese, lead the hub with free browser games to play with kids while waiting: at a restaurant, in a stationary queue or at the doctor's office. Offer quiet shared puzzles and distinguish small-group play where conversation is welcome. Keep each detail page's specific game name as its main keyword and add one truthful scene to its introduction. Do not repeat a list of keywords on every page.
+
+| Parent question | Copy guidance |
+|---|---|
+| Do we need to prepare anything? | Existing browser puzzles need no extra props, download or sign-in to play. |
+| We have 10–15 minutes; can we play? | Choose an easy puzzle, try a few moves and stop when food arrives or your name is called. Do not promise a completion time or saved progress. |
+| What works at the doctor's office? | Quiet shared puzzles with sound and music off. Werewolf needs conversation and is not a quiet waiting-room recommendation. |
+| What can a small group play? | Suggest Werewolf around a table with time and space to talk; preserve its actual player/age guidance. |
+
+Visible FAQ text and FAQPage JSON-LD must be generated from the same localized copy. Do not change player counts or claim multiplayer support for a shared single-player puzzle.
 
 Parent search contexts: **games to play while waiting in line**, **games to play at a restaurant**, **games to play at dinner table**, **games to play while waiting for food**, **waiting room games**, **free online games for kids**. Chinese intent: 等餐、排隊、看診時跟孩子玩的免費益智小遊戲.
 

@@ -11,7 +11,7 @@ import { resolvePage, resolveChildPage } from "@/lib/hosted-page-resolver";
 import { hostedPageUrl, hostedAlternates, hasExternalCanonical } from "@/lib/hosted-page-urls";
 import { hostedLegalCopy } from "@/lib/hosted-legal-copy";
 import { PLATFORM_ORIGIN } from "@/lib/platform-identity";
-import { buildJsonLd, hostedOgImage } from "@/lib/hosted-page-seo";
+import { buildJsonLd, hostedOgImage, resolveHostedDescription } from "@/lib/hosted-page-seo";
 import { notFound, redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
@@ -82,7 +82,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const variants = childSlug ? await loadHostedChildVariants(rootPage.organizationId, slug, childSlug) : roots;
   const legal = subpage ? hostedLegalCopy(page.locale, subpage, page.title) : null;
   const title = legal?.title || page.metaTitle || page.title;
-  const description = legal?.description || page.metaDescription || page.tagline || undefined;
+  const description = legal?.description || resolveHostedDescription(page);
   const image = hostedOgImage(page);
   // A locale-free child route can resolve a first published child even when
   // its locale has no parent variant. Preserve that reachable fallback URL.

@@ -13,12 +13,13 @@ test("sitemap uses stable static dates, true update times and excludes login and
     { ...root, privacyPolicy: "Privacy" },
     { ...root, slug: "external", canonicalUrl: "https://example.org/official", privacyPolicy: "Privacy" },
   ], [{ id: "demo", updatedAt, hostedPageSlug: null }]);
-  assert.equal(entries.length, 14); // 4 directories + /games + 5 games + collection + 3 hosted/app entries
-  assert.ok(!entries.some(entry => /login|external/.test(entry.url)));
-  assert.equal(entries.find(entry => entry.url === "https://appai.info/")?.lastModified, PLATFORM_CONTENT_MODIFIED);
+  assert.equal(entries.length, 11 * 9 + 11 + 3 + 9); // platform locales, spec, hosted/policies, app locales
+  assert.ok(!entries.some(entry => /login/.test(entry.url) || entry.url.endsWith("/p/external")));
+  assert.ok(entries.some(entry => entry.url.endsWith("/p/external/privacy")));
+  assert.equal(entries.find(entry => entry.url === "https://appai.info/")?.lastModified, undefined);
   assert.equal(entries.find(entry => entry.url.endsWith("/p/site"))?.lastModified, updatedAt);
   assert.equal(entries.find(entry => entry.url.endsWith("/apps/demo"))?.lastModified, updatedAt);
-  assert.deepEqual(entries, buildSitemapEntries([{ ...root, privacyPolicy: "Privacy" }], [{ id: "demo", updatedAt, hostedPageSlug: null }]));
+  assert.deepEqual(entries.filter(entry => !entry.url.includes("/p/external/")), buildSitemapEntries([{ ...root, privacyPolicy: "Privacy" }], [{ id: "demo", updatedAt, hostedPageSlug: null }]));
 });
 
 test("sitemap includes live and Beta own-game pages with alternates, without play URLs or soon entries", () => {
@@ -55,7 +56,7 @@ test("sitemap child and policy alternates only reference reachable published var
     { ...root, slug: "site-faq", parentSlug: "site", locale: "fr", isDefault: false },
     { ...root, slug: "orphan", parentSlug: "missing" },
   ], []);
-  assert.ok(!entries.some(entry => /\/fr|orphan/.test(entry.url)));
+  assert.ok(!entries.some(entry => /\/p\/.*\/fr|orphan/.test(entry.url)));
   assert.deepEqual(entries.find(entry => entry.url.endsWith("site-faq"))?.alternates?.languages, {
     ja: "https://appai.info/p/site/site-faq", "x-default": "https://appai.info/p/site/site-faq",
   });
@@ -80,4 +81,22 @@ test("sitemap serialization escapes XML text and hreflang attributes", () => {
   assert.match(xml, /href="https:\/\/appai.info\/p\/a\?x=&quot;1&quot;&amp;y=2"/);
   assert.match(xml, /<lastmod>2025-04-01T12:00:00.000Z<\/lastmod>/);
   assert.match(xml, /<priority>0<\/priority>/);
+});
+
+
+test("app lastmod follows the bound locale variant, fallback and organization without a platform date floor", () => {
+  const jaDate = new Date("2025-05-01");
+  const fallbackDate = new Date("2025-04-20");
+  const appDate = new Date("2025-04-15");
+  const pages = [{ ...root, updatedAt: fallbackDate }, { ...root, locale: "ja-JP", isDefault: false, updatedAt: jaDate },
+    { ...root, organizationId: "other", updatedAt: new Date("2026-12-01") }];
+  const apps = [{ id: "bound", organizationId: "fixture", hostedPageSlug: root.slug, updatedAt: appDate },
+    { id: "standalone", organizationId: "fixture", hostedPageSlug: null, updatedAt: appDate },
+    { id: "newer-app", organizationId: "fixture", hostedPageSlug: root.slug, updatedAt: new Date("2025-06-01") }];
+  const entries = buildSitemapEntries(pages, apps);
+  for (const locale of locales) {
+    assert.equal(entries.find(entry => entry.url === platformUrl("/apps/bound", locale))?.lastModified, locale === "ja" ? jaDate : fallbackDate);
+    assert.equal(entries.find(entry => entry.url === platformUrl("/apps/standalone", locale))?.lastModified, appDate);
+    assert.equal(entries.find(entry => entry.url === platformUrl("/apps/newer-app", locale))?.lastModified, apps[2].updatedAt);
+  }
 });

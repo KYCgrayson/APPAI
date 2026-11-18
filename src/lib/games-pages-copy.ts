@@ -58,11 +58,12 @@ const COPY: Record<GamePageLocale, Record<string, GamePageCopy>> = {
     ...TABLETOP_PUZZLE_COPY["en"],
     "tabletop-puzzles": {
       metaTitle: "Tabletop Puzzles — free logic games for kids and parents | AppAI",
-      description: "Play River Crossing, Night Bridge and Water Pouring in your browser. Three free 3D logic puzzles for ages 6+, with no download or sign-in.",
-      intro: "Three tabletop logic puzzles to think through on your own or talk through with your child.",
+      description: "Free Tabletop Puzzles for kids ages 6+: River Crossing, Night Bridge and Water Pouring. Share a browser puzzle while waiting at a restaurant or doctor’s office.",
+      intro: "Choose River Crossing, Night Bridge or Water Pouring to think through with your child while waiting for food. Share one screen and stop when your meal arrives.",
       background: "We put three familiar logic challenges on a small 3D tabletop: carry everyone across a river, share a lantern on a night bridge, or measure water with jugs. Each puzzle asks you to plan a move and see what changes. Choose a difficulty that leaves room to experiment; a grown-up can ask questions while the child controls the next move.",
       genre: "Logic puzzle",
       faq: [
+        {"question": "Can we use a 10–15 minute wait without preparing anything?", "answer": "Yes. Open a puzzle in your browser; no extra props or setup are needed. Choose an easy level, try a few moves and stop when called at the doctor’s office or when food arrives. A 10–15 minute break may not be enough to finish a puzzle."},
         { question: "Is this a game to play while waiting in line or at a restaurant?", answer: "You can try a puzzle together while seated and waiting for food. There is no need to finish before the food arrives. In a moving line, put the phone away when you need to watch where you are going; choose River Crossing or Water Pouring if you want to think without a time constraint." },
         { question: "What ages are Tabletop Puzzles for?", answer: "We suggest ages 6 and up. Start with the easiest difficulty and help read the rules. The harder puzzles can also give older children and adults something to work through." },
         { question: "Can a parent and child play together on one phone?", answer: "Yes. It is a single-player puzzle, but you can share one screen: one person suggests a move and the other taps it. There is no separate multiplayer room to set up for this." },
@@ -72,11 +73,12 @@ const COPY: Record<GamePageLocale, Record<string, GamePageCopy>> = {
     },
     "guess-duel": {
       metaTitle: "Guess Duel Beta — a free number game for two | AppAI",
-      description: "Hide a number and use A/B clues to guess the other code. A free browser game for parents and kids ages 8+, on one phone or against the computer. Beta.",
-      intro: "A turn-taking number duel: hide your code and use each clue to narrow down the other one.",
+      description: "Guess Duel is a free browser number game for two, ages 8+. Take turns with A/B clues while waiting for food at a restaurant. No download. Beta.",
+      intro: "Waiting for food with your child? Try Guess Duel on one phone: hide your secret number, take turns guessing and use the A/B clues to narrow it down.",
       background: "Guess Duel is our Beta take on the familiar A/B number deduction game. A correct digit in the correct place earns an A; a correct digit elsewhere earns a B. You decide what to try next from those clues. Start with three digits for a gentler game, or use four when both players want more to keep track of.",
       genre: "Number deduction",
       faq: [
+        {"question": "Do we need any props to play while waiting?", "answer": "No extra props are needed. Use one phone, choose three digits for a simpler duel and agree to stop when food arrives. A 10–15 minute wait may not be enough to finish."},
         { question: "Can we play Guess Duel while waiting for food at a restaurant?", answer: "Yes, if you have time to take turns and keep each secret number hidden. You can stop guessing when the meal arrives. For a moving queue, wait until you can safely look at the phone." },
         { question: "What age can children start playing?", answer: "We suggest ages 8 and up. Use three different digits first and explain the A/B clues together. Reading the clues and keeping a secret may still need an adult's help." },
         { question: "Can two people play on one phone?", answer: "Yes. Take turns with the same device and let the other person look away when you enter a secret. A solo player can also choose the computer opponent. Link-based play between two phones is another option; room-code play is coming soon." },
@@ -86,8 +88,8 @@ const COPY: Record<GamePageLocale, Record<string, GamePageCopy>> = {
     },
     werewolf: {
       metaTitle: "Werewolf Beta — a free family party game on one phone | AppAI",
-      description: "Play Werewolf together with one phone, using the app or an adult as host. A free browser party game for ages 8+, with family wording available. Beta.",
-      intro: "Gather a group, pass one phone, and talk your way through a game of hidden roles.",
+      description: "Werewolf is a free browser party game for a small group, ages 8+. Share one phone around a table with space to talk. App or adult host. Beta.",
+      intro: "Gather a small group around a table with time and space to talk. Pass one phone and work out the hidden roles in Werewolf; save it for somewhere you won’t disturb a quiet waiting room.",
       background: "Our Beta Werewolf game helps a group run the familiar night-and-day social deduction game. The app can guide a pass-the-phone game, or an adult can read the host script. Players keep their roles secret and discuss who might be a werewolf. The theme includes deception and players being removed from play, so read the roles together before deciding whether it suits your family.",
       genre: "Social deduction party game",
       faq: [
@@ -103,11 +105,12 @@ const COPY: Record<GamePageLocale, Record<string, GamePageCopy>> = {
     ...TABLETOP_PUZZLE_COPY["zh-TW"],
     "tabletop-puzzles": {
       metaTitle: "桌上謎題合集：親子免費邏輯小遊戲｜AppAI",
-      description: "在瀏覽器裡玩過河、夜過橋、量水，三個適合 6 歲以上的免費 3D 邏輯謎題。免下載、免登入，和孩子一起想下一步。",
-      intro: "三個桌上邏輯謎題，可以自己想，也可以和孩子一起討論下一步。",
+      description: "免費桌上謎題合集：過河、夜過橋、量水，適合 6 歲以上親子等餐或候診時一起解。共用手機開瀏覽器就能玩，免下載、免登入。",
+      intro: "等餐時和孩子共用手機，選過河、夜過橋或量水，一起討論下一步。餐點來了就先放下，不必一次解完。",
       background: "我們把三種熟悉的邏輯挑戰放上 3D 小桌面：帶大家過河、共用一盞燈過夜橋，或用水壺量出指定水量。每走一步，都能看看條件怎麼改變。先選一個能慢慢試的難度，大人負責提問，孩子決定下一步怎麼走。",
       genre: "邏輯謎題",
       faq: [
+        {"question": "只有 10–15 分鐘空檔，需要先準備什麼嗎？", "answer": "不用準備額外道具，開瀏覽器選一題入門謎題就能開始。試幾步、一起想，候診叫號或餐點來了就先停；10–15 分鐘不代表一定能通關。"},
         { question: "適合排隊或在餐廳等餐時和孩子玩嗎？", answer: "坐著等餐時，可以一起試一道謎題，餐點來了就先放下。移動中的隊伍要先注意腳步；想慢慢討論、不受時間條件影響，可以先選過河或量水。" },
         { question: "桌上謎題適合幾歲？", answer: "建議 6 歲以上，先從入門難度開始，大人可以陪讀規則。較難的關卡也適合大孩子和成人一起想。" },
         { question: "親子可以共用一支手機玩嗎？", answer: "可以。這是單人解謎，但能一起看同一個畫面：一個人提議走法，另一個人操作，不用另外建立多人房間。" },
@@ -117,11 +120,12 @@ const COPY: Record<GamePageLocale, Record<string, GamePageCopy>> = {
     },
     "guess-duel": {
       metaTitle: "猜數字對決 Beta：親子兩人免費推理遊戲｜AppAI",
-      description: "各自藏一組數字，用幾 A 幾 B 的線索猜出答案。適合 8 歲以上，在同一支手機對戰或跟電腦玩，免下載、免登入。試玩版。",
-      intro: "藏好你的數字，輪流猜，用每一條線索慢慢縮小答案範圍。",
+      description: "猜數字對決是免費親子雙人瀏覽器遊戲。餐廳等餐時輪流猜數字，用幾A幾B推理答案。適合 8 歲以上，免下載，試玩版。",
+      intro: "和孩子在餐廳等餐時，可以共用手機玩猜數字對決：各自藏好答案，輪流猜，再用幾A幾B縮小範圍。",
       background: "猜數字對決是我們做的 A/B 數字推理試玩版（Beta）。數字和位置都對是 A，數字對但位置不對是 B，再根據線索決定下一次要猜什麼。先用三位數熟悉規則，雙方都想多想一點時，再選四位數。",
       genre: "數字推理",
       faq: [
+        {"question": "等餐時玩需要準備道具嗎？", "answer": "不用額外道具，共用一支手機，先選三位數，約好餐點來了就停。10–15 分鐘不一定能完成一局。"},
         { question: "可以在餐廳等餐時玩猜數字對決嗎？", answer: "可以，找個能輪流操作、也能藏好祕密數字的位置，餐點來了就先停。排隊時若需要往前移動，請先收好手機、注意腳步。" },
         { question: "孩子幾歲可以開始玩？", answer: "建議 8 歲以上，先用三個不重複的數字，一起弄懂 A/B 線索。讀線索和保守祕密的部分，可能還需要大人幫忙。" },
         { question: "兩個人能用同一支手機玩嗎？", answer: "可以，輪流操作，輸入祕密時請對方先別看。也能一個人跟電腦對戰，或用連結在兩支手機之間傳；輸入房號的連線玩法還在準備中。" },
@@ -131,8 +135,8 @@ const COPY: Record<GamePageLocale, Record<string, GamePageCopy>> = {
     },
     werewolf: {
       metaTitle: "狼人殺 Beta：一支手機玩的免費親子派對遊戲｜AppAI",
-      description: "全家共用一支手機玩狼人殺，由 App 或大人當主持人。適合 8 歲以上，可開親子用語，瀏覽器免費玩、免下載。試玩版。",
-      intro: "找幾個人圍坐，傳一支手機，從討論中找出藏起來的身分。",
+      description: "免費狼人殺瀏覽器派對遊戲，適合 8 歲以上、能圍桌聊天的小團體。一支手機，由 App 或大人主持，可開親子用語，試玩版。",
+      intro: "找個能自在聊天的地方，小團體圍桌傳一支手機，一起推理狼人殺的隱藏身分。這款需要討論，不適合安靜的候診室。",
       background: "這個狼人殺試玩版（Beta）幫大家跑熟悉的黑夜、白天推理流程：可以讓 App 帶著傳手機，也可以由大人照台詞主持。每個人藏好身分，討論誰可能是狼人。主題包含說謊和出局，開始前先一起讀角色，看看適不適合自己家。",
       genre: "社交推理派對遊戲",
       faq: [
@@ -148,11 +152,12 @@ const COPY: Record<GamePageLocale, Record<string, GamePageCopy>> = {
     ...TABLETOP_PUZZLE_COPY["zh-CN"],
     "tabletop-puzzles": {
       metaTitle: "桌上谜题合集：亲子免费逻辑小游戏｜AppAI",
-      description: "在浏览器里玩过河、夜过桥、量水，三个适合 6 岁以上的免费 3D 逻辑谜题。免下载、免登录，和孩子一起想下一步。",
-      intro: "三个桌上逻辑谜题，可以自己想，也可以和孩子一起讨论下一步。",
+      description: "免费桌上谜题合集：过河、夜过桥、量水，适合 6 岁以上亲子等餐或候诊时一起解。共用手机打开浏览器就能玩，免下载、免登录。",
+      intro: "等餐时和孩子共用手机，选过河、夜过桥或量水，一起讨论下一步。餐点来了就先放下，不必一次解完。",
       background: "我们把三种熟悉的逻辑挑战放上 3D 小桌面：带大家过河、共用一盏灯过夜桥，或用水壶量出指定水量。每走一步，都能看看条件怎么改变。先选一个能慢慢试的难度，大人负责提问，孩子决定下一步怎么走。",
       genre: "逻辑谜题",
       faq: [
+        {"question": "只有 10–15 分钟空档，需要先准备什么吗？", "answer": "不用准备额外道具，打开浏览器选一道入门谜题就能开始。试几步、一起想，候诊叫号或餐点来了就先停；10–15 分钟不代表一定能通关。"},
         { question: "适合排队或在餐厅等餐时和孩子玩吗？", answer: "坐着等餐时，可以一起试一道谜题，餐点来了就先放下。移动中的队伍要先注意脚步；想慢慢讨论、不受时间条件影响，可以先选过河或量水。" },
         { question: "桌上谜题适合几岁？", answer: "建议 6 岁以上，先从入门难度开始，大人可以陪读规则。较难的关卡也适合大孩子和成人一起想。" },
         { question: "亲子可以共用一部手机玩吗？", answer: "可以。这是单人解谜，但能一起看同一个画面：一个人提议走法，另一个人操作，不用另外创建多人房间。" },
@@ -162,11 +167,12 @@ const COPY: Record<GamePageLocale, Record<string, GamePageCopy>> = {
     },
     "guess-duel": {
       metaTitle: "猜数字对决 Beta：亲子两人免费推理游戏｜AppAI",
-      description: "各自藏一组数字，用几 A 几 B 的线索猜出答案。适合 8 岁以上，在同一部手机对战或跟电脑玩，免下载、免登录。试玩版。",
-      intro: "藏好你的数字，轮流猜，用每一条线索慢慢缩小答案范围。",
+      description: "猜数字对决是免费亲子双人浏览器游戏。餐厅等餐时轮流猜数字，用几A几B推理答案。适合 8 岁以上，免下载，试玩版。",
+      intro: "和孩子在餐厅等餐时，可以共用手机玩猜数字对决：各自藏好答案，轮流猜，再用几A几B缩小范围。",
       background: "猜数字对决是我们做的 A/B 数字推理试玩版（Beta）。数字和位置都对是 A，数字对但位置不对是 B，再根据线索决定下一次要猜什么。先用三位数熟悉规则，双方都想多想一点时，再选四位数。",
       genre: "数字推理",
       faq: [
+        {"question": "等餐时玩需要准备道具吗？", "answer": "不用额外道具，共用一部手机，先选三位数，约好餐点来了就停。10–15 分钟不一定能完成一局。"},
         { question: "可以在餐厅等餐时玩猜数字对决吗？", answer: "可以，找个能轮流操作、也能藏好秘密数字的位置，餐点来了就先停。排队时若需要往前移动，请先收好手机、注意脚步。" },
         { question: "孩子几岁可以开始玩？", answer: "建议 8 岁以上，先用三个不重复的数字，一起弄懂 A/B 线索。读线索和保守秘密的部分，可能还需要大人帮忙。" },
         { question: "两个人能用同一部手机玩吗？", answer: "可以，轮流操作，输入秘密时请对方先别看。也能一个人跟电脑对战，或用链接在两部手机之间传；输入房号的联机玩法还在准备中。" },
@@ -176,8 +182,8 @@ const COPY: Record<GamePageLocale, Record<string, GamePageCopy>> = {
     },
     werewolf: {
       metaTitle: "狼人杀 Beta：一部手机玩的免费亲子派对游戏｜AppAI",
-      description: "全家共用一部手机玩狼人杀，由 App 或大人当主持人。适合 8 岁以上，可开亲子用语，浏览器免费玩、免下载。试玩版。",
-      intro: "找几个人围坐，传一部手机，从讨论中找出藏起来的身份。",
+      description: "免费狼人杀浏览器派对游戏，适合 8 岁以上、能围桌聊天的小团体。一部手机，由 App 或大人主持，可开亲子用语，试玩版。",
+      intro: "找个能自在聊天的地方，小团体围桌传一部手机，一起推理狼人杀的隐藏身份。这款需要讨论，不适合安静的候诊室。",
       background: "这个狼人杀试玩版（Beta）帮大家跑熟悉的黑夜、白天推理流程：可以让 App 带着传手机，也可以由大人照台词主持。每个人藏好身份，讨论谁可能是狼人。主题包含说谎和出局，开始前先一起读角色，看看适不适合自己家。",
       genre: "社交推理派对游戏",
       faq: [
@@ -202,18 +208,21 @@ export function getGamePageLabels(locale: string) {
 const HUB_FAQ: Record<GamePageLocale, GameFaq[]> = {
   ...LOCALIZED_HUB_FAQ,
   en: [
-    { question: "Which games can we play at a restaurant while waiting for food?", answer: "Try a river crossing, bridge and torch, or water jug puzzle together on one phone. Guess Duel lets two people take turns. Stop when the meal arrives; Werewolf is better when your group has time and space to talk." },
+    {"question": "Can we use a 10–15 minute wait without preparing anything?", "answer": "Yes. Open a puzzle in your browser; no extra props or setup are needed. Choose an easy level, try a few moves and stop when called at the doctor’s office or when food arrives. A 10–15 minute break may not be enough to finish a puzzle."},
+    { question: "Which games can we play at a restaurant while waiting for food?", answer: "Try a river crossing, bridge and torch, or water jug puzzle together on one phone. Guess Duel lets two people take turns. Stop when the meal arrives; Werewolf is better when your small group has time and space to talk." },
     { question: "Are these free online games for kids?", answer: "The games are free in your browser with no download. Check each game's age guidance and rules with a grown-up. Sign-in is needed to upload a leaderboard score, not to play." },
-    { question: "Which are quiet waiting room games?", answer: "The three tabletop puzzles work well for quiet discussion with sound and music off. Werewolf needs group discussion and is better suited to a table away from a quiet waiting room." },
+    { question: "Which are quiet waiting room games?", answer: "At the doctor’s office, try one of the three tabletop puzzles with sound and music off and stop when called. Werewolf needs group discussion and is better suited to a table away from a quiet waiting room." },
     { question: "Can we play while waiting in line?", answer: "Try a puzzle while the queue is stationary. Put the phone away when the line moves, and agree on a stopping point together." },
   ],
   "zh-TW": [
+    {"question": "只有 10–15 分鐘空檔，需要先準備什麼嗎？", "answer": "不用準備額外道具，開瀏覽器選一題入門謎題就能開始。試幾步、一起想，候診叫號或餐點來了就先停；10–15 分鐘不代表一定能通關。"},
     { question: "在餐廳等餐時可以和孩子玩什麼？", answer: "可以共用一支手機解過河、夜過橋或量水謎題，也能兩人輪流玩猜數字對決。餐點來了就先停；狼人殺則適合有時間和空間討論的小團體。" },
     { question: "這些是免下載的免費親子線上遊戲嗎？", answer: "是，開瀏覽器就能免費玩。先和大人看每款遊戲的年齡建議與規則；玩遊戲不用登入，上傳排行榜成績才要登入。" },
     { question: "候診時有哪些能安靜玩的遊戲？", answer: "三款桌上謎題都能關掉音效與音樂，小聲討論。狼人殺需要團體討論，比較適合能聊天的桌邊。" },
     { question: "排隊等待時能玩嗎？", answer: "隊伍停著時可以試幾步，開始移動就先收好手機，也可以事先約好停下來的時機。" },
   ],
   "zh-CN": [
+    {"question": "只有 10–15 分钟空档，需要先准备什么吗？", "answer": "不用准备额外道具，打开浏览器选一道入门谜题就能开始。试几步、一起想，候诊叫号或餐点来了就先停；10–15 分钟不代表一定能通关。"},
     { question: "在餐厅等餐时可以和孩子玩什么？", answer: "可以共用一部手机解过河、夜过桥或量水谜题，也能两人轮流玩猜数字对决。餐点来了就先停；狼人杀则适合有时间和空间讨论的小团体。" },
     { question: "这些是免下载的免费亲子在线游戏吗？", answer: "是，打开浏览器就能免费玩。先和大人看每款游戏的年龄建议与规则；玩游戏不用登录，上传排行榜成绩才要登录。" },
     { question: "候诊时有哪些能安静玩的游戏？", answer: "三款桌上谜题都能关掉音效与音乐，小声讨论。狼人杀需要团体讨论，比较适合能聊天的桌边。" },

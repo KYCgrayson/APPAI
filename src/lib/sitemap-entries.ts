@@ -1,4 +1,7 @@
 import type { MetadataRoute } from "next";
+import { locales } from "../i18n/routing.ts";
+import { pickByLocale } from "./locale-match.ts";
+import { SPEC_TOPICS } from "./spec-topics.ts";
 import { hostedAlternates, hostedPageUrl, hasExternalCanonical, type HostedUrlPage } from "./hosted-page-urls.ts";
 import { platformAlternates, platformUrl } from "./platform-seo.ts";
 import { PLATFORM_ORIGIN } from "./platform-identity.ts";
@@ -8,9 +11,9 @@ export const SITEMAP_URL_LIMIT = 45_000;
 // Leave room below Next's 2 MB serialized data-cache limit, even with hreflangs.
 export const SITEMAP_CACHE_BYTE_LIMIT = 1_800_000;
 // Update when public platform content changes; never use the generation time.
-export const PLATFORM_CONTENT_MODIFIED = "2026-11-10T00:00:00.000Z";
+export const PLATFORM_CONTENT_MODIFIED = "2026-11-18T00:00:00.000Z";
 export interface SitemapPage extends HostedUrlPage { updatedAt: Date | string }
-export interface SitemapApp { id: string; updatedAt: Date | string; hostedPageSlug: string | null }
+export interface SitemapApp { organizationId?: string; id: string; updatedAt: Date | string; hostedPageSlug: string | null }
 
 export function splitSitemapEntries(entries: MetadataRoute.Sitemap): MetadataRoute.Sitemap[] {
   const shards: MetadataRoute.Sitemap[] = [[]];
@@ -48,28 +51,41 @@ export function sitemapXml(entries: MetadataRoute.Sitemap): string {
   }).join("")}</urlset>`;
 }
 
-export function buildSitemapEntries(pages: readonly SitemapPage[], apps: readonly SitemapApp[], origin = PLATFORM_ORIGIN): MetadataRoute.Sitemap {
-  const entries: MetadataRoute.Sitemap = ["/", "/apps", "/websites", "/tools"].map(path => ({
-    url: platformUrl(path, "en", origin),
-    lastModified: PLATFORM_CONTENT_MODIFIED,
-    changeFrequency: "daily", priority: path === "/" ? 1 : 0.8,
-    alternates: { languages: platformAlternates(path, origin) },
-  }));
-  // Games hub (added on main by #50); weekly cadence, lower priority than directories.
-  entries.push({
-    url: platformUrl("/games", "en", origin),
-    lastModified: PLATFORM_CONTENT_MODIFIED,
-    changeFrequency: "weekly", priority: 0.7,
-    alternates: { languages: platformAlternates("/games", origin) },
-  });
-  for (const game of [...GAMES.filter(isPlayableGame), TABLETOP_COLLECTION]) {
-    const path = gamePageHref(game);
-    entries.push({
-      url: platformUrl(path, "en", origin),
+export type DirectoryUpdates = Partial<Record<"/" | "/apps" | "/websites" | "/tools", (Date | string)[]>>;
+
+/** Unknown timestamps are omitted; never substitute the request/build time. */
+export function latestContentModified(values: readonly (Date | string)[]): string | undefined {
+  let latest = new Date(PLATFORM_CONTENT_MODIFIED).getTime();
+  for (const value of values) {
+    const time = new Date(value).getTime();
+    if (!Number.isFinite(time)) return undefined;
+    latest = Math.max(latest, time);
+  }
+  return new Date(latest).toISOString();
+}
+
+export function buildSitemapEntries(pages: readonly SitemapPage[], apps: readonly SitemapApp[], origin = PLATFORM_ORIGIN, directoryUpdates: DirectoryUpdates = {}): MetadataRoute.Sitemap {
+  const entries: MetadataRoute.Sitemap = [];
+  for (const path of ["/", "/apps", "/websites", "/tools"] as const) {
+    for (const locale of locales) entries.push({
+      url: platformUrl(path, locale, origin),
+      // Home also shows a live count; its changes have no trustworthy timestamp.
+      lastModified: path === "/" ? undefined : latestContentModified(directoryUpdates[path] ?? []),
+      changeFrequency: "daily", priority: path === "/" ? 1 : 0.8,
+      alternates: { languages: platformAlternates(path, origin) },
+    });
+  }
+  for (const path of ["/games", ...[...GAMES.filter(isPlayableGame), TABLETOP_COLLECTION].map(gamePageHref)]) {
+    for (const locale of locales) entries.push({
+      url: platformUrl(path, locale, origin),
       lastModified: PLATFORM_CONTENT_MODIFIED,
       changeFrequency: "weekly", priority: 0.7,
       alternates: { languages: platformAlternates(path, origin) },
     });
+  }
+  // Text/plain agent documents are public, locale-free routes. Unknown dates are omitted.
+  for (const path of ["/spec", ...SPEC_TOPICS.map(topic => `/spec/${topic}`)]) {
+    entries.push({ url: `${origin.replace(/\/$/, "")}${path}`, changeFrequency: "weekly", priority: 0.5 });
   }
   const roots = new Map<string, SitemapPage[]>();
   const groups = new Map<string, SitemapPage[]>();
@@ -82,25 +98,29 @@ export function buildSitemapEntries(pages: readonly SitemapPage[], apps: readonl
     groups.set(key(page), [...(groups.get(key(page)) || []), page]);
   }
   for (const page of pages) {
-    if (hasExternalCanonical(page, origin)) continue;
     const rootVariants = roots.get(`${page.organizationId}/${page.parentSlug || page.slug}`) || [];
     const url = hostedPageUrl(page, rootVariants, origin);
     if (!url) continue;
     const siblings = groups.get(key(page)) || [];
-    entries.push({ url, lastModified: page.updatedAt, changeFrequency: "weekly", priority: 0.7,
+    if (!hasExternalCanonical(page, origin)) entries.push({ url, lastModified: page.updatedAt, changeFrequency: "weekly", priority: 0.7,
       alternates: { languages: hostedAlternates(siblings, rootVariants, origin) } });
     if (page.parentSlug) continue;
     for (const policy of ["privacy", "terms"] as const) {
       const policyUrl = hostedPageUrl(page, rootVariants, origin, policy);
       if (policyUrl) entries.push({ url: policyUrl, lastModified: page.updatedAt, changeFrequency: "monthly", priority: 0.3,
-        alternates: { languages: hostedAlternates(siblings.filter(sibling => !hasExternalCanonical(sibling, origin)), rootVariants, origin, policy) } });
+        alternates: { languages: hostedAlternates(siblings, rootVariants, origin, policy) } });
     }
   }
   for (const app of apps) {
-    if (app.hostedPageSlug) continue;
     const path = `/apps/${app.id}`;
-    entries.push({ url: platformUrl(path, "en", origin), lastModified: app.updatedAt, changeFrequency: "weekly", priority: 0.6,
-      alternates: { languages: platformAlternates(path, origin) } });
+    const variants = app.hostedPageSlug ? roots.get(`${app.organizationId}/${app.hostedPageSlug}`) || [] : [];
+    for (const locale of locales) {
+      const localized = pickByLocale(variants, locale);
+      const lastModified = localized && new Date(localized.updatedAt).getTime() > new Date(app.updatedAt).getTime()
+        ? localized.updatedAt : app.updatedAt;
+      entries.push({ url: platformUrl(path, locale, origin), lastModified, changeFrequency: "weekly", priority: 0.6,
+        alternates: { languages: platformAlternates(path, origin) } });
+    }
   }
   return entries.sort((a, b) => a.url.localeCompare(b.url, "en"));
 }

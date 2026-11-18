@@ -124,15 +124,11 @@ export const RESERVED_GAME_SLUGS: readonly string[] = [...STATIC_GAME_PATH_SEGME
 const COPY: Record<GamePageLocale, HubCopy> = {
   ...LOCALIZED_HUB_COPY,
   en: {
-    metaTitle: "Games — play free original brain games on AppAI",
-    metaDescription:
-      "Original brain games from AppAI, played in the browser on phone or desktop: three 3D logic puzzles, a number duel for two and a party game for the whole family. No download, no sign-up needed to play.",
+    metaTitle: "Free browser games to play with kids while waiting | AppAI",
+    metaDescription: "Free browser games for kids and families waiting at a restaurant, in a queue or at the doctor’s office. Share a puzzle or find a game for a small group.",
     label: "Games",
-    title: "Games to play together",
-    intro: [
-      "Small original games made at AppAI: three logic puzzles to solve on your own, a number duel for a parent and child, and a party game for the whole family around one phone.",
-      "Everything runs in your browser on a phone, tablet or computer. Nothing to install, and no sign-in needed to play.",
-    ],
+    title: "Free games to play with kids while waiting",
+    intro: ["Waiting for food, standing in a queue, or sitting at the doctor’s office? Share a free browser puzzle with your child and put it down when it’s your turn.", "Try River Crossing or Water Pouring for quiet play, or Guess Duel for two. For a small group with room to talk, choose Werewolf around a table. No download, sign-in or extra props needed."],
     notes: [
       "Games marked Beta are new — tell us what you think through Feedback.",
       "Online rooms (each player on their own phone with a room code) are coming soon.",
@@ -183,14 +179,11 @@ const COPY: Record<GamePageLocale, HubCopy> = {
     },
   },
   "zh-TW": {
-    metaTitle: "遊戲專區：在 AppAI 免費玩原創動腦遊戲",
-    metaDescription: "AppAI 原創動腦小遊戲，手機、電腦打開瀏覽器就能玩：三個 3D 邏輯謎題、兩人猜數字對決、全家一起玩的派對遊戲。免下載，玩遊戲不用註冊。",
+    metaTitle: "等餐、排隊、候診時和孩子玩的免費小遊戲｜AppAI",
+    metaDescription: "餐廳等餐、排隊或候診時，和孩子共用手機玩免費瀏覽器小遊戲。一起解過河、量水謎題，或兩人猜數字；能聊天的小團體也有狼人殺可選。免下載、免登入。",
     label: "遊戲專區",
-    title: "一起來動動腦",
-    intro: [
-      "這裡是 AppAI 自己做的原創小遊戲：三個適合一個人解的邏輯謎題、親子兩人的猜數字對決，還有全家圍著一支手機玩的派對遊戲。",
-      "所有遊戲都在瀏覽器裡執行，手機、平板、電腦都能玩，不用安裝，玩遊戲也不用登入。",
-    ],
+    title: "等待時，和孩子一起玩免費小遊戲",
+    intro: ["在餐廳等餐、排隊或候診時，和孩子共用一支手機解謎，輪到自己就先放下。所有遊戲都能在瀏覽器免費玩。", "安靜的地方可選過河或量水，兩人對戰可試猜數字。能圍桌聊天的小團體則可選狼人殺。不用下載、登入，也不需要準備額外道具。"],
     notes: ["標示「試玩版」的是新遊戲，玩完歡迎到「意見回饋」告訴我們。", "房號連線（每人用自己的手機輸入房號一起玩）即將推出。"],
     play: "開始玩",
     details: "遊戲介紹／開始玩",
@@ -226,14 +219,11 @@ const COPY: Record<GamePageLocale, HubCopy> = {
     },
   },
   "zh-CN": {
-    metaTitle: "游戏专区：在 AppAI 免费玩原创动脑游戏",
-    metaDescription: "AppAI 原创动脑小游戏，手机、电脑打开浏览器就能玩：三个 3D 逻辑谜题、两人猜数字对决、全家一起玩的派对游戏。免下载，玩游戏不用注册。",
+    metaTitle: "等餐、排队、候诊时和孩子玩的免费小游戏｜AppAI",
+    metaDescription: "餐厅等餐、排队或候诊时，和孩子共用手机玩免费浏览器小游戏。一起解过河、量水谜题，或两人猜数字；能聊天的小团体也有狼人杀可选。免下载、免登录。",
     label: "游戏专区",
-    title: "一起来动动脑",
-    intro: [
-      "这里是 AppAI 自己做的原创小游戏：三个适合一个人解的逻辑谜题、亲子两人的猜数字对决，还有全家围着一部手机玩的派对游戏。",
-      "所有游戏都在浏览器里运行，手机、平板、电脑都能玩，不用安装，玩游戏也不用登录。",
-    ],
+    title: "等待时，和孩子一起玩免费小游戏",
+    intro: ["在餐厅等餐、排队或候诊时，和孩子共用一部手机解谜，轮到自己就先放下。所有游戏都能在浏览器免费玩。", "安静的地方可选过河或量水，两人对战可试猜数字。能围桌聊天的小团体则可选狼人杀。不用下载、登录，也不需要准备额外道具。"],
     notes: ["标示“试玩版”的是新游戏，玩完欢迎到“意见反馈”告诉我们。", "房号联机（每人用自己的手机输入房号一起玩）即将推出。"],
     play: "开始玩",
     details: "游戏介绍／开始玩",

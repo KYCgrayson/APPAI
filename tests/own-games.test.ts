@@ -120,14 +120,14 @@ test("game and collection metadata use canonical pages, nine hreflangs and absol
   for (const game of [...GAMES, TABLETOP_COLLECTION]) for (const locale of locales) {
     const metadata = buildGamePageMetadata(game, locale);
     const copy = getGamePageCopy(locale, game.slug);
-    const cover = `https://appai.info${game.cover}`;
+    const cover = `https://appai.info${game.cover.replace(/\.svg$/, ".png")}`;
     assert.equal(metadata.title, copy.metaTitle);
     assert.equal(metadata.description, copy.description);
     assert.equal(metadata.alternates?.canonical, platformUrl(gamePageHref(game), locale));
     assert.deepEqual(metadata.alternates?.languages, platformAlternates(gamePageHref(game)));
     assert.deepEqual(Object.keys(metadata.alternates!.languages!).sort(), [...locales, "x-default"].sort());
     assert.equal(metadata.openGraph?.url, metadata.alternates?.canonical);
-    assert.deepEqual(metadata.openGraph?.images, [{ url: cover, width: 640, height: 360, alt: getGamesCopy(locale).games[game.slug].name }]);
+    assert.deepEqual(metadata.openGraph?.images, [{ url: cover, width: 1200, height: 630, alt: getGamesCopy(locale).games[game.slug].name }]);
     assert.deepEqual(metadata.twitter?.images, [cover]);
     assert.ok(metadata.twitter && "card" in metadata.twitter);
     assert.equal(metadata.twitter.card, "summary_large_image");

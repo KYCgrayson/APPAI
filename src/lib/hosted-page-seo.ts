@@ -1,11 +1,55 @@
 import { editorialImageUrl, projectCardUrl } from "./hosted-editorial-links.ts";
 import { gameSectionSchema } from "./game-section.ts";
 import { DAYS, isBusinessHours, type BusinessHours } from "./business-hours.ts";
-import { normalizeHostedContent } from "./hosted-content.ts";
+import { decideSectionAccess } from "./iframe-tool-session-contract.ts";
+import { normalizeHostedContent, orderedHostedSections } from "./hosted-content.ts";
 import { PLATFORM_ORIGIN } from "./platform-identity.ts";
 /* Publisher JSON is intentionally open; all SEO URLs pass the shared sanitizer. */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { sanitizeUrl } from "./sanitize.ts";
+import { unified } from "unified";
+import remarkParse from "remark-parse";
+import remarkGfm from "remark-gfm";
+
+type TextNode = { type: string; value?: string; children?: TextNode[] };
+function markdownSummary(value: string): string {
+  const tree = unified().use(remarkParse).use(remarkGfm).parse(value);
+  const text = (node: TextNode): string => {
+    if (["html", "image", "imageReference", "definition", "footnoteDefinition"].includes(node.type)) return "";
+    if (node.type === "text" || node.type === "inlineCode" || node.type === "code") return node.value || "";
+    if (node.type === "break") return " ";
+    return (node.children || []).map(text).join("") + (["paragraph", "heading", "listItem", "tableCell"].includes(node.type) ? " " : "");
+  };
+  return text(tree);
+}
+
+function summaryText(value: unknown, markdown: boolean): string {
+  if (typeof value !== "string") return "";
+  const plain = (markdown ? markdownSummary(value) : value).replace(/\s+/g, " ").trim();
+  const chars = Array.from(plain);
+  if (chars.length <= 180) return plain;
+  const prefix = chars.slice(0, 179).join("");
+  const sentence = [...prefix.matchAll(/[.!?。！？](?:\s|$)/g)].at(-1);
+  if (sentence && sentence.index >= 80) return prefix.slice(0, sentence.index + 1);
+  const space = prefix.lastIndexOf(" ");
+  return (space >= 120 ? prefix.slice(0, space) : prefix) + "…";
+}
+
+/** Preserve supplied metadata byte-for-byte; only derive from public summary fields. */
+export function resolveHostedDescription(page: { metaDescription?: unknown; tagline?: unknown; content?: unknown }): string | undefined {
+  for (const value of [page.metaDescription, page.tagline]) {
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  for (const section of orderedHostedSections(page.content)) {
+    if (decideSectionAccess(section.data.access, { isLoggedIn: false, isAdmin: false }) !== "render") continue;
+    const value = section.type === "hero" ? section.data.subheadline
+      : ["profile-header", "entries"].includes(section.type) ? section.data.intro : undefined;
+    const description = summaryText(value, section.type !== "hero");
+    if (description) return description;
+  }
+  return undefined;
+}
+
 function isoDate(value: unknown): string | undefined {
   if (!(typeof value === "string" || typeof value === "number" || value instanceof Date)) return undefined;
   const date = new Date(value);
@@ -49,7 +93,7 @@ export function buildJsonLd(
     "@id": `${url}#primary`,
     name: page.title,
     headline: page.title,
-    description: page.metaDescription || page.tagline || undefined,
+    description: resolveHostedDescription(page),
     url,
     image: hostedOgImage(page),
     inLanguage: page.locale,
@@ -74,7 +118,6 @@ export function buildJsonLd(
   } else if (downloadSection && !games.length) {
     primary.applicationCategory = "Application";
     if (platforms.length > 0) primary.operatingSystem = platforms.join(", ");
-    primary.offers = { "@type": "Offer", price: "0", priceCurrency: "USD" };
   }
 
   const graph: any[] = [primary];

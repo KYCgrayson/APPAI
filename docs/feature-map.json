@@ -229,6 +229,9 @@
         "src/lib/revalidate-seo.ts",
         "src/lib/sitemap-data.ts",
         "src/lib/sitemap-entries.ts",
+        "src/lib/spec-topics.ts",
+        "tests/seo-recheck*.test.ts",
+        "scripts/generate-game-social-images.mjs",
         "src/app/robots.ts",
         "src/app/sitemap.xml/**",
         "src/app/sitemaps/**",
@@ -239,7 +242,8 @@
         "tests/platform-metadata.test.ts",
         "tests/platform-seo.test.ts",
         "tests/sitemap*.test.ts"
-      ]
+      ],
+      "docs": ["docs/apps/seo-recheck-67*.md"]
     },
     {
       "id": "game-platform",

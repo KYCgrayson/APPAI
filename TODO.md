@@ -4,6 +4,12 @@
 - [x] Keep publisher content, content language choices, icons, URLs, SEO and CSP unchanged; cover locale matching and byte-identical SSR apart from declared data attributes.
 - [ ] Run `HOSTED_CHROME_LOCALE_BROWSER_TESTS=1` outside the restricted sandbox: Chrome exits at startup here; capture before/after screenshots and verify real hydration/drawer interaction.
 
+## SEO re-check (ops #67, 2026-11-18)
+
+- [x] Implement audit F1–F9 only: sitemap coverage/dates, waiting-game copy, public description fallback, six directory locales, raw/auth noindex, reproducible PNG social covers, and unknown-price Offer removal.
+- [x] Synchronize agent spec/llms, add finding-specific tests and exact unaffected-output comparisons against `3ddf782`; independent Codex review passed.
+- [ ] Owner-side production GET/header recheck and before/after browser screenshots; sandbox DNS and Chrome startup are unavailable. No commit/push/PR/deployment. [Change report and output inventory](docs/apps/seo-recheck-67.md).
+
 ## Video digest site recipe (#91 / #108, docs only)
 
 - [x] Document an index feed/grid and video children, in-page moments, Markdown key points/tables/sources, optional heading colour, owner-removal preflight, external subscriptions and publisher-owned daily updates.

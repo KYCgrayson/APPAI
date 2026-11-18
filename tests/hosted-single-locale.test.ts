@@ -154,7 +154,7 @@ test("Chinese switcher source preference agrees with the reader even when source
   assert.equal((await resolvePage("locale-site", "zh-CN"))?.privacyPolicy, "香港政策");
 });
 
-test("multi-locale metadata, page-body HTML/JSON-LD and sitemap XML are byte-identical to main 4a71b1e", async () => {
+test("multi-locale metadata, page-body HTML/JSON-LD and hosted sitemap XML are byte-identical to main 4a71b1e", async () => {
   fixtureDb.acceptLanguage = "";
   for (const locales of [["en", "zh-TW", "zh-CN", "es"], ["es", "en"], ["en", "zh-TW"]]) {
     const pages = locales.flatMap((locale, index) => [row(locale, index === 0), row(locale, index === 0, true)]);
@@ -166,6 +166,6 @@ test("multi-locale metadata, page-body HTML/JSON-LD and sitemap XML are byte-ide
         assert.equal(stripVisitorChromeAttributes(await renderHtml(await Page(props))), await renderHtml(await MainPage(props)), `${locale}/${suffix}`);
       }
     }
-    assert.equal(sitemapXml(buildSitemapEntries(pages, [])), mainXml(mainSitemap(pages, [])));
+    assert.equal(sitemapXml(buildSitemapEntries(pages, []).filter(entry => entry.url.includes("/p/"))), mainXml(mainSitemap(pages, []).filter((entry: { url: string }) => entry.url.includes("/p/"))));
   }
 });

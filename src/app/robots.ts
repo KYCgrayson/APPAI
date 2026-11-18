@@ -38,7 +38,7 @@ const AI_CRAWLERS = [
   "Pinterestbot",        // Pinterest preview
 ];
 
-const DISALLOW_PATHS = ["/api/", "/dashboard/", "/admin/", "/auth/"];
+const DISALLOW_PATHS = ["/api/", "/dashboard/", "/admin/"];
 
 export default function robots(): MetadataRoute.Robots {
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";

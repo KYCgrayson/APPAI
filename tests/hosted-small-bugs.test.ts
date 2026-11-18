@@ -101,7 +101,7 @@ test('root content logo reaches light/dark headers, favicon, home, directory, Ap
     assert.ok(html.includes(`src="${logo}"`));
     assert.ok(!before.includes(`src="${logo}"`), 'main reproduces missing detail image');
     assert.deepEqual(await appMetadata(params), await beforeAppMetadata(params));
-    assert.deepEqual(jsonLd(html), jsonLd(before));
+    assert.deepEqual(jsonLd(html), jsonLd(before).map(value => value.replace(',"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}', ""))); // #67 F9
   }
 });
 

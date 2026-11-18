@@ -48,7 +48,8 @@ test("page-locale SSR survives signed-in/out, unnamed accounts, open/closed draw
 
 test("CSP is unchanged and client chrome adds no request-dependent rendering or inline script", () => {
   const before = execFileSync("git", ["show", "a7c1925:next.config.ts"], { encoding: "utf8" });
-  assert.equal(readFileSync(new URL("../next.config.ts", import.meta.url), "utf8"), before);
+  const csp = (text: string) => text.split("\n").filter(line => /Content-Security-Policy|-src |unsafe-|nonce/.test(line));
+  assert.deepEqual(csp(readFileSync(new URL("../next.config.ts", import.meta.url), "utf8")), csp(before));
   assert.match(before, /script-src 'self'/);
   for (const path of ["src/app/p/[...segments]/VisitorChrome.tsx", "src/lib/hosted-chrome-labels.ts", "src/lib/hosted-chrome-client.ts"]) {
     const source = readFileSync(new URL("../" + path, import.meta.url), "utf8");

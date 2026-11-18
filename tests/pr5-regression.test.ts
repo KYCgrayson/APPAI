@@ -18,10 +18,11 @@ test("P1: consistent F0 data preserves publisher HTML for 12 URLs, sitemap shard
   // preserving the historical full-page snapshot above and SEO checks below.
   const publisher = JSON.parse(readFileSync(new URL("./fixtures/pr5-f0-publisher-baseline.json", import.meta.url), "utf8"));
   assert.match(publisher.source, /949fda4/);
-  // #41 only corrects the llms POST draft/publish instructions; keep all archived
-  // HTML and sitemap hashes intact and pin the revised discovery text separately.
+  // #67 updates sitemap coverage/dates and llms SEO guidance; #91 PR-2 adds diagram/recipe llms text.
+  // Preserve archived publisher HTML hashes and pin only these two revised outputs.
   assert.deepEqual(await captureF0({ publisherOnly: true }), { ...expected, html: publisher.html,
-    llms: "71dfb1cfd205f844d0e70e539c0b201005a3c6d28f4360172c8a6f1fdeb8e893" });
+    llms: "f37a80dee5f1b4ff79cf635924a49476c0c09a54190320eca5aedc4fc8bd70a4",
+    sitemapShards: ["0df22036909af91dfa780d39889e5dcd51182226eea344a24015015c2cd416a2"] });
 });
 
 test("P1: full rendered HTML matches main after only the approved navigation deltas", async () => {

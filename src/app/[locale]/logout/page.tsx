@@ -5,6 +5,10 @@ import { safeInternalPath } from "@/lib/redirects";
 import { revokeUniversalAppSessionsForUser } from "@/lib/universal-apps/runtime-session";
 import { getTranslations } from "next-intl/server";
 
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { robots: { index: false, follow: true } };
+
 export default async function LogoutPage({
   searchParams,
 }: {

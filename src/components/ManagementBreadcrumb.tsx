@@ -13,7 +13,7 @@ export function ManagementBreadcrumb({ area, homeHref = "/" }: { area: "dashboar
   const pathname = usePathname();
   const segments = pathname.split("/").filter(Boolean);
   if (segments[0] !== area) return null;
-  return <Breadcrumb label="Breadcrumb" className={`mx-auto px-6 py-2 ${area === "admin" ? "max-w-7xl" : "max-w-6xl"}`} items={[
+  return <Breadcrumb label="Breadcrumb" visitorChrome={false} className={`mx-auto px-6 py-2 ${area === "admin" ? "max-w-7xl" : "max-w-6xl"}`} items={[
     { name: "AppAI", href: homeHref },
     { name: area === "admin" ? "Admin" : "Dashboard", href: `/${area}` },
     ...segments.slice(1).map((segment, index) => ({ name: labels[segment] ?? segment, href: `/${segments.slice(0, index + 2).join("/")}` })),
