@@ -99,7 +99,7 @@ test("P2 S5–S6: sitemap pages/Apps and llms root discovery use the same visibi
   reset();
   const entries = (await Promise.all((await sitemap.loadSitemapIds()).map(({ id }) => sitemap.loadSitemapShard(String(id))))).flat();
   for (const row of f1Pages) assert.equal(entries.some(entry => entry.url === `https://appai.info/p/${row.parentSlug ? row.parentSlug + "/" : ""}${row.slug}`), f1Expected.pages.includes(row.slug), row.id);
-  for (const app of f1Apps) assert.equal(entries.some(entry => entry.url.endsWith(`/apps/${app.id}`)), ["standalone", "empty"].includes(app.id), app.id);
+  for (const app of f1Apps) assert.equal(entries.some(entry => entry.url.endsWith(`/apps/${app.id}`)), f1Expected.apps.includes(app.id), app.id);
   const text = await (await llms.GET()).text();
   for (const row of f1Pages) assert.equal(text.includes(`https://appai.info/p/${row.slug} —`), f1Expected.roots.includes(row.slug), row.id);
   assert.equal(await (await llmsFull.GET()).text(), readFileSync(new URL("../AGENT_INSTRUCTIONS.md", import.meta.url), "utf8"));

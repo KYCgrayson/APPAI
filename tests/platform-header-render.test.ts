@@ -108,7 +108,7 @@ for (const [route, source] of [
   ["/games", "src/app/[locale]/games/page.tsx"],
   ["/games/water-pouring", "src/app/[locale]/games/[slug]/page.tsx"],
 ] as const) {
-  test(`${route}: header DOM equals main except #73's current-crumb text in all nine locales`, async () => {
+  test(`${route}: header DOM equals main except #73's current-crumb text and #67's translated directory labels in all nine locales`, async () => {
     const { default: CurrentPage } = await import(new URL(`../${source}`, import.meta.url).href);
     const { default: MainPage } = await import(baseline.moduleUrl(source));
     for (const locale of locales) {
@@ -127,6 +127,9 @@ for (const [route, source] of [
         main = main.replace(link, link.replace(/^<a\b/, "<span").replace(/<\/a>$/, "</span>")
           .replace(/ href="[^"]*"/, "").replace(" hover:text-white hover:underline", ""));
       }
+      // F5 changes these labels only; keep all markup and attributes exact.
+      const categories = getDirectoryCopy(locale).categories;
+      main = main.replace(/>Websites</g, `>${categories.websites}<`).replace(/>Tools</g, `>${categories.tools}<`).replace(/>Apps</g, `>${categories.apps}<`);
       assert.equal(current, main, `${route}, ${locale}`);
       if (route === "/login") assert.equal(current, "", "main's login has no header");
       else assert.ok(current, `${route} must retain its header`);

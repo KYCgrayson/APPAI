@@ -70,7 +70,7 @@ Publish: [send the validated body](https://appai.info/spec#publish-in-one-minute
 
 ### Preview without saving
 
-**Preview without saving:** `POST /api/v1/pages?dryRun=true` (identical to `POST /api/v1/pages/preview`) — same body; HTTP 200 returns `{valid, errors: [], warnings: [], sanitizedContent, next}`. Always check `valid`; warnings do not block creation. Preview rejects an exact (slug, locale) owned by another organization; it does not check plan limits, parent existence or ownership of the parent root; POST does.
+**Preview without saving:** `POST /api/v1/pages?dryRun=true` (identical to `POST /api/v1/pages/preview`) — same body; HTTP 200 returns `{valid, errors: [], warnings: [], sanitizedContent, next}`. Always check `valid`; warnings do not block creation. A missing effective SEO description produces a `metaDescription` warning; see the [public summary fallback](https://appai.info/spec/pages#creating-a-page). Preview rejects an exact (slug, locale) owned by another organization; it does not check plan limits, parent existence or ownership of the parent root; POST does.
 
 For an existing slug+locale, dry-run with `POST /api/v1/pages?dryRun=true&upsert=true` (or `POST /api/v1/pages/preview?upsert=true`), then publish with `POST /api/v1/pages?upsert=true`. Without `upsert=true`, preview warns that the page already exists; publishing returns 409. Use `PATCH /api/v1/pages/{slug}?locale=xx` for partial updates.
 

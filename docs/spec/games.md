@@ -499,9 +499,20 @@ Previously shared own-game room, puzzle/challenge and leaderboard `claim` querie
 |---|---|
 | H1 | One clear game name: `GAME` uses page `title`. Other templates need one hero or named profile-header. |
 | Description | Say what players do, device/players and the short play context. Include how-to-play in the page, outside the iframe. |
-| Cover | Recommended 1200×630 with meaningful alt text; also set `ogImage` if a different sharing image is needed |
+| Cover | Recommended 1200×630 with meaningful alt text; use a PNG/JPEG raster `ogImage` for social sharing, even if the visible cover is SVG |
 | Structured data | Automatic `VideoGame`: name, description, genre, Web browser platform, play mode, player range, age audience, language and hosted page URL. `faq` reuses the `FAQPage` mechanism. No platform free Offer is attached. |
 | FAQ | Answer real parent questions; use only phrases that describe the game accurately, without repeating keywords mechanically |
+
+For English, Traditional Chinese and Simplified Chinese, lead the hub with free browser games to play with kids while waiting: at a restaurant, in a stationary queue or at the doctor's office. Offer quiet shared puzzles and distinguish small-group play where conversation is welcome. Keep each detail page's specific game name as its main keyword and add one truthful scene to its introduction. Do not repeat a list of keywords on every page.
+
+| Parent question | Copy guidance |
+|---|---|
+| Do we need to prepare anything? | Existing browser puzzles need no extra props, download or sign-in to play. |
+| We have 10–15 minutes; can we play? | Choose an easy puzzle, try a few moves and stop when food arrives or your name is called. Do not promise a completion time or saved progress. |
+| What works at the doctor's office? | Quiet shared puzzles with sound and music off. Werewolf needs conversation and is not a quiet waiting-room recommendation. |
+| What can a small group play? | Suggest Werewolf around a table with time and space to talk; preserve its actual player/age guidance. |
+
+Visible FAQ text and FAQPage JSON-LD must be generated from the same localized copy. Do not change player counts or claim multiplayer support for a shared single-player puzzle.
 
 Parent search contexts: **games to play while waiting in line**, **games to play at a restaurant**, **games to play at dinner table**, **games to play while waiting for food**, **waiting room games**, **free online games for kids**. Chinese intent: 等餐、排隊、看診時跟孩子玩的免費益智小遊戲.
 

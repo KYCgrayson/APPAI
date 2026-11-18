@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
-import { OWN_GAME_SLUGS } from "./src/lib/games-catalog";
+import { GAMES, OWN_GAME_SLUGS } from "./src/lib/games-catalog";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const ownGameSlugPattern = OWN_GAME_SLUGS.map((slug) =>
@@ -122,6 +122,10 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      ...OWN_GAME_SLUGS.filter(slug => GAMES.some(game => game.buildSlug === slug)).map(slug => ({
+        source: `/games/${slug}/index.html`,
+        headers: [{ key: "X-Robots-Tag", value: "noindex, follow" }],
+      })),
       {
         source: "/(.*)",
         headers: securityHeaders,
