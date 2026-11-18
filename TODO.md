@@ -1,3 +1,9 @@
+## Platform design rules (ops #22, 2026-11-18; documentation only)
+
+- [x] Add root DESIGN.md with source-backed tokens/components, three benchmark principles, 14 known deviations and an 18-item review checklist; hook CLAUDE.md, hosted style guidance and both feature maps; regenerate AGENT_INSTRUCTIONS.md. No UI/CSS/component changes.
+- [x] Author self-check of appendix line references, then an independent reviewer agent verified ~45 claims (no wrong values or line refs); its fixes applied (spec link, card-name truncation, tagline spacing, D10 focus note).
+- [x] Committed on `claude/22-design-md`; with fresh dependencies typecheck, full tests (0 failed), lint (0 errors), spec build and feature-map check pass.
+
 ## Hosted chrome browser language (#91)
 
 - [x] Preserve page-locale server HTML/cache behaviour; enhance marked platform labels using browser languages after hydration, including late-mounted mobile menus and accessible labels.
