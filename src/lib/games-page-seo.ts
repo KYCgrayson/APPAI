@@ -10,10 +10,10 @@ export function buildGamePageMetadata(game: { slug: string; cover: string }, loc
   const metadata = buildPlatformMetadata(locale, gamePageHref(game), {
     title: copy.metaTitle, description: copy.description,
   });
-  const image = new URL(game.cover, PLATFORM_ORIGIN).href;
+  const image = new URL(game.cover.replace(/\.svg$/, ".png"), PLATFORM_ORIGIN).href;
   return {
     ...metadata,
-    openGraph: { ...metadata.openGraph, images: [{ url: image, width: 640, height: 360, alt: name }] },
+    openGraph: { ...metadata.openGraph, images: [{ url: image, width: 1200, height: 630, alt: name }] },
     twitter: { ...metadata.twitter, images: [image] },
   };
 }

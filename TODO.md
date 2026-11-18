@@ -1,3 +1,9 @@
+## SEO re-check (ops #67, 2026-11-18)
+
+- [x] Implement audit F1–F9 only: sitemap coverage/dates, waiting-game copy, public description fallback, six directory locales, raw/auth noindex, reproducible PNG social covers, and unknown-price Offer removal.
+- [x] Synchronize agent spec/llms, add finding-specific tests and exact unaffected-output comparisons against `3ddf782`; independent Codex review passed.
+- [ ] Owner-side production GET/header recheck and before/after browser screenshots; sandbox DNS and Chrome startup are unavailable. No commit/push/PR/deployment. [Change report and output inventory](docs/apps/seo-recheck-67.md).
+
 ## Single-locale hosted pages (#91 PR-3)
 
 - [x] Document first-created default selection, draft/public fallback, independent children and unchanged four-locale publishing policy.

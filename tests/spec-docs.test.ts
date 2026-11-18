@@ -110,7 +110,7 @@ test('topic headers have purpose then Previous/Next with a consistent happy path
     if (links.next) checkLink(links.next, topic);
     assert.doesNotMatch(lines.slice(0, 4).join('\n'), /\[Overview\].*\[Pages\].*\[Style\]/);
   }
-  const routeTopics = JSON.parse(read('src/app/spec/[topic]/route.ts').match(/const topics = (\[[^;]+\]);/)![1]);
+  const routeTopics = JSON.parse(read('src/lib/spec-topics.ts').match(/SPEC_TOPICS = (\[[^;]+\]) as const;/)![1]);
   assert.deepEqual(topics, routeTopics);
   const chain = ['overview', ...topics];
   const url = (topic: string) => 'https://appai.info/spec' + (topic === 'overview' ? '' : '/' + topic);
@@ -207,11 +207,11 @@ test('entry points lead with the overview and agent authorization rather than pa
 
 test('topic route whitelists ten files, preserves examples and includes section tracing', () => {
   const route = read('src/app/spec/[topic]/route.ts');
-  assert.ok(route.includes('if (!topics.includes(topic))'));
+  assert.ok(route.includes('if (!SPEC_TOPICS.some(value => value === topic))'));
   assert.match(route, /status: 404/);
   assert.match(route, /text\/plain; charset=utf-8/);
   assert.match(route, /public, max-age=3600/);
-  const whitelist = route.match(/const topics\s*=\s*\[([^\]]*)\]/)?.[1];
+  const whitelist = read('src/lib/spec-topics.ts').match(/SPEC_TOPICS\s*=\s*\[([^\]]*)\]/)?.[1];
   assert.ok(whitelist);
   assert.deepEqual([...whitelist.matchAll(/['"]([^'"]+)['"]/g)].map(match => match[1]), topics);
   assert.ok(read('src/app/spec/examples/[name]/route.ts').includes('GET'));

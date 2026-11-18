@@ -122,6 +122,10 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      ...["river-crossing", "guess-duel", "werewolf"].map(slug => ({
+        source: `/games/${slug}/index.html`,
+        headers: [{ key: "X-Robots-Tag", value: "noindex, follow" }],
+      })),
       {
         source: "/(.*)",
         headers: securityHeaders,

@@ -47,7 +47,7 @@ test('shared dry-run validates, sanitizes, and warns without mutating input', ()
   for (const sections of [[null, 'bad'], 'bad', [{ type: 'hero', data: {} }], [{ type: 'features', data: { items: false } }]]) {
     assert.ok(checkPagePreview({ slug: 'demo', title: 'Demo', content: { sections } }).warnings.length);
   }
-  assert.deepEqual(checkPagePreview({ slug: 'demo', title: 'Demo', parentSlug: 'root', themeColor: '#047857', fontFamily: 'Lato' }).warnings, []);
+  assert.deepEqual(checkPagePreview({ slug: 'demo', title: 'Demo', tagline: 'A public demo.', parentSlug: 'root', themeColor: '#047857', fontFamily: 'Lato' }).warnings, []);
 });
 test('each preset is a copyable, clean full POST body matching its served file', () => {
   assert.equal(PRESET_DEFS.length, 11);
@@ -112,7 +112,7 @@ test('section discovery exposes icons and comma-list filtering in both formats',
   assert.match(route, /enriched.length === 0.*total: 0, validTypes:/);
 });
 test('features and contact accept custom heading and subheading', () => {
-  const result = checkPagePreview({ slug: 'business', title: 'Business', privacyPolicy: 'Supplied policy.', themeColor: '#047857', fontFamily: 'Lato', content: { logo: url, sections: [
+  const result = checkPagePreview({ slug: 'business', title: 'Business', tagline: 'Business services.', privacyPolicy: 'Supplied policy.', themeColor: '#047857', fontFamily: 'Lato', content: { logo: url, sections: [
     { type: 'features', data: { heading: 'Services', subheading: 'How we help', items: [{ title: 'Design', description: 'Accessible websites.' }] } },
     { type: 'contact', data: { heading: 'Visit us', subheading: 'Say hello', email: 'hello@example.com' } },
   ] } });
@@ -184,7 +184,7 @@ test('placeholder logo detection accepts mixed-case schemes and hosts but preser
 });
 
 test('preview warns on raw omitted styling even when schema supplies defaults', () => {
-  const base = { slug: 'styled', title: 'Styled', privacyPolicy: 'Supplied policy.', content: { logo: url } };
+  const base = { slug: 'styled', title: 'Styled', tagline: 'A styled page.', privacyPolicy: 'Supplied policy.', content: { logo: url } };
   for (const missing of ['themeColor', 'fontFamily']) {
     const body: Record<string, unknown> = { ...base, themeColor: '#047857', fontFamily: 'Lato' };
     delete body[missing];

@@ -204,7 +204,7 @@ curl -X POST https://appai.info/api/v1/pages \
 | `locale` | No | BCP 47 code (default: `en`). Same slug + different locale = language variant |
 | `title` | Yes | Page title |
 | `tagline` | No | Short description |
-| `metaDescription` | No | SEO description, max 500 characters, stored on this locale variant. Used for HTML, Open Graph and Twitter descriptions; falls back to `tagline` when empty or omitted. |
+| `metaDescription` | No | SEO description, max 500 characters, stored on this locale variant. Used unchanged for HTML, Open Graph, Twitter and primary JSON-LD descriptions. Empty or whitespace-only values fall back to `tagline`, then the first public summary in display order: hero `subheadline`, profile-header `intro` or entries `intro`. Derived summaries strip Markdown, collapse whitespace and end at a sentence or within 180 Unicode characters. Login/admin-gated sections, individual news/project cards and non-rendered fields are never description sources. Preview warns without blocking when no effective description exists. |
 | `themeColor` | No | Hex color (e.g. `#6366F1`) |
 | `themeColorSecondary` | No | Hex accent color |
 | `darkMode` | No | Boolean (default: false) |
@@ -310,5 +310,13 @@ Free plan's three-root limit; restoring one rechecks that limit.
 `publish-person-site.mjs` performs the removal preflight, omits removed pages/cards,
 continues after removal conflicts and prints the skipped slugs. Removal never frees
 its slug. See [the API error contract](https://appai.info/spec/api#owner-removal-and-api-write-blocks).
+
+
+
+### Indexing and product prices
+
+- Sitemaps list each platform locale as its own URL with reciprocal alternates, self-canonical public app detail pages (including apps bound to hosted pages), and the locale-free `/spec` and supported topics. Spec responses remain `text/plain`.
+- An external `canonicalUrl` excludes only that marketing page; its nonempty, published privacy/terms documents keep local canonicals and sitemap entries. Drafts, unreachable children, converted Chinese variants, aliases and game play URLs remain excluded.
+- A download section produces `SoftwareApplication`, but the platform does not infer a third-party product's price from a download link or certify it as free. Public app details and hosted download pages omit unknown-price Offers; there is no new price field.
 
 All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)

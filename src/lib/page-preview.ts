@@ -1,3 +1,4 @@
+import { resolveHostedDescription } from "./hosted-page-seo.ts";
 import { galleryContentIssues } from "./gallery.ts";
 import { projectCardsContentIssues } from "./project-cards.ts";
 import { normalizeVideoContent } from "./video-data.ts";
@@ -20,6 +21,9 @@ export function checkPagePreview(body: unknown, iconNames: readonly string[] = [
   }
   const sanitizedContent = sanitizePageContent(storeTypography(parsed.data).content, undefined, warnings, context.existingContent) as Record<string, unknown>;
 
+  if (!resolveHostedDescription({ ...parsed.data, content: sanitizedContent })) {
+    warnings.push({ path: "metaDescription", message: "No effective SEO description. Supply metaDescription or tagline, or a public hero subheadline / profile-header or entries intro. Gated content and individual cards are not used. See /spec/pages#creating-a-page." });
+  }
   const computedTypography = computeTypography(typographySettings(sanitizedContent));
   warnings.push(...computedTypography.warnings);
   warnings.push(...pageLogoWarnings({ ...parsed.data, content: sanitizedContent }));

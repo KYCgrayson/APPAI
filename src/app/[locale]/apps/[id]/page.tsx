@@ -87,7 +87,6 @@ export default async function AppDetailPage({ params }: Props) {
           ].join(", "),
         }
       : {}),
-    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
   };
 
   return (

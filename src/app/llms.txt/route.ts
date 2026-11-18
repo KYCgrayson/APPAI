@@ -220,7 +220,18 @@ a strict matching appId, clears the app's local HttpOnly runtime-session cookie,
 then routes to AppAI /logout?callbackUrl=/ for platform signout. Do not put any
 of these values in a public environment variable.
 
+Hosted SEO descriptions use metaDescription, then tagline, then a public visible hero
+subheadline, profile-header intro or entries intro in display order. Never use gated
+content or individual cards. Preview warns if none exists; third-party prices are not
+inferred as free. Contract: https://appai.info/spec/pages#creating-a-page
+
 ## Games
+
+AppAI's own free browser games suit shared play with kids while waiting at a restaurant,
+in a stationary queue or at the doctor's office. Quiet puzzles and small-group discussion
+games have different settings: Werewolf needs space to talk. Keep game names primary,
+use natural localized copy and generate visible FAQ/schema together. Writing guidance:
+https://appai.info/spec/games#seo-writing
 
 Read ${baseUrl}/spec/games. Deploy original game files to your own GitHub Pages,
 Cloudflare Pages, Vercel or Netlify host; AppAI supplies a GAME page with a game
