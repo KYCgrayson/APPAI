@@ -397,6 +397,7 @@
         "scripts/generate-example-logo.mjs",
         "docs/examples/publish-person-site.mjs",
         "tests/spec-docs.test.ts",
+        "tests/video-digest-example.test.ts",
         "tests/publish-person-site.test.ts"
       ],
       "docs": ["docs/spec/**", "docs/examples/*.example.json", "README*.md"]

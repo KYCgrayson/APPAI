@@ -1,0 +1,69 @@
+{
+  "slug": "paper-lantern-digest-folds",
+  "parentSlug": "paper-lantern-digest",
+  "template": "PRODUCT_SHOWCASE",
+  "locale": "en",
+  "title": "Fold a paper lantern",
+  "metaDescription": "Fictional workshop notes with three key moments, a folding comparison and original sources.",
+  "themeColor": "#0369A1",
+  "themeColorSecondary": "#0F766E",
+  "fontFamily": "Manrope",
+  "darkMode": false,
+  "hideFromNav": true,
+  "isPublished": false,
+  "content": {
+    "sections": [
+      {
+        "type": "hero",
+        "order": 0,
+        "data": {
+          "headline": "Fold a paper lantern",
+          "subheadline": "A fictional four-minute workshop, from first crease to finished shape.",
+          "variant": "split",
+          "heroHeight": "small",
+          "backgroundImage": "https://example.com/paper-lantern/folds.jpg",
+          "backgroundColor": "#FFFFFF"
+        }
+      },
+      {
+        "type": "video",
+        "order": 1,
+        "data": {
+          "id": "episode-video",
+          "heading": "Watch the workshop",
+          "url": "https://www.youtube.com/watch?v=Example0001",
+          "caption": "Fictional example: folding a paper lantern.",
+          "thumbnail": "https://example.com/paper-lantern/folds.jpg",
+          "uploadDate": "2026-01-15T09:00:00Z",
+          "duration": "PT4M",
+          "momentsHeading": "Key moments",
+          "moments": [
+            { "t": 0, "title": "Prepare the sheet", "text": "Start with an even square." },
+            { "t": 90, "title": "Fold the base", "text": "Align the edges before pressing the crease." },
+            { "t": 180, "title": "Join the panels", "text": "Compare how the two folds hold their shape." }
+          ],
+          "backgroundColor": "#F0F9FF"
+        }
+      },
+      {
+        "type": "about",
+        "order": 2,
+        "data": {
+          "id": "notes",
+          "heading": "Summary and key points",
+          "text": "This fictional workshop turns a square sheet into a small paper lantern.\n\n## Key points\n\n- [▶ 0:00](?t=0#episode-video) Begin with a square so the edges line up.\n- [▶ 1:30](?t=90#episode-video) Fold the base before joining the sides.\n- [▶ 3:00](?t=180#episode-video) Compare the panels before the final join.\n\n## Fold comparison\n\n| Fold | Purpose | Check |\n|---|---|---|\n| Base crease | Support the shape | Edges align |\n| Panel crease | Join the sides | Tabs overlap evenly |",
+          "backgroundColor": "#FFFFFF"
+        }
+      },
+      {
+        "type": "about",
+        "order": 3,
+        "data": {
+          "heading": "Sources",
+          "text": "- [Original video — fictional URL](https://www.youtube.com/watch?v=Example0001)\n- [Workshop notes — fictional source](https://example.com/paper-lantern/folds-notes)\n\nAll media, dates and workshop details in this example are fictional; replace them with verified public material before publishing.",
+          "backgroundColor": "#F0F9FF"
+        }
+      }
+    ]
+  }
+}
