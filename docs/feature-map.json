@@ -16,6 +16,8 @@
         "src/components/ManagementBreadcrumb.tsx",
         "tests/breadcrumbs-render.test.ts",
         "src/components/AppCard.tsx",
+        "src/components/DirectoryLogo.tsx",
+        "src/lib/directory-logo.ts",
         "src/components/ui/**",
         "src/lib/public-directory.ts",
         "src/lib/directory-copy.ts",

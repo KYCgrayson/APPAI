@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { DirectoryLogo } from "@/components/DirectoryLogo";
 
 /** The App fields a directory card renders. Kept structural so both the
  *  directory query and the home-page query satisfy it without a shared select. */
@@ -8,6 +9,7 @@ export type AppCardApp = {
   tagline: string;
   category: string;
   logoUrl: string | null;
+  themeColor?: string | null;
   iosUrl: string | null;
   androidUrl: string | null;
 };
@@ -63,15 +65,7 @@ export async function AppCard({
       className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors block min-w-0 break-words"
     >
       <div className="flex items-start gap-4">
-        {app.logoUrl ? (
-          // Logo URLs are app-supplied and not restricted to configured image hosts.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={app.logoUrl} alt={name} className="w-12 h-12 rounded-xl object-cover" />
-        ) : (
-          <div className="w-12 h-12 rounded-xl bg-gray-800 flex items-center justify-center text-lg font-bold text-gray-400">
-            {name[0]}
-          </div>
-        )}
+        <DirectoryLogo name={name} logoUrl={app.logoUrl} themeColor={app.themeColor} />
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold truncate text-white">{name}</h3>
           <p className="text-sm text-gray-400 line-clamp-2">{localizedTagline || app.tagline}</p>

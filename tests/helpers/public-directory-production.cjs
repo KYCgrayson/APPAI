@@ -52,6 +52,15 @@ function query(model, rows, args = {}) {
 const admin = { id: 'fixture-admin', name: 'Fictional Admin', email: 'admin@example.test',
   role: 'ADMIN', organizationId: 'fixture-org', emailVerified: null, image: null };
 globalThis.prisma = {
+  $queryRaw: async sql => {
+    if (!sql.sql.includes('AS "heroLogos"')) throw new Error('Unexpected fixture SQL');
+    return query('hostedPage.logoProjection', pages, { where: { slug: { in: sql.values }, isPublished: true, parentSlug: null },
+      orderBy: [{ slug: 'asc' }, { locale: 'asc' }] }).map(row => ({
+      ...Object.fromEntries(['organizationId', 'slug', 'locale', 'isDefault', 'title', 'tagline', 'themeColor', 'headerLogo'].map(key => [key, row[key]])),
+      logo: row.content?.logo ?? null,
+      heroLogos: row.content.sections.filter(section => section.type === 'hero').map(section => section.data?.logo ?? null),
+    }));
+  },
   hostedPage: {
     findMany: async args => query('hostedPage', pages, args),
     count: async args => query('hostedPage', pages, args).length,

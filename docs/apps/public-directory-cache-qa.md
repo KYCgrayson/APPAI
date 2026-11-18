@@ -164,3 +164,17 @@ index remains unmerged and the merge commit could not be completed. No push.
 The ops checkout is outside this session's writable roots; its inbox/run-log
 update could not be applied. Pending run-log/inbox text and machine-readable
 production evidence are saved under `/private/tmp/92a-merge-qa/`.
+
+## Directory logo fallback (#32)
+
+Pages without a logo show a generated letter tile and are listed after pages with a logo; homepage featured and recent sections keep their existing priority and 6/12 selection limits. Existing App logos remain unchanged. Legacy fallback order is `headerLogo` → `content.logo` → hero `data.logo`, never large `heroImage` photos. The tile uses the selected locale's six-digit `themeColor` (otherwise slate `#334155`), a complete first grapheme, and the higher-contrast black/white foreground (at least 4.5:1).
+
+Directory misses reuse the already-loaded content and add only `headerLogo`/`themeColor`; home uses a parameterized SQL projection of logo fields, with hero array order preserved. Cache TTL, tags, invalidation and 50-card batching remain unchanged; new DTO cache versions prevent old cached cards from omitting branding. The All view partitions across personal and regular cards, keeping their previous relative order within each logo group. No directory admin-pin order exists; homepage featured placement remains first. No ItemList JSON-LD is emitted by these listings; metadata, canonical, hreflang, sitemap, FAQ and breadcrumbs are unchanged.
+
+Reproducible checks (fictional fixtures only, no DB):
+
+- `node --experimental-strip-types --test tests/directory-logo.test.ts tests/directory-logo-render.test.ts tests/directory-cache.test.ts`: image precedence, Latin/CJK/emoji graphemes, a 4,096-colour contrast sweep, stable cross-batch ordering, nine-locale existing-card HTML parity against `baa8373`, home selection/visibility and cache round trips with oversized source content.
+- `DIRECTORY_LOGO_BROWSER_TESTS=1 DIRECTORY_LOGO_QA_DIR=/tmp/appai-32-qa node --experimental-strip-types --test tests/directory-logo-browser.test.ts`: installed Chrome, compiled production CSS, all nine locales × six listings at 375px, 48px image/tile boxes, group spacing, and before/after screenshots. All external image requests are blocked.
+- `npm run spec:build`, `npm run typecheck`, `npm test`, `npm run lint`, `npm run feature-map:check`.
+
+Implementation review found and fixed missing spacing between mixed All-view logo groups. Unit/render/cache checks passed locally. Browser verification could not run because Chrome exited during startup and browser access was unavailable; no screenshots or 375px success are claimed. SQL shape/visibility is fixture-tested, but no PostgreSQL execution, production access, migration or data change was performed. Git staging was denied by the execution sandbox, so the feature-map check reports the two new, untracked source paths as stale until they can be staged normally.

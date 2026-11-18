@@ -1,3 +1,5 @@
+import { Prisma } from "@prisma/client";
+import { directoryLogo, logosFirst } from "./directory-logo.ts";
 import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import { publicPageWhere, publicAppFilter, publicRootSelect } from "@/lib/hosted-page-visibility";
@@ -14,7 +16,7 @@ const DIRECTORY_BATCH_SIZE = 50;
 const cardSelect = { id: true, name: true, tagline: true, category: true, logoUrl: true,
   iosUrl: true, androidUrl: true, hostedPageSlug: true, organizationId: true } as const;
 const pageCardSelect = { organizationId: true, slug: true, locale: true, isDefault: true,
-  title: true, tagline: true, canonicalUrl: true, template: true } as const;
+  title: true, tagline: true, canonicalUrl: true, template: true, headerLogo: true, themeColor: true } as const;
 const directoryAppSelect = { ...cardSelect, tags: true, appType: true, isApproved: true, url: true } as const;
 function project<T, S extends Partial<Record<keyof T, true>>>(row: T, select: S): Pick<T, keyof S & keyof T> {
   return Object.fromEntries(Object.keys(select).map(key => [key, row[key as keyof T]])) as Pick<T, keyof S & keyof T>;
@@ -75,7 +77,7 @@ const loadDirectoryBatch = unstable_cache(async (
   });
   const publishers = new Map(organizations.map(org => [org.id, publisherLabel(org)]));
   const localizedVariant = (variants: typeof hostedPages) => {
-    const cards = variants.map(variant => project(variant, pageCardSelect));
+    const cards = variants.map(variant => ({ ...project(variant, pageCardSelect), logoUrl: directoryLogo(null, variant) }));
     return chineseFallback(cards, locale) ?? pickByLocale(cards, locale);
   };
 
@@ -95,17 +97,22 @@ const loadDirectoryBatch = unstable_cache(async (
       .filter((page) => page !== undefined)
     : [];
   return {
-    entries: directoryApps.map(app => ({
-      app: project(app, cardSelect),
-      publisher: publishers.get(app.organizationId) ?? null,
-      canonicalUrl: app.hostedPageSlug ? canonicalBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) ?? null : null,
-      launchPath: canLaunchUniversalApp(app, releasesByApp.get(app.id)) ? getUniversalAppLaunchPath(app) : null,
-      variant: app.hostedPageSlug ? localizedVariant(variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) ?? []) ?? null : null,
-    })),
-    profiles: personalProfiles.map(profile => ({ ...profile, publisher: publishers.get(profile.organizationId) ?? null })),
+    entries: directoryApps.map(app => {
+      const variant = app.hostedPageSlug ? localizedVariant(variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) ?? []) ?? null : null;
+      return {
+        app: { ...project(app, cardSelect), logoUrl: app.logoUrl || variant?.logoUrl || null, themeColor: variant?.themeColor ?? null },
+        publisher: publishers.get(app.organizationId) ?? null,
+        canonicalUrl: app.hostedPageSlug ? canonicalBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) ?? null : null,
+        launchPath: canLaunchUniversalApp(app, releasesByApp.get(app.id)) ? getUniversalAppLaunchPath(app) : null,
+        variant,
+      };
+    }),
+    profiles: personalProfiles.map(profile => ({ ...profile,
+      logoUrl: apps.find(app => app.organizationId === profile.organizationId && app.hostedPageSlug === profile.slug)?.logoUrl || profile.logoUrl,
+      publisher: publishers.get(profile.organizationId) ?? null })),
     nextOffset: apps.length === DIRECTORY_BATCH_SIZE ? offset + DIRECTORY_BATCH_SIZE : null,
   };
-}, ["public-directory-batch-v2"], cacheOptions);
+}, ["public-directory-batch-v3"], cacheOptions);
 
 export async function loadPublicDirectory(locale: string, kind?: DirectoryKind, category = "ALL", personalOnly = false) {
   const first = await loadDirectoryBatch(locale, kind ?? null, personalOnly ? "ALL" : category || "ALL", personalOnly, 0);
@@ -118,7 +125,7 @@ export async function loadPublicDirectory(locale: string, kind?: DirectoryKind, 
     profiles.push(...batch.profiles);
     offset = batch.nextOffset;
   }
-  return { entries, profiles };
+  return { entries: logosFirst(entries, entry => entry.app.logoUrl), profiles: logosFirst(profiles, profile => profile.logoUrl) };
 }
 
 export const loadPublicHome = unstable_cache(async (locale: string) => {
@@ -144,20 +151,39 @@ export const loadPublicHome = unstable_cache(async (locale: string) => {
   const homeSlugs = [...featuredApps, ...recentApps]
     .map((a) => a.hostedPageSlug)
     .filter((s): s is string => !!s);
+  // Prisma cannot select JSON subfields. Project only logo candidates in SQL,
+  // keeping large hero photos/section bodies out of the home query and cache.
   const homeVariants = homeSlugs.length
-    ? await db.hostedPage.findMany({
-        where: { slug: { in: homeSlugs }, ...publicPageWhere() },
-        select: { organizationId: true, slug: true, locale: true, isDefault: true, title: true, tagline: true },
-        orderBy: [{ slug: "asc" }, { locale: "asc" }],
-      })
+    ? await db.$queryRaw<Array<{
+        organizationId: string; slug: string; locale: string; isDefault: boolean;
+        title: string; tagline: string | null; themeColor: string | null;
+        headerLogo: string | null; logo: unknown; heroLogos: unknown[] | null;
+      }>>(Prisma.sql`
+        SELECT "organizationId", slug, locale, "isDefault", title, tagline,
+          "themeColor", "headerLogo", content->'logo' AS logo,
+          (SELECT jsonb_agg(section->'data'->'logo' ORDER BY position)
+            FROM jsonb_array_elements(CASE WHEN jsonb_typeof(content->'sections') = 'array'
+              THEN content->'sections' ELSE '[]'::jsonb END) WITH ORDINALITY AS sections(section, position)
+            WHERE section->>'type' = 'hero') AS "heroLogos"
+        FROM "HostedPage"
+        WHERE slug IN (${Prisma.join(homeSlugs)}) AND "isPublished" = true AND "parentSlug" IS NULL
+        ORDER BY slug ASC, locale ASC
+      `)
     : [];
-  const variantsBySlug = groupByKey(homeVariants.map(variant => project(variant, {
-    organizationId: true, slug: true, locale: true, isDefault: true, title: true, tagline: true,
+  const variantsBySlug = groupByKey(homeVariants.map(({ logo, heroLogos, headerLogo, ...variant }) => ({
+    ...variant, logoUrl: directoryLogo(null, { headerLogo, content: {
+      logo, sections: (heroLogos ?? []).map(logo => ({ type: "hero", data: { logo } })),
+    } }),
   })), h => `${h.organizationId}/${h.slug}`);
-  const localize = (rows: typeof featuredApps) => rows.map(app => ({ ...project(app, cardSelect),
-    localized: app.hostedPageSlug ? pickByLocale(variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) ?? [], locale) : undefined }));
+  const localize = (rows: typeof featuredApps) => logosFirst(rows.map(app => {
+    const localized = app.hostedPageSlug ? pickByLocale(variantsBySlug.get(`${app.organizationId}/${app.hostedPageSlug}`) ?? [], locale) : undefined;
+    return { ...project(app, cardSelect), localized,
+      logoUrl: app.logoUrl || localized?.logoUrl || null, themeColor: localized?.themeColor ?? null };
+  }), app => app.logoUrl);
+  // Keep the curated featured section and existing 6/12 selection limits;
+  // stable logo-first ordering applies separately inside each displayed group.
   return { featuredApps: localize(featuredApps), recentApps: localize(recentApps), totalPages };
-}, ["public-directory-home-v1"], cacheOptions);
+}, ["public-directory-home-v2"], cacheOptions);
 
 export const loadPublicAppDetail = unstable_cache(async (id: string, locale: string) => {
   const roots = await db.hostedPage.findMany({ where: publicPageWhere(), select: publicRootSelect, orderBy: [{ slug: "asc" }, { locale: "asc" }] });
