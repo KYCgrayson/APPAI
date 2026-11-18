@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
   const recovery = types && enriched.length === 0 ? { total: 0, validTypes: SECTION_DEFS.map(section => section.type) } : {};
 
   if (format === "jsonschema") {
-    const schemas: Record<string, JsonSchema> = {};
+    const schemas: Record<string, unknown> = {};
     for (const s of enriched) {
       const props: Record<string, JsonSchema> = {};
       const required: string[] = [];
@@ -114,8 +114,9 @@ export async function GET(request: NextRequest) {
       schemas[s.type] = {
         type: "object",
         description: s.description,
-        properties: props,
         ...(required.length > 0 ? { required } : {}),
+        ...s.dataSchema,
+        properties: { ...props, ...s.dataSchema?.properties },
       };
     }
     return NextResponse.json({ ...recovery, icons: ICON_NAMES, logoGuidance: LOGO_GUIDANCE, $schema: "https://json-schema.org/draft/2020-12/schema", sections: schemas });

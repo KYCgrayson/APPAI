@@ -1,0 +1,30 @@
+{
+  "heading": "A fictional paper workshop",
+  "subheading": "Four ways to explain a small project without a video.",
+  "items": [
+    {
+      "kind": "compare", "title": "Choose a bridge", "icon": "leaf-outline",
+      "columns": [
+        { "label": "Folded paper", "points": ["Quick to assemble", "Easy to recycle"] },
+        { "label": "Cardboard arch", "points": ["Holds a larger model", "Needs more material"] }
+      ],
+      "takeaway": "Choose the material that fits the model.",
+      "sources": [{ "label": "Workshop notes", "url": "HTTPS://example.com/workshop" }],
+      "link": { "label": "Related moment", "url": "?t=90#workshop-video" }
+    },
+    {
+      "kind": "steps", "title": "Build the prototype",
+      "steps": [{ "label": "Sketch", "detail": "Draw a small bridge." }, { "label": "Fold", "detail": "Fold the support bands." }, { "label": "Test", "detail": "Add paper tokens one at a time." }],
+      "link": { "label": "Project page", "url": "/p/paper-workshop" }
+    },
+    {
+      "kind": "layers", "title": "Inside the model", "focus": 1,
+      "layers": [{ "label": "Deck", "detail": "The walking surface." }, { "label": "Supports", "detail": "The highlighted load-bearing layer." }, { "label": "Base", "detail": "The stable foundation." }]
+    },
+    {
+      "kind": "cycle", "title": "Improve the design",
+      "steps": [{ "label": "Observe", "detail": "Notice where the model bends." }, { "label": "Adjust", "detail": "Change one fold." }, { "label": "Retest", "detail": "Try the same paper tokens again." }],
+      "takeaway": "Repeat the experiment after each change."
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import { DiagramSection } from "../sections/DiagramSection";
 import { neutralHeadingCss, sectionHeadingColor } from "@/lib/heading-color";
 import { buildPagePath } from "@/lib/parse-page-segments";
 import { PLATFORM_ORIGIN } from "@/lib/platform-identity";
@@ -158,7 +159,7 @@ function renderSection(
   const data = { ...section.data };
   // These fields were ignored before v2. Never reinterpret existing live content.
   if (!modern) {
-    if (!["features", "contact", "links"].includes(section.type)) delete data.subheading;
+    if (!["features", "contact", "links", "diagram"].includes(section.type)) delete data.subheading;
     if (["pricing", "faq", "video", "download", "testimonials", "gallery", "team", "schedule", "sponsors", "stats", "embed"].includes(section.type)) delete data.heading;
   }
   const props = { renderVersion: modern ? 2 : 1, data: data as never, themeColor, themeColorSecondary, darkMode, isAdmin: viewer.isAdmin, typographyActive: hasTypography(typographySettings(page.content)) };
@@ -219,6 +220,9 @@ function renderSection(
       break;
     case "faq":
       content = <FaqSection {...props} />;
+      break;
+    case "diagram":
+      content = <DiagramSection {...props} locale={page.locale} />;
       break;
     case "gallery":
       content = <GallerySection {...props} />;
