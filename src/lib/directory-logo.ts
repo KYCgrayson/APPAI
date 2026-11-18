@@ -12,7 +12,7 @@ export function firstGrapheme(name: string): string {
   for (const { segment } of graphemes.segment(name)) {
     if (!/[^\p{White_Space}\p{C}\p{M}\p{Default_Ignorable_Code_Point}]/u.test(segment)) continue;
     firstVisible ??= segment;
-    if (/[\p{L}\p{N}\p{Extended_Pictographic}]/u.test(segment)) return segment;
+    if (/[\p{L}\p{N}\p{Extended_Pictographic}\p{Regional_Indicator}]/u.test(segment)) return segment;
   }
   return firstVisible ?? "?";
 }

@@ -40,7 +40,7 @@ test("invalid logo candidates are skipped consistently for App, page, update and
 test("first character is a complete Latin, CJK or emoji grapheme", () => {
   for (const [name, expected] of [["App", "A"], [" hello", "h"], ["éclair", "é"], ["e\u0301clair", "e\u0301"],
     ["網站", "網"], ["𠮷野", "𠮷"], ["👩🏽‍💻 Tools", "👩🏽‍💻"], ["👨‍👩‍👧‍👦 Family", "👨‍👩‍👧‍👦"],
-    ["🇹🇼 Taiwan", "T"], ["🇹🇼", "🇹🇼"], ["1️⃣ One", "1️⃣"], ["", "?"], ["  ", "?"]]) {
+    ["🇹🇼 Taiwan", "🇹🇼"], ["🇹🇼", "🇹🇼"], ["1️⃣ One", "1️⃣"], ["", "?"], ["  ", "?"]]) {
     assert.equal(firstGrapheme(name), expected);
   }
 });
