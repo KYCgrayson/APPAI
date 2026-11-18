@@ -51,6 +51,17 @@ test("error indices refer to array positions, including nested columns and secon
   assert.match(diagramContentIssues(content)[0].message, /^sections\[3\]\.data\.items\[1\]\.kind:/);
 });
 
+test("invalid diagram links explain accepted destinations without dumping the pattern", () => {
+  const content = diagramContent({ items: [{ ...diagramFixture.items[0], link: { label: "More", url: "javascript:alert(1)" } }] });
+  const issues = diagramContentIssues(content);
+  assert.ok(issues.some(issue => issue.message === "sections[1].data.items[0].link.url: Link must be https, /p/…, #anchor or ?t=…#anchor"));
+  for (const issue of issues) assert.ok(issue.message.length < 150, issue.message);
+  const preview = checkPagePreview({ slug: "paper-workshop", title: "Workshop", content });
+  assert.equal(preview.valid, false);
+  assert.ok(preview.errors.some(issue => issue.message.includes("Link must be https")));
+  assert.doesNotMatch(JSON.stringify(preview.errors), /must match pattern/);
+});
+
 test("UTF-16 limits and parsed HTTPS host semantics remain authoritative", () => {
   const item = diagramFixture.items[0];
   assert.ok(normalizeDiagramData({ items: [{ ...item, title: "😀".repeat(40) }] }));

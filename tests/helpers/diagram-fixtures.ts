@@ -1,5 +1,19 @@
 import fixture from "../fixtures/diagram.json" with { type: "json" };
 export const diagramFixture = fixture;
+const bilingualNodes = Array.from({ length: 8 }, (_, index) => ({
+  label: index % 2 ? "Subscription 訂閱" : "Authentication 驗證",
+  detail: "Authentication protects your Subscription. 使用者完成驗證後，即可管理訂閱及接收通知。",
+}));
+export const bilingualDiagramFixture = {
+  heading: "Subscription workflow 訂閱流程",
+  items: [
+    { kind: "compare", title: "Compare subscriptions 比較訂閱", columns: Array.from({ length: 4 }, () => ({
+      label: "Authentication 驗證", points: ["Subscription management 訂閱管理", "Authentication protects your account. 驗證可保護帳戶。"],
+    })) },
+    { kind: "steps", title: "Eight steps 八個步驟", steps: bilingualNodes },
+    ...[3, 4, 5, 6].map(count => ({ kind: "cycle", title: `Subscription cycle ${count} 訂閱循環`, steps: bilingualNodes.slice(0, count) })),
+  ],
+};
 export const diagramContent = (data: unknown) => ({ sections: [
   { type: "hero", order: 0, data: { headline: "Paper workshop" } },
   { type: "diagram", order: 8, data },

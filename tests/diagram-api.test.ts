@@ -6,6 +6,7 @@ import { gameApiFixture, registerGameApiFixtures } from "./helpers/game-api-fixt
 import { renderHtml } from "./helpers/render-html.mjs";
 import { diagramFixture, diagramContent, invalidDiagrams } from "./helpers/diagram-fixtures.ts";
 import { normalizeDiagramData } from "../src/lib/diagram.ts";
+import { registerMainHostedBaseline } from "./helpers/hosted-chrome-regression.mjs";
 
 const hooks = [registerHostedRenderLoader(), registerHostedHeaders(), registerGameApiFixtures()];
 test.after(() => hooks.reverse().forEach(hook => hook.deregister()));
@@ -88,6 +89,15 @@ test("merged patches retain diagrams; post-sanitization empty text is rejected o
 test("sections endpoint exposes discriminated fields, array bounds, HTTPS sources and focus dependency", async () => {
   const response = await definitions.GET(new NextRequest("https://appai.info/api/v1/sections?format=jsonschema&type=diagram"));
   const schema = (await response.json()).sections.diagram;
+  const assertEmbeddedSchema = (value: unknown) => {
+    if (!value || typeof value !== "object") return;
+    for (const [key, child] of Object.entries(value)) {
+      assert.notEqual(key, "$schema");
+      if (key === "additionalProperties") assert.notDeepEqual(child, {});
+      assertEmbeddedSchema(child);
+    }
+  };
+  assertEmbeddedSchema(schema);
   assert.deepEqual(schema.required, ["items"]); assert.ok(schema.properties.id);
   assert.equal(schema.properties.items.minItems, 1); assert.equal(schema.properties.items.maxItems, 12);
   const variants = schema.properties.items.items.oneOf;
@@ -111,4 +121,17 @@ test("sections endpoint exposes discriminated fields, array bounds, HTTPS source
   const registry = await definitions.GET(new NextRequest("https://appai.info/api/v1/sections?type=diagram"));
   const body = await registry.json();
   assert.equal(body.total, 1); assert.ok(body.sections[0].dataSchema); assert.ok(body.icons.includes("leaf-outline"));
+  assertEmbeddedSchema(body.sections[0].dataSchema);
+});
+
+test("non-diagram section schemas retain every byte and key order from the branch base", async () => {
+  const baseline = registerMainHostedBaseline("3ddf782");
+  try {
+    const before = await import(baseline.moduleUrl("src/app/api/v1/sections/route.ts"));
+    const url = "https://appai.info/api/v1/sections?format=jsonschema";
+    const previous = await (await before.GET(new NextRequest(url))).json();
+    const current = await (await definitions.GET(new NextRequest(url))).json();
+    delete current.sections.diagram;
+    assert.equal(JSON.stringify(current), JSON.stringify(previous));
+  } finally { baseline.deregister(); }
 });

@@ -33,6 +33,7 @@ test("all-kind fixture renders semantic lists, headings, focus, safe links and l
     const arrows = [...html.matchAll(/<span class="arrow"[^>]*>/g)];
     assert.equal(arrows.length, 5); arrows.forEach(match => assert.ok(match[0].includes('aria-hidden="true"')));
     assert.match(html, /data-direction="up"/);
+    assert.match(html, /<span class="returnCue" aria-hidden="true">↶ 1<\/span>/);
     assert.equal((html.match(/<svg/g) ?? []).length, 1);
     assert.doesNotMatch(html, /<script|<img|<video|<iframe|<canvas|<button/);
   }

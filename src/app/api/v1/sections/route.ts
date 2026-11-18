@@ -111,12 +111,13 @@ export async function GET(request: NextRequest) {
         props[f.name] = fieldToJsonSchema(f);
         if (f.required) required.push(f.name);
       }
+      const { properties: dataProperties, ...dataSchema } = s.dataSchema ?? {};
       schemas[s.type] = {
         type: "object",
         description: s.description,
+        properties: { ...props, ...dataProperties },
         ...(required.length > 0 ? { required } : {}),
-        ...s.dataSchema,
-        properties: { ...props, ...s.dataSchema?.properties },
+        ...dataSchema,
       };
     }
     return NextResponse.json({ ...recovery, icons: ICON_NAMES, logoGuidance: LOGO_GUIDANCE, $schema: "https://json-schema.org/draft/2020-12/schema", sections: schemas });

@@ -1,6 +1,6 @@
 .section { --page-heading-neutral: #111827; padding: 3rem 1.5rem; background: #f9fafb; color: #111827; overflow-wrap: anywhere; }
 .section[data-dark="true"] { --page-heading-neutral: #f3f4f6; background: #111827; color: #f3f4f6; }
-.inner { max-width: 72rem; margin-inline: auto; min-width: 0; }
+.inner { max-width: 72rem; margin-inline: auto; min-width: 0; container-type: inline-size; }
 .section h2 { font-size: 2rem; font-weight: 700; margin: 0 0 1rem; }
 .section h3 { display: flex; gap: .65rem; align-items: center; font-size: 1.4rem; font-weight: 700; margin: 0 0 1.5rem; }
 .section h3 svg { flex-shrink: 0; color: var(--diagram-accent); }
@@ -8,12 +8,12 @@
 .section p { margin: .65rem 0 0; white-space: pre-line; }
 .item { margin-block: 2.5rem; min-width: 0; }
 .columns, .steps, .cycle, .layers { padding: 0; margin: 0; list-style: none; }
-.columns { display: grid; grid-template-columns: repeat(var(--diagram-columns), minmax(0, 1fr)); gap: 1rem; }
+.columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 1rem; }
 .box { position: relative; min-width: 0; padding: 1.25rem; border: 1px solid #6b7280; border-radius: .75rem; background: #fff; }
 .section[data-dark="true"] .box { background: #1f2937; border-color: #9ca3af; }
 .points { list-style: disc; padding-inline-start: 1.25rem; margin: .75rem 0 0; }
 .points li + li { margin-top: .5rem; }
-.steps { display: grid; grid-template-columns: repeat(var(--diagram-columns), minmax(0, 1fr)); gap: 2rem; }
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 2rem; }
 .number { display: block; color: var(--diagram-accent); font-size: 1.25rem; font-weight: 700; margin-bottom: .5rem; }
 .arrow { position: absolute; width: 1rem; height: 1rem; right: -1.55rem; top: calc(50% - .5rem); color: var(--diagram-accent); }
 .arrow::after { content: ""; display: block; width: .65rem; height: .65rem; border-top: 2px solid; border-right: 2px solid; transform: rotate(45deg); }
@@ -24,16 +24,37 @@
 .cycle .arrow[data-direction="left"] { right: auto; left: -2rem; transform: rotate(180deg); }
 .cycle .arrow[data-direction="down"] { right: calc(50% - .5rem); top: auto; bottom: -2rem; transform: rotate(90deg); }
 .cycle .arrow[data-direction="up"] { right: auto; left: var(--diagram-return-x, calc(50% - .5rem)); top: -2rem; transform: rotate(-90deg); }
+.returnCue { display: none; color: var(--diagram-accent); font-weight: 700; margin-top: .75rem; }
 .sources { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; padding-inline-start: 1.25rem; margin: 1rem 0 0; list-style: disc; }
 .section a { color: var(--diagram-accent); text-decoration: underline; text-underline-offset: .2em; }
 .section a:focus-visible { outline: 3px solid var(--diagram-accent); outline-offset: 4px; border-radius: 2px; }
 .takeaway { font-weight: 600; }
 .link { margin-top: 1rem; }
 .srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+/* 14rem tracks plus 2rem gaps: hide arrows across a row break. */
+@container (width < 30rem) {
+  .steps .arrow { top: auto; bottom: -1.65rem; right: calc(50% - .5rem); transform: rotate(90deg); }
+}
+@container (30rem <= width < 46rem) {
+  .steps > :nth-child(2n) .arrow { display: none; }
+}
+@container (46rem <= width < 62rem) {
+  .steps > :nth-child(3n) .arrow { display: none; }
+}
+@container (width >= 62rem) {
+  .steps > :nth-child(4n) .arrow { display: none; }
+}
+/* Three cycle tracks need 48rem, including the two 3rem arrow gaps. */
+@container (width < 48rem) {
+  .cycle { display: flex; flex-direction: column; gap: 2rem; padding: 0; }
+  .cycle .arrow[data-direction] { top: auto; bottom: -1.65rem; right: calc(50% - .5rem); left: auto; transform: rotate(90deg); }
+  .cycle .arrow[data-direction="up"] { display: none; }
+  .returnCue { display: block; }
+}
 @media (max-width: 640px) {
   .section { --page-heading-neutral: #111827; padding: 2rem 1rem; }
   .columns, .steps, .cycle { display: flex; flex-direction: column; }
   .steps, .cycle { gap: 2rem; }
-  .cycle { padding: 0 0 2rem; }
+  .steps > :nth-child(n) .arrow { display: block; }
   .arrow, .cycle .arrow[data-direction] { top: auto; bottom: -1.65rem; right: calc(50% - .5rem); left: auto; transform: rotate(90deg); }
 }

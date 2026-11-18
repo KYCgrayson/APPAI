@@ -7,7 +7,7 @@ import { videoFieldPath } from "./video-data.ts";
 export const DIAGRAM_KINDS = ["compare", "steps", "layers", "cycle"] as const;
 const text = (max: number) => z.string().min(1).max(max).regex(/\S/, "Must contain non-whitespace text")
   .describe(`Nonblank plain text; the API limit is ${max} UTF-16 code units. JSON Schema maxLength counts Unicode code points.`);
-const safeHref = z.string().max(2048).regex(new RegExp(PROJECT_CARD_HREF_PATTERN))
+const safeHref = z.string().max(2048).regex(new RegExp(PROJECT_CARD_HREF_PATTERN), "Link must be https, /p/…, #anchor or ?t=…#anchor")
   .refine(value => !!editorialLink(value, PLATFORM_ORIGIN, "project-card"), "Use HTTPS without credentials, /p/..., #anchor, or ?t=time#anchor")
   .describe("Shared project-card/gallery safe href. The API additionally parses HTTPS URLs; the pattern alone cannot validate host semantics.");
 const sourceHref = z.string().max(2048).regex(new RegExp(`^(?=[hH][tT][tT][pP][sS]://)${PROJECT_CARD_HREF_PATTERN.slice(1)}`), "Sources require HTTPS")
@@ -80,8 +80,13 @@ export function diagramContentIssues(content: unknown, partial = false) {
 export function diagramJsonSchema() {
   const schema = z.toJSONSchema(diagramDataSchema, { io: "input" });
   const items = z.toJSONSchema(diagramDataSchema.shape.items, { io: "input" });
+  // These schemas are embedded under the discovery endpoint's root schema.
+  delete schema.$schema;
+  delete schema.additionalProperties; // Passthrough emits {}, equivalent to omission.
+  delete items.$schema;
   items.items = { oneOf: diagramDataSchema.shape.items.element.options.map(option => {
     const variant = z.toJSONSchema(option, { io: "input" });
+    delete variant.$schema;
     if (option === layerSchema) {
       variant.allOf = Array.from({ length: 6 }, (_, focus) => ({
         if: { properties: { focus: { const: focus } }, required: ["focus"] },

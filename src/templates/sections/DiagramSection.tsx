@@ -42,6 +42,7 @@ function Diagram({ item, locale }: { item: DiagramItem; locale: string }) {
           <span className={styles.number} aria-hidden="true">{index + 1}</span>
           <h4>{step.label}</h4>{step.detail && <p>{step.detail}</p>}
           {(!last || cycle) && <span className={styles.arrow} data-direction={direction} aria-hidden="true" />}
+          {cycle && last && <span className={styles.returnCue} aria-hidden="true">↶ 1</span>}
         </li>;
       })}
     </ol>
