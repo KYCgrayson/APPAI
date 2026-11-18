@@ -357,7 +357,7 @@ test("#91 first-created locale (including draft) wins; root/child defaults and s
   }
 });
 
-test("#91 set-default scopes selection, locks and clearing to root or requested parent; children never sync listings", async () => {
+test("#91 set-default resolves slug + locale and scopes locks and clearing to the actual parent; children never sync listings", async () => {
   const variants = [
     managedPage("shared", { locale: "en", id: "root-en" }),
     managedPage("shared", { locale: "es", id: "root-es", isDefault: false }),
@@ -368,19 +368,45 @@ test("#91 set-default scopes selection, locks and clearing to root or requested 
   ];
   const store = reset(variants);
   store.apps.push({ id: "listing", hostedPageSlug: "shared", organizationId: "org-a", name: "Root listing" });
-  for (const query of ["locale=ja", "locale=es&parentSlug=site", "locale=de&parentSlug=site", "locale=fr", "locale=en&parentSlug=missing"]) {
+  const listing = structuredClone(store.apps);
+  for (const [query, actualParent] of [
+    ["locale=es&parentSlug=site", null],
+    ["locale=de&parentSlug=site", "other-site"],
+    ["locale=ja&parentSlug=missing", "site"],
+    ["locale=ja&parentSlug=", "site"],
+    ["locale=en&parentSlug=missing", null],
+  ] as const) {
+    const before = structuredClone(store.rows);
+    const response = await defaultRoute.POST(req(`/api/v1/pages/shared/set-default?${query}`), ctx("shared"));
+    assert.equal(response.status, 409, query);
+    const json = await response.json();
+    assert.equal(json.code, "parent_mismatch");
+    assert.equal(json.parentSlug, actualParent);
+    assert.ok(json.error.includes(`parentSlug ${JSON.stringify(actualParent)}`));
+    assert.deepEqual(store.rows, before);
+    assert.deepEqual(store.apps, listing);
+    assert.deepEqual(state.cache, []);
+  }
+  for (const query of ["locale=fr", "locale=fr&parentSlug=site", "locale=it"]) {
     const before = structuredClone(store.rows);
     const response = await defaultRoute.POST(req(`/api/v1/pages/shared/set-default?${query}`), ctx("shared"));
     assert.equal(response.status, 404, query);
     assert.deepEqual(store.rows, before);
+    assert.deepEqual(store.apps, listing);
+    assert.deepEqual(state.cache, []);
   }
-  const listing = structuredClone(store.apps);
-  store.locks.length = 0;
-  const child = await defaultRoute.POST(req("/api/v1/pages/shared/set-default?locale=ja&parentSlug=site"), ctx("shared"));
-  assert.equal(child.status, 200);
-  assert.deepEqual(store.rows.filter(row => row.isDefault).map(row => row.id), ["root-en", "child-ja", "other-child", "foreign"]);
-  assert.deepEqual(store.apps, listing, "child default cannot overwrite a same-slug root listing");
-  assert.deepEqual(store.locks, ["hp-tree:org-a:site"]);
+  for (const query of ["locale=ja", "locale=ja&parentSlug=site"]) {
+    // Each call must switch the default, rather than merely succeed idempotently.
+    store.rows.find(row => row.id === "child-tw")!.isDefault = true;
+    store.rows.find(row => row.id === "child-ja")!.isDefault = false;
+    store.locks.length = 0;
+    const child = await defaultRoute.POST(req(`/api/v1/pages/shared/set-default?${query}`), ctx("shared"));
+    assert.equal(child.status, 200, query);
+    assert.equal((await child.json()).page.parentSlug, "site");
+    assert.deepEqual(store.rows.filter(row => row.isDefault).map(row => row.id), ["root-en", "child-ja", "other-child", "foreign"]);
+    assert.deepEqual(store.apps, listing, "child default cannot overwrite a same-slug root listing");
+    assert.deepEqual(store.locks, ["hp-tree:org-a:site"]);
+  }
   const root = await defaultRoute.POST(req("/api/v1/pages/shared/set-default?locale=es"), ctx("shared"));
   assert.equal(root.status, 200);
   assert.deepEqual(store.rows.filter(row => row.isDefault).map(row => row.id), ["root-es", "child-ja", "other-child", "foreign"]);
@@ -393,12 +419,14 @@ test("#91 removed variants cannot be selected, and another parent's removal does
       managedPage("shared"),
       removedPage("shared", removal, "OWNER", { id: "removed-child", parentSlug: "site", locale: "ja" }),
     ]);
-    assert.equal((await defaultRoute.POST(req("/api/v1/pages/shared/set-default?locale=ja"), ctx("shared"))).status, 404);
     const before = structuredClone(store.rows);
-    const blocked = await defaultRoute.POST(req("/api/v1/pages/shared/set-default?locale=ja&parentSlug=site"), ctx("shared"));
-    assert.equal(blocked.status, 409);
-    assert.equal((await blocked.json()).code, "removed_by_owner");
-    assert.deepEqual(store.rows, before);
+    for (const query of ["locale=ja", "locale=ja&parentSlug=site"]) {
+      const blocked = await defaultRoute.POST(req(`/api/v1/pages/shared/set-default?${query}`), ctx("shared"));
+      assert.equal(blocked.status, 409);
+      assert.equal((await blocked.json()).code, "removed_by_owner");
+      assert.deepEqual(store.rows, before);
+      assert.equal(state.cache.length, 0);
+    }
     assert.equal((await defaultRoute.POST(req("/api/v1/pages/shared/set-default?locale=en"), ctx("shared"))).status, 200);
   }
   // Defense in depth: removal after the guard read must be excluded by the

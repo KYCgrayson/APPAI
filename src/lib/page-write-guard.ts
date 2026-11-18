@@ -42,7 +42,7 @@ export async function recordAgentBlocked(page: HostedPage, actor: ApiActor) {
 
 /** One lock protocol for every page mutation, including creates and App rebindings. */
 export async function withPageWrite(request: NextRequest, slug: string | null,
-  operation: (tx: PageStore, actor: PageApiActor) => Promise<NextResponse>, options: { unpublish?: boolean; appId?: string; appCreate?: boolean; parentSlug?: string | null } = {}) {
+  operation: (tx: PageStore, actor: PageApiActor) => Promise<NextResponse>, options: { unpublish?: boolean; appId?: string; appCreate?: boolean } = {}) {
   const actor = await validateApiKey(request.headers.get("authorization"));
   if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   let blocked: HostedPage | undefined;
@@ -56,8 +56,7 @@ export async function withPageWrite(request: NextRequest, slug: string | null,
   let response: NextResponse;
   try {
     response = await db.$transaction(async tx => {
-      let parentSlug: string | null = options.parentSlug ?? null;
-      const parentScope = options.parentSlug !== undefined ? { parentSlug } : {};
+      let parentSlug: string | null = null;
       let targetLocale = request.nextUrl.searchParams.get("locale") || "en";
       let targetSlug = slug;
       if (options.appId || options.appCreate) {
@@ -82,15 +81,15 @@ export async function withPageWrite(request: NextRequest, slug: string | null,
         targetLocale = typeof body.locale === "string" ? body.locale : "en";
         parentSlug = typeof body.parentSlug === "string" ? body.parentSlug : null;
       }
-      const exact = await tx.hostedPage.findFirst({ where: { organizationId: actor.organizationId, slug: targetSlug!, locale: targetLocale, ...parentScope } });
-      const existing = exact || (slug ? await tx.hostedPage.findFirst({ where: { organizationId: actor.organizationId, slug: targetSlug!, ...parentScope } }) : null);
+      const exact = await tx.hostedPage.findFirst({ where: { organizationId: actor.organizationId, slug: targetSlug!, locale: targetLocale } });
+      const existing = exact || (slug ? await tx.hostedPage.findFirst({ where: { organizationId: actor.organizationId, slug: targetSlug! } }) : null);
       const logicalParent = existing ? existing.parentSlug : parentSlug;
       const rootSlug = logicalParent || targetSlug!;
       // POST reserves the slug across trees/locales, including a removed child's old URL.
       const sameSlug = slug === null ? await tx.hostedPage.findMany({ where: { organizationId: actor.organizationId, slug: targetSlug! }, orderBy: { locale: "asc" } }) : [];
       await lockPageTrees(tx, [treeKey({ organizationId: actor.organizationId, slug: rootSlug, parentSlug: null }), ...sameSlug.map(treeKey)]);
       refreshSlug = rootSlug;
-      const current = await tx.hostedPage.findFirst({ where: { organizationId: actor.organizationId, slug: targetSlug!, locale: targetLocale, ...parentScope } });
+      const current = await tx.hostedPage.findFirst({ where: { organizationId: actor.organizationId, slug: targetSlug!, locale: targetLocale } });
       if (current && current.parentSlug !== logicalParent) return NextResponse.json({ error: "Page tree changed; read it again.", code: "scope_changed" }, { status: 409 });
       const logical = await tx.hostedPage.findMany({ where: { organizationId: actor.organizationId, slug: targetSlug!, parentSlug: logicalParent }, orderBy: { locale: "asc" } });
       if (logical.some(p => (p.parentSlug || p.slug) !== rootSlug)) return NextResponse.json({ error: "Page tree changed; read it again.", code: "scope_changed" }, { status: 409 });

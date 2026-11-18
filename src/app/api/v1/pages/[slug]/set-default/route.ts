@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { hostedPageApprovalUpdate } from "@/lib/hosted-page-approval";
 
 // POST /api/v1/pages/:slug/set-default?locale=ja
-// Add &parentSlug=site for a child; omission selects the root.
+// slug + locale identifies a root or child; optional parentSlug must match.
 // Sets the specified locale as the default for this logical page.
 // The default uses /p/:slug for roots or /p/:parentSlug/:slug for children.
 async function postPage(
@@ -23,11 +23,11 @@ async function postPage(
     );
   }
 
-  const parentSlug = request.nextUrl.searchParams.get("parentSlug") || null;
+  const parentSlug = request.nextUrl.searchParams.get("parentSlug");
 
-  // Select only a live variant in the requested logical page.
+  // slug + locale is unique across parents; scope writes to the actual parent.
   const page = await db.hostedPage.findFirst({
-    where: { slug, locale, organizationId: authResult.organizationId, parentSlug, removalState: null },
+    where: { slug, locale, organizationId: authResult.organizationId, removalState: null },
   });
   if (!page) {
     return NextResponse.json(
@@ -36,7 +36,15 @@ async function postPage(
     );
   }
 
-  // Unset all existing defaults for this slug, then set the new one
+  if (parentSlug !== null && parentSlug !== page.parentSlug) {
+    return NextResponse.json(
+      { error: `Page "${slug}" (locale: ${locale}) has parentSlug ${JSON.stringify(page.parentSlug)}, not ${JSON.stringify(parentSlug)}.`,
+        code: "parent_mismatch", parentSlug: page.parentSlug },
+      { status: 409 }
+    );
+  }
+
+  // Unset live defaults for this logical page, then set the new one.
   await db.hostedPage.updateMany({
     where: { slug, organizationId: authResult.organizationId, parentSlug: page.parentSlug, removalState: null },
     data: { isDefault: false },
@@ -64,7 +72,5 @@ async function postPage(
 }
 
 export async function POST(request: NextRequest, context: { params: Promise<{ slug: string }> }) {
-  return withPageWrite(request, (await context.params).slug, (tx, actor) => postPage(request, context, tx, actor), {
-    parentSlug: request.nextUrl.searchParams.get("parentSlug") || null,
-  });
+  return withPageWrite(request, (await context.params).slug, (tx, actor) => postPage(request, context, tx, actor));
 }

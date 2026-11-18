@@ -5,6 +5,7 @@
 - [x] Add single-locale routing/HTML language/SEO/sitemap coverage and exact multi-locale comparison against main 4a71b1e.
 - [x] Independent Codex review found no blocking issues; requested edge-case tests added.
 - [x] Round 2: isolate live defaults by slug + parent, cover missing defaults/removals, and generate untracked static main/branch comparison pages in `.qa-91-3/`.
+- [x] Round 3: restore slug + locale child set-default calls; validate optional parentSlug with an explicit mismatch response and regression coverage.
 - [ ] Browser screenshots: local headless Chrome exited before capture. No production changes, commits or pushes in this worktree task.
 
 ## Hosted-page small bugs and heading colour (#91, PR-4)
