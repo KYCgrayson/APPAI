@@ -334,3 +334,144 @@ test("API page and App lists have deterministic id order when timestamps tie", a
   assert.deepEqual((await (await pagesRoute.GET(req("/api/v1/pages", undefined, "GET"))).json()).map((row: { id: string }) => row.id), ["c-en", "b-en", "a-en"]);
   assert.deepEqual((await (await appsRoute.GET(req("/api/v1/apps", undefined, "GET"))).json()).map((row: { id: string }) => row.id), ["c", "b", "a"]);
 });
+
+test("#91 first-created locale (including draft) wins; root/child defaults and set-default are independent", async () => {
+  for (const firstLocale of ["en", "zh-TW", "es"]) {
+    const store = reset([]);
+    const create = async (slug: string, locale: string, parentSlug?: string, isPublished = true) => {
+      const response = await pagesRoute.POST(req("/api/v1/pages", { slug, title: "Locale fixture", locale, parentSlug, isPublished }));
+      assert.equal(response.status, 201, JSON.stringify(await response.json()));
+      return store.rows.find(row => row.slug === slug && row.locale === locale)!;
+    };
+    assert.equal((await create("locale-site", firstLocale, undefined, false)).isDefault, true);
+    const laterLocale = firstLocale === "en" ? "es" : "en";
+    assert.equal((await create("locale-site", laterLocale)).isDefault, false, "publishing later does not replace draft default");
+    assert.equal((await create("site-notes", laterLocale, "locale-site")).isDefault, true);
+    assert.equal((await create("site-notes", firstLocale, "locale-site")).isDefault, false);
+    const response = await defaultRoute.POST(req(`/api/v1/pages/locale-site/set-default?locale=${laterLocale}`), ctx("locale-site"));
+    assert.equal(response.status, 200);
+    assert.deepEqual(store.rows.filter(row => row.slug === "locale-site" && row.isDefault).map(row => row.locale), [laterLocale]);
+    assert.deepEqual(store.rows.filter(row => row.slug === "site-notes" && row.isDefault).map(row => row.locale), [laterLocale]);
+    const missing = await defaultRoute.POST(req("/api/v1/pages/locale-site/set-default?locale=ja"), ctx("locale-site"));
+    assert.equal(missing.status, 404);
+  }
+});
+
+test("#91 set-default resolves slug + locale and scopes locks and clearing to the actual parent; children never sync listings", async () => {
+  const variants = [
+    managedPage("shared", { locale: "en", id: "root-en" }),
+    managedPage("shared", { locale: "es", id: "root-es", isDefault: false }),
+    managedPage("shared", { locale: "zh-TW", id: "child-tw", parentSlug: "site" }),
+    managedPage("shared", { locale: "ja", id: "child-ja", parentSlug: "site", isDefault: false }),
+    managedPage("shared", { locale: "de", id: "other-child", parentSlug: "other-site" }),
+    managedPage("shared", { locale: "fr", id: "foreign", organizationId: "org-b" }),
+  ];
+  const store = reset(variants);
+  store.apps.push({ id: "listing", hostedPageSlug: "shared", organizationId: "org-a", name: "Root listing" });
+  const listing = structuredClone(store.apps);
+  for (const [query, actualParent] of [
+    ["locale=es&parentSlug=site", null],
+    ["locale=de&parentSlug=site", "other-site"],
+    ["locale=ja&parentSlug=missing", "site"],
+    ["locale=ja&parentSlug=", "site"],
+    ["locale=en&parentSlug=missing", null],
+  ] as const) {
+    const before = structuredClone(store.rows);
+    const response = await defaultRoute.POST(req(`/api/v1/pages/shared/set-default?${query}`), ctx("shared"));
+    assert.equal(response.status, 409, query);
+    const json = await response.json();
+    assert.equal(json.code, "parent_mismatch");
+    assert.equal(json.parentSlug, actualParent);
+    assert.ok(json.error.includes(`parentSlug ${JSON.stringify(actualParent)}`));
+    assert.deepEqual(store.rows, before);
+    assert.deepEqual(store.apps, listing);
+    assert.deepEqual(state.cache, []);
+  }
+  for (const query of ["locale=fr", "locale=fr&parentSlug=site", "locale=it"]) {
+    const before = structuredClone(store.rows);
+    const response = await defaultRoute.POST(req(`/api/v1/pages/shared/set-default?${query}`), ctx("shared"));
+    assert.equal(response.status, 404, query);
+    assert.deepEqual(store.rows, before);
+    assert.deepEqual(store.apps, listing);
+    assert.deepEqual(state.cache, []);
+  }
+  for (const query of ["locale=ja", "locale=ja&parentSlug=site"]) {
+    // Each call must switch the default, rather than merely succeed idempotently.
+    store.rows.find(row => row.id === "child-tw")!.isDefault = true;
+    store.rows.find(row => row.id === "child-ja")!.isDefault = false;
+    store.locks.length = 0;
+    const child = await defaultRoute.POST(req(`/api/v1/pages/shared/set-default?${query}`), ctx("shared"));
+    assert.equal(child.status, 200, query);
+    assert.equal((await child.json()).page.parentSlug, "site");
+    assert.deepEqual(store.rows.filter(row => row.isDefault).map(row => row.id), ["root-en", "child-ja", "other-child", "foreign"]);
+    assert.deepEqual(store.apps, listing, "child default cannot overwrite a same-slug root listing");
+    assert.deepEqual(store.locks, ["hp-tree:org-a:site"]);
+  }
+  const root = await defaultRoute.POST(req("/api/v1/pages/shared/set-default?locale=es"), ctx("shared"));
+  assert.equal(root.status, 200);
+  assert.deepEqual(store.rows.filter(row => row.isDefault).map(row => row.id), ["root-es", "child-ja", "other-child", "foreign"]);
+  assert.equal(store.apps[0].name, variants[1].title);
+});
+
+test("#91 removed variants cannot be selected, and another parent's removal does not block set-default", async () => {
+  for (const removal of ["UNPUBLISHED", "DELETED"]) {
+    const store = reset([
+      managedPage("shared"),
+      removedPage("shared", removal, "OWNER", { id: "removed-child", parentSlug: "site", locale: "ja" }),
+    ]);
+    const before = structuredClone(store.rows);
+    for (const query of ["locale=ja", "locale=ja&parentSlug=site"]) {
+      const blocked = await defaultRoute.POST(req(`/api/v1/pages/shared/set-default?${query}`), ctx("shared"));
+      assert.equal(blocked.status, 409);
+      assert.equal((await blocked.json()).code, "removed_by_owner");
+      assert.deepEqual(store.rows, before);
+      assert.equal(state.cache.length, 0);
+    }
+    assert.equal((await defaultRoute.POST(req("/api/v1/pages/shared/set-default?locale=en"), ctx("shared"))).status, 200);
+  }
+  // Defense in depth: removal after the guard read must be excluded by the
+  // handler's own target lookup, before any defaults or listings are changed.
+  const store = reset([managedPage("shared")]);
+  const delegate = client().hostedPage;
+  const findFirst = delegate.findFirst.bind(delegate);
+  Object.assign(delegate, { async findFirst(query: Prisma.HostedPageFindFirstArgs) {
+    if (query.where?.locale === "en" && query.where?.removalState === null) store.rows[0].removalState = "DELETED";
+    return findFirst(query);
+  } });
+  const response = await defaultRoute.POST(req("/api/v1/pages/shared/set-default?locale=en"), ctx("shared"));
+  assert.equal(response.status, 404);
+  assert.equal(store.rows[0].isDefault, true);
+  assert.equal(state.cache.length, 0);
+});
+
+test("#91 creating a variant fills a missing live default and preserves an existing draft or published default", async () => {
+  for (const parentSlug of [null, "site"]) for (const isDefault of [false, true]) for (const isPublished of [false, true]) {
+    const store = reset([
+      managedPage("site"),
+      managedPage("shared", { parentSlug, isDefault, isPublished }),
+      managedPage("shared", { id: "another-parent", parentSlug: parentSlug ? null : "site", locale: "de" }),
+    ]);
+    for (const locale of ["zh-TW", "es"]) {
+      const response = await pagesRoute.POST(req("/api/v1/pages", { slug: "shared", title: "New variant", locale, parentSlug: parentSlug ?? undefined }));
+      assert.equal(response.status, 201);
+      assert.equal((await response.json()).isDefault, locale === "zh-TW" && !isDefault);
+      assert.equal(store.rows.filter(row => row.slug === "shared" && row.parentSlug === parentSlug && row.removalState === null && row.isDefault).length, 1);
+    }
+  }
+});
+
+test("#91 creation's default query ignores historical removed rows without ignoring live defaults", async () => {
+  for (const parentSlug of [null, "site"]) for (const removal of ["UNPUBLISHED", "DELETED"]) for (const liveDefault of [false, true]) {
+    const store = reset([managedPage("site"), ...(liveDefault ? [managedPage("shared", { parentSlug, isPublished: false })] : [])]);
+    // Exercise the handler's count against historical data separately from the
+    // removal guard. Public POST still blocks reserved removed slugs (P7 above).
+    const history = removedPage("shared", removal, "OWNER", { parentSlug, id: "historical", locale: "ja" });
+    Object.assign(client().hostedPage, { async count(query: Prisma.HostedPageCountArgs) {
+      const historyStore = managementStore([...store.rows, history]) as unknown as PrismaClient;
+      return historyStore.hostedPage.count(query);
+    } });
+    const response = await pagesRoute.POST(req("/api/v1/pages", { slug: "shared", title: "Re-created", locale: "zh-TW", parentSlug: parentSlug ?? undefined }));
+    assert.equal(response.status, 201);
+    assert.equal((await response.json()).isDefault, !liveDefault);
+  }
+});

@@ -200,7 +200,7 @@
         "src/lib/platform-locale.ts",
         "src/lib/zh-convert.ts",
         "src/lib/hosted-page-resolver.ts",
-        "tests/hosted-locales.test.ts",
+        "tests/hosted-*locale*.test.ts",
         "tests/locale-match.test.ts",
         "tests/platform-locale.test.ts",
         "tests/zh-convert.test.ts"

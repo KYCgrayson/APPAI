@@ -317,7 +317,9 @@ test("automatic sibling navigation keeps the requested Japanese and converted Ch
       const result = await stream(await Layout({ params: Promise.resolve({ segments }), children: null }));
       assert.equal(result.errors.length, 0);
       assert.ok(result.html.includes(`href="/p/nav-site/${locale}/nav-faq"`));
-      assert.ok(!result.html.includes('href="/p/nav-site/nav-faq"'));
+      // The script switcher may link back to the stored default; sibling nav stays localized.
+      const nav = result.html.match(/<nav\b[^>]*>[\s\S]*?<\/nav>/)?.[0] ?? "";
+      assert.ok(!nav.includes('href="/p/nav-site/nav-faq"'));
     }
   }
 });
