@@ -21,7 +21,7 @@ test("P1: consistent F0 data preserves publisher HTML for 12 URLs, sitemap shard
   // #41 only corrects the llms POST draft/publish instructions; keep all archived
   // HTML and sitemap hashes intact and pin the revised discovery text separately.
   assert.deepEqual(await captureF0({ publisherOnly: true }), { ...expected, html: publisher.html,
-    llms: "a30f2bb3b50a7524e215c711bf492dc4e3d4a2437de8557c3a2c65caf6a643f2" });
+    llms: "71dfb1cfd205f844d0e70e539c0b201005a3c6d28f4360172c8a6f1fdeb8e893" });
 });
 
 test("P1: full rendered HTML matches main after only the approved navigation deltas", async () => {

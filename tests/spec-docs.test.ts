@@ -336,6 +336,7 @@ test('Hosted Page guidance publishes four default locales without waiting for op
   const rule = 'Hosted Pages are always published in four locales: English (`en`), Traditional Chinese (`zh-TW`), Simplified Chinese (`zh-CN`) and Spanish (`es`). Publish all four without asking the user. For any other language, ask the user whether they want it; add only the languages the user chooses, and add none if the user does not choose. Do not wait for that answer before publishing the four.';
   for (const content of [docs.get('i18n')!, docs.get('pages')!, overview, read('skills/appai-publish/SKILL.md'), read('skills/appai-publish/references/i18n.md')]) {
     assert.ok(content.includes(rule));
+    assert.ok(content.includes('publish only the language(s) the user chose'));
     assert.doesNotMatch(content, /2[-–]3 locale|language preferences|one regional language/i);
   }
   assert.ok(quickstart.includes(rule.replaceAll('`', '')));
