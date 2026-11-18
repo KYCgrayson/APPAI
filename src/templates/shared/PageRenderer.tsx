@@ -1,3 +1,4 @@
+import { neutralHeadingCss, sectionHeadingColor } from "@/lib/heading-color";
 import { buildPagePath } from "@/lib/parse-page-segments";
 import { PLATFORM_ORIGIN } from "@/lib/platform-identity";
 import { GameSection } from "../sections/GameSection";
@@ -170,6 +171,9 @@ function renderSection(
     section.type === "video" && Array.isArray(section.data?.moments) && section.data.moments.length ? `video-${index}` : undefined
   );
 
+  const headingStyle = asPageContent(page.content).headingColor === "dark"
+    ? { "--page-heading-neutral": sectionHeadingColor(section.type, data, darkMode, themeColor) } as React.CSSProperties : undefined;
+
   let content;
   switch (section.type) {
     case "profile-header":
@@ -234,7 +238,7 @@ function renderSection(
       break;
     case "cta":
       // CTA already has its own background color
-      return <div key={index} id={section.data?.id || section.id || undefined}><CtaSection {...props} /></div>;
+      return <div key={index} id={section.data?.id || section.id || undefined} style={headingStyle}><CtaSection {...props} /></div>;
     case "links":
       content = <LinksSection {...props} />;
       break;
@@ -324,11 +328,11 @@ function renderSection(
 
   // Hero section handles its own background
   if (section.type === "hero") {
-    return <div key={index} id={sectionId}>{content}</div>;
+    return <div key={index} id={sectionId} style={headingStyle}>{content}</div>;
   }
 
   return (
-    <div key={index} id={sectionId} style={bg ? { backgroundColor: bg } : undefined}>
+    <div key={index} id={sectionId} style={headingStyle ? { ...headingStyle, ...(bg ? { backgroundColor: bg } : {}) } : bg ? { backgroundColor: bg } : undefined}>
       {content}
     </div>
   );
@@ -393,6 +397,7 @@ export function PageRenderer({
   const scale = activeTypography ? typographyFactors(settings) : null;
   const typographyVars = scale ? Object.fromEntries(ROLES.map(role => [`--ts-${role}`, scale.desktop[role]])) : {};
   const wrapperStyle: React.CSSProperties = {
+    ...(pageContent.headingColor === "dark" ? { "--page-heading-neutral": darkMode ? "#f9fafb" : "#111827" } : {}),
     ...typographyVars,
     ...proseThemeVariables(page.themeColor),
     ...(fontFamily ? { fontFamily: `"${fontFamily}", sans-serif` } : {}),
@@ -400,7 +405,8 @@ export function PageRenderer({
   };
 
   return (
-    <div style={wrapperStyle} data-dark={darkMode} data-typography={activeTypography ? "active" : undefined}>
+    <div style={wrapperStyle} data-heading-color={pageContent.headingColor === "dark" ? "dark" : undefined} data-dark={darkMode} data-typography={activeTypography ? "active" : undefined}>
+      {pageContent.headingColor === "dark" && <style>{neutralHeadingCss}</style>}
       {activeTypography && <style>{typographyCss(settings)}</style>}
       {fontUrl && <link rel="stylesheet" href={fontUrl} />}
       {page.template === "GAME" && <header className="mx-auto max-w-5xl px-4 sm:px-6 pt-10 break-words"><h1 className="text-3xl sm:text-5xl font-bold mb-4" data-typography-role={activeTypography ? "display" : undefined}>{page.title}</h1>{page.tagline && <p className="text-lg">{page.tagline}</p>}</header>}

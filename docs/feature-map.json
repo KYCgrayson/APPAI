@@ -142,6 +142,9 @@
         "tests/hosted-editorial-links.test.ts",
         "tests/hosted-render.test.ts",
         "tests/dark-style.test.ts",
+        "src/lib/heading-color.ts",
+        "src/lib/hero-media.ts",
+        "tests/hosted-small-bugs.test.ts",
         "tests/helpers/dark-style-render.mjs",
         "tests/fixtures/dark-style-light-baseline.json",
         "tests/hosted-navigation-*.test.ts",
@@ -154,7 +157,7 @@
         "tests/helpers/hosted-*.mjs",
         "tests/helpers/typography-api-loader.mjs"
       ],
-      "docs": ["PRD_SIMPLE_ORDER_SECTION.md", "docs/apps/hosted-page-cache-qa.md"]
+      "docs": ["PRD_SIMPLE_ORDER_SECTION.md", "docs/apps/hosted-page-cache-qa.md", "docs/apps/hosted-small-bugs-qa.md"]
     },
     {
       "id": "auth",

@@ -54,7 +54,7 @@ export default async function AppDetailPage({ params }: Props) {
   const [t, ta] = await Promise.all([getTranslations("appDetail"), getTranslations("apps")]);
   const data = await loadPublicAppDetail(id, locale);
   if (!data) notFound();
-  const { app, localized, universalLaunchPath, directoryKind: kind, isPersonalProfile } = data;
+  const { app, localized, displayLogoUrl, universalLaunchPath, directoryKind: kind, isPersonalProfile } = data;
   const tb = await getTranslations("breadcrumbs");
   const name = localized?.title || app.name;
   const directory = isPersonalProfile
@@ -108,9 +108,9 @@ export default async function AppDetailPage({ params }: Props) {
       <div className="max-w-3xl mx-auto px-6 pt-4 pb-12">
         <PlatformBreadcrumb items={trail} dark={false} />
         <div className="flex items-start gap-6 mb-8">
-          {app.logoUrl ? (
+          {displayLogoUrl ? (
             <img
-              src={app.logoUrl}
+              src={displayLogoUrl}
               alt={name}
               className="w-20 h-20 rounded-2xl object-cover"
             />

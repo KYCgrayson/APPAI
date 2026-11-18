@@ -1,5 +1,7 @@
 export const dynamic = "force-dynamic";
 
+import { directoryLogo } from "@/lib/directory-logo";
+import { publicPageWhere } from "@/lib/hosted-page-visibility";
 import { db } from "@/lib/db";
 import { AdminAppActions } from "./actions";
 
@@ -23,6 +25,15 @@ export default async function AdminAppsPage({
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     include: { organization: { select: { name: true, email: true } } },
   });
+
+  const slugs = apps.flatMap(app => app.hostedPageSlug ? [app.hostedPageSlug] : []);
+  const roots = slugs.length ? await db.hostedPage.findMany({
+    where: { ...publicPageWhere(), slug: { in: slugs } },
+    select: { slug: true, organizationId: true, isDefault: true, headerLogo: true, content: true },
+    orderBy: [{ isDefault: "desc" }, { locale: "asc" }],
+  }) : [];
+  const displayApps = apps.map(app => ({ ...app, logoUrl: directoryLogo(app.logoUrl,
+    roots.find(root => root.slug === app.hostedPageSlug && root.organizationId === app.organizationId)) }));
 
   const filters = [
     { label: "All", value: "" },
@@ -61,7 +72,7 @@ export default async function AdminAppsPage({
         </div>
       ) : (
         <div className="space-y-3">
-          {apps.map((app) => (
+          {displayApps.map((app) => (
             <div
               key={app.id}
               className="bg-white rounded-xl p-5 shadow-sm"

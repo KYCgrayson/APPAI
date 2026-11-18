@@ -102,3 +102,52 @@ test('section PATCH also opts the page into render version 2', async () => {
   assert.equal(result.status, 200);
   assert.equal((state.page.content as { renderVersion: number }).renderVersion, 2);
 });
+
+test('headingColor persists in JSON across POST/upsert/PUT/PATCH and validates precise paths in both previews', async () => {
+  const { POST: preview } = await import('../src/app/api/v1/pages/preview/route.ts');
+  const base = { slug: 'typography-example', title: 'Example' };
+  for (const headingColor of ['dark', 'theme']) {
+    state.page = null;
+    for (const [write, query] of [[POST, ''], [POST, '?upsert=true'], [PUT, ''], [PATCH, '']] as const) {
+      const result = await write(req('POST', { ...(write === POST ? base : {}), content: { headingColor } }, query), context);
+      assert.ok(result.status === 200 || result.status === 201, `${write.name}: ${await result.clone().text()}`);
+      assert.equal((await result.json()).content.headingColor, headingColor);
+      assert.equal(state.page && 'headingColor' in state.page, false, 'no new database column');
+    }
+    const patch = await PATCH(req('PATCH', { content: { logo: '/logo.png' } }), context);
+    assert.equal((await patch.json()).content.headingColor, headingColor, 'unrelated patch preserves setting');
+    for (const write of [POST, preview]) {
+      const response = await write(req('POST', { ...base, content: { headingColor } }, '?dryRun=true&upsert=true'));
+      const result = await response.json();
+      assert.equal(result.valid, true);
+      assert.equal(result.sanitizedContent.headingColor, headingColor);
+    }
+  }
+  for (const headingColor of ['neutral', '', null, false, 1, {}]) {
+    for (const write of [POST, PUT, PATCH]) {
+      const response = await write(req('POST', { ...(write === POST ? base : {}), content: { headingColor } }, '?upsert=true'), context);
+      assert.equal(response.status, 400);
+      assert.deepEqual((await response.json()).details[0].path, ['content', 'headingColor']);
+    }
+    for (const write of [POST, preview]) {
+      const result = await (await write(req('POST', { ...base, content: { headingColor } }, '?dryRun=true&upsert=true'))).json();
+      assert.equal(result.valid, false);
+      assert.ok(result.errors.some((error: { path: string }) => error.path === 'content.headingColor'));
+    }
+  }
+});
+
+test('ignored hero media warnings reach dry-run, preview, POST, upsert, PUT and merged PATCH', async () => {
+  const { POST: preview } = await import('../src/app/api/v1/pages/preview/route.ts');
+  const content = { sections: [{ type: 'hero', data: { variant: 'minimal', backgroundImage: 'https://i.ytimg.com/vi/fixture/maxresdefault.jpg' } }] };
+  const base = { slug: 'typography-example', title: 'Example', content };
+  state.page = null;
+  for (const [write, query] of [[POST, ''], [POST, '?upsert=true'], [PUT, ''], [PATCH, ''], [POST, '?dryRun=true&upsert=true'], [preview, '']] as const) {
+    const response = await write(req('POST', write === PUT || write === PATCH ? { content } : base, query), context);
+    assert.ok([200, 201].includes(response.status), `${write.name}: ${await response.clone().text()}`);
+    const result = await response.json();
+    assert.ok(result.warnings.some((w: { path: string; message: string }) => w.path.replace('(hero)', '') === 'content.sections[0].data.backgroundImage' && /minimal.*ignores/.test(w.message)));
+  }
+  const merged = await PATCH(req('PATCH', { content: { headingColor: 'dark' } }), context);
+  assert.ok((await merged.json()).warnings.some((w: { message: string }) => /minimal.*ignores/.test(w.message)));
+});

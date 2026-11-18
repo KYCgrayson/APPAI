@@ -249,3 +249,38 @@ for (const signal of ["getPaused", "playProgress", "timeupdate"]) test(`Vimeo ${
   assert.equal(states.at(-1), "blocked");
   player.dispose();
 });
+
+for (const playerState of [-1, 5]) for (const recovers of [false, true]) test(`YouTube ${playerState}: confirmed seek retries playback once (${recovers ? 'recovers' : 'fallback'})`, async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
+  const f = youtubeFrame();
+  t.after(() => f.player.dispose());
+  f.player.request(90, true); f.reply({ event: 'onReady' }); await Promise.resolve();
+  const plays = () => f.sent.filter(message => message.func === 'playVideo').length;
+  f.reply({ event: 'infoDelivery', info: { currentTime: 90, playerState } });
+  t.mock.timers.tick(1799); assert.equal(plays(), 1);
+  t.mock.timers.tick(1); assert.equal(plays(), 2);
+  assert.equal(f.seeks().length, 1, 'retry playback without another seek');
+  assert.equal(f.states.at(-1)?.state, 'seeked');
+  if (recovers) f.reply({ event: 'onStateChange', info: 1 });
+  t.mock.timers.tick(1800);
+  assert.equal(f.states.at(-1)?.state, recovers ? 'seeked' : 'blocked');
+  for (let i = 0; i < 3; i++) {
+    f.reply({ event: 'infoDelivery', info: { currentTime: 90, playerState: recovers ? 1 : playerState } });
+    t.mock.timers.tick(2000);
+  }
+  assert.equal(plays(), 2);
+});
+
+for (const cancel of ['dispose', 'error', 'new-seek', 'playing', 'buffering', 'paused', 'navigation'] as const) test(`YouTube retry respects ${cancel}`, async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
+  const f = youtubeFrame(); t.after(() => f.player.dispose());
+  f.player.request(90, cancel !== 'navigation'); f.reply({ event: 'onReady' }); await Promise.resolve();
+  f.reply({ event: 'infoDelivery', info: { currentTime: 90, playerState: -1 } });
+  t.mock.timers.tick(500);
+  if (cancel === 'dispose') f.player.dispose();
+  if (cancel === 'error') f.reply({ event: 'onError' });
+  if (cancel === 'new-seek') { f.player.request(120, false); await Promise.resolve(); }
+  if (['playing', 'buffering', 'paused'].includes(cancel)) f.reply({ event: 'onStateChange', info: cancel === 'playing' ? 1 : cancel === 'buffering' ? 3 : 2 });
+  t.mock.timers.tick(1300);
+  assert.equal(f.sent.filter(message => message.func === 'playVideo').length, cancel === 'navigation' ? 0 : 1);
+});

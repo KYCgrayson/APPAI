@@ -1,3 +1,4 @@
+import { extractLogoFromContent } from "@/lib/page-logo";
 import { loadHostedRootVariants, loadHostedChildVariants } from "@/lib/public-hosted-page";
 import { hostedPagePath, isUnavailableHostedPolicyLink } from "@/lib/hosted-page-urls";
 import { hostedNavigationCopy, hostedLinkFocus } from "@/lib/hosted-navigation-copy";
@@ -64,11 +65,9 @@ export default async function HostedPageLayout({ params, children }: Props) {
   const darkMode = !parsed.subpage && !!renderedPage.darkMode;
   const themeColor = (darkMode ? renderedPage.themeColor : page.themeColor) || "#000000";
   const content = normalizeHostedContent(page.content);
-  const primaryLogo = contentString(content.logo)
-    || contentString(content.sections.find(s => s.type === "hero")?.data.logo);
-  const logo = darkMode
-    ? primaryLogo || page.headerLogo || page.heroImage
-    : page.headerLogo || primaryLogo || page.heroImage;
+  const primaryLogo = extractLogoFromContent(content);
+  const logo = (darkMode ? primaryLogo : null)
+    || extractLogoFromContent(content, page.headerLogo) || page.heroImage;
   const downloadSection = content.sections.find(s => s.type === "download");
   const appStoreUrl = contentString(downloadSection?.data.appStoreUrl) || contentString(content.appStoreUrl);
   const playStoreUrl = contentString(downloadSection?.data.playStoreUrl) || contentString(content.playStoreUrl);

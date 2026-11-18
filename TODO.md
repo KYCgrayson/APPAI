@@ -1,3 +1,11 @@
+## Hosted-page small bugs and heading colour (#91, PR-4)
+
+- [x] Reproduce hero variant behavior on child routes; warn on ignored media across publish, updates and previews; document HTTPS thumbnail support.
+- [x] Preserve root logos in App detail/admin fallbacks without changing SEO image metadata or directory cache policy.
+- [x] Add content.headingColor theme/dark, child inheritance and API field-path validation; preserve default HTML.
+- [x] Retry YouTube playback once after a confirmed unstarted/cued seek; retain honest blocked fallback.
+- [ ] Verify on a real YouTube player/device after approved release; local deterministic tests do not measure provider intermittency.
+
 ## Dark style kits and dry-run leftovers (ops #41, 2026-11-18)
 
 - [x] Audit current behavior before edits; retain existing about dark text, root locale URLs, style/topic links and distinct kit moods.

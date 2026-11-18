@@ -117,6 +117,15 @@ Required: each item's `title`; all top-level fields optional; links require `lab
 
 ### hero
 
+| Variant / media | Rendering rule |
+|---|---|
+| `centered` (default) + `backgroundImage` | Full-bleed background, including HTTPS YouTube thumbnails |
+| `centered` + `backgroundVideo` | Video takes precedence over `backgroundImage`; remove the video to show the image |
+| `split` + `backgroundImage` | Right-side image; `backgroundVideo` is ignored |
+| `minimal` | Text/logo/CTA only; both background media fields are ignored |
+
+Use `data.backgroundImage`, not `image`/`imageUrl`/`backgroundUrl`, and an HTTPS URL or same-origin `/path`. These rules are identical on root and child pages. POST/upsert, PUT, PATCH and dry-run return field-specific `warnings` for ignored media, common wrong image fields and non-HTTPS/non-root-relative sources. Preview does not fetch images: a syntactically valid URL may still return 404, deny hotlinking or point to a web page. Next Image host rules do not apply to hero CSS backgrounds/native images; hosted CSP allows HTTPS image hosts. Use a `video` section for a YouTube watch URL.
+
 `ctaUrl` (and `ctaSecondaryUrl`) allows `tel:+{E.164 digits}` and renders it as a tappable phone link.
 ```json
 { "type": "hero", "order": 1, "data": {

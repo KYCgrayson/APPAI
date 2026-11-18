@@ -319,3 +319,13 @@ export function registerAuthRenderState(state) {
     },
   });
 }
+
+/** Read-only SSR of the real admin App action controls, without a mounted router. */
+export function registerAdminAppNavigation() {
+  return registerHooks({
+    resolve(specifier, context, next) {
+      return specifier === 'next/navigation' && context.parentURL?.endsWith('/admin/apps/actions.tsx') ? { url: 'fixture:admin-router', shortCircuit: true } : next(specifier, context);
+    },
+    load(url, context, next) { return url === 'fixture:admin-router' ? { format: 'module', shortCircuit: true, source: 'export const useRouter = () => ({ refresh() {} });' } : next(url, context); },
+  });
+}

@@ -27,7 +27,7 @@ const typographyFields = {
   textContrast: z.enum(["low", "normal", "high"]).optional(),
   typography: z.object({ caption: textStep.optional(), card: textStep.optional(), body: textStep.optional(), heading: textStep.optional(), display: textStep.optional() }).strict().optional(),
 };
-const makeContentSchema = (partial = false, existingContent?: unknown) => z.object(typographyFields).catchall(z.any()).superRefine((content, ctx) => {
+const makeContentSchema = (partial = false, existingContent?: unknown) => z.object({ ...typographyFields, headingColor: z.enum(["theme", "dark"]).optional() }).catchall(z.any()).superRefine((content, ctx) => {
   for (const issue of normalizeVideoContent(content, partial, existingContent).issues) ctx.addIssue({ ...issue });
   for (const issue of galleryContentIssues(content)) ctx.addIssue(issue);
   for (const issue of projectCardsContentIssues(content)) ctx.addIssue(issue);
