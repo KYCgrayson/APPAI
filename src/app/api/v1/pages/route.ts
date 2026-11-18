@@ -212,17 +212,19 @@ async function postPage(request: NextRequest, db: PageStore, authResult: PageApi
     delete pageData.locale;
     delete pageData.parentSlug;
 
-    // First locale variant for this slug becomes the default. For child pages
-    // we scope the variant count by (slug, parentSlug) so a child "faq" under
-    // root "foo" is independent from a root page named "faq" elsewhere.
-    const existingVariants = await db.hostedPage.count({
+    // Only live defaults in this logical page block a new default (drafts count).
+    // The shared tree lock serializes this check and creation. Removed history
+    // and defaults in another parent scope must not leave a new page defaultless.
+    const existingDefaults = await db.hostedPage.count({
       where: {
         slug: data.slug,
         organizationId: authResult.organizationId,
         parentSlug,
+        removalState: null,
+        isDefault: true,
       },
     });
-    const shouldBeDefault = existingVariants === 0;
+    const shouldBeDefault = existingDefaults === 0;
 
     const hadPersonRoot = !!await db.hostedPage.findFirst({
       where: { slug: data.slug, organizationId: authResult.organizationId, parentSlug: null, template: "PERSON" },

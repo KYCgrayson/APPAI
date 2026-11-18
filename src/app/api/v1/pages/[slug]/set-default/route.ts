@@ -5,8 +5,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { hostedPageApprovalUpdate } from "@/lib/hosted-page-approval";
 
 // POST /api/v1/pages/:slug/set-default?locale=ja
-// Sets the specified locale as the default for this slug.
-// The default locale is shown at /p/:slug (without locale suffix).
+// Add &parentSlug=site for a child; omission selects the root.
+// Sets the specified locale as the default for this logical page.
+// The default uses /p/:slug for roots or /p/:parentSlug/:slug for children.
 async function postPage(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
@@ -22,10 +23,11 @@ async function postPage(
     );
   }
 
+  const parentSlug = request.nextUrl.searchParams.get("parentSlug") || null;
 
-  // Verify the target locale exists
+  // Select only a live variant in the requested logical page.
   const page = await db.hostedPage.findFirst({
-    where: { slug, locale, organizationId: authResult.organizationId },
+    where: { slug, locale, organizationId: authResult.organizationId, parentSlug, removalState: null },
   });
   if (!page) {
     return NextResponse.json(
@@ -43,7 +45,7 @@ async function postPage(
   const updated = await updateLivePage(db, page, { isDefault: true });
 
   // Update the App listing from the new default
-  const app = await db.app.findFirst({ where: { hostedPageSlug: slug, organizationId: authResult.organizationId } });
+  const app = !page.parentSlug && await db.app.findFirst({ where: { hostedPageSlug: slug, organizationId: authResult.organizationId } });
   if (app) {
     await db.app.update({
       where: { id: app.id },
@@ -62,5 +64,7 @@ async function postPage(
 }
 
 export async function POST(request: NextRequest, context: { params: Promise<{ slug: string }> }) {
-  return withPageWrite(request, (await context.params).slug, (tx, actor) => postPage(request, context, tx, actor));
+  return withPageWrite(request, (await context.params).slug, (tx, actor) => postPage(request, context, tx, actor), {
+    parentSlug: request.nextUrl.searchParams.get("parentSlug") || null,
+  });
 }
