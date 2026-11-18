@@ -1,3 +1,9 @@
+## Hosted chrome browser language (#91)
+
+- [x] Preserve page-locale server HTML/cache behaviour; enhance marked platform labels using browser languages after hydration, including late-mounted mobile menus and accessible labels.
+- [x] Keep publisher content, content language choices, icons, URLs, SEO and CSP unchanged; cover locale matching and byte-identical SSR apart from declared data attributes.
+- [ ] Run `HOSTED_CHROME_LOCALE_BROWSER_TESTS=1` outside the restricted sandbox: Chrome exits at startup here; capture before/after screenshots and verify real hydration/drawer interaction.
+
 ## SEO re-check (ops #67, 2026-11-18)
 
 - [x] Implement audit F1–F9 only: sitemap coverage/dates, waiting-game copy, public description fallback, six directory locales, raw/auth noindex, reproducible PNG social covers, and unknown-price Offer removal.

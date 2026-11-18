@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { renderHtml } from "./helpers/render-html.mjs";
 import { fixtureDb, registerHostedHeaders, registerHostedRenderLoader, registerHostedNavigationState } from "./helpers/hosted-render-loader.mjs";
-import { registerMainHostedBaseline } from "./helpers/hosted-chrome-regression.mjs";
+import { stripVisitorChromeAttributes, registerMainHostedBaseline } from "./helpers/hosted-chrome-regression.mjs";
 
 const loader = registerHostedRenderLoader();
 const headers = registerHostedHeaders();
@@ -163,7 +163,7 @@ test("multi-locale metadata, page-body HTML/JSON-LD and hosted sitemap XML are b
       for (const suffix of ["", "site-notes", "privacy", "terms"]) {
         const props = request(locale, suffix);
         assert.equal(JSON.stringify(await generateMetadata(props)), JSON.stringify(await mainMetadata(props)));
-        assert.equal(await renderHtml(await Page(props)), await renderHtml(await MainPage(props)), `${locale}/${suffix}`);
+        assert.equal(stripVisitorChromeAttributes(await renderHtml(await Page(props))), await renderHtml(await MainPage(props)), `${locale}/${suffix}`);
       }
     }
     assert.equal(sitemapXml(buildSitemapEntries(pages, []).filter(entry => entry.url.includes("/p/"))), mainXml(mainSitemap(pages, []).filter((entry: { url: string }) => entry.url.includes("/p/"))));

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 
 import { hostedNavigationCopy } from "@/lib/hosted-navigation-copy";
+import type { HostedChromeLabel } from "@/lib/hosted-chrome-labels";
 import { readableTextColor } from "@/lib/prose-theme";
 
 interface MenuLink {
@@ -10,6 +11,8 @@ interface MenuLink {
   href: string;
   external?: boolean;
   isCurrent?: boolean;
+  chromeLabel?: HostedChromeLabel;
+  chromeSuffix?: string;
 }
 
 interface LocaleOption {
@@ -78,6 +81,7 @@ export function MobileMenu({
       <button
         type="button"
         aria-label={open ? labels.closeMenu : labels.openMenu}
+        data-chrome-aria-label={open ? "closeMenu" : "openMenu"}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={compact
@@ -116,6 +120,7 @@ export function MobileMenu({
           <button
             type="button"
             aria-label={labels.closeMenu}
+            data-chrome-aria-label="closeMenu"
             onClick={() => setOpen(false)}
             className="fixed inset-0 top-[57px] z-40 bg-black/20"
           />
@@ -128,6 +133,8 @@ export function MobileMenu({
                 {navItems.map((item, i) => (
                   <li key={i}>
                     <a
+                      data-chrome-label={item.chromeLabel}
+                      data-chrome-suffix={item.chromeSuffix}
                       href={item.href}
                       target={item.external ? "_blank" : undefined}
                       rel={item.external ? "noopener noreferrer" : undefined}
@@ -144,7 +151,7 @@ export function MobileMenu({
 
             {locales.length > 1 && (
               <div className="px-6 py-4 border-b border-gray-100">
-                <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
+                <div data-chrome-label="language" className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
                   {labels.language}
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -171,6 +178,8 @@ export function MobileMenu({
                 {utilityLinks.map((item, i) => (
                   <li key={i}>
                     <a
+                      data-chrome-label={item.chromeLabel}
+                      data-chrome-suffix={item.chromeSuffix}
                       href={item.href}
                       target={item.external ? "_blank" : undefined}
                       rel={item.external ? "noopener noreferrer" : undefined}
@@ -188,6 +197,7 @@ export function MobileMenu({
             {download && (
               <div className="p-4 border-t border-gray-100">
                 <a
+                  data-chrome-label="download"
                   href={download.href}
                   target="_blank"
                   rel="noopener noreferrer"

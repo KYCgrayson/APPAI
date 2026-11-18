@@ -4,7 +4,7 @@ import { createElement } from 'react';
 import { createRequire } from 'node:module';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { fixtureDb, registerHostedRenderLoader, registerHostedHeaders, registerHostedNavigationState, registerDirectoryFixtures, registerAdminAppNavigation } from './helpers/hosted-render-loader.mjs';
-import { registerMainHostedBaseline } from './helpers/hosted-chrome-regression.mjs';
+import { stripVisitorChromeAttributes, registerMainHostedBaseline } from './helpers/hosted-chrome-regression.mjs';
 import { renderHtml } from './helpers/render-html.mjs';
 import { hostedChromeBrowser } from './helpers/hosted-chrome-browser.mjs';
 import { app, page } from './fixtures/pr5-pages.ts';
@@ -63,7 +63,7 @@ test('child inherits headingColor only; own theme/dark overrides root and SEO st
     assert.equal(html.includes('data-heading-color="dark"'), (childMode ?? rootMode) === 'dark');
     assert.deepEqual(await generateMetadata(params), await beforeMetadata(params));
     assert.deepEqual(jsonLd(html), jsonLd(await renderHtml(await BeforeHostedPage(params))));
-    if (!rootMode && !childMode) assert.equal(html, await renderHtml(await BeforeHostedPage(params)));
+    if (!rootMode && !childMode) assert.equal(stripVisitorChromeAttributes(html), await renderHtml(await BeforeHostedPage(params)));
     assert.equal((fixtureDb.rows[1].content as Record<string, unknown>).headingColor, childMode, 'render does not mutate saved JSON');
   }
 });

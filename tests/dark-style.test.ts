@@ -5,6 +5,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { PAGE_STYLES } from "../src/lib/page-styles.ts";
 import { readableTextColor, hostedChromeTheme } from "../src/lib/prose-theme.ts";
+import { stripVisitorChromeAttributes } from "./helpers/hosted-chrome-regression.mjs";
 import { darkStyleRenderer } from "./helpers/dark-style-render.mjs";
 import { hostedChromeBrowser } from "./helpers/hosted-chrome-browser.mjs";
 
@@ -25,7 +26,7 @@ test("light hosted HTML is byte-identical to 027beea across all five light kits 
       for (const child of [false, true]) for (const open of [false, true]) for (const signedIn of [false, true]) {
         const key = JSON.stringify([kit.id, mode, child, open, signedIn]);
         const html = await renderer.render(kit, { mode, child, open, signedIn });
-        assert.equal(createHash("sha256").update(html).digest("hex"), baseline.hashes[key], key);
+        assert.equal(createHash("sha256").update(stripVisitorChromeAttributes(html)).digest("hex"), baseline.hashes[key], key);
         count++;
       }
     assert.equal(count, 80);

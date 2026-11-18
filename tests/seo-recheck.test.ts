@@ -277,7 +277,9 @@ test("untargeted hosted root/child/legal SEO and full body remain byte-identical
     for (const locale of locales) for (const suffix of ["", "seo-child", "privacy", "terms"]) {
       const props = { params: Promise.resolve({ segments: [root.slug, ...(locale === "en" ? [] : [locale]), ...(suffix ? [suffix] : [])] }) };
       assert.equal(JSON.stringify(await hosted.generateMetadata(props)), JSON.stringify(await oldHosted.generateMetadata(props)));
-      assert.equal(await renderHtml(await hosted.default(props)), await renderHtml(await oldHosted.default(props)));
+      // #91 visitor-language chrome adds inert data-chrome-* markers only.
+      const stripChrome = (html: string) => html.replace(/ data-chrome-[a-z-]+="[^"]*"/g, "");
+      assert.equal(stripChrome(await renderHtml(await hosted.default(props))), await renderHtml(await oldHosted.default(props)));
     }
   }
 });
