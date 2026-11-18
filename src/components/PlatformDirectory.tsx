@@ -3,12 +3,14 @@ import type { DirectoryKind } from "@/lib/directory-kind";
 import { chineseScript } from "@/lib/zh-convert";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { DirectoryLogo } from "@/components/DirectoryLogo";
 import { AppCard } from "@/components/AppCard";
 import { PlatformHeader } from "@/components/PlatformHeader";
 import { PlatformBreadcrumb } from "@/components/PlatformBreadcrumb";
 import { getExternalCanonical } from "@/lib/canonical";
 import { UNIVERSAL_APP_CATEGORIES } from "@/lib/universal-apps/manifest";
 import { getDirectoryCopy } from "@/lib/directory-copy";
+import { isLogoUrl } from "@/lib/page-logo";
 
 type Props = {
   kind?: DirectoryKind;
@@ -21,6 +23,15 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
   const copy = getDirectoryCopy(locale);
   const activeCategory = personalOnly ? "ALL" : category || "ALL";
   const { entries, profiles: personalProfiles } = await loadPublicDirectory(locale, kind, activeCategory, personalOnly);
+
+  // All includes a separate personal section. Partition across both sections so
+  // a logo-free profile cannot precede a real logo in the regular cards.
+  const groups = entries.length && personalProfiles.length
+    ? [true, false].map(hasLogo => ({
+        entries: entries.filter(entry => isLogoUrl(entry.app.logoUrl) === hasLogo),
+        personalProfiles: personalProfiles.filter(profile => isLogoUrl(profile.logoUrl) === hasLogo),
+      })).filter(group => group.entries.length || group.personalProfiles.length)
+    : [{ entries, personalProfiles }];
 
   const categories = ["ALL", ...UNIVERSAL_APP_CATEGORIES];
   const categoryHref = (value: string) => {
@@ -75,8 +86,9 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
           </nav>
         </details>}
 
+        {groups.map(({ entries, personalProfiles }, group) => <div key={group} className={group > 0 ? "mt-6" : undefined}>
         {personalProfiles.length > 0 && (
-          <section aria-label={copy.personalPages} className="mb-10">
+          <section aria-label={groups.length > 1 ? `${copy.personalPages} (${group + 1})` : copy.personalPages} className="mb-10">
             <div className="grid gap-6 md:grid-cols-3">
               {personalProfiles.map((profile) => {
                 const hasLocale = profile.locale === locale;
@@ -85,7 +97,10 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
                   <a key={profile.slug} href={href} className="block min-w-0 break-words rounded-xl border border-gray-800 bg-gray-900 p-6 transition-colors hover:border-gray-700">
                     <p className="mb-2 text-xs uppercase tracking-wide text-cyan-400">{copy.personal}</p>
                     {profile.publisher && <p className="mb-2 text-xs text-gray-400 break-words">{copy.by} {profile.publisher}</p>}
-                    <h2 className="font-semibold text-white">{profile.title}</h2>
+                    <div className="flex items-start gap-4">
+                      <DirectoryLogo name={profile.title} logoUrl={profile.logoUrl} themeColor={profile.themeColor} />
+                      <h2 className="min-w-0 flex-1 font-semibold text-white">{profile.title}</h2>
+                    </div>
                     <p className="mt-1 text-sm text-gray-400 line-clamp-2">{profile.tagline}</p>
                   </a>
                 );
@@ -113,7 +128,9 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
               );
             })}
           </div>
-        ) : personalProfiles.length === 0 ? (
+        ) : null}
+        </div>)}
+        {entries.length === 0 && personalProfiles.length === 0 ? (
           <div className="py-20 text-center">
             <h2 className="mb-2 text-xl font-semibold text-white">{copy.emptyTitle}</h2>
             <p className="text-gray-400">{copy.emptyDescription}</p>

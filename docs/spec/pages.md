@@ -59,6 +59,8 @@ Sitemap and origin discovery caches are invalidated after publishing changes. Ex
 
 ### Directory classification
 
+Pages without a logo show a generated letter tile and are listed after pages with a logo (within each homepage section; featured stays first).
+
 For approved, published root pages, the first matching rule wins: Universal App (`appType` set) → **Apps**; explicit `appai:kind:website|tool|app` tag → **Websites / Tools / Apps**; `iframe-tool`, `tool`, `media-downloader` or `video-subtitle` section → **Tools**; `download` section, App record `iosUrl`/`androidUrl`, or a link anywhere in content to `apps.apple.com`, `itunes.apple.com`, `play.google.com` or `testflight.apple.com` → **Apps**; otherwise → **Websites**, including `APP_LANDING` without app signals. PERSON profiles appear only in **All** and **Personal pages**.
 
 Force a hosted page's kind on its corresponding App record: `PUT /api/v1/apps/{id}` with `{"tags":["appai:kind:website"]}` (top-level `tags` array; preserve any other tags). Find the record by `hostedPageSlug` via `GET /api/v1/apps`. Tags also go at the top level of `POST /api/v1/apps`; the page create/publish payload does not accept them. Universal Apps always remain in Apps.

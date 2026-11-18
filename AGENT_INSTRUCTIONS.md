@@ -253,6 +253,8 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 
 ### Logo
 
+Pages without a logo show a generated letter tile and are listed after pages with a logo (within each homepage section; featured stays first).
+
 
 **“no logo” means you make one.** If the user has no logo, create a simple square 512×512 PNG following the Logo rules, upload it with `POST /api/v1/upload`, then publish. Agents MUST supply a logo. Non-blocking platform warnings are a fallback, not permission to skip it.
 
@@ -267,7 +269,7 @@ Create a simple SVG with a solid background and initial/shape, then convert: `rs
 | Light header / Favicon | `headerLogo` | `content.logo` → hero `data.logo` → `heroImage` |
 | Dark header | root `content.logo` → hero `data.logo` | `headerLogo` → `heroImage` |
 | Hero section | hero `data.logo` | primary logo |
-| App cards | `headerLogo` → `content.logo` → hero `data.logo` | -- |
+| Directory cards | Existing App `logoUrl` → `headerLogo` → `content.logo` → hero `data.logo` | First grapheme on `themeColor` (invalid/missing: slate `#334155`), with AA-contrast black/white text; never `heroImage` |
 
 
 All topics: [Overview](https://appai.info/spec) · [Authorization & API](https://appai.info/spec/api) · [Style & logo](https://appai.info/spec/style) · [Theme](https://appai.info/spec/theme) · [Typography](https://appai.info/spec/typography) · [Pages](https://appai.info/spec/pages) · [Sections](https://appai.info/spec/sections) · [Multi-language & multi-page](https://appai.info/spec/i18n) · [Tools](https://appai.info/spec/tools) · [Universal App](https://appai.info/spec/apps) · [Games](https://appai.info/spec/games)
@@ -438,6 +440,8 @@ These rules apply to hosted routes, navigation, discovery indexes, directories, 
 Sitemap and origin discovery caches are invalidated after publishing changes. External `llms.txt` caches may retain the previous response for up to one hour.
 
 ### Directory classification
+
+Pages without a logo show a generated letter tile and are listed after pages with a logo (within each homepage section; featured stays first).
 
 For approved, published root pages, the first matching rule wins: Universal App (`appType` set) → **Apps**; explicit `appai:kind:website|tool|app` tag → **Websites / Tools / Apps**; `iframe-tool`, `tool`, `media-downloader` or `video-subtitle` section → **Tools**; `download` section, App record `iosUrl`/`androidUrl`, or a link anywhere in content to `apps.apple.com`, `itunes.apple.com`, `play.google.com` or `testflight.apple.com` → **Apps**; otherwise → **Websites**, including `APP_LANDING` without app signals. PERSON profiles appear only in **All** and **Personal pages**.
 

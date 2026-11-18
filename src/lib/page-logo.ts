@@ -4,22 +4,31 @@ export const LOGO_GUIDANCE = "Agents MUST provide a logo for every root page; cr
 
 type LogoPage = { content?: unknown; headerLogo?: unknown; parentSlug?: unknown };
 
+/** Logos must use HTTPS or a same-origin root-relative path. */
+export function isLogoUrl(value: unknown): value is string {
+  if (typeof value !== "string" || !value.trim()) return false;
+  const logo = value.trim();
+  if (/^\/(?![\/\\])/.test(logo) && !/[\\\r\n\t]/.test(logo)) return true;
+  try { return new URL(logo).protocol === "https:"; } catch { return false; }
+}
+
+function logoCandidates(value: unknown, headerLogo?: unknown) {
+  const content = value as { logo?: unknown; sections?: { type?: string; data?: { logo?: unknown } }[] } | null;
+  return [headerLogo, content?.logo,
+    ...(Array.isArray(content?.sections) ? content.sections.filter(s => s?.type === "hero").map(s => s.data?.logo) : [])];
+}
+
 /** Pure, shared directory-logo selection. Background photos are never logos. */
 export function extractLogoFromContent(value: unknown, headerLogo?: unknown): string | null {
-  const content = value as { logo?: unknown; sections?: { type?: string; data?: { logo?: unknown } }[] } | null;
-  const candidates = [headerLogo, content?.logo,
-    ...(Array.isArray(content?.sections) ? content.sections.filter(s => s?.type === "hero").map(s => s.data?.logo) : [])];
-  return candidates.find((v): v is string => typeof v === "string" && !!v.trim())?.trim() || null;
+  return logoCandidates(value, headerLogo).find(isLogoUrl)?.trim() || null;
 }
 
 export function pageLogoWarnings(page: LogoPage): SanitizeWarning[] {
   // Child pages render the root page's header and have no separate directory card.
   if (page.parentSlug) return [];
-  const logo = extractLogoFromContent(page.content, page.headerLogo);
+  const logo = logoCandidates(page.content, page.headerLogo).find((v): v is string => typeof v === "string" && !!v.trim());
   if (!logo) return [{ path: "content.logo", message: `Missing root page logo. ${LOGO_GUIDANCE}` }];
-  let safe = /^\/(?![\/\\])/.test(logo) && !/[\\\r\n\t]/.test(logo);
-  try { safe ||= new URL(logo).protocol === "https:"; } catch { /* relative path or invalid URL */ }
-  return safe ? [] : [{ path: "content.logo", message: `Logo URL must use HTTPS (or an appai.info /path). ${LOGO_GUIDANCE}` }];
+  return isLogoUrl(logo) ? [] : [{ path: "content.logo", message: `Logo URL must use HTTPS (or an appai.info /path). ${LOGO_GUIDANCE}` }];
 }
 
 /** Omit absent logos so page edits preserve logos set through the Apps API. */

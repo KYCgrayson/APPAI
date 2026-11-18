@@ -89,7 +89,7 @@ test("20 repeated page renders perform directory database reads on the first req
   for (const [name, render] of [["home", () => home()], ["apps", () => PlatformDirectory({})],
     ["detail", () => detail.default({ params: Promise.resolve({ id: "cached", locale: "en" }) })]] as const) {
     state.entries.clear();
-    const mocks = [t.mock.method(fixtureDb.hostedPage, "findMany"), t.mock.method(fixtureDb.app, "findMany"),
+    const mocks = [t.mock.method(fixtureDb, "$queryRaw"), t.mock.method(fixtureDb.hostedPage, "findMany"), t.mock.method(fixtureDb.app, "findMany"),
       t.mock.method(fixtureDb.app, "findFirst"), t.mock.method(fixtureDb.appRelease, "findMany"), t.mock.method(fixtureDb.organization, "findMany")];
     const count = () => mocks.reduce((sum, mock) => sum + mock.mock.callCount(), 0);
     try {
@@ -233,4 +233,30 @@ test("cached detail breadcrumbs match directory membership and survive the JSON 
     }
     for (const write of state.writes) assert.doesNotMatch(write.json, /"(?:content|createdAt|updatedAt|users|session)":/);
   }
+});
+
+test("derived logos and page colours survive cached JSON round trips without full content or extra hit reads", async t => {
+  reset();
+  fixtureDb.rows[0].content = { logo: "/primary.svg", sections: [{ type: "about", data: { text: "x".repeat(2_100_000) } }] };
+  fixtureDb.rows[0].headerLogo = "/header.svg";
+  fixtureDb.rows[0].themeColor = "#ffee00";
+  const raw = t.mock.method(fixtureDb, "$queryRaw");
+  const pages = t.mock.method(fixtureDb.hostedPage, "findMany");
+  try {
+    const home = await loadPublicHome("en");
+    const directory = await loadPublicDirectory("en");
+    assert.equal(home.recentApps[0].logoUrl, "/header.svg");
+    assert.equal(home.recentApps[0].themeColor, "#ffee00");
+    assert.equal(directory.entries[0].app.logoUrl, "/header.svg");
+    assert.equal(directory.entries[0].app.themeColor, "#ffee00");
+    const reads = raw.mock.callCount() + pages.mock.callCount();
+    fixtureDb.rows[0].headerLogo = "/later.svg";
+    assert.deepEqual(await loadPublicHome("en"), home);
+    assert.deepEqual(await loadPublicDirectory("en"), directory);
+    assert.equal(raw.mock.callCount() + pages.mock.callCount(), reads);
+    for (const write of state.writes) {
+      assert.ok(write.bytes < 10_000);
+      assert.doesNotMatch(write.json, /"(?:content|sections|heroLogos|createdAt|updatedAt)":/);
+    }
+  } finally { raw.mock.restore(); pages.mock.restore(); }
 });

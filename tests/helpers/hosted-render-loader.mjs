@@ -49,7 +49,15 @@ export const fixtureDb = {
   hostedPath: "",
   acceptLanguage: "",
   async $transaction(fn) { return fn(fixtureDb); },
-  async $queryRaw() { return []; },
+  async $queryRaw(query) {
+    if (!query?.sql?.includes('AS "heroLogos"')) return [];
+    const rows = queryRows(fixtureDb.rows, { where: { slug: { in: query.values }, isPublished: true, parentSlug: null },
+      orderBy: [{ slug: 'asc' }, { locale: 'asc' }] });
+    return rows.map(row => ({ ...Object.fromEntries(['organizationId', 'slug', 'locale', 'isDefault', 'title', 'tagline', 'themeColor', 'headerLogo'].map(key => [key, row[key]])),
+      logo: row.content?.logo ?? null,
+      heroLogos: Array.isArray(row.content?.sections) ? row.content.sections.filter(section => section?.type === 'hero').map(section => section.data?.logo ?? null) : null,
+    }));
+  },
   app: {
     async update() { throw new Error("Unexpected fixture write"); },
     async delete() { throw new Error("Unexpected fixture write"); },
