@@ -134,8 +134,8 @@ Line heights are Tailwind defaults unless `leading-relaxed` (1.625) is specified
 - CJK hero keeps `[word-break:keep-all]`, intentional `<wbr />` opportunities
   and `text-balance`; other locales use `[overflow-wrap:anywhere]`. Test actual
   zh-TW/ja/ko strings at 375px; add valid break opportunities if an unbroken title overflows.
-- Cards use `min-w-0 break-words`; reserve `truncate`/`line-clamp-2` for summaries,
-  with full content reachable at the destination. Do not truncate field errors.
+- Cards use `min-w-0 break-words`; reserve `truncate`/`line-clamp-2` for summaries
+  (and single-line card names), with full content reachable at the destination. Do not truncate field errors.
 - Hosted content follows `docs/spec/typography.md`: kit font for en/es,
   Noto Sans TC/SC for zh-TW/zh-CN, matching CJK font for other requested locales.
   Its `textSize`, `textContrast` and role multipliers do not size platform chrome.
@@ -157,7 +157,7 @@ Use the existing 4px spacing unit: 1/2/3/4/5/6/8/10/12/16/20 =
 | Directory grid | `grid gap-6 md:grid-cols-3`; one column below md |
 | Game grid | `grid gap-6 md:grid-cols-2 lg:grid-cols-3` |
 | Work-area grid | `grid md:grid-cols-3 gap-6`; supporting sections `md:grid-cols-2` |
-| Card internals | `p-6`, identity row `gap-4`, metadata `mt-2`, description `mt-1` / `mt-2` |
+| Card internals | `p-6`, identity row `gap-4`, tagline directly under the name, metadata `mt-2` |
 | Form rhythm | `space-y-5` or grouped `gap-4`; label-to-control `gap-1` |
 
 Breakpoints: sm 640px, md 768px, lg 1024px. At 375px, keep one column for
@@ -336,7 +336,7 @@ Dominant choices: gray neutrals, `rounded-xl` cards, `rounded-lg` form controls,
 | D07 | `src/app/admin/layout.tsx:20` | Admin header has a wide unwrapped row; adopt dashboard's wrapping pattern and verify 375px. |
 | D08 | `src/app/dashboard/settings/page.tsx:106` | Key-name input relies on placeholder and the action row does not wrap; add an associated label and mobile stacking. |
 | D09 | `src/app/[locale]/login/page.tsx:25`; `src/app/[locale]/auth/device/page.tsx:84` | Full-width auth card has no outer mobile gutter; keep `p-8` internally and use existing `px-4` outer spacing. |
-| D10 | `src/components/LanguageSwitcher.tsx:21`; `src/components/PlatformHeaderView.tsx:69`; `src/app/p/[...segments]/MobileMenu.tsx:83` | Noncompact selector/nav and 40px root hamburger fall short of the new 44px standalone-control target; verify spacing and focus when updating them. |
+| D10 | `src/components/LanguageSwitcher.tsx:21`; `src/components/PlatformHeaderView.tsx:69`; `src/app/p/[...segments]/MobileMenu.tsx:83` | Noncompact selector/nav and 40px root hamburger fall short of the new 44px standalone-control target; LanguageSwitcher's `focus:ring-1 focus:ring-gray-600` on gray-950 likely misses the 3:1 focus rule; verify spacing and focus when updating them. |
 | D11 | `src/app/p/[...segments]/LocaleLink.tsx:20`; `src/app/p/[...segments]/MobileMenu.tsx:154` | Hosted locale selection is visual without current-language semantics; desktop pills are also very small. Preserve #41 inversion while improving semantics/targets. |
 | D12 | `src/app/[locale]/auth/device/page.tsx:148`; `src/app/[locale]/page.tsx:220` | Spinner and FAQ transform have no explicit reduced-motion alternative; reuse the existing no-preference gating approach. |
 | D13 | `src/app/[locale]/feedback/form.tsx:17`, `:38` | Feedback uses plain `rounded` fields and a blue primary while work forms mostly use `rounded-lg` and neutral buttons; align roles without losing status semantics. |

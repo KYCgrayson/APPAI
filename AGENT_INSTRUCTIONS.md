@@ -253,7 +253,7 @@ API base: `https://appai.info`; auth: `Authorization: Bearer appai_sk_YOUR_KEY`.
 2. Choose a light or dark kit in [Theme](https://appai.info/spec/theme); copy its colors, font and darkMode together; use the kit's suggested `backgroundColors` for section `data.backgroundColor` when provided; otherwise leave it unset. Exception: `cta` ignores `backgroundColor` and always uses `themeColor`.
 3. Choose text size, contrast and role overrides in [Typography](https://appai.info/spec/typography); use the kit font for en/es, Noto Sans TC for zh-TW and Noto Sans SC for zh-CN.
 
-Apply the repository's `DESIGN.md` guidance on contrast, spacing, logos and anti-patterns to hosted pages: keep text at WCAG AA contrast (4.5:1 for normal text, 3:1 for large text), consistent section spacing, readable mobile layouts and a recognizable square logo; avoid gratuitous gradients, giant shadows and random colours.
+Apply the [DESIGN.md](https://github.com/KYCgrayson/APPAI/blob/main/DESIGN.md) guidance on contrast, spacing, logos and anti-patterns to hosted pages: keep text at WCAG AA contrast (4.5:1 for normal text, 3:1 for large text), consistent section spacing, readable mobile layouts and a recognizable square logo; avoid gratuitous gradients, giant shadows and random colours.
 Use the existing [Typography](https://appai.info/spec/typography), [Theme](https://appai.info/spec/theme) and [Logo](https://appai.info/spec/style#logo) rules for the hosted-page values; platform chrome rules do not replace a publisher's theme kit.
 
 ### Heading colour

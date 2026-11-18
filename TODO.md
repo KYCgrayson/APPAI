@@ -1,9 +1,8 @@
 ## Platform design rules (ops #22, 2026-11-18; documentation only)
 
 - [x] Add root DESIGN.md with source-backed tokens/components, three benchmark principles, 14 known deviations and an 18-item review checklist; hook CLAUDE.md, hosted style guidance and both feature maps; regenerate AGENT_INSTRUCTIONS.md. No UI/CSS/component changes.
-- [x] Independent source review passed after correcting appendix line references. Spec build, 19 spec documentation tests and lint pass (0 errors, 31 existing warnings). Feature-map inventory including new DESIGN.md passes a read-only in-memory check; no alternate Git index or repository copy was created.
-- [ ] Environment follow-up: linked node_modules lacks opencc-js and has stale Prisma types; typecheck fails, full tests report 760 passed / 49 failed / 10 skipped. No dependencies or database changed.
-- [ ] Stage and commit with `#22:` prefix where Git metadata is writable; sandbox blocks this worktree's index.lock, so the ordinary feature-map check cannot see DESIGN.md yet. No push or PR requested.
+- [x] Author self-check of appendix line references, then an independent reviewer agent verified ~45 claims (no wrong values or line refs); its fixes applied (spec link, card-name truncation, tagline spacing, D10 focus note).
+- [x] Committed on `claude/22-design-md`; with fresh dependencies typecheck, full tests (0 failed), lint (0 errors), spec build and feature-map check pass.
 
 ## SEO re-check (ops #67, 2026-11-18)
 
