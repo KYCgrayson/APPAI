@@ -43,3 +43,15 @@ test('dry-run warns without blocking or altering content for missing and duplica
     assert.ok(preview.warnings.some(warning => warning.path === 'content.sections' && warning.message.includes(`renders ${count} H1`)));
   }
 });
+
+test('hero media warnings explain variant precedence and blocked sources without warning on HTTPS thumbnails', async () => {
+  const { heroMediaWarnings } = await import('../src/lib/hero-media.ts');
+  const image = 'https://i.ytimg.com/vi/fixture/maxresdefault.jpg';
+  const warn = (data: Record<string, unknown>) => heroMediaWarnings({ sections: [{ type: 'hero', data }] });
+  for (const variant of [undefined, 'centered', 'split']) assert.deepEqual(warn({ variant, backgroundImage: image }), []);
+  assert.match(warn({ variant: 'minimal', backgroundImage: image })[0].message, /minimal.*ignores backgroundImage/);
+  assert.match(warn({ variant: 'split', backgroundVideo: 'https://example.com/video.mp4' })[0].message, /split.*ignores backgroundVideo/);
+  assert.match(warn({ backgroundImage: image, backgroundVideo: 'https://example.com/video.mp4' })[0].message, /takes precedence/);
+  for (const backgroundImage of ['http://example.com/bg.jpg', 'https://', 'https://not a url', false, 0]) assert.match(warn({ backgroundImage })[0].message, /CSP/);
+  assert.match(warn({ imageUrl: image })[0].message, /use data.backgroundImage/);
+});

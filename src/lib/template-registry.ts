@@ -402,7 +402,7 @@ export const SECTION_DEFS: SectionDef[] = [
       { name: "headline", type: "string", required: true, description: "Main headline text" },
       { name: "subheadline", type: "string", required: false, description: "Supporting text below headline" },
       { name: "logo", type: "url", required: false, description: "Logo image URL, displayed top-left" },
-      { name: "backgroundImage", type: "url", required: false, description: "Background image URL. In 'centered' variant: full-bleed background. In 'split' variant: displayed as the right-side image." },
+      { name: "backgroundImage", type: "url", required: false, description: "Background image URL. In 'centered' variant: full-bleed background. In 'split' variant: displayed as the right-side image. Ignored in 'minimal'; centered backgroundVideo takes precedence. Use HTTPS or a same-origin /path; HTTPS YouTube thumbnails are allowed." },
       { name: "backgroundVideo", type: "url", required: false, description: "Background video URL (mp4/webm, autoplays muted). Only used in 'centered' variant." },
       { name: "ctaText", type: "string", required: false, description: "Primary call-to-action button text" },
       { name: "ctaUrl", type: "url", required: false, description: "Primary call-to-action button link" },

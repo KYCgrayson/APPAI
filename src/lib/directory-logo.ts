@@ -1,5 +1,5 @@
 import { extractLogoFromContent, isLogoUrl } from "./page-logo.ts";
-import { readableTextColor } from "./prose-theme.ts";
+import { normalizeOpaqueHex, readableTextColor } from "./prose-theme.ts";
 
 /** Keep valid App logos verbatim; legacy pages may only have a header/hero logo. */
 export function directoryLogo(logoUrl: string | null | undefined, page?: { content?: unknown; headerLogo?: unknown } | null) {
@@ -19,8 +19,7 @@ export function firstGrapheme(name: string): string {
 
 /** Opaque hex only: alpha/CSS expressions cannot guarantee contrast on every surface. */
 export function directoryTileColors(themeColor?: string | null) {
-  const normalized = (themeColor ?? "").trim().replace(/^#([\da-f])([\da-f])([\da-f])$/i, "#$1$1$2$2$3$3");
-  const backgroundColor = /^#[\da-f]{6}$/i.test(normalized) ? normalized : "#334155";
+  const backgroundColor = normalizeOpaqueHex(themeColor) ?? "#334155";
   return { backgroundColor, color: readableTextColor(backgroundColor) };
 }
 

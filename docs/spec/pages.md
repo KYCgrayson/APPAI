@@ -106,7 +106,7 @@ Every section supports `id` (anchor for `#links`). Use kit backgroundColors when
 
 ### Auto-Generated Features
 
-Every page automatically gets: sticky header (with logo, title, language switcher, download button), footer (nonempty privacy/terms links), dynamic favicon (from hero logo), breadcrumb navigation on sub-pages, alternating section backgrounds, responsive mobile layout, SEO meta tags, JSON-LD structured data.
+Every page automatically gets: sticky header (with logo, title, language switcher, download button), footer (nonempty privacy/terms links), dynamic favicon (from page logo; children without a logo use root header branding), breadcrumb navigation on sub-pages, alternating section backgrounds, responsive mobile layout, SEO meta tags, JSON-LD structured data.
 
 | Hosted navigation | Visitor behavior |
 |---|---|
@@ -212,6 +212,7 @@ curl -X POST https://appai.info/api/v1/pages \
 | `textSize` | No | Top level or `content.textSize`; `xs`, `sm`, `md` (default), `lg`, `xl`, `2xl`, `3xl`, `4xl`. |
 | `textContrast` | No | Top level or `content.textContrast`; `low`, `normal` (default), `high`. |
 | `typography` | No | Top level or `content.typography`; optional role overrides `{caption, card, body, heading, display}`, each using textSize steps. Top-level settings win and persist under content; `{}` clears overrides. |
+| `content.headingColor` | No | `"theme"` (default, unchanged rendering) or `"dark"` (neutral section headings: near-black on light pages, light on darkMode pages). Children inherit the root value unless explicitly set; `"theme"` opts out. Invalid values fail validation at `content.headingColor`. |
 | `headerLogo` | No | Logo URL for light headers; dark headers prefer root `content.logo` / hero `data.logo`, falling back to `headerLogo` when neither exists |
 | `content` | Yes | `{ "sections": [{ "type": "...", "order": N, "data": {...} }] }` |
 | `privacyPolicy` | No | Markdown text |

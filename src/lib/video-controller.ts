@@ -25,6 +25,7 @@ export function createVideoController(kind: "youtube" | "vimeo" | "file", initia
   let connected = false;
   let failed = false;
   let seekAttempt = 0;
+  let playRetried = false;
   let timeout: ReturnType<typeof setTimeout> | undefined;
   let blocked: ReturnType<typeof setTimeout> | undefined;
   let handshake: ReturnType<typeof setInterval> | undefined;
@@ -41,7 +42,12 @@ export function createVideoController(kind: "youtube" | "vimeo" | "file", initia
     if (!ready || !confirmed || youtubeState === undefined || playing || blocked !== undefined) return;
     blocked = setTimeout(() => {
       blocked = undefined;
-      if (ready && confirmed && !playing && youtubeState !== undefined) state("blocked");
+      if (!ready || !confirmed || playing || youtubeState === undefined || disposed || failed) return;
+      if (wantsPlay && !playRetried && (youtubeState === -1 || youtubeState === 5)) {
+        playRetried = true;
+        send({ event: "command", func: "playVideo", args: [] });
+        youtubeBlocked(); // One more grace period, then the honest press-play fallback.
+      } else state("blocked");
     }, wantsPlay ? 1800 : 0);
   }
   function seekYouTube() {
@@ -96,7 +102,7 @@ export function createVideoController(kind: "youtube" | "vimeo" | "file", initia
   return {
     request(t: number, play: boolean) {
       if (disposed || kind === "youtube" && failed) return;
-      desired = t; wantsPlay = play;
+      desired = t; wantsPlay = play; playRetried = false;
       confirmed = false; awaitingPosition = false;
       clearTimeout(blocked); blocked = undefined;
       if (ready) clearTimeout(timeout);

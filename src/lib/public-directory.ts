@@ -193,7 +193,7 @@ export const loadPublicAppDetail = unstable_cache(async (id: string, locale: str
   const app = project(row, select);
   const variants = app.hostedPageSlug ? await db.hostedPage.findMany({
     where: { slug: app.hostedPageSlug, organizationId: app.organizationId, ...publicPageWhere() },
-    select: { locale: true, isDefault: true, title: true, tagline: true, metaDescription: true, template: true, content: true },
+    select: { locale: true, isDefault: true, title: true, tagline: true, metaDescription: true, template: true, content: true, headerLogo: true },
     orderBy: [{ slug: "asc" }, { locale: "asc" }],
   }) : [];
   const localized = pickByLocale(variants.map(variant => project(variant, {
@@ -205,6 +205,7 @@ export const loadPublicAppDetail = unstable_cache(async (id: string, locale: str
   }) : [];
   // Classify on the miss; the breadcrumb needs only these JSON-safe results,
   // never the full published content or request/session data.
-  return { app, localized, directoryKind: appDirectoryKind(app, variants),
+  const displayLogoUrl = directoryLogo(app.logoUrl, pickByLocale(variants, locale));
+  return { app, localized, displayLogoUrl, directoryKind: appDirectoryKind(app, variants),
     isPersonalProfile: isPersonalDirectoryProfile(variants), universalLaunchPath: canLaunchUniversalApp(app, releases) ? getUniversalAppLaunchPath(app) : null };
-}, ["public-directory-detail-v2"], cacheOptions);
+}, ["public-directory-detail-v3"], cacheOptions);

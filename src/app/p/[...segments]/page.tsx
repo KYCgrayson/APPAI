@@ -1,5 +1,7 @@
+import { extractLogoFromContent, hostedHeaderLogo, isLogoUrl } from "@/lib/page-logo";
+import { inheritHeadingColor } from "@/lib/heading-color";
 import { loadHostedRoot, loadHostedRootVariants, loadHostedChildVariants } from "@/lib/public-hosted-page";
-import { normalizeHostedContent, contentString } from "@/lib/hosted-content";
+import { normalizeHostedContent } from "@/lib/hosted-content";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { breadcrumbJsonLd } from "@/lib/breadcrumbs";
 import { hostedBreadcrumbs } from "@/lib/hosted-breadcrumbs";
@@ -32,12 +34,11 @@ interface Props {
 
 function extractLogos(page: { content: unknown; headerLogo: string | null; heroImage: string | null }): { headerLogo: string | null; heroLogo: string | null } {
   const content = normalizeHostedContent(page.content);
-  const defaultLogo = contentString(content.logo)
-    || contentString(content.sections.find((s) => s.type === "hero")?.data.logo)
+  const defaultLogo = extractLogoFromContent(content)
     || page.heroImage
     || null;
   return {
-    headerLogo: page.headerLogo || defaultLogo,
+    headerLogo: isLogoUrl(page.headerLogo) ? page.headerLogo.trim() : defaultLogo,
     heroLogo: defaultLogo,
   };
 }
@@ -72,7 +73,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!page) return {};
 
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
-  const { headerLogo: logoUrl } = extractLogos(page);
+  const logoUrl = childSlug
+    ? extractLogoFromContent(normalizeHostedContent(page.content), page.headerLogo)
+      || hostedHeaderLogo({ ...rootPage, content: normalizeHostedContent(rootPage.content) }, !subpage && !!page.darkMode)
+    : extractLogos(page).headerLogo;
 
   const roots = await loadHostedRootVariants(slug, rootPage.organizationId);
   const variants = childSlug ? await loadHostedChildVariants(rootPage.organizationId, slug, childSlug) : roots;
@@ -363,7 +367,7 @@ export default async function HostedPage({ params }: Props) {
       />
       {visibleBreadcrumb}
       {page.customCss && <style>{page.customCss}</style>}
-      <PageRenderer page={{ ...page, videoPageUrl: hostedPageUrl(page, roots, baseUrl) || pageUrl }} isLoggedIn={isLoggedIn} isAdmin={isAdmin} userId={userId} />
+      <PageRenderer page={{ ...page, content: childSlug ? inheritHeadingColor(page.content, rootPage.content) : page.content, videoPageUrl: hostedPageUrl(page, roots, baseUrl) || pageUrl }} isLoggedIn={isLoggedIn} isAdmin={isAdmin} userId={userId} />
     </>
   );
 }
