@@ -40,7 +40,7 @@ test("generic launcher falls back to the manifest entry path for malformed or cr
 
 test("AppAI no longer contains a Simpleshop compatibility UI or API route", () => {
   for (const path of [
-    "src/app/app/simpleshop",
+    "src/app/(legacy)/app/simpleshop",
     "src/app/api/apps/simpleshop",
     "src/components/apps/simpleshop",
     "src/lib/simpleshop",

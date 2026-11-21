@@ -10,9 +10,9 @@ const headerHooks = registerHostedHeaders();
 test.after(() => { headerHooks.deregister(); intl.deregister(); hooks.deregister(); });
 
 test("rendered /p/* pages and both layouts omit platform WebApplication and free Offer JSON-LD", async () => {
-  const { default: RootLayout } = await import("../src/app/layout.tsx");
-  const { default: HostedLayout } = await import("../src/app/p/[...segments]/layout.tsx");
-  const { default: HostedPage } = await import("../src/app/p/[...segments]/page.tsx");
+  const { default: RootLayout } = await import("../src/app/(legacy)/layout.tsx");
+  const { default: HostedLayout } = await import("../src/app/(legacy)/p/[...segments]/layout.tsx");
+  const { default: HostedPage } = await import("../src/app/(legacy)/p/[...segments]/page.tsx");
   const root = { id: "root", organizationId: "fixture-org", slug: "schema-site", parentSlug: null,
     locale: "en", title: "Hosted fixture", isDefault: true, isPublished: true, content: {},
     privacyPolicy: "Privacy", termsOfService: "Terms", createdAt: new Date("2025-01-01"), updatedAt: new Date("2025-02-01") };

@@ -16,7 +16,7 @@ const sectionApi = await import("../src/app/api/v1/pages/[slug]/sections/[order]
 const sessionApi = await import("../src/app/api/v1/tools/sessions/issue/route.ts");
 const publish = await import("../src/app/api/v1/pages/[slug]/publish/route.ts");
 const setDefault = await import("../src/app/api/v1/pages/[slug]/set-default/route.ts");
-const { default: HomePage } = await import("../src/app/[locale]/page.tsx");
+const { default: HomePage } = await import("../src/app/(site)/[locale]/page.tsx");
 const example = JSON.parse(readFileSync(new URL("../docs/examples/game.example.json", import.meta.url), "utf8"));
 const request = (body: unknown, method = "POST", query = "") => new NextRequest(`https://appai.info/api/v1/pages${query}`, { method, headers: { "content-type": "application/json", authorization: "Bearer fixture" }, body: JSON.stringify(body) });
 const params = { params: Promise.resolve({ slug: example.slug }) };
@@ -91,7 +91,7 @@ test("a published GAME App stays out of both homepage approved lists", async () 
   assert.equal(gameApiFixture.apps[0].category, "GAMES");
   assert.equal(gameApiFixture.apps[0].isApproved, false);
   gameApiFixture.appQueries = [];
-  const html = await renderHtml(await HomePage());
+  const html = await renderHtml(await HomePage({ params: Promise.resolve({ locale: "en" }) }));
   assert.ok(gameApiFixture.appQueries.some(q => q.isApproved === true && q.isFeatured === true));
   assert.ok(gameApiFixture.appQueries.some(q => q.isApproved === true && !q.isFeatured));
   assert.ok(!html.includes(example.title));

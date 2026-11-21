@@ -27,7 +27,7 @@ const poll = (db: ApprovalStore) => pollDeviceToken(db, { deviceCode: "secret", 
 const pollError = async (db: ApprovalStore) => { const result = await poll(db); assert.ok("error" in result); return result.error; };
 
 test("page only mutates from explicit decision clicks; lookup is read-only", async () => {
-  const source = readFileSync(new URL("../src/app/[locale]/auth/device/page.tsx", import.meta.url), "utf8");
+  const source = readFileSync(new URL("../src/app/(legacy)/[locale]/auth/device/page.tsx", import.meta.url), "utf8");
   const effect = source.slice(source.indexOf("useEffect(() =>"), source.indexOf("async function handleDecision"));
   assert.doesNotMatch(effect, /POST|handleDecision\(|approveDevice/);
   assert.match(effect, /\/api\/auth\/device\/lookup/);

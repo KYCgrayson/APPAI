@@ -12,8 +12,8 @@ import { registerHostedRenderLoader, registerDirectoryFixtures, fixtureDb } from
 const hooks = registerHostedRenderLoader();
 const intl = registerDirectoryFixtures({ translated: true });
 test.after(() => { intl.deregister(); hooks.deregister(); });
-const detail = await import("../src/app/[locale]/games/[slug]/page.tsx");
-const hub = await import("../src/app/[locale]/games/page.tsx");
+const detail = await import("../src/app/(legacy)/[locale]/games/[slug]/page.tsx");
+const hub = await import("../src/app/(legacy)/[locale]/games/page.tsx");
 
 function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#x27;" })[char]!);
@@ -66,7 +66,7 @@ test("all localized detail pages render one H1, cover, instructions, parent FAQ 
 });
 
 test("SSG detail module cannot read request queries, cookies or headers", () => {
-  const source = readFileSync(new URL("../src/app/[locale]/games/[slug]/page.tsx", import.meta.url), "utf8");
+  const source = readFileSync(new URL("../src/app/(legacy)/[locale]/games/[slug]/page.tsx", import.meta.url), "utf8");
   assert.doesNotMatch(source, /\b(searchParams|cookies|headers)\b/);
   assert.match(source, /export function generateStaticParams\(/);
 });
@@ -142,14 +142,14 @@ test("hub titles and buttons link to locale-aware detail pages and share canonic
 });
 
 test("homepage strip follows main sections, uses nine message files and only lists live/Beta own games", async () => {
-  const { default: HomePage } = await import("../src/app/[locale]/page.tsx");
+  const { default: HomePage } = await import("../src/app/(site)/[locale]/page.tsx");
   fixtureDb.rows = [];
   fixtureDb.apps = [];
   const english = JSON.parse(readFileSync(new URL("../src/messages/en.json", import.meta.url), "utf8")).home;
   for (const locale of locales) {
     fixtureDb.locale = locale;
     const messages = JSON.parse(readFileSync(new URL(`../src/messages/${locale}.json`, import.meta.url), "utf8")).home;
-    const html = await renderHtml(await HomePage());
+    const html = await renderHtml(await HomePage({ params: Promise.resolve({ locale: fixtureDb.locale }) }));
     const start = html.indexOf('<section aria-labelledby="home-games"');
     const strip = html.slice(start, html.indexOf("</section>", start));
     assert.ok(start > html.indexOf(escapeHtml(messages.forAgents)));
@@ -173,7 +173,7 @@ test("homepage strip follows main sections, uses nine message files and only lis
   const original = GAMES[0].status;
   try {
     GAMES[0].status = "soon";
-    const html = await renderHtml(await HomePage());
+    const html = await renderHtml(await HomePage({ params: Promise.resolve({ locale: fixtureDb.locale }) }));
     const start = html.indexOf('<section aria-labelledby="home-games"');
     const strip = html.slice(start, html.indexOf("</section>", start));
     assert.ok(!strip.includes(gamePageHref(GAMES[0])));

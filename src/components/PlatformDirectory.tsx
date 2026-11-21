@@ -1,7 +1,7 @@
 import { loadPublicDirectory } from "@/lib/public-directory";
 import type { DirectoryKind } from "@/lib/directory-kind";
 import { chineseScript } from "@/lib/zh-convert";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { DirectoryLogo } from "@/components/DirectoryLogo";
 import { AppCard } from "@/components/AppCard";
@@ -13,13 +13,14 @@ import { getDirectoryCopy } from "@/lib/directory-copy";
 import { isLogoUrl } from "@/lib/page-logo";
 
 type Props = {
+  locale: string;
   kind?: DirectoryKind;
   category?: string;
   personalOnly?: boolean;
 };
 
-export async function PlatformDirectory({ kind, category, personalOnly = false }: Props) {
-  const [locale, appsT] = await Promise.all([getLocale(), getTranslations("apps")]);
+export async function PlatformDirectory({ locale, kind, category, personalOnly = false }: Props) {
+  const appsT = await getTranslations("apps");
   const copy = getDirectoryCopy(locale);
   const activeCategory = personalOnly ? "ALL" : category || "ALL";
   const { entries, profiles: personalProfiles } = await loadPublicDirectory(locale, kind, activeCategory, personalOnly);
@@ -37,6 +38,7 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
   const categoryHref = (value: string) => {
     const path = kind === "websites" || kind === "tools" ? `/${kind}` : "/apps";
     const query = new URLSearchParams();
+    if (kind === "apps" && value === "ALL") return "/apps/native";
     if (kind === "apps") query.set("kind", "apps");
     if (personalOnly) query.set("type", "personal");
     if (value !== "ALL") query.set("category", value);
@@ -48,7 +50,7 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
-      <PlatformHeader currentSection={kind ?? "apps"} />
+      <PlatformHeader locale={locale} currentSection={kind ?? "apps"} />
       <main className="max-w-6xl mx-auto px-6 pt-4 pb-8">
         <PlatformBreadcrumb section={kind ?? "apps"} dark />
         <div className="mb-8">
@@ -64,7 +66,7 @@ export async function PlatformDirectory({ kind, category, personalOnly = false }
             { label: copy.all, path: "/apps", active: !kind },
             { label: copy.categories.websites, path: "/websites", active: kind === "websites" && !personalOnly },
             { label: copy.categories.tools, path: "/tools", active: kind === "tools" },
-            { label: copy.categories.apps, path: "/apps?kind=apps", active: kind === "apps" },
+            { label: copy.categories.apps, path: "/apps/native", active: kind === "apps" },
             { label: copy.personalPages, path: "/websites?type=personal", active: personalOnly },
           ].map(tab => (
             <Link key={tab.label} href={tab.path}

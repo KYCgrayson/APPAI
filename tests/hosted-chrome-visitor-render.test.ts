@@ -12,8 +12,8 @@ test("existing F0 fixture pages: all 12 full HTML renders differ from a7c1925 on
   const fixture = await visitorChromeFixture();
   const baseline = registerMainHostedBaseline("a7c1925");
   try {
-    const { default: Layout } = await import("../src/app/p/[...segments]/layout.tsx");
-    const { default: Page } = await import("../src/app/p/[...segments]/page.tsx");
+    const { default: Layout } = await import("../src/app/(legacy)/p/[...segments]/layout.tsx");
+    const { default: Page } = await import("../src/app/(legacy)/p/[...segments]/page.tsx");
     const { default: BeforeLayout } = await import(baseline.layoutUrl);
     const { default: BeforePage } = await import(baseline.moduleUrl("src/app/p/[...segments]/page.tsx"));
     fixtureDb.rows = structuredClone(f0Pages);
@@ -51,13 +51,13 @@ test("CSP is unchanged and client chrome adds no request-dependent rendering or 
   const csp = (text: string) => text.split("\n").filter(line => /Content-Security-Policy|-src |unsafe-|nonce/.test(line));
   assert.deepEqual(csp(readFileSync(new URL("../next.config.ts", import.meta.url), "utf8")), csp(before));
   assert.match(before, /script-src 'self'/);
-  for (const path of ["src/app/p/[...segments]/VisitorChrome.tsx", "src/lib/hosted-chrome-labels.ts", "src/lib/hosted-chrome-client.ts"]) {
+  for (const path of ["src/app/(legacy)/p/[...segments]/VisitorChrome.tsx", "src/lib/hosted-chrome-labels.ts", "src/lib/hosted-chrome-client.ts"]) {
     const source = readFileSync(new URL("../" + path, import.meta.url), "utf8");
     assert.doesNotMatch(source, /next\/headers|next\/cache|next-intl|from .*site-nav|from .*db|localStorage|sessionStorage|document\.cookie|<script|dangerouslySetInnerHTML/);
   }
-  for (const path of ["src/app/p/[...segments]/layout.tsx", "src/app/p/[...segments]/page.tsx"]) {
+  for (const path of ["src/app/(legacy)/p/[...segments]/layout.tsx", "src/app/(legacy)/p/[...segments]/page.tsx"]) {
     const current = readFileSync(new URL("../" + path, import.meta.url), "utf8");
-    const previous = execFileSync("git", ["show", `a7c1925:${path}`], { encoding: "utf8" });
+    const previous = execFileSync("git", ["show", `a7c1925:${path.replace("/(legacy)", "")}`], { encoding: "utf8" });
     const sensitiveLines = (text: string) => text.split("\n").filter(line => /headers\(|cookies\(|getPlatformLocale|Vary|force-dynamic|revalidate|dynamic\s*=/.test(line));
     assert.deepEqual(sensitiveLines(current), sensitiveLines(previous));
   }

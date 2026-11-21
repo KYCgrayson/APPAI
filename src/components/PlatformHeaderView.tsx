@@ -1,14 +1,12 @@
 import { Link } from "@/i18n/navigation";
-import { AccountControls, type AccountLabels, type AccountUser } from "./AccountControls";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export type PlatformHeaderViewProps = {
   currentSection?: "websites" | "tools" | "apps" | "games";
   breadcrumbs?: { name: string; href: string }[];
-  user?: AccountUser | null;
-  isAdmin?: boolean;
+  account: React.ReactNode;
+  rememberLocale?: boolean;
   labels: {
-    account: AccountLabels;
     categories: Record<"websites" | "tools" | "apps", string>;
     games: string;
     breadcrumb: string;
@@ -16,7 +14,7 @@ export type PlatformHeaderViewProps = {
 };
 
 /** Shared presentation, with identity and translated copy supplied by the caller. */
-export function PlatformHeaderView({ currentSection, breadcrumbs, user, isAdmin, labels }: PlatformHeaderViewProps) {
+export function PlatformHeaderView({ currentSection, breadcrumbs, account, rememberLocale, labels }: PlatformHeaderViewProps) {
   return (
     <header className="border-b border-gray-800 bg-gray-950/90 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 sm:px-6 sm:py-4">
@@ -28,8 +26,8 @@ export function PlatformHeaderView({ currentSection, breadcrumbs, user, isAdmin,
         <div className={breadcrumbs
           ? "order-2 ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 sm:order-3 sm:flex-none sm:gap-3"
           : "order-2 ml-auto flex shrink-0 items-center gap-2 sm:order-3 sm:gap-3"}>
-          <LanguageSwitcher compact={!!breadcrumbs} />
-          <AccountControls user={user} isAdmin={isAdmin} labels={labels.account} compact={!!breadcrumbs} light />
+          <LanguageSwitcher compact={!!breadcrumbs} rememberLocale={rememberLocale} />
+          {account}
         </div>
         {breadcrumbs ? (
           // A separate row at every width keeps long localized trails independent of account controls.
@@ -57,7 +55,7 @@ export function PlatformHeaderView({ currentSection, breadcrumbs, user, isAdmin,
               {(["websites", "tools", "apps"] as const).map((section) => (
                 <li key={section}>
                   <Link
-                    href={section === "apps" ? "/apps?kind=apps" : `/${section}`}
+                    href={section === "apps" ? "/apps/native" : `/${section}`}
                     aria-current={currentSection === section ? "page" : undefined}
                     className={`text-sm transition-colors hover:text-white ${currentSection === section ? "text-cyan-300" : "text-gray-400"}`}
                   >

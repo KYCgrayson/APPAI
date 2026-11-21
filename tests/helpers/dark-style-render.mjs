@@ -8,8 +8,8 @@ export async function darkStyleRenderer() {
   const headers = registerHostedHeaders();
   const state = { open: false, user: null };
   const navigation = registerHostedNavigationState(state);
-  const { default: Layout } = await import('../../src/app/p/[...segments]/layout.tsx');
-  const { default: HostedPage } = await import('../../src/app/p/[...segments]/page.tsx');
+  const { default: Layout } = await import('../../src/app/(legacy)/p/[...segments]/layout.tsx');
+  const { default: HostedPage } = await import('../../src/app/(legacy)/p/[...segments]/page.tsx');
   const { PageRenderer } = await import('../../src/templates/shared/PageRenderer.tsx');
   return {
     /**

@@ -18,13 +18,13 @@ import type { PrismaClient } from "@prisma/client";
 
 const hooks = [registerHostedRenderLoader(), registerHostedHeaders(), registerDirectoryFixtures({ translated: true }), registerSitemapFixtures(), registerPr5PublicFixtures()];
 test.after(() => hooks.reverse().forEach(hook => hook.deregister()));
-const hosted = await import("../src/app/p/[...segments]/page.tsx");
-const layout = await import("../src/app/p/[...segments]/layout.tsx");
+const hosted = await import("../src/app/(legacy)/p/[...segments]/page.tsx");
+const layout = await import("../src/app/(legacy)/p/[...segments]/layout.tsx");
 const { resolveChildPage } = await import("../src/lib/hosted-page-resolver.ts");
 const { loadSiblings } = await import("../src/lib/site-nav.ts");
 const { PlatformDirectory } = await import("../src/components/PlatformDirectory.tsx");
-const { default: home } = await import("../src/app/[locale]/page.tsx");
-const detail = await import("../src/app/[locale]/apps/[id]/page.tsx");
+const { default: home } = await import("../src/app/(site)/[locale]/page.tsx");
+const detail = await import("../src/app/(legacy)/[locale]/apps/[id]/page.tsx");
 const sitemap = await import("../src/lib/sitemap-data.ts");
 const llms = await import("../src/app/llms.txt/route.ts");
 const llmsFull = await import("../src/app/llms-full.txt/route.ts");
@@ -74,11 +74,11 @@ test("P2 S1: hosted HTML/layout/metadata/nav and direct child resolver agree wit
 test("P2 S2–S4: directory/home cards and counts, App details/OG/JSON-LD exclude hidden Apps", async () => {
   reset();
   for (const kind of [undefined, "websites", "tools", "apps"] as const) {
-    const html = await renderHtml(await PlatformDirectory({ kind }));
+    const html = await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale, kind }));
     if (!kind) for (const href of ["/p/live", "/apps/standalone", "/apps/empty"]) assert.ok(html.includes(`href="${href}"`), href);
     for (const app of f1Apps.filter(app => !f1Expected.apps.includes(app.id))) assert.ok(!html.includes(app.name), app.id);
   }
-  const html = await renderHtml(await home());
+  const html = await renderHtml(await home({ params: Promise.resolve({ locale: fixtureDb.locale }) }));
   for (const app of f1Apps) assert.equal(html.includes(app.hostedPageSlug === "live" && app.isApproved ? 'href="/p/live"' : app.name), f1Expected.apps.includes(app.id), app.id);
   assert.ok(html.replace(/<!--.*?-->/g, "").includes("3 pages hosted"), html.match(/<p class="mt-8 text-sm text-gray-500">.*?<\/p>/)?.[0]);
   for (const app of f1Apps) {
@@ -159,7 +159,7 @@ test("P4: every locale of all 61 F2 logical pages has the helper URL and a succe
 });
 
 test("public read routes cannot reintroduce bare publication/approval queries", () => {
-  const paths = ["src/app/p", "src/app/[locale]", "src/components/PlatformDirectory.tsx", "src/lib/hosted-page-resolver.ts", "src/lib/site-nav.ts", "src/lib/sitemap-data.ts", "src/app/llms.txt", "src/app/api/v1/form-submit", "src/app/api/v1/simple-order-submit", "src/app/api/v1/tools/sessions/issue"];
+  const paths = ["src/app/(legacy)/p", "src/app/(site)/[locale]", "src/app/(legacy)/[locale]", "src/components/PlatformDirectory.tsx", "src/lib/hosted-page-resolver.ts", "src/lib/site-nav.ts", "src/lib/sitemap-data.ts", "src/app/llms.txt", "src/app/api/v1/form-submit", "src/app/api/v1/simple-order-submit", "src/app/api/v1/tools/sessions/issue"];
   function scan(path: string) {
     if (!path.endsWith(".ts") && !path.endsWith(".tsx")) { for (const item of readdirSync(path)) scan(join(path, item)); return; }
     assert.doesNotMatch(readFileSync(path, "utf8"), /is(?:Published|Approved): true/, path);
@@ -201,6 +201,6 @@ test("P12 first public origin reads after removal omit the tree from all discove
   const entries=(await Promise.all((await sitemap.loadSitemapIds()).map(({id})=>sitemap.loadSitemapShard(String(id))))).flat();
   assert.ok(!entries.some(entry=>entry.url.includes("/p/live")));
   assert.doesNotMatch(await (await llms.GET()).text(),/https:\/\/appai.info\/p\/live —/);
-  for(const html of [await renderHtml(await PlatformDirectory({})),await renderHtml(await home())])assert.ok(!html.includes('href="/p/live"'));
+  for(const html of [await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale })),await renderHtml(await home({ params: Promise.resolve({ locale: fixtureDb.locale }) }))])assert.ok(!html.includes('href="/p/live"'));
   await assert.rejects(()=>detail.default({params:Promise.resolve({id:"live-app",locale:"en"})}),/404/);
 });

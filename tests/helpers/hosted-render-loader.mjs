@@ -46,6 +46,8 @@ export const fixtureDb = {
   organizations: [],
   organizationQueries: 0,
   locale: "en",
+  /** @type {{ user: { name?: string }, role: string } | null} */
+  platformSession: null,
   hostedPath: "",
   acceptLanguage: "",
   async $transaction(fn) { return fn(fixtureDb); },
@@ -137,6 +139,7 @@ export function registerDirectoryFixtures({ translated = false } = {}) {
       if (url === 'fixture:intl-server') return { format: 'module', source: `
         import { readFileSync } from 'node:fs';
         import { createTranslator } from 'use-intl/core';
+        export function setRequestLocale(locale) { globalThis[Symbol.for('appai.test.db')].locale = locale; }
         export async function getLocale() { return globalThis[Symbol.for('appai.test.db')].locale; }
         export async function getTranslations(input) {
           if (!${translated}) { const t = key => key; t.has = () => true; return t; }
@@ -182,6 +185,7 @@ export function registerHostedRenderLoader() {
   return registerHooks({
     resolve(specifier, context, nextResolve) {
       if (specifier === 'next/cache') return { url: 'fixture:uncached-directory', shortCircuit: true };
+      if (specifier === 'next-auth/react' && context.parentURL?.endsWith('/PlatformAccountControls.tsx')) return { url: 'fixture:platform-session', shortCircuit: true };
       if (specifier === 'next/image') return { url: 'fixture:next-image', shortCircuit: true };
       if (specifier === '@/lib/iframe-tool-session') return { url: 'fixture:identity', shortCircuit: true };
       if (specifier === '@/lib/auth') return { url: 'fixture:auth', shortCircuit: true };
@@ -198,6 +202,7 @@ export function registerHostedRenderLoader() {
     },
     load(url, context, nextLoad) {
       if (url === 'fixture:uncached-directory') return { format: 'module', source: 'export const unstable_cache = fn => fn;', shortCircuit: true };
+      if (url === 'fixture:platform-session') return { format: 'module', source: 'export function useSession() { return { data: globalThis[Symbol.for("appai.test.db")].platformSession }; }', shortCircuit: true };
       if (url === 'fixture:next-image') return { format: 'module', source: 'export { Image as default } from "next/dist/client/image-component.js";', shortCircuit: true };
       if (url === 'fixture:identity') return { format: 'module', source: 'export function issueIframeToolSession() { throw new Error("Unexpected identity issuance in render fixture"); }', shortCircuit: true };
       if (url === 'fixture:auth') return { format: 'module', source: 'export async function auth() { return null; } export function signIn() { throw new Error("Unexpected auth in render fixture"); } export const signOut = signIn;', shortCircuit: true };

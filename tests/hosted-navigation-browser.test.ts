@@ -23,7 +23,7 @@ test("desktop and mobile headers contain exactly one visible Home, with the draw
   const hooks = registerHostedNavigationState(state);
   const browser = await hostedChromeBrowser(binary);
   try {
-    const { default: Layout } = await import("../src/app/p/[...segments]/layout.tsx");
+    const { default: Layout } = await import("../src/app/(legacy)/p/[...segments]/layout.tsx");
     for (const locale of ["en", "zh-TW", "zh-CN", "de", "es", "fr", "ar"]) for (const logo of [false, true]) {
       const root = page("browser-site", { locale, title: "這是一個很長的繁體中文網站名稱與作品集",
         content: { logo: logo ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" : undefined, sections: [] } });

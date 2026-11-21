@@ -1,15 +1,11 @@
 import { serializeJsonLd } from "@/lib/json-ld";
 import { PLATFORM_ORIGIN } from "@/lib/platform-identity";
-import { parsePageSegments } from "@/lib/parse-page-segments";
-import { resolvePage, resolveChildPage } from "@/lib/hosted-page-resolver";
-import { headers } from "next/headers";
 import type { Metadata } from "next";
-import { getLocale } from "next-intl/server";
 import { Analytics } from "@vercel/analytics/react";
 import { Providers } from "./providers";
 import "./globals.css";
 
-export const metadata: Metadata = {
+export const rootMetadata: Metadata = {
   title: "AppAI - AI App Hosting Platform",
   description:
     "Publish AI-built hosted pages and database-capable Universal Apps. AppAI provides review, identity, and managed capabilities.",
@@ -19,24 +15,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const requestHeaders = await headers();
-  const hostedPath = requestHeaders.get("x-appai-hosted-path");
-  const parsed = hostedPath?.startsWith("/p/")
-    ? parsePageSegments(hostedPath.slice(3).split("/").filter(Boolean)) : null;
-  let hostedLocale: string | undefined;
-  if (parsed) {
-    const root = await resolvePage(parsed.slug, parsed.locale);
-    const page = root && parsed.childSlug
-      ? await resolveChildPage(parsed.slug, parsed.childSlug, parsed.locale, root.organizationId) : root;
-    hostedLocale = page?.locale;
-  }
-  const locale = hostedLocale || await getLocale();
-
+export function RootDocument({ children, locale }: { children: React.ReactNode; locale: string }) {
   return (
     <html lang={locale} dir={["ar", "he", "fa", "ur"].includes(locale.split("-")[0]) ? "rtl" : "ltr"}>
       <head>

@@ -28,7 +28,7 @@ export function revalidateSeoIndexes(slug?: string) {
   }
   if (slug) {
     try {
-      revalidatePath("/p/[...segments]", "layout");
+      revalidatePath("/(legacy)/p/[...segments]", "layout");
     } catch (error) {
       refreshed = false;
       console.error("Failed to refresh hosted layout", error);

@@ -137,7 +137,7 @@ test("migration only creates Feedback and page renders independently of storage"
   const migration = read("../prisma/feedback-migration.sql");
   assert.match(migration, /CREATE TABLE "Feedback"/);
   assert.doesNotMatch(migration, /ALTER|UPDATE|INSERT|DELETE|DROP/i);
-  const page = read("../src/app/[locale]/feedback/page.tsx");
+  const page = read("../src/app/(legacy)/[locale]/feedback/page.tsx");
   assert.match(page, /<FeedbackForm/);
   assert.doesNotMatch(page, /\bdb\b|feedback-server/);
   const schema = read("../prisma/schema.prisma");
@@ -183,7 +183,7 @@ test("feedback deployment adds only its own table and page rendering has no data
   const migration = read("../prisma/feedback-migration.sql");
   assert.match(migration, /CREATE TABLE "Feedback"/);
   assert.doesNotMatch(migration, /\b(ALTER|UPDATE|INSERT|DELETE|DROP)\b/i);
-  const page = read("../src/app/[locale]/feedback/page.tsx");
+  const page = read("../src/app/(legacy)/[locale]/feedback/page.tsx");
   assert.doesNotMatch(page, /feedback-server|@\/lib\/db|db\./);
 });
 
@@ -228,7 +228,7 @@ test("admin missing-table loader returns notice state and propagates other failu
   assert.deepEqual(await loadAdminFeedback(async () => []), []);
   const error = Object.assign(new Error("failure"), { code: "P1001" });
   await assert.rejects(loadAdminFeedback(async () => { throw error; }), error);
-  const page = readFileSync(new URL("../src/app/admin/feedback/page.tsx", import.meta.url), "utf8");
+  const page = readFileSync(new URL("../src/app/(legacy)/admin/feedback/page.tsx", import.meta.url), "utf8");
   assert.match(page, /loadAdminFeedback\(/);
   assert.match(page, /Feedback table not created yet/);
 });
