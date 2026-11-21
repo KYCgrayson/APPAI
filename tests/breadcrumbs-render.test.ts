@@ -15,14 +15,14 @@ import { locales } from "../src/i18n/routing.ts";
 const authState = { code: "QA-CODE" as string | null, state: "loading" };
 const hooks = [registerHostedRenderLoader(), registerHostedHeaders(), registerDirectoryFixtures({ translated: true }), registerBreadcrumbNavigation(), registerAuthRenderState(authState)];
 test.after(() => hooks.reverse().forEach(hook => hook.deregister()));
-const { default: HostedPage } = await import("../src/app/p/[...segments]/page.tsx");
-const { default: HostedLayout } = await import("../src/app/p/[...segments]/layout.tsx");
-const { default: NotFound } = await import("../src/app/not-found.tsx");
+const { default: HostedPage } = await import("../src/app/(legacy)/p/[...segments]/page.tsx");
+const { default: HostedLayout } = await import("../src/app/(legacy)/p/[...segments]/layout.tsx");
+const { default: NotFound } = await import("../src/app/(legacy)/not-found.tsx");
 const { Breadcrumb } = await import("../src/components/Breadcrumb.tsx");
 const { ManagementBreadcrumb } = await import("../src/components/ManagementBreadcrumb.tsx");
-const { default: AppDetail } = await import("../src/app/[locale]/apps/[id]/page.tsx");
-const { default: PlatformHome } = await import("../src/app/[locale]/page.tsx");
-const { default: Websites } = await import("../src/app/[locale]/websites/page.tsx");
+const { default: AppDetail } = await import("../src/app/(legacy)/[locale]/apps/[id]/page.tsx");
+const { default: PlatformHome } = await import("../src/app/(site)/[locale]/page.tsx");
+const { default: Websites } = await import("../src/app/(site)/[locale]/websites/page.tsx");
 const { PlatformDirectory } = await import("../src/components/PlatformDirectory.tsx");
 
 function trail(html: string, names: string[], hrefs: string[], label = "Breadcrumb") {
@@ -98,8 +98,8 @@ for (const locale of ["en", "zh-TW"]) {
     const prefix = locale === "en" ? "" : "/zh-TW";
     const label = locale === "en" ? "Breadcrumb" : "導覽路徑";
     for (const [section, name] of Object.entries(locale === "en" ? { apps: "Apps", websites: "Websites", tools: "Tools" } : { apps: "應用程式", websites: "網站", tools: "工具" })) {
-      const { default: Directory } = await import(`../src/app/[locale]/${section}/page.tsx`);
-      const html = await renderHtml(await Directory({ searchParams: Promise.resolve({}) }));
+      const { default: Directory } = await import(`../src/app/(site)/[locale]/${section}/page.tsx`);
+      const html = await renderHtml(await Directory({ params: Promise.resolve({ locale }) }));
       const nav = trail(html, ["AppAI", name], [`${prefix}/`], label)!;
       assert.match(nav, /background-color:transparent;color:#e5e7eb;--breadcrumb-link:#67e8f9/);
       assert.match(html, /<\/header><main class="max-w-6xl mx-auto px-6 pt-4 pb-8"><nav[^>]*data-breadcrumb="platform"/);
@@ -109,14 +109,14 @@ for (const locale of ["en", "zh-TW"]) {
     const detailNav = trail(detail, ["AppAI", locale === "en" ? "Websites" : "網站", locale === "en" ? "My app" : "我的應用"], [`${prefix}/`, `${prefix}/websites`], label)!;
     assert.match(detailNav, /background-color:transparent;color:#374151;--breadcrumb-link:#1f2937/);
     assert.match(detail, /<\/header><div class="max-w-3xl mx-auto px-6 pt-4 pb-12"><nav[^>]*data-breadcrumb="platform"/);
-    const { default: FeedbackPage } = await import("../src/app/[locale]/feedback/page.tsx");
+    const { default: FeedbackPage } = await import("../src/app/(legacy)/[locale]/feedback/page.tsx");
     const feedback = await renderHtml(await FeedbackPage());
     const feedbackNav = trail(feedback, ["AppAI", locale === "en" ? "Feedback" : "意見回饋"], [`${prefix}/`], label)!;
     assert.match(feedbackNav, /background-color:transparent;color:#374151;--breadcrumb-link:#1f2937/);
     assert.match(feedback, /<\/header><main class="max-w-xl mx-auto px-6 pt-4 pb-16"><nav[^>]*data-breadcrumb="platform"/);
-    trail(await renderHtml(await PlatformHome()), ["AppAI"], [], label);
+    trail(await renderHtml(await PlatformHome({ params: Promise.resolve({ locale: fixtureDb.locale }) })), ["AppAI"], [], label);
     for (const [path, slug] of [["games", undefined], ["games/[slug]", "water-pouring"], ["games/[slug]", "tabletop-puzzles"]]) {
-      const { default: GamePage } = await import(`../src/app/[locale]/${path}/page.tsx`);
+      const { default: GamePage } = await import(`../src/app/(legacy)/[locale]/${path}/page.tsx`);
       const html = await renderHtml(await GamePage({ params: Promise.resolve({ locale, slug }) }));
       const { gameBreadcrumbs } = await import("../src/lib/games-page-seo.ts");
       const items = gameBreadcrumbs(locale, slug);
@@ -162,7 +162,7 @@ test("static game play pages preserve main's toolbar and viewport with no added 
   const baseline = registerMainHostedBaseline();
   try {
     const { NextRequest } = await import("next/server.js");
-    const { GET } = await import("../src/app/games/[slug]/runtime/route.ts");
+    const { GET } = await import("../src/app/(legacy)/games/[slug]/runtime/route.ts");
     const { GET: MainGET } = await import(baseline.moduleUrl("src/app/games/[slug]/runtime/route.ts"));
     for (const locale of ["en", "zh-TW"]) {
       const request = new NextRequest(`https://appai.info/games/water-pouring/play?locale=${locale}&game=water`);
@@ -184,7 +184,7 @@ for (const locale of ["en", "zh-TW"]) {
     const label = locale === "en" ? "Breadcrumb" : "導覽路徑";
     const messages = JSON.parse(readFileSync(new URL(`../src/messages/${locale}.json`, import.meta.url), "utf8"));
     for (const [path, key] of [["login", "signIn"], ["logout", "signOut"], ["auth/device", "deviceAuth"]]) {
-      const { default: Page } = await import(`../src/app/[locale]/${path}/page.tsx`);
+      const { default: Page } = await import(`../src/app/(legacy)/[locale]/${path}/page.tsx`);
       for (const state of path === "auth/device" ? ["missing", "loading", "needLogin", "ready", "approving", "done", "denied", "error"] : ["loading"]) {
         authState.code = state === "missing" ? null : "QA-CODE";
         authState.state = state;
@@ -195,9 +195,9 @@ for (const locale of ["en", "zh-TW"]) {
         assert.match(html, /class="relative [^"]*p-8[^"]*"/);
       }
       // Positioning establishes a containing block but contributes no flow height.
-      const file = `src/app/[locale]/${path}/page.tsx`;
+      const file = `src/app/(legacy)/[locale]/${path}/page.tsx`;
       const source = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
-      const main = execFileSync("git", ["show", `5379be0:${file}`], { encoding: "utf8" });
+      const main = execFileSync("git", ["show", `5379be0:${file.replace("/(legacy)", "")}`], { encoding: "utf8" });
       const classes = (input: string) => [...input.matchAll(/className="([^"]*)"/g)].map(match => match[1].replace(/^relative /, ""));
       assert.deepEqual(classes(source), classes(main), `${path}: flow dimensions unchanged from #73`);
     }
@@ -225,7 +225,7 @@ test("management pages include AppAI and English overview/sub-page labels", asyn
     }
     fixtureDb.hostedPath = `/${area}`;
     for (const homeHref of ["/", "/zh-TW/"]) trail(await renderHtml(ManagementBreadcrumb({ area, homeHref })), ["AppAI", name], [homeHref]);
-    assert.match(readFileSync(new URL(`../src/app/${area}/layout.tsx`, import.meta.url), "utf8"), new RegExp(`<ManagementBreadcrumb area="${area}"`));
+    assert.match(readFileSync(new URL(`../src/app/(legacy)/${area}/layout.tsx`, import.meta.url), "utf8"), new RegExp(`<ManagementBreadcrumb area="${area}"`));
   }
 });
 
@@ -299,9 +299,9 @@ for (const locale of ["en", "zh-TW"]) {
         trail(detail, ["AppAI", "Site"], [`${prefix}/`], copy.breadcrumb);
         assert.deepEqual(breadcrumbLd(detail).itemListElement.map((item: { name: string }) => item.name), ["AppAI", "Site"]);
         for (const kind of [undefined, "websites", "tools", "apps"] as const) {
-          assert.doesNotMatch(await renderHtml(await PlatformDirectory({ kind })), /href="\/p\/unlisted"/);
+          assert.doesNotMatch(await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale, kind })), /href="\/p\/unlisted"/);
         }
-        const { default: Games } = await import("../src/app/[locale]/games/page.tsx");
+        const { default: Games } = await import("../src/app/(legacy)/[locale]/games/page.tsx");
         assert.doesNotMatch(await renderHtml(await Games()), /href="\/p\/unlisted"/);
       }
     }
@@ -319,10 +319,11 @@ test("PERSON trails link to the exact personal directory and its localized filte
       page("contact", { locale, parentSlug: "person-site", title: "Contact" }),
       page("person-site", { id: "draft", locale: "pt-BR", isDefault: false, isPublished: false, template: "GAME" })];
     fixtureDb.apps = [app("person-app", "person-site")];
-    const directory = await renderHtml(await Websites({ searchParams: Promise.resolve({ type: "personal" }) }));
+    const { default: FilteredDirectory } = await import("../src/app/(site)/[locale]/directory-filtered/[section]/page.tsx");
+    const directory = await renderHtml(await FilteredDirectory({ params: Promise.resolve({ locale: fixtureDb.locale, section: "websites" }), searchParams: Promise.resolve({ type: "personal" }) }));
     assert.ok(directory.includes(`>${category}</h1>`));
     assert.match(directory, /href="\/p\/person-site"/);
-    assert.doesNotMatch(await renderHtml(await Websites({ searchParams: Promise.resolve({}) })), /href="\/p\/person-site"/);
+    assert.doesNotMatch(await renderHtml(await Websites({ params: Promise.resolve({ locale: fixtureDb.locale }) })), /href="\/p\/person-site"/);
     for (const child of [false, true]) {
       const html = await renderHtml(await HostedPage({ params: Promise.resolve({ segments: ["person-site", ...(child ? ["contact"] : [])] }) }));
       const names = ["AppAI", category, "Person", ...(child ? ["Contact"] : [])];
@@ -421,9 +422,9 @@ test("auth scroll height matches shipped #73 with compiled CSS at desktop and mo
   try {
     for (const locale of ["en", "zh-TW"]) for (const path of ["login", "logout", "auth/device"]) {
       fixtureDb.locale = locale;
-      const source = `src/app/[locale]/${path}/page.tsx`;
+      const source = `src/app/(legacy)/[locale]/${path}/page.tsx`;
       const { default: Current } = await import(new URL(`../${source}`, import.meta.url).href);
-      const { default: Main } = await import(baseline.moduleUrl(source));
+      const { default: Main } = await import(baseline.moduleUrl(source.replace("/(legacy)", "")));
       for (const state of path === "auth/device" ? ["missing", "loading", "needLogin", "ready", "approving", "done", "denied", "error"] : ["loading"]) {
         authState.code = state === "missing" ? null : "QA-CODE";
         authState.state = state;

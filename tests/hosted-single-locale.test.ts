@@ -10,9 +10,9 @@ const state = { open: true, user: null };
 const hooks = registerHostedNavigationState(state);
 const baseline = registerMainHostedBaseline("4a71b1e");
 test.after(() => { baseline.deregister(); hooks.deregister(); headers.deregister(); loader.deregister(); });
-const { default: Layout } = await import("../src/app/p/[...segments]/layout.tsx");
-const { default: Page, generateMetadata } = await import("../src/app/p/[...segments]/page.tsx");
-const { default: RootLayout } = await import("../src/app/layout.tsx");
+const { default: Layout } = await import("../src/app/(legacy)/p/[...segments]/layout.tsx");
+const { default: Page, generateMetadata } = await import("../src/app/(legacy)/p/[...segments]/page.tsx");
+const { default: RootLayout } = await import("../src/app/(legacy)/layout.tsx");
 const { resolvePage } = await import("../src/lib/hosted-page-resolver.ts");
 const { loadHostedRootVariants, loadHostedChildVariants } = await import("../src/lib/public-hosted-page.ts");
 const { buildSitemapEntries, sitemapXml } = await import("../src/lib/sitemap-entries.ts");
@@ -60,8 +60,8 @@ for (const locale of ["en", "zh-TW", "zh-CN", "es"]) {
       assert.equal(meta.openGraph?.locale, locale);
       const body = await Page(props);
       const html = await renderHtml(await Layout({ ...props, children: body }));
-      const document = await RootLayout({ children: null });
-      assert.equal(document.props.lang, locale, "actual html element uses resolved content locale");
+      const document = await renderHtml(await RootLayout({ children: null }));
+      assert.match(document, new RegExp(`<html lang="${locale}"`), "actual html element uses resolved content locale");
       assert.match(html, new RegExp(`lang="${locale}"`));
       const links = localeLinks(html);
       assert.equal(links.length, locale.startsWith("zh-") ? 4 : 0, "desktop + open drawer");
@@ -91,7 +91,7 @@ test("derived Chinese pages retain noindex and self canonical; alternates and si
       assert.deepEqual(meta.alternates, { canonical: `https://appai.info${fixtureDb.hostedPath}`, languages: {
         [source]: defaultUrl, "x-default": defaultUrl,
       } });
-      assert.equal((await RootLayout({ children: null })).props.lang, target);
+      assert.match(await renderHtml(await RootLayout({ children: null })), new RegExp(`<html lang="${target}"`));
       const html = await renderHtml(await Layout({ ...props, children: await Page(props) }));
       assert.match(html, /自動轉換|自动转换/);
       assert.ok(localeLinks(html).some(link => link.href === defaultUrl.replace("https://appai.info", "")), "return to source locale");
@@ -119,7 +119,7 @@ test("switcher omits empty policies and unreachable child locales, including der
   }
   fixtureDb.rows = [row("en"), row("zh-TW", false), row("zh-TW", true, true)];
   const props = request(null, "site-notes");
-  assert.equal((await RootLayout({ children: null })).props.lang, "zh-TW", "child has its own default");
+  assert.match(await renderHtml(await RootLayout({ children: null })), /<html lang="zh-TW"/, "child has its own default");
   const links = localeLinks(await renderHtml(await Layout({ ...props, children: await Page(props) })));
   assert.equal(links.length, 4);
   for (const link of links) await Page({ params: Promise.resolve({ segments: link.href.slice(3).split("/") }) });

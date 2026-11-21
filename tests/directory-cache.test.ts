@@ -17,8 +17,8 @@ const { revalidateSeoIndexes } = await import("../src/lib/revalidate-seo.ts");
 const admin = await import("../src/app/api/admin/apps/route.ts");
 const adminUsers = await import("../src/app/api/admin/users/route.ts");
 const { PlatformDirectory } = await import("../src/components/PlatformDirectory.tsx");
-const { default: home } = await import("../src/app/[locale]/page.tsx");
-const detail = await import("../src/app/[locale]/apps/[id]/page.tsx");
+const { default: home } = await import("../src/app/(site)/[locale]/page.tsx");
+const detail = await import("../src/app/(legacy)/[locale]/apps/[id]/page.tsx");
 function reset() {
   state.entries.clear(); state.writes.length = state.invalidations.length = 0; state.admin = true;
   fixtureDb.locale = "en"; fixtureDb.rows = [page("cached", { title: "English fixture", content: { text: "x".repeat(2_100_000) } }),
@@ -61,8 +61,8 @@ test("all public loaders use tagged one-hour data cache, with complete arguments
     ["en", "tools", "OTHER", false, 0], ["en", "apps", "OTHER", false, 0], ["en", "websites", "ALL", true, 0]]);
   // Both miss and hit render valid localized HTML / JSON-LD without Date methods.
   for (let i = 0; i < 2; i++) {
-    assert.match(await renderHtml(await home()), /English fixture/);
-    assert.match(await renderHtml(await PlatformDirectory({})), /English fixture/);
+    assert.match(await renderHtml(await home({ params: Promise.resolve({ locale: fixtureDb.locale }) })), /English fixture/);
+    assert.match(await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale })), /English fixture/);
     const props = { params: Promise.resolve({ id: "cached", locale: "en" }) };
     assert.equal((await detail.generateMetadata(props)).title, "English fixture - AppAI");
     const html = await renderHtml(await detail.default(props));
@@ -86,7 +86,7 @@ test("directory batch keys include pagination and preserve all listings without 
 
 test("20 repeated page renders perform directory database reads on the first request only", async t => {
   reset();
-  for (const [name, render] of [["home", () => home()], ["apps", () => PlatformDirectory({})],
+  for (const [name, render] of [["home", () => home({ params: Promise.resolve({ locale: fixtureDb.locale }) })], ["apps", () => PlatformDirectory({ locale: fixtureDb.locale })],
     ["detail", () => detail.default({ params: Promise.resolve({ id: "cached", locale: "en" }) })]] as const) {
     state.entries.clear();
     const mocks = [t.mock.method(fixtureDb, "$queryRaw"), t.mock.method(fixtureDb.hostedPage, "findMany"), t.mock.method(fixtureDb.app, "findMany"),
@@ -119,15 +119,15 @@ test("all four admin actions invalidate after successful write; unapprove remove
   try {
     for (const action of ["approve", "unapprove", "feature", "unfeature"]) {
       reset();
-      const initial = await renderHtml(await home()); assert.match(initial, /English fixture/);
-      assert.match(await renderHtml(await PlatformDirectory({})), /English fixture/);
+      const initial = await renderHtml(await home({ params: Promise.resolve({ locale: fixtureDb.locale }) })); assert.match(initial, /English fixture/);
+      assert.match(await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale })), /English fixture/);
       assert.ok(await loadPublicAppDetail("cached", "en"));
       const response = await admin.PATCH(request(action));
       assert.equal(response.status, 200);
       assert.deepEqual(state.invalidations, [["seo-sitemap", { expire: 0 }], ["public-directory", { expire: 0 }], ["hosted-page", { expire: 0 }]]);
       if (action === "unapprove") {
-        assert.doesNotMatch(await renderHtml(await home()), /English fixture/);
-        assert.doesNotMatch(await renderHtml(await PlatformDirectory({})), /English fixture/);
+        assert.doesNotMatch(await renderHtml(await home({ params: Promise.resolve({ locale: fixtureDb.locale }) })), /English fixture/);
+        assert.doesNotMatch(await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale })), /English fixture/);
         assert.equal(await loadPublicAppDetail("cached", "en"), null);
         const props = { params: Promise.resolve({ id: "cached", locale: "en" }) };
         assert.deepEqual((await detail.generateMetadata(props)).robots, { index: false });

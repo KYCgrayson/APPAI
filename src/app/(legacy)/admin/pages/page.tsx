@@ -1,4 +1,4 @@
-import { PageActions } from "@/app/dashboard/pages/actions";
+import { PageActions } from "@/app/(legacy)/dashboard/pages/actions";
 import { db } from "@/lib/db";
 import { pagePresentation, logicalPageStatus, PAGE_STATUS_LABELS, type PageSummary } from "@/lib/dashboard-pages";
 import { logicalKey } from "@/lib/page-management";

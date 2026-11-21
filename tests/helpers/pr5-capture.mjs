@@ -9,8 +9,8 @@ export async function captureF0({ publisherOnly = false, normalizeChrome = false
   fixtureDb.apps = structuredClone(f0Apps);
   fixtureDb.locale = 'en';
   fixtureSitemapCache.entries.clear();
-  const hosted = await import('../../src/app/p/[...segments]/page.tsx');
-  const { default: layout } = await import('../../src/app/p/[...segments]/layout.tsx');
+  const hosted = await import('../../src/app/(legacy)/p/[...segments]/page.tsx');
+  const { default: layout } = await import('../../src/app/(legacy)/p/[...segments]/layout.tsx');
   const { loadSitemapIds, loadSitemapShard } = await import('../../src/lib/sitemap-data.ts');
   const { sitemapXml } = await import('../../src/lib/sitemap-entries.ts');
   const { GET: llms } = await import('../../src/app/llms.txt/route.ts');

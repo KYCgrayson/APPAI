@@ -23,13 +23,13 @@ const intl = registerDirectoryFixtures({ translated: true });
 const auth = registerAuthRenderState({ code: null, state: "loading" });
 const baseline = registerMainHostedBaseline("3ddf782", ["@/i18n/navigation"]);
 test.after(() => { baseline.deregister(); auth.deregister(); intl.deregister(); headers.deregister(); loader.deregister(); });
-const hosted = await import("../src/app/p/[...segments]/page.tsx");
+const hosted = await import("../src/app/(legacy)/p/[...segments]/page.tsx");
 const oldHosted = await import(baseline.moduleUrl("src/app/p/[...segments]/page.tsx"));
 const oldSeo = await import(baseline.moduleUrl("src/lib/hosted-page-seo.ts"));
-const appDetail = await import("../src/app/[locale]/apps/[id]/page.tsx");
+const appDetail = await import("../src/app/(legacy)/[locale]/apps/[id]/page.tsx");
 const oldAppDetail = await import(baseline.moduleUrl("src/app/[locale]/apps/[id]/page.tsx"));
-const gameDetail = await import("../src/app/[locale]/games/[slug]/page.tsx");
-const gameHub = await import("../src/app/[locale]/games/page.tsx");
+const gameDetail = await import("../src/app/(legacy)/[locale]/games/[slug]/page.tsx");
+const gameHub = await import("../src/app/(legacy)/[locale]/games/page.tsx");
 const oldGameHub = await import(baseline.moduleUrl("src/app/[locale]/games/page.tsx"));
 const oldGameDetail = await import(baseline.moduleUrl("src/app/[locale]/games/[slug]/page.tsx"));
 const oldGameSeo = await import(baseline.moduleUrl("src/lib/games-page-seo.ts"));
@@ -185,7 +185,7 @@ test("F4: root/child metadata shares fallback with JSON-LD and missing descripti
 
 test("F5: six directory locales have complete authored UI, actual directory/home rendering and no English fallback", async () => {
   const { PlatformDirectory } = await import("../src/components/PlatformDirectory.tsx");
-  const { default: Home } = await import("../src/app/[locale]/page.tsx");
+  const { default: Home } = await import("../src/app/(site)/[locale]/page.tsx");
   const strings = (value: unknown): string[] => typeof value === "string" ? [value] : Object.values(value as object).flatMap(strings);
   for (const locale of ["ja", "ko", "de", "fr", "es", "hi"]) {
     const copy = getDirectoryCopy(locale);
@@ -194,12 +194,12 @@ test("F5: six directory locales have complete authored UI, actual directory/home
     assert.notEqual(copy.description, getDirectoryCopy("en").description);
     fixtureDb.locale = locale; fixtureDb.rows = []; fixtureDb.apps = [];
     for (const kind of [undefined, "websites", "tools"] as const) {
-      const html = await renderHtml(await PlatformDirectory({ kind }));
+      const html = await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale, kind }));
       assert.ok(html.includes(escapeHtml(kind ? copy.entrances[kind].title : copy.title)));
       assert.ok(html.includes(escapeHtml(copy.emptyTitle)));
       assert.ok(!html.includes("Nothing here yet"));
     }
-    const home = await renderHtml(await Home());
+    const home = await renderHtml(await Home({ params: Promise.resolve({ locale: fixtureDb.locale }) }));
     assert.ok(home.includes(escapeHtml(copy.entranceTitle)));
     assert.ok(!home.includes("Find what you need"));
   }
@@ -214,8 +214,8 @@ test("F6/F7: precise raw HTML noindex headers, crawlable auth noindex shells and
   assert.ok(raw.every(rule => rule.headers[0].value === "noindex, follow"));
   assert.deepEqual(await config.rewrites!(), await oldConfig.rewrites());
   assert.deepEqual(rules.filter(rule => !raw.includes(rule)), await oldConfig.headers());
-  const { metadata: logout } = await import("../src/app/[locale]/logout/page.tsx");
-  const { metadata: device } = await import("../src/app/[locale]/auth/device/layout.tsx");
+  const { metadata: logout } = await import("../src/app/(legacy)/[locale]/logout/page.tsx");
+  const { metadata: device } = await import("../src/app/(legacy)/[locale]/auth/device/layout.tsx");
   assert.deepEqual(logout.robots, { index: false, follow: true });
   assert.deepEqual(device.robots, logout.robots);
   const robots = (await import("../src/app/robots.ts")).default();
@@ -245,7 +245,7 @@ test("F8: six PNG social assets are 1200×630, reproducible from SVG, all 9 loca
   }
 });
 
-test("F9: third-party app and download schemas omit unknown price, all other app metadata/schema stays identical; HTML allows F5 navigation translations", async () => {
+test("F9: third-party app and download schemas omit unknown price, all other app metadata/schema stays identical; HTML allows F5 navigation translations and the cached Apps link", async () => {
   fixtureDb.rows = [root];
   fixtureDb.apps = [{ id: "app", name: "Fictional app", organizationId: root.organizationId, hostedPageSlug: root.slug, isApproved: true, category: "OTHER", tags: [], screenshots: [] }];
   for (const locale of locales) {
@@ -256,7 +256,7 @@ test("F9: third-party app and download schemas omit unknown price, all other app
     const oldHtml = await renderHtml(await oldAppDetail.default(props));
     const oldWithTranslatedHeader = oldHtml.replace(/<header\b[\s\S]*?<\/header>/, (header: string) => {
       const copy = getDirectoryCopy(locale);
-      return header.replace(/>Websites</g, `>${escapeHtml(copy.categories.websites)}<`)
+      return header.replace("/apps?kind=apps", "/apps/native").replace(/>Websites</g, `>${escapeHtml(copy.categories.websites)}<`)
         .replace(/>Tools</g, `>${escapeHtml(copy.categories.tools)}<`).replace(/>Apps</g, `>${escapeHtml(copy.categories.apps)}<`);
     });
     assert.equal(html, oldWithTranslatedHeader.replace(',"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}', ""));

@@ -5,7 +5,7 @@ import { registerHostedRenderLoader } from "./helpers/hosted-render-loader.mjs";
 import { actionHooks, registerActionsFixture } from "./helpers/pr5-actions-fixture.mjs";
 const hooks=[registerHostedRenderLoader(),registerActionsFixture()];
 test.after(()=>hooks.reverse().forEach(h=>h.deregister()));
-const {PageActions}=await import("../src/app/dashboard/pages/actions.tsx");
+const {PageActions}=await import("../src/app/(legacy)/dashboard/pages/actions.tsx");
 type Node = ReactElement<Record<string,unknown>>;
 function elements(node:unknown):Node[]{if(Array.isArray(node))return node.flatMap(elements);if(!node||typeof node!=="object"||!("props" in node))return [];const el=node as Node;return [el,...elements(el.props.children)];}
 const render=()=>{actionHooks.refIndex=actionHooks.stateIndex=0;return PageActions({children:"Fixture rows"});};

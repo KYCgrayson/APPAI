@@ -13,7 +13,7 @@ const { AppCard } = await import("../src/components/AppCard.tsx");
 const { AppCard: BeforeCard } = await import(baseline.moduleUrl("src/components/AppCard.tsx"));
 const { PlatformDirectory } = await import("../src/components/PlatformDirectory.tsx");
 const { loadPublicDirectory, loadPublicHome } = await import("../src/lib/public-directory.ts");
-const { default: home } = await import("../src/app/[locale]/page.tsx");
+const { default: home } = await import("../src/app/(site)/[locale]/page.tsx");
 
 test("cards with existing logos render byte-for-byte as baa8373 in all nine locales", async () => {
   for (const locale of locales) {
@@ -49,7 +49,7 @@ test("all locales and kinds use logo-first cards, including personal and fallbac
     const data = await loadPublicDirectory(locale, kind);
     assert.deepEqual(data.entries.map(entry => entry.app.id), ["y-header", "x-hero", "w-existing", "z-letter"]);
     assert.deepEqual(data.entries.map(entry => entry.app.logoUrl), ["/header.svg", "/hero.svg", "/existing.svg", null]);
-    const html = await renderHtml(await PlatformDirectory({ kind }));
+    const html = await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale, kind }));
     assert.ok(html.indexOf('href="/p/header"') < html.indexOf('href="/p/letter"'), `${locale}/${kind}`);
     assert.match(html, /background-color:#ffee00;color:#000000/);
     assert.match(html, />👩🏽‍💻<\/div>/);
@@ -63,7 +63,7 @@ test("all locales and kinds use logo-first cards, including personal and fallbac
       assert.ok(html.indexOf('href="/p/existing"') < html.indexOf('href="/p/person-letter"'));
       assert.ok(html.indexOf('href="/p/person-letter"') < html.indexOf('href="/p/letter"'));
     }
-    const personal = await renderHtml(await PlatformDirectory({ kind: "websites", personalOnly: true }));
+    const personal = await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale, kind: "websites", personalOnly: true }));
     assert.ok(personal.indexOf('href="/p/person-logo"') < personal.indexOf('href="/p/person-letter"'));
     assert.match(personal, /background-color:#123456;color:#ffffff/);
   }
@@ -84,7 +84,7 @@ test("invalid App and page logos render tiles and sort after valid fallbacks on 
   assert.deepEqual(data.profiles.map(profile => profile.logoUrl), ["/person.svg", null]);
   const homeData = await loadPublicHome("en");
   assert.deepEqual(homeData.recentApps.map(row => row.logoUrl), ["/primary.svg", "/hero.svg", "/person.svg", null, null, null]);
-  for (const html of [await renderHtml(await PlatformDirectory({})), await renderHtml(await home())]) {
+  for (const html of [await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale })), await renderHtml(await home({ params: Promise.resolve({ locale: fixtureDb.locale }) }))]) {
     assert.doesNotMatch(html, /<img[^>]+src="(?:#|mailto:|tel:|logo.png)/);
     assert.match(html, />Q<\/div>/);
     assert.ok(html.indexOf('href="/p/hero"') < html.indexOf('href="/p/letter"'));
@@ -119,7 +119,7 @@ test("home keeps featured selection ahead of recent, real-logo priority within e
     assert.match(sql.sql, /"isPublished" = true AND "parentSlug" IS NULL/);
     assert.doesNotMatch(sql.sql, /SELECT\s+\*|SELECT\s+content\b|heroImage/);
     assert.ok(sql.values.includes("letter"));
-    const html = await renderHtml(await home());
+    const html = await renderHtml(await home({ params: Promise.resolve({ locale: fixtureDb.locale }) }));
     assert.ok(html.indexOf('href="/p/letter"') < html.indexOf('href="/p/header"'), "featured section wins");
     assert.match(html, /background-color:#ffee00;color:#000000/);
   } finally { query.mock.restore(); }

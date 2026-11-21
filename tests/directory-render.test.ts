@@ -29,7 +29,7 @@ test("directory renders five real tabs, publisher labels, personal profiles, Chi
   ] as const) {
     fixtureDb.locale = locale;
     fixtureDb.organizationQueries = 0;
-    const html = (await renderHtml(await PlatformDirectory({}))).replace(/<!--.*?-->/g, "");
+    const html = (await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale }))).replace(/<!--.*?-->/g, "");
     assert.match(html, new RegExp(`<section aria-label="${labels[4]}"`));
     for (const label of labels) assert.match(html, new RegExp(`>${label}</a>`));
     assert.match(html, new RegExp(`${prefix} appai.info`));
@@ -44,12 +44,12 @@ test("directory renders five real tabs, publisher labels, personal profiles, Chi
 
 test("personal filter ignores categories and tabs clear filters", async () => {
   fixtureDb.locale = "en";
-  const html = await renderHtml(await PlatformDirectory({ kind: "websites", personalOnly: true, category: "OTHER" }));
+  const html = await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale, kind: "websites", personalOnly: true, category: "OTHER" }));
   assert.match(html, /<a[^>]*aria-current="page"[^>]*href="\/websites\?type=personal"/);
   assert.doesNotMatch(html, /<details/);
   assert.match(html, /example-person/);
   assert.doesNotMatch(html, /href="\/p\/example-app"/);
-  assert.match(html, /href="\/apps\?kind=apps"/);
+  assert.match(html, /href="\/apps\/native"/);
 });
 test.after(() => { directoryLoader.deregister(); loader.deregister(); });
 
@@ -58,7 +58,7 @@ test("missing organizations omit publisher lines on app and personal cards", asy
   try {
     fixtureDb.organizations = [];
     fixtureDb.locale = "en";
-    const html = (await renderHtml(await PlatformDirectory({}))).replace(/<!--.*?-->/g, "");
+    const html = (await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale }))).replace(/<!--.*?-->/g, "");
     assert.match(html, /example-person/);
     assert.match(html, /example-app/);
     assert.doesNotMatch(html, />By\s*</);
@@ -71,12 +71,12 @@ test("AppCard URLs retain HEAD behavior outside Chinese and select Chinese varia
     for (const locale of ["en", "ja", "fr", "zh-CN"]) {
       fixtureDb.rows = [...saved, { ...saved[0], locale, isDefault: false, title: "Localized title" }];
       fixtureDb.locale = locale;
-      const html = await renderHtml(await PlatformDirectory({}));
+      const html = await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale }));
       assert.match(html, new RegExp(`href="/p/example-app${locale === "zh-CN" ? "/zh-CN" : ""}"`));
     }
     fixtureDb.rows = saved;
     fixtureDb.locale = "zh-TW";
-    assert.match(await renderHtml(await PlatformDirectory({})), /href="\/p\/example-app"/);
+    assert.match(await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale })), /href="\/p\/example-app"/);
   } finally { fixtureDb.rows = saved; }
 });
 
@@ -84,7 +84,7 @@ test("AppCard URLs retain HEAD behavior outside Chinese and select Chinese varia
 test("PERSON profiles appear only in All and Personal pages, while marketing pages appear in Websites", async () => {
   fixtureDb.locale = "en";
   for (const kind of ["websites", "tools", "apps"] as const) {
-    const html = await renderHtml(await PlatformDirectory({ kind }));
+    const html = await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale, kind }));
     assert.doesNotMatch(html, /href="\/p\/example-person"/);
     if (kind === "websites") assert.match(html, /href="\/p\/example-app"/);
     else assert.doesNotMatch(html, /href="\/p\/example-app"/);
@@ -102,8 +102,8 @@ test("directory passes App URLs and published content into app classification", 
       fixtureDb.rows = savedRows.map(page => page.slug === "example-app"
         ? { ...page, content: signal === "content" ? { nested: [{ text: "https://testflight.apple.com/join/example" }] }
           : signal === "download" ? { sections: [{ type: "download", data: {} }] } : {} } : page);
-      assert.match(await renderHtml(await PlatformDirectory({ kind: "apps" })), /href="\/p\/example-app"/);
-      assert.doesNotMatch(await renderHtml(await PlatformDirectory({ kind: "websites" })), /href="\/p\/example-app"/);
+      assert.match(await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale, kind: "apps" })), /href="\/p\/example-app"/);
+      assert.doesNotMatch(await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale, kind: "websites" })), /href="\/p\/example-app"/);
     }
   } finally { fixtureDb.apps = savedApps; fixtureDb.rows = savedRows; }
 });
@@ -122,7 +122,7 @@ test("GAME templates and game-kind apps never enter the shared directories, even
       ...savedRows[0], slug: app.hostedPageSlug, template: "GAME", content: { sections: [{ type: "tool" }, { type: "download" }] },
     }));
     for (const kind of [undefined, "tools", "apps", "websites"] as const) {
-      const html = await renderHtml(await PlatformDirectory({ kind }));
+      const html = await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale, kind }));
       assert.doesNotMatch(html, /href="\/(?:p|app|apps)\/game-/);
       assert.doesNotMatch(html, /href="\/app\/example-game"/);
       assert.doesNotMatch(html, /Example app/);

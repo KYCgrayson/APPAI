@@ -101,6 +101,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // Keep the original custom 404 for unmatched URLs with multiple root layouts.
+    globalNotFound: true,
+  },
   outputFileTracingIncludes: {
     "/spec": ["./docs/spec/**", "./AGENT_INSTRUCTIONS.md"],
     "/spec/[topic]": ["./docs/spec/**", "./AGENT_INSTRUCTIONS.md"],

@@ -5,10 +5,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return platformMetadata(params, "home");
 }
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 import { serializeJsonLd } from "@/lib/json-ld";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import NextLink from "next/link";
 import { Link } from "@/i18n/navigation";
 import { AppCard } from "@/components/AppCard";
@@ -18,10 +18,11 @@ import { PlatformFooter } from "@/components/PlatformFooter";
 import { getDirectoryCopy } from "@/lib/directory-copy";
 import { GAMES, gamePageHref, getGamesCopy, isPlayableGame } from "@/lib/games-catalog";
 
-export default async function HomePage() {
+export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
   const t = await getTranslations("home");
   const tc = await getTranslations("common");
-  const locale = await getLocale();
   const directoryCopy = getDirectoryCopy(locale);
   const gamesCopy = getGamesCopy(locale);
 
@@ -29,8 +30,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
-      {/* Agent discovery metadata lives in src/app/layout.tsx. */}
-      <PlatformHeader />
+      <PlatformHeader locale={locale} />
       <div className="max-w-6xl mx-auto px-6 pt-4"><PlatformBreadcrumb dark /></div>
 
       {/* Hero */}
@@ -97,7 +97,7 @@ export default async function HomePage() {
             {(["websites", "tools", "apps"] as const).map((section) => {
               const item = directoryCopy.entrances[section];
               return (
-                <Link key={section} href={section === "apps" ? "/apps?kind=apps" : `/${section}`} className="group rounded-2xl border border-gray-800 bg-gray-950 p-6 transition-colors hover:border-cyan-700/70">
+                <Link key={section} href={section === "apps" ? "/apps/native" : `/${section}`} className="group rounded-2xl border border-gray-800 bg-gray-950 p-6 transition-colors hover:border-cyan-700/70">
                   <p className="text-xs uppercase tracking-widest text-cyan-400">{directoryCopy.categories[section]}</p>
                   <h3 className="mt-3 text-xl font-semibold text-white">{item.title}</h3>
                   <p className="mt-2 min-h-12 text-sm leading-relaxed text-gray-400">{item.description}</p>
@@ -288,7 +288,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <PlatformFooter />
+      <PlatformFooter locale={locale} />
     </div>
   );
 }

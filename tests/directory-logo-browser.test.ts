@@ -27,7 +27,7 @@ test("directory cards at 375px: no page overflow, real logos and letter tiles ar
     await browser.send("Emulation.setDeviceMetricsOverride", { width: 375, height: 900, deviceScaleFactor: 1, mobile: true });
     const { PlatformDirectory } = await import("../src/components/PlatformDirectory.tsx");
     const { PlatformDirectory: Before } = await import(baseline.moduleUrl("src/components/PlatformDirectory.tsx"));
-    const { default: home } = await import("../src/app/[locale]/page.tsx");
+    const { default: home } = await import("../src/app/(site)/[locale]/page.tsx");
     const logo = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" rx="12" fill="#0891b2"/><path d="M12 34L24 12L36 34Z" fill="white"/></svg>');
     const setHtml = async (html: string) => browser!.send("Page.setDocumentContent", {
       frameId: (await browser!.send("Page.getFrameTree")).frameTree.frame.id,
@@ -51,7 +51,7 @@ test("directory cards at 375px: no page overflow, real logos and letter tiles ar
         page("person-logo", { title: "Profile logo", template: "PERSON" })];
       if (route === "tools" || route === "apps") for (const row of fixtureDb.apps) row.tags = [`appai:kind:${route === "tools" ? "tool" : "app"}`];
       const props = { kind: route === "personal" ? "websites" as const : ["websites", "tools", "apps"].includes(route) ? route as "websites" | "tools" | "apps" : undefined, personalOnly: route === "personal" };
-      await setHtml(await renderHtml(route === "home" ? await home() : await PlatformDirectory(props)));
+      await setHtml(await renderHtml(route === "home" ? await home({ params: Promise.resolve({ locale: fixtureDb.locale }) }) : await PlatformDirectory({ ...props, locale: fixtureDb.locale })));
       const actual = await browser.evaluate(`(() => ({ overflow: document.documentElement.scrollWidth > innerWidth,
         images: document.querySelectorAll('a[href^="/p/"] img.w-12.h-12').length,
         tiles: document.querySelectorAll('a[href^="/p/"] div.w-12.h-12').length,

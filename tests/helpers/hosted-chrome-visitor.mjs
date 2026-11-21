@@ -12,11 +12,11 @@ export async function visitorChromeFixture() {
   const state = { open: false, user: null };
   const hooks = [registerHostedRenderLoader(), registerHostedHeaders(), registerHostedNavigationState(state)];
   const baseline = registerMainHostedBaseline('a7c1925');
-  const { default: Layout } = await import('../../src/app/p/[...segments]/layout.tsx');
-  const { default: Page } = await import('../../src/app/p/[...segments]/page.tsx');
+  const { default: Layout } = await import('../../src/app/(legacy)/p/[...segments]/layout.tsx');
+  const { default: Page } = await import('../../src/app/(legacy)/p/[...segments]/page.tsx');
   const { default: BeforeLayout } = await import(baseline.layoutUrl);
   const { default: BeforePage } = await import(baseline.moduleUrl('src/app/p/[...segments]/page.tsx'));
-  const { default: NotFound } = await import('../../src/app/not-found.tsx');
+  const { default: NotFound } = await import('../../src/app/(legacy)/not-found.tsx');
   const { default: BeforeNotFound } = await import(baseline.moduleUrl('src/app/not-found.tsx'));
   return {
     state,
@@ -69,8 +69,8 @@ export function visitorChromeBrowserBundle(menuProps) {
   const require = createRequire(import.meta.url);
   const react = load(require.resolve('react'));
   const dom = load(require.resolve('react-dom/client'));
-  const visitor = load(new URL('../../src/app/p/[...segments]/VisitorChrome.tsx', import.meta.url).pathname);
-  const menu = load(new URL('../../src/app/p/[...segments]/MobileMenu.tsx', import.meta.url).pathname);
+  const visitor = load(new URL('../../src/app/(legacy)/p/[...segments]/VisitorChrome.tsx', import.meta.url).pathname);
+  const menu = load(new URL('../../src/app/(legacy)/p/[...segments]/MobileMenu.tsx', import.meta.url).pathname);
   return `(() => {
     const process = { env: { NODE_ENV: 'development' } };
     const modules = {${[...modules].map(([path, code]) => `${JSON.stringify(path)}: (module, exports, require) => {${code}\n}`).join(',\n')}};

@@ -11,8 +11,8 @@ const headers = registerHostedHeaders();
 test.after(() => { headers.deregister(); intl.deregister(); hooks.deregister(); });
 
 test("platform route generateMetadata reads the nine message files", async () => {
-  const routes = [await import("../src/app/[locale]/page.tsx"), await import("../src/app/[locale]/tools/page.tsx"),
-    await import("../src/app/[locale]/apps/page.tsx"), await import("../src/app/[locale]/websites/page.tsx")];
+  const routes = [await import("../src/app/(site)/[locale]/page.tsx"), await import("../src/app/(site)/[locale]/tools/page.tsx"),
+    await import("../src/app/(site)/[locale]/apps/page.tsx"), await import("../src/app/(site)/[locale]/websites/page.tsx")];
   for (const route of routes) {
     const titles = new Set();
     const descriptions = new Set();
@@ -26,7 +26,7 @@ test("platform route generateMetadata reads the nine message files", async () =>
 });
 
 test("all nine homepage headings SSR with expected copy, phrase breaks and wrapping classes", async () => {
-  const { default: HomePage } = await import("../src/app/[locale]/page.tsx");
+  const { default: HomePage } = await import("../src/app/(site)/[locale]/page.tsx");
   fixtureDb.apps = [];
   fixtureDb.rows = [];
   const expectedHeadings = {
@@ -42,7 +42,7 @@ test("all nine homepage headings SSR with expected copy, phrase breaks and wrapp
   };
   for (const [locale, [title1, title2]] of Object.entries(expectedHeadings)) {
     fixtureDb.locale = locale;
-    const element = await HomePage();
+    const element = await HomePage({ params: Promise.resolve({ locale: fixtureDb.locale }) });
     const html = await new Promise<string>((resolve, reject) => {
       const output = new PassThrough();
       const chunks: string[] = [];
@@ -72,7 +72,7 @@ test("all nine homepage headings SSR with expected copy, phrase breaks and wrapp
 });
 
 test("app detail canonical, social and JSON-LD URLs include /apps/ in every locale", async () => {
-  const { default: AppDetail, generateMetadata } = await import("../src/app/[locale]/apps/[id]/page.tsx");
+  const { default: AppDetail, generateMetadata } = await import("../src/app/(legacy)/[locale]/apps/[id]/page.tsx");
   fixtureDb.apps = [{ id: "example", name: "Example", tagline: "Example app", isApproved: true,
     hostedPageSlug: null, appType: null, category: "OTHER", tags: [], screenshots: [] }];
   for (const locale of ["en", "ja", "ko", "zh-CN", "zh-TW", "de", "fr", "es", "hi"]) {
@@ -98,11 +98,11 @@ test("app detail canonical, social and JSON-LD URLs include /apps/ in every loca
 });
 
 test("login, launcher and error surfaces carry noindex", async () => {
-  const login = await import("../src/app/[locale]/login/page.tsx");
-  const launcher = await import("../src/app/app/layout.tsx");
+  const login = await import("../src/app/(legacy)/[locale]/login/page.tsx");
+  const launcher = await import("../src/app/(legacy)/app/layout.tsx");
   assert.equal((login.metadata.robots as { index: boolean }).index, false);
   assert.equal((launcher.metadata.robots as { index: boolean }).index, false);
-  const { default: NotFound } = await import("../src/app/not-found.tsx");
+  const { default: NotFound } = await import("../src/app/(legacy)/not-found.tsx");
   const { default: ErrorPage } = await import("../src/app/error.tsx");
   const { default: GlobalError } = await import("../src/app/global-error.tsx");
   const props = { error: new Error("Example"), reset() {} };

@@ -118,7 +118,7 @@ test("Game info follows internal puzzle switching and history navigation without
 test("runtime route serves all five pages from allowlisted existing static builds, including HEAD", async () => {
   const hooks = registerHostedRenderLoader();
   try {
-    const { GET } = await import("../src/app/games/[slug]/runtime/route.ts");
+    const { GET } = await import("../src/app/(legacy)/games/[slug]/runtime/route.ts");
     const { NextRequest } = await import("next/server");
     for (const game of GAMES) for (const method of ["GET", "HEAD"]) {
       const response = await GET(new NextRequest(`https://appai.info${gamePlayHref(game, "zh-CN")}`, { method }), { params: Promise.resolve({ slug: game.slug }) });

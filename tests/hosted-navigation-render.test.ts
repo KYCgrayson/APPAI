@@ -17,9 +17,9 @@ const pr71Baseline = registerMainHostedBaseline("857c588");
 
 test.after(() => { pr71Baseline.deregister(); baseline.deregister(); hooks.deregister(); headers.deregister(); loader.deregister(); });
 
-const { default: Layout } = await import("../src/app/p/[...segments]/layout.tsx");
-const { default: HostedPage } = await import("../src/app/p/[...segments]/page.tsx");
-const { default: NotFound } = await import("../src/app/p/[...segments]/not-found.tsx");
+const { default: Layout } = await import("../src/app/(legacy)/p/[...segments]/layout.tsx");
+const { default: HostedPage } = await import("../src/app/(legacy)/p/[...segments]/page.tsx");
+const { default: NotFound } = await import("../src/app/(legacy)/p/[...segments]/not-found.tsx");
 const { buildNav } = await import("../src/lib/site-nav.ts");
 const { hostedNavigationCopy, HOME_LABELS } = await import("../src/lib/hosted-navigation-copy.ts");
 const { proseThemeVariables } = await import("../src/lib/prose-theme.ts");

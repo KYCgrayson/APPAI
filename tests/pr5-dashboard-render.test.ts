@@ -8,8 +8,8 @@ import { dashboardStore } from "./helpers/pr5-sqlite.mjs";
 import { f2Pages, page, PR5_NOW } from "./fixtures/pr5-pages.ts";
 const hooks = [registerHostedRenderLoader(), registerPr5PublicFixtures()];
 test.after(() => hooks.reverse().forEach(hook => hook.deregister()));
-const { default: Pages } = await import("../src/app/dashboard/pages/page.tsx");
-const { default: Dashboard } = await import("../src/app/dashboard/page.tsx");
+const { default: Pages } = await import("../src/app/(legacy)/dashboard/pages/page.tsx");
+const { default: Dashboard } = await import("../src/app/(legacy)/dashboard/page.tsx");
 
 test("dashboard renders English URL filters, groups, locale chips, hidden/mixed labels and correct logical-root usage", async () => {
   test.mock.timers.enable({ apis: ["Date"], now: PR5_NOW.getTime() });
@@ -42,7 +42,7 @@ test("dashboard renders English URL filters, groups, locale chips, hidden/mixed 
 
 
 test("admin selection is logical-page scoped and displays hidden locales, removal and blocked-agent details", async () => {
-  const { default: AdminPages } = await import("../src/app/admin/pages/page.tsx");
+  const { default: AdminPages } = await import("../src/app/(legacy)/admin/pages/page.tsx");
   const rows=[page("admin-root"),page("admin-root",{id:"admin-root-ja",locale:"ja",isDefault:false,isPublished:false}),
     page("admin-child",{parentSlug:"admin-root"}),page("admin-child",{id:"admin-child-ja",parentSlug:"admin-root",locale:"ja",isDefault:false}),removedPage("admin-trash","DELETED")];
   fixtureDb.rows=rows.map(row=>({...row,organization:{name:"Fixture organization"}}));
