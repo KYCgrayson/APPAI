@@ -124,7 +124,7 @@ test("sections endpoint exposes discriminated fields, array bounds, HTTPS source
   assertEmbeddedSchema(body.sections[0].dataSchema);
 });
 
-test("non-diagram section schemas retain every byte and key order from the branch base", async () => {
+test("section schemas outside diagram and project-cards retain every byte and key order from the branch base", async () => {
   const baseline = registerMainHostedBaseline("3ddf782");
   try {
     const before = await import(baseline.moduleUrl("src/app/api/v1/sections/route.ts"));
@@ -132,6 +132,9 @@ test("non-diagram section schemas retain every byte and key order from the branc
     const previous = await (await before.GET(new NextRequest(url))).json();
     const current = await (await definitions.GET(new NextRequest(url))).json();
     delete current.sections.diagram;
+    // #116 extends the card schema, covered by project-cards-api.test.ts.
+    delete current.sections["project-cards"];
+    delete previous.sections["project-cards"];
     assert.equal(JSON.stringify(current), JSON.stringify(previous));
   } finally { baseline.deregister(); }
 });

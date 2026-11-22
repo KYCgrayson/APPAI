@@ -257,7 +257,7 @@ async function patchPage(
     // mergeContent retains object identity for untouched sections. Validate only
     // changed sections, with their final merged data and original field indices.
     const touchedContent = { ...merged, ...(Array.isArray(merged?.sections) ? { sections: merged.sections.map(section => previous.includes(section) ? {} : section) } : {}) };
-    const issues = [...diagramContentIssues(touchedContent), ...galleryContentIssues(touchedContent), ...projectCardsContentIssues(touchedContent), ...gameContentIssues(touchedContent), ...normalizeVideoContent(touchedContent, false, page.content).issues];
+    const issues = [...diagramContentIssues(touchedContent), ...galleryContentIssues(touchedContent), ...projectCardsContentIssues(touchedContent, mergedContent), ...gameContentIssues(touchedContent), ...normalizeVideoContent(touchedContent, false, page.content).issues];
     if (issues.length) throw new z.ZodError(issues);
     const sanitized = sanitizePageContent(
       mergedContent,

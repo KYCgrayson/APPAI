@@ -16,7 +16,9 @@ type JsonSchema = {
   minLength?: number;
   maxItems?: number;
   minItems?: number;
-  enum?: readonly string[];
+  enum?: readonly (string | number)[];
+  format?: string;
+  additionalProperties?: false;
   pattern?: string;
   const?: string;
   not?: JsonSchema;
@@ -87,6 +89,8 @@ function fieldToJsonSchema(field: SectionFieldDef): JsonSchema {
   for (const key of ["maxLength", "minLength", "maxItems", "minItems", "minimum", "maximum"] as const) if (field[key] !== undefined) base[key] = field[key];
   if (field.enum) base.enum = field.enum;
   if (field.pattern) base.pattern = field.pattern;
+  if (field.format) base.format = field.format;
+  if (field.additionalProperties === false) base.additionalProperties = false;
   return base;
 }
 

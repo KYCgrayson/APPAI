@@ -1,6 +1,7 @@
 import { diagramJsonSchema, DIAGRAM_KINDS } from "./diagram.ts";
 import { PROJECT_CARD_HREF_PATTERN, EDITORIAL_IMAGE_PATTERN } from "./hosted-editorial-links.ts";
 import { GALLERY_ASPECTS, GALLERY_BADGE_PATTERN } from "./gallery.ts";
+import { PROJECT_CARD_DATE_PATTERN, PROJECT_CARD_PAGE_SIZES, PROJECT_CARD_PUBLISHED_AT_PATTERN } from "./project-cards.ts";
 import { SOCIAL_PLATFORMS } from "./sanitize.ts";
 import example0 from "../../docs/examples/app-landing.example.json" with { type: "json" };
 import example1 from "../../docs/examples/saas-landing.example.json" with { type: "json" };
@@ -27,7 +28,9 @@ export interface SectionFieldDef {
   type: "string" | "url" | "markdown" | "boolean" | "number" | "integer" | "array" | "object" | "video-time";
   required: boolean;
   description: string;
-  enum?: readonly string[];
+  enum?: readonly (string | number)[];
+  format?: "date" | "date-time";
+  additionalProperties?: false;
   pattern?: string;
   maxLength?: number;
   minLength?: number;
@@ -357,6 +360,10 @@ export const SECTION_DEFS: SectionDef[] = [
     description: "Editorial project grid (default) or single-column post feed with meta and one or two image tiles. Background remains the profile-header default.",
     fields: [
       { name: "layout", type: "string", required: false, enum: ["grid", "feed"], description: "Default grid. Feed is a centered single-column post stream." },
+      { name: "sort", type: "string", required: false, enum: ["date-desc"], description: "Date descending, undated last; ties use publishedAt descending, then original array order. Omit to keep the array order." },
+      { name: "pagination", type: "object", required: false, additionalProperties: false, description: "At most one project-cards section per page may paginate. Hosted URLs use ?page=N&size=10|20. Invalid size uses defaultSize; invalid or out-of-range page returns 404.", fields: [
+        { name: "defaultSize", type: "integer", required: true, enum: PROJECT_CARD_PAGE_SIZES, description: "Number of cards per page when the size query is absent or invalid." },
+      ] },
       { name: "subheading", type: "string", required: false, description: "Optional supporting text below the heading." },
       { name: "heading", type: "string", required: false, description: "Optional section heading above the content." },
       { name: "eyebrow", type: "string", required: false, description: "Short accent label above the heading." },
@@ -364,9 +371,11 @@ export const SECTION_DEFS: SectionDef[] = [
         name: "items", type: "array", required: false, description: "Ordered content items; each requires a non-empty name or title.",
         items: [
           { name: "name", type: "string", required: true, description: "Display name used as the profile h1 or project title." },
+          { name: "date", type: "string", required: false, format: "date", pattern: PROJECT_CARD_DATE_PATTERN, description: "A real calendar date (YYYY-MM-DD). Used for sorting; supply meta to display the date." },
+          { name: "publishedAt", type: "string", required: false, format: "date-time", pattern: PROJECT_CARD_PUBLISHED_AT_PATTERN, description: "ISO datetime with seconds and Z or a numeric UTC offset. Used as the date-desc tie-breaker." },
           { name: "href", type: "url", required: false, maxLength: 2048, pattern: PROJECT_CARD_HREF_PATTERN, description: "Title and description link in either layout. HTTPS without credentials, /p/... with optional ?t=time/#anchor, #anchor, or ?t=time#anchor. Time uses the video contract (0–86400 seconds, m:ss or h:mm:ss)." },
           { name: "meta", type: "array", required: false, maxItems: 3, valueItems: { type: "string", minLength: 1, pattern: "^\\s*\\S(?:[\\s\\S]{0,38}\\S)?\\s*$", description: "1–40 characters after trimming." }, description: "Up to three strings, 1–40 characters each after trimming, joined by · above the title. Feed uses category only when meta is absent." },
-          { name: "featured", type: "boolean", required: false, description: "Feed only; only the first true item is enlarged. Later true values and all grid values are ignored." },
+          { name: "featured", type: "boolean", required: false, description: "Feed only; the first true item is enlarged. In a paginated feed, only page 1 can show a featured card." },
           { name: "media", type: "array", required: false, minItems: 1, maxItems: 2, description: "Feed only; ignored in grid. One or two image tiles. If absent, screenshot becomes one 16:9 tile. Featured tiles stack full-width; other pairs stay side by side at all widths.", items: [
             { name: "url", type: "url", required: true, pattern: EDITORIAL_IMAGE_PATTERN, description: "HTTPS image URL without credentials, like screenshot.url; no file extension requirement." },
             { name: "alt", type: "string", required: true, description: "Accessible image description; empty for decorative images. Linked decorative images use label or the item name as their accessible link name." },

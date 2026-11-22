@@ -11,7 +11,8 @@ import { resolvePage, resolveChildPage } from "@/lib/hosted-page-resolver";
 import { hostedPageUrl, hostedAlternates, hasExternalCanonical } from "@/lib/hosted-page-urls";
 import { hostedLegalCopy } from "@/lib/hosted-legal-copy";
 import { PLATFORM_ORIGIN } from "@/lib/platform-identity";
-import { buildJsonLd, hostedOgImage, resolveHostedDescription } from "@/lib/hosted-page-seo";
+import { buildJsonLd, hostedOgImage, projectCardsCanonical, resolveHostedDescription } from "@/lib/hosted-page-seo";
+import { projectCardsPageHref, resolveProjectCardsPagination, type ProjectCardsQuery } from "@/lib/project-cards";
 import { notFound, redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
@@ -30,6 +31,7 @@ import type { Metadata } from "next";
 
 interface Props {
   params: Promise<{ segments: string[] }>;
+  searchParams?: Promise<ProjectCardsQuery>;
 }
 
 function extractLogos(page: { content: unknown; headerLogo: string | null; heroImage: string | null }): { headerLogo: string | null; heroLogo: string | null } {
@@ -43,10 +45,19 @@ function extractLogos(page: { content: unknown; headerLogo: string | null; heroI
   };
 }
 
+function serializeSearchParams(params: ProjectCardsQuery) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (Array.isArray(value)) value.forEach(entry => query.append(key, entry));
+    else if (value !== undefined) query.append(key, value);
+  }
+  return query;
+}
+
 // Nav loading + building lives in @/lib/site-nav. It's rendered inline in the
 // sticky header in layout.tsx, so page.tsx no longer needs to build nav itself.
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { segments } = await params;
   const parsed = parsePageSegments(segments);
   if (!parsed) return {};
@@ -72,6 +83,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : rootPage;
   if (!page) return {};
 
+  const pagination = subpage ? undefined
+    : resolveProjectCardsPagination(normalizeHostedContent(page.content).sections, await searchParams ?? {});
+  if (pagination === null) notFound();
+
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
   const logoUrl = childSlug
     ? extractLogoFromContent(normalizeHostedContent(page.content), page.headerLogo)
@@ -89,14 +104,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const defaultCanonical = hostedPageUrl(page, [rootPage, ...roots], baseUrl, subpage)
     || (childSlug ? `${baseUrl}${buildPagePath(slug, explicitLocale || rootPage.locale, childSlug, !explicitLocale)}` : null);
   // Policy documents have their own identity, independent of the marketing URL.
-  const canonicalUrl = (!subpage && page.canonicalUrl) || defaultCanonical || undefined;
-  const languages = !subpage && hasExternalCanonical(page, baseUrl)
+  const canonicalUrl = pagination && defaultCanonical ? projectCardsCanonical(defaultCanonical, pagination, page.canonicalUrl)
+    : (!subpage && page.canonicalUrl) || defaultCanonical || undefined;
+  const languages = (pagination?.canonicalPage ?? 1) > 1 || !subpage && hasExternalCanonical(page, baseUrl)
     ? undefined : hostedAlternates(variants, roots, baseUrl, subpage);
   return {
     title,
     description,
     // Derived script variants are useful to readers but are not original translations.
-    robots: page.autoConverted ? { index: false, follow: true } : undefined,
+    robots: page.autoConverted || pagination?.noindex ? { index: false, follow: true } : undefined,
     icons: logoUrl ? { icon: logoUrl, apple: logoUrl } : undefined,
     openGraph: {
       title,
@@ -119,7 +135,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function HostedPage({ params }: Props) {
+export default async function HostedPage({ params, searchParams }: Props) {
   const { segments } = await params;
   const parsed = parsePageSegments(segments);
   if (!parsed) notFound();
@@ -226,6 +242,21 @@ export default async function HostedPage({ params }: Props) {
     );
   }
 
+  const rootPage = await resolvePage(slug, explicitLocale);
+  if (!rootPage) notFound();
+
+  // Resolve the actual page being rendered: child page if childSlug present,
+  // otherwise the root page itself.
+  const page = childSlug
+    ? await resolveChildPage(slug, childSlug, explicitLocale, rootPage.organizationId)
+    : rootPage;
+  if (!page) notFound();
+
+  const query = !subpage ? await searchParams ?? {} : {};
+  const pagination = subpage ? undefined
+    : resolveProjectCardsPagination(normalizeHostedContent(page.content).sections, query);
+  if (pagination === null) notFound();
+
   // Auto-detect language: when no locale in URL, check browser preference.
   // Skip if: user explicitly chose a language (cookie), or visiting a subpage,
   // or visiting a child page (locale is inherited from how they got here).
@@ -248,28 +279,24 @@ export default async function HostedPage({ params }: Props) {
 
           // Only redirect if matched locale differs from default
           if (matched && matched !== defaultLocale) {
-            redirect(buildPagePath(slug, matched, null, false));
+            const redirectQuery = serializeSearchParams(query);
+            redirect(buildPagePath(slug, matched, null, false) + (redirectQuery.size ? `?${redirectQuery}` : ""));
           }
         }
       }
     }
   }
 
-  const rootPage = await resolvePage(slug, explicitLocale);
-  if (!rootPage) notFound();
-
-  // Resolve the actual page being rendered: child page if childSlug present,
-  // otherwise the root page itself.
-  const page = childSlug
-    ? await resolveChildPage(slug, childSlug, explicitLocale, rootPage.organizationId)
-    : rootPage;
-  if (!page) notFound();
-
   const baseUrl = process.env.NEXTAUTH_URL || "https://appai.info";
   const roots = [rootPage, ...await loadHostedRootVariants(slug, rootPage.organizationId)];
-  const pageUrl = (!subpage && page.canonicalUrl) || hostedPageUrl(page, roots, baseUrl, subpage)
+  const hostedUrl = hostedPageUrl(page, roots, baseUrl, subpage)
     || (childSlug ? `${baseUrl}${buildPagePath(slug, explicitLocale || rootPage.locale, childSlug, !explicitLocale)}` : null);
+  const pageUrl = pagination && hostedUrl ? projectCardsCanonical(hostedUrl, pagination, page.canonicalUrl)
+    : (!subpage && page.canonicalUrl) || hostedUrl;
   if (!pageUrl) notFound();
+  const videoPageUrl = pagination && hostedUrl
+    ? projectCardsPageHref(hostedUrl, pagination.page, pagination.size === pagination.defaultSize ? undefined : pagination.size)
+    : hostedUrl || pageUrl;
   const legal = subpage ? hostedLegalCopy(page.locale, subpage, page.title) : null;
 
   const trail = await hostedBreadcrumbs(rootPage, roots, page.locale, childSlug || subpage ? {
@@ -277,6 +304,7 @@ export default async function HostedPage({ params }: Props) {
     chromeLabel: subpage === "privacy" ? "privacyPolicy" : subpage === "terms" ? "termsOfService" : undefined,
     href: hostedPageUrl(page, roots, baseUrl, subpage) ?? pageUrl,
   } : undefined);
+  if (pagination) trail[trail.length - 1].href = pageUrl;
   const breadcrumb = breadcrumbJsonLd(trail, baseUrl);
   const visibleBreadcrumb = trail.length > 0 ? <Breadcrumb items={trail}
     label={hostedNavigationCopy(page.locale).breadcrumb} themeColor={rootPage.themeColor}
@@ -358,7 +386,7 @@ export default async function HostedPage({ params }: Props) {
     );
   }
 
-  const jsonLd = buildJsonLd(page, pageUrl, baseUrl, breadcrumb);
+  const jsonLd = buildJsonLd(page, pageUrl, baseUrl, breadcrumb, pagination);
 
   return (
     <>
@@ -368,7 +396,10 @@ export default async function HostedPage({ params }: Props) {
       />
       {visibleBreadcrumb}
       {page.customCss && <style>{page.customCss}</style>}
-      <PageRenderer page={{ ...page, content: childSlug ? inheritHeadingColor(page.content, rootPage.content) : page.content, videoPageUrl: hostedPageUrl(page, roots, baseUrl) || pageUrl }} isLoggedIn={isLoggedIn} isAdmin={isAdmin} userId={userId} />
+      <PageRenderer page={{ ...page, content: childSlug ? inheritHeadingColor(page.content, rootPage.content) : page.content, videoPageUrl }}
+        cardPagination={pagination ? { ...pagination, path: buildPagePath(slug, explicitLocale || page.locale, childSlug, !explicitLocale) } : undefined}
+        cardSeekQuery={pagination ? serializeSearchParams({ ...query, t: undefined }).toString() : undefined}
+        isLoggedIn={isLoggedIn} isAdmin={isAdmin} userId={userId} />
     </>
   );
 }
