@@ -17,8 +17,8 @@ const meanings = [
 ];
 const overview = docs.get('overview')!;
 const quickstart = read('src/app/llms.txt/route.ts');
-const homepage = read('src/app/[locale]/page.tsx');
-const layout = read('src/app/layout.tsx');
+const homepage = read('src/app/(site)/[locale]/page.tsx');
+const layout = read('src/app/RootDocument.tsx');
 const references = readdirSync(new URL('../skills/appai-publish/references/', import.meta.url)).filter(name => name.endsWith('.md'));
 const skillPaths = ['skills/appai-publish/SKILL.md', ...references.map(name => 'skills/appai-publish/references/' + name)];
 const readmes = readdirSync(new URL('../', import.meta.url)).filter(name => /^README.*\.md$/.test(name));
@@ -245,7 +245,9 @@ test('layout metadata starts at the overview and lists four use-cases', () => {
   assert.ok(positionOf(instructions, 'https://appai.info/spec') < positionOf(instructions, 'llms-full.txt'));
   assert.match(instructions, /complete single-file fallback/);
   assert.match(instructions, /Never submit organizationId, credentials, runtime URLs, SQL, or secrets\./);
-  assert.match(homepage, /\{\/\* Agent discovery metadata lives in src\/app\/layout\.tsx\. \*\/\}/);
+  for (const path of ['src/app/(site)/[locale]/layout.tsx', 'src/app/(legacy)/layout.tsx']) {
+    assert.match(read(path), /export const metadata = rootMetadata;/);
+  }
 });
 
 test('every topic ends with compact absolute All-topics navigation', () => {

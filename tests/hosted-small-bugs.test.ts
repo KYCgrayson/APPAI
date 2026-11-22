@@ -21,10 +21,10 @@ const { HeroSection: Round1Hero } = await import(round1.moduleUrl('src/templates
 const { generateMetadata: round1Metadata } = await import(round1.moduleUrl('src/app/p/[...segments]/page.tsx'));
 const { PageRenderer } = await import('../src/templates/shared/PageRenderer.tsx');
 const { PageRenderer: BeforeRenderer } = await import(baseline.moduleUrl('src/templates/shared/PageRenderer.tsx'));
-const { default: Layout } = await import('../src/app/p/[...segments]/layout.tsx');
-const { default: HostedPage, generateMetadata } = await import('../src/app/p/[...segments]/page.tsx');
+const { default: Layout } = await import('../src/app/(legacy)/p/[...segments]/layout.tsx');
+const { default: HostedPage, generateMetadata } = await import('../src/app/(legacy)/p/[...segments]/page.tsx');
 const { default: BeforeHostedPage, generateMetadata: beforeMetadata } = await import(baseline.moduleUrl('src/app/p/[...segments]/page.tsx'));
-const { default: AppDetail, generateMetadata: appMetadata } = await import('../src/app/[locale]/apps/[id]/page.tsx');
+const { default: AppDetail, generateMetadata: appMetadata } = await import('../src/app/(legacy)/[locale]/apps/[id]/page.tsx');
 const { default: BeforeAppDetail, generateMetadata: beforeAppMetadata } = await import(baseline.moduleUrl('src/app/[locale]/apps/[id]/page.tsx'));
 const { loadPublicAppDetail, loadPublicDirectory, loadPublicHome } = await import('../src/lib/public-directory.ts');
 const image = 'https://i.ytimg.com/vi/fixture/maxresdefault.jpg';
@@ -162,7 +162,7 @@ test('invalid higher-priority logos cannot hide a valid content.logo in headers 
 
 test('admin App list falls back to published root logo without mixing organizations', async () => {
   const navigation = registerAdminAppNavigation();
-  const { default: AdminApps } = await import('../src/app/admin/apps/page.tsx');
+  const { default: AdminApps } = await import('../src/app/(legacy)/admin/apps/page.tsx');
   navigation.deregister();
   const { root } = fixture();
   fixtureDb.apps[0].organization = { name: 'Fixture studio' };

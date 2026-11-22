@@ -21,6 +21,7 @@ export function AccountControls({
   isAdmin = false,
   compact = false,
   hostedChrome = false,
+  authPathPrefix = "",
 }: {
   user?: AccountUser | null;
   callbackUrl?: string;
@@ -34,6 +35,7 @@ export function AccountControls({
   compact?: boolean;
   /** Only hosted chrome participates in browser-language enhancement. */
   hostedChrome?: boolean;
+  authPathPrefix?: string;
 }) {
   const displayName = user?.name || user?.email || labels.account;
   const muted = light ? "text-slate-500 hover:text-white" : "text-gray-600 hover:text-black";
@@ -41,7 +43,7 @@ export function AccountControls({
   const tapTarget = compact ? "inline-flex min-h-11 shrink-0 items-center whitespace-nowrap" : "";
 
   if (!user) {
-    return <Link data-chrome-label={hostedChrome ? "signIn" : undefined} href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`} className={`${tapTarget} rounded-lg px-3 py-2 text-sm font-medium transition-colors ${surface}`}>{labels.signIn}</Link>;
+    return <Link data-chrome-label={hostedChrome ? "signIn" : undefined} href={`${authPathPrefix}/login?callbackUrl=${encodeURIComponent(callbackUrl)}`} className={`${tapTarget} rounded-lg px-3 py-2 text-sm font-medium transition-colors ${surface}`}>{labels.signIn}</Link>;
   }
 
   return (
@@ -59,7 +61,7 @@ export function AccountControls({
       )}
       <span data-chrome-content={hostedChrome && (user.name || user.email) ? "" : undefined} data-chrome-label={hostedChrome && !user.name && !user.email ? "account" : undefined} data-chrome-title={hostedChrome && !user.name && !user.email ? "account" : undefined} className={`min-w-0 max-w-20 truncate text-sm sm:max-w-28 ${light ? "text-slate-300" : "text-gray-700"}`} title={user.email || displayName}>{displayName}</span>
       <Link data-chrome-label={hostedChrome ? "dashboard" : undefined} href="/dashboard" className={`${compact ? "hidden min-h-11 shrink-0 items-center whitespace-nowrap sm:inline-flex" : "hidden sm:inline"} text-sm transition-colors ${muted}`}>{labels.dashboard}</Link>
-      <Link data-chrome-label={hostedChrome ? "signOut" : undefined} href="/logout?callbackUrl=/" className={`${tapTarget} text-sm transition-colors ${muted}`}>{labels.signOut}</Link>
+      <Link data-chrome-label={hostedChrome ? "signOut" : undefined} href={`${authPathPrefix}/logout?callbackUrl=/`} className={`${tapTarget} text-sm transition-colors ${muted}`}>{labels.signOut}</Link>
     </div>
   );
 }

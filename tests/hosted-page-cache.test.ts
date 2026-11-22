@@ -99,9 +99,9 @@ test("no-argument SEO invalidation expires all hosted entries, including negativ
 test("cache callbacks have no request API imports and render paths have no direct DB access", () => {
   const read = (path: string) => readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8");
   assert.doesNotMatch(read("lib/public-hosted-page.ts"), /next\/headers|lib\/auth|unstable_cache/);
-  for (const path of ["app/layout.tsx", "app/not-found.tsx", "app/p/[...segments]/page.tsx", "app/p/[...segments]/layout.tsx",
+  for (const path of ["app/(legacy)/layout.tsx", "app/(legacy)/not-found.tsx", "app/(legacy)/p/[...segments]/page.tsx", "app/(legacy)/p/[...segments]/layout.tsx",
     "lib/site-nav.ts", "lib/hosted-breadcrumbs.ts", "lib/hosted-page-resolver.ts"]) assert.doesNotMatch(read(path), /db\.hostedPage|db\.app\./);
-  assert.doesNotMatch(read("app/p/[...segments]/page.tsx"), /revalidate\s*=\s*60/);
+  assert.doesNotMatch(read("app/(legacy)/p/[...segments]/page.tsx"), /revalidate\s*=\s*60/);
 });
 
 test("size budget includes Next's second JSON escaping pass", async t => {

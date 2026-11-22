@@ -11,7 +11,7 @@ export async function browserBundle() {
     const entry=join(directory,'entry.jsx');const loader=join(directory,'loader.cjs');const navigation=join(directory,'navigation.js');
     await writeFile(loader,`const ts=require(${JSON.stringify(require.resolve('typescript'))});module.exports=source=>ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;`);
     await writeFile(navigation,'export function useRouter(){return {refresh(){window.refreshed=true;}};}');
-    await writeFile(entry,`import React from 'react';import {createRoot} from 'react-dom/client';import {PageActions,PageActionButtons} from ${JSON.stringify(join(root,'src/app/dashboard/pages/actions.tsx'))};
+    await writeFile(entry,`import React from 'react';import {createRoot} from 'react-dom/client';import {PageActions,PageActionButtons} from ${JSON.stringify(join(root,'src/app/(legacy)/dashboard/pages/actions.tsx'))};
       window.mount=(count,root)=>{window.scope={pages:count,rows:count*3,children:0,titles:['Fixture'],skipped:[],includesRoot:root};
         createRoot(document.getElementById('fixture')).render(React.createElement(PageActions,null,
           ...Array.from({length:count},(_,i)=>React.createElement('label',{key:i},React.createElement('input',{type:'checkbox',name:'targets',value:'p'+i,defaultChecked:true}),'Page '+i)),

@@ -3,9 +3,9 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getGamePageLabels } from "@/lib/games-pages-copy";
 
-export async function PlatformFooter({ gameNavigation = false }: { gameNavigation?: boolean }) {
+export async function PlatformFooter({ gameNavigation = false, locale }: { gameNavigation?: boolean; locale?: string }) {
   const t = await getTranslations("common");
-  const labels = getGamePageLabels(await getLocale());
+  const labels = getGamePageLabels(locale ?? await getLocale());
   const commitSha = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7)
     || process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7)
     || "dev";

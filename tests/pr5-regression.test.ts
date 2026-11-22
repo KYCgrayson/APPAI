@@ -33,8 +33,8 @@ test("P1: full rendered HTML matches main after only the approved navigation del
 });
 
 test("P1: hreflangs and language switchers retain main's en, ja, zh-CN, zh-TW order regardless of scan order", async () => {
-  const hosted = await import("../src/app/p/[...segments]/page.tsx");
-  const { default: layout } = await import("../src/app/p/[...segments]/layout.tsx");
+  const hosted = await import("../src/app/(legacy)/p/[...segments]/page.tsx");
+  const { default: layout } = await import("../src/app/(legacy)/p/[...segments]/layout.tsx");
   const { loadSitemapIds, loadSitemapShard } = await import("../src/lib/sitemap-data.ts");
   const { hostedAlternates } = await import("../src/lib/hosted-page-urls.ts");
   // Verified by rendering main and pre-PR 557445a with fixture reads emulating slug_locale index order.

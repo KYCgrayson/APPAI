@@ -131,8 +131,8 @@ test("root/child resolution converts only published, organization-scoped variant
 
 test("converted hosted route renders matching chrome, notice, switcher, and noindex", async () => {
   const { fixtureDb } = await import("./helpers/hosted-render-loader.mjs");
-  const { default: Layout } = await import("../src/app/p/[...segments]/layout.tsx");
-  const { default: HostedPage, generateMetadata } = await import("../src/app/p/[...segments]/page.tsx");
+  const { default: Layout } = await import("../src/app/(legacy)/p/[...segments]/layout.tsx");
+  const { default: HostedPage, generateMetadata } = await import("../src/app/(legacy)/p/[...segments]/page.tsx");
   for (const [source, requested, title, expected, notice] of [
     ["zh-TW", "zh-CN", "網站", "网站", "此页由繁体中文自动转换"],
     ["zh-CN", "zh-TW", "网站", "網站", "此頁由簡體中文自動轉換"],
@@ -177,8 +177,8 @@ test("off-spec harmless section data retains sections and valid content", async 
 
 test("notice and noindex follow the rendered child independently of the root", async () => {
   const { fixtureDb } = await import("./helpers/hosted-render-loader.mjs");
-  const { default: Layout } = await import("../src/app/p/[...segments]/layout.tsx");
-  const { generateMetadata } = await import("../src/app/p/[...segments]/page.tsx");
+  const { default: Layout } = await import("../src/app/(legacy)/p/[...segments]/layout.tsx");
+  const { generateMetadata } = await import("../src/app/(legacy)/p/[...segments]/page.tsx");
   for (const childConverted of [false, true]) {
     const base = { organizationId: "fixture-org", isPublished: true, isDefault: true, title: "網站", content: {}, createdAt: new Date(), updatedAt: new Date() };
     fixtureDb.rows = [
@@ -276,8 +276,8 @@ test("legacy features, contact and links retain their previously supported subhe
 
 test("hosted SEO shares child URLs with schema and omits unreachable locales", async () => {
   const { fixtureDb } = await import("./helpers/hosted-render-loader.mjs");
-  const { default: HostedPage, generateMetadata } = await import("../src/app/p/[...segments]/page.tsx");
-  const { default: Layout } = await import("../src/app/p/[...segments]/layout.tsx");
+  const { default: HostedPage, generateMetadata } = await import("../src/app/(legacy)/p/[...segments]/page.tsx");
+  const { default: Layout } = await import("../src/app/(legacy)/p/[...segments]/layout.tsx");
   const root = { id: "root", organizationId: "fixture-org", slug: "seo-site", parentSlug: null,
     locale: "en", title: "Example", isDefault: true, isPublished: true, content: {},
     createdAt: new Date("2025-01-01"), updatedAt: new Date("2025-02-01") };
@@ -301,7 +301,7 @@ test("hosted SEO shares child URLs with schema and omits unreachable locales", a
 
 test("automatic sibling navigation keeps the requested Japanese and converted Chinese locale", async () => {
   const { fixtureDb } = await import("./helpers/hosted-render-loader.mjs");
-  const { default: Layout } = await import("../src/app/p/[...segments]/layout.tsx");
+  const { default: Layout } = await import("../src/app/(legacy)/p/[...segments]/layout.tsx");
   const { buildNav, resolveNavHref } = await import("../src/lib/site-nav.ts");
   for (const locale of ["ja", "zh-TW"]) {
     const root = { organizationId: "fixture-org", slug: "nav-site", parentSlug: null,
@@ -326,7 +326,7 @@ test("automatic sibling navigation keeps the requested Japanese and converted Ch
 
 test("a root's default locale does not make a reachable nondefault child fall through to notFound", async () => {
   const { fixtureDb } = await import("./helpers/hosted-render-loader.mjs");
-  const { default: HostedPage, generateMetadata } = await import("../src/app/p/[...segments]/page.tsx");
+  const { default: HostedPage, generateMetadata } = await import("../src/app/(legacy)/p/[...segments]/page.tsx");
   const root = { organizationId: "fixture-org", slug: "fallback-site", parentSlug: null,
     locale: "en", title: "English root", isDefault: true, isPublished: true, content: {},
     createdAt: new Date("2025-01-01"), updatedAt: new Date("2025-02-01") };
@@ -351,7 +351,7 @@ test("a root's default locale does not make a reachable nondefault child fall th
 
 test("a converted parent also permits its nondefault child and supplies matching metadata", async () => {
   const { fixtureDb } = await import("./helpers/hosted-render-loader.mjs");
-  const { default: HostedPage, generateMetadata } = await import("../src/app/p/[...segments]/page.tsx");
+  const { default: HostedPage, generateMetadata } = await import("../src/app/(legacy)/p/[...segments]/page.tsx");
   const root = { organizationId: "fixture-org", slug: "converted-site", parentSlug: null,
     locale: "zh-CN", title: "网站", isDefault: true, isPublished: true, content: {},
     createdAt: new Date("2025-01-01"), updatedAt: new Date("2025-02-01") };
@@ -368,8 +368,8 @@ test("a converted parent also permits its nondefault child and supplies matching
 
 test("legal metadata, schema and language switcher keep policy paths and only existing policies", async () => {
   const { fixtureDb } = await import("./helpers/hosted-render-loader.mjs");
-  const { default: HostedPage, generateMetadata } = await import("../src/app/p/[...segments]/page.tsx");
-  const { default: Layout } = await import("../src/app/p/[...segments]/layout.tsx");
+  const { default: HostedPage, generateMetadata } = await import("../src/app/(legacy)/p/[...segments]/page.tsx");
+  const { default: Layout } = await import("../src/app/(legacy)/p/[...segments]/layout.tsx");
   const root = { id: "root", organizationId: "fixture-org", slug: "legal-site", parentSlug: null,
     locale: "en", title: "Example", isDefault: true, isPublished: true, content: {},
     privacyPolicy: "Privacy", termsOfService: "Terms", createdAt: new Date("2025-01-01"), updatedAt: new Date("2025-02-01") };
@@ -393,7 +393,7 @@ test("legal metadata, schema and language switcher keep policy paths and only ex
 
 test("external hosted canonical is also the schema identity", async () => {
   const { fixtureDb } = await import("./helpers/hosted-render-loader.mjs");
-  const { default: HostedPage, generateMetadata } = await import("../src/app/p/[...segments]/page.tsx");
+  const { default: HostedPage, generateMetadata } = await import("../src/app/(legacy)/p/[...segments]/page.tsx");
   fixtureDb.rows = [{ organizationId: "fixture-org", slug: "canonical-site", parentSlug: null,
     locale: "en", title: "Example", isDefault: true, isPublished: true, createdAt: new Date("2026-11-13T00:00Z"), updatedAt: new Date("2026-11-13T00:00Z"), content: {}, canonicalUrl: "https://example.org/official" }];
   const params = Promise.resolve({ segments: ["canonical-site", "en"] });

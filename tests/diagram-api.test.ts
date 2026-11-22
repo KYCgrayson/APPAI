@@ -15,7 +15,7 @@ const pageRoute = await import("../src/app/api/v1/pages/[slug]/route.ts");
 const section = await import("../src/app/api/v1/pages/[slug]/sections/[order]/route.ts");
 const preview = await import("../src/app/api/v1/pages/preview/route.ts");
 const definitions = await import("../src/app/api/v1/sections/route.ts");
-const { default: HostedPage } = await import("../src/app/p/[...segments]/page.tsx");
+const { default: HostedPage } = await import("../src/app/(legacy)/p/[...segments]/page.tsx");
 const params = { params: Promise.resolve({ slug: "paper-workshop" }) };
 const sectionParams = { params: Promise.resolve({ slug: "paper-workshop", order: "8" }) };
 const request = (body: unknown, method = "POST", query = "") => new NextRequest(`https://appai.info/api/v1/pages${query}`, { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) });

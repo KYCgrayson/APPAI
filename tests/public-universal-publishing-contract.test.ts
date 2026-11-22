@@ -147,7 +147,7 @@ test("public contract requires generic Universal App auth chrome and safe logout
 });
 
 test("operator release queue redacts package transport details while identifying package releases", () => {
-  const queue = read("src/app/admin/universal-apps/page.tsx");
+  const queue = read("src/app/(legacy)/admin/universal-apps/page.tsx");
 
   assert.match(queue, /releasePackage:\s*\{\s*select:\s*\{\s*sourceDigest:\s*true,\s*actualSizeBytes:\s*true/);
   assert.match(queue, /release\.sourceType === "PACKAGE"/);

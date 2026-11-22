@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { createElement } from "react";
 import { locales } from "../src/i18n/routing.ts";
 import { gameBreadcrumbs } from "../src/lib/games-page-seo.ts";
 import { getDirectoryCopy } from "../src/lib/directory-copy.ts";
@@ -16,6 +17,7 @@ const intl = registerDirectoryFixtures({ translated: true });
 const baseline = registerMainHostedBaseline("main", ["@/i18n/navigation"]);
 test.after(() => { baseline.deregister(); intl.deregister(); loader.deregister(); });
 const { PlatformHeaderView } = await import("../src/components/PlatformHeaderView.tsx");
+const { PlatformAccountControls } = await import("../src/components/PlatformAccountControls.tsx");
 const { PlatformHeader } = await import("../src/components/PlatformHeader.tsx");
 
 function labels(locale: string) {
@@ -32,12 +34,13 @@ for (const signedIn of [true, false]) {
   test(`header with breadcrumbs reserves a mobile row and unbroken items (${signedIn ? "admin" : "signed out"}, nine locales)`, async () => {
     for (const locale of locales) {
       fixtureDb.locale = locale;
+      fixtureDb.platformSession = signedIn ? { user: { name: "Header QA Account ".repeat(20) }, role: "ADMIN" } : null;
       const html = await renderHtml(PlatformHeaderView({
         breadcrumbs: gameBreadcrumbs(locale, "water-pouring"),
-        user: signedIn ? { name: "Header QA Account ".repeat(20) } : null,
-        isAdmin: signedIn,
+        account: createElement(PlatformAccountControls, { labels: labels(locale).account, compact: true, locale }),
         labels: labels(locale),
       }));
+      fixtureDb.platformSession = null;
       const nav = html.match(/<nav\b[\s\S]*?<\/nav>/)![0];
       assert.match(nav, /order-3 min-w-0 basis-full/);
       assert.doesNotMatch(nav, /sm:(?:basis-auto|order-2)|break-words/);
@@ -49,14 +52,15 @@ for (const signedIn of [true, false]) {
       assert.doesNotMatch(nav, /<a[^>]*aria-current=/);
       assert.match(html, /order-2 ml-auto flex min-w-0 flex-1 items-center justify-end/);
       assert.match(html, /<select[^>]*class="[^"]*min-h-11 w-24 shrink-0 sm:w-auto/);
+      const prefix = locale === "en" ? "" : `/${locale}`;
       if (signedIn) {
         assert.match(html, /★ Admin/);
         assert.match(html, /class="min-w-0 max-w-20 truncate text-sm sm:max-w-28 /);
-        assert.match(html, /<a(?=[^>]*href="\/logout\?callbackUrl=\/")(?=[^>]*class="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap)[^>]*>/);
-        assert.doesNotMatch(html, /href="\/login/);
+        assert.match(html, new RegExp(`<a(?=[^>]*href="${prefix}/logout\\?callbackUrl=/")(?=[^>]*class="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap)[^>]*>`));
+        assert.doesNotMatch(html, /\/login\?callbackUrl=/);
       } else {
-        assert.match(html, /href="\/login\?callbackUrl=%2Fdashboard"/);
-        assert.doesNotMatch(html, /★ Admin|href="\/logout/);
+        assert.ok(html.includes(`href="${prefix}/login?callbackUrl=%2Fdashboard"`));
+        assert.doesNotMatch(html, /★ Admin|\/logout\?callbackUrl=/);
       }
     }
   });
@@ -65,6 +69,7 @@ for (const signedIn of [true, false]) {
 test("a long current breadcrumb truncates inside plain text and retains its full title", async () => {
   const name = 'Long CJK 遊戲名稱 & "name" '.repeat(20);
   const html = await renderHtml(PlatformHeaderView({
+    account: null,
     breadcrumbs: [{ name: "AppAI", href: "/" }, { name, href: "/games/long" }],
     labels: labels("en"),
   }));
@@ -87,7 +92,7 @@ test("PlatformHeader preserves the caller's second breadcrumb label", async () =
 
 test("the header without breadcrumbs preserves the branding and responsive navigation classes", async () => {
   fixtureDb.locale = "en";
-  const html = await renderHtml(PlatformHeaderView({ labels: labels("en"), currentSection: "tools" }));
+  const html = await renderHtml(PlatformHeaderView({ account: null, labels: labels("en"), currentSection: "tools" }));
   assert.match(html, /<span>AppAI<\/span>/);
   assert.match(html, /class="order-2 ml-auto flex shrink-0 items-center gap-2 sm:order-3 sm:gap-3"/);
   assert.match(html, /class="order-3 basis-full border-t border-gray-800 pt-2 sm:order-2 sm:basis-auto sm:border-0 sm:pt-0"/);
@@ -100,17 +105,17 @@ function header(html: string) {
 }
 
 for (const [route, source] of [
-  ["/apps", "src/app/[locale]/apps/page.tsx"],
-  ["/websites", "src/app/[locale]/websites/page.tsx"],
-  ["/tools", "src/app/[locale]/tools/page.tsx"],
-  ["/apps/app-crumb", "src/app/[locale]/apps/[id]/page.tsx"],
-  ["/login", "src/app/[locale]/login/page.tsx"],
-  ["/games", "src/app/[locale]/games/page.tsx"],
-  ["/games/water-pouring", "src/app/[locale]/games/[slug]/page.tsx"],
+  ["/apps", "src/app/(site)/[locale]/apps/page.tsx"],
+  ["/websites", "src/app/(site)/[locale]/websites/page.tsx"],
+  ["/tools", "src/app/(site)/[locale]/tools/page.tsx"],
+  ["/apps/app-crumb", "src/app/(legacy)/[locale]/apps/[id]/page.tsx"],
+  ["/login", "src/app/(legacy)/[locale]/login/page.tsx"],
+  ["/games", "src/app/(legacy)/[locale]/games/page.tsx"],
+  ["/games/water-pouring", "src/app/(legacy)/[locale]/games/[slug]/page.tsx"],
 ] as const) {
-  test(`${route}: header DOM equals main except #73's current-crumb text and #67's translated directory labels in all nine locales`, async () => {
+  test(`${route}: header DOM equals main except #73's current-crumb text #67's translated labels and #92-C's Apps link in all nine locales`, async () => {
     const { default: CurrentPage } = await import(new URL(`../${source}`, import.meta.url).href);
-    const { default: MainPage } = await import(baseline.moduleUrl(source));
+    const { default: MainPage } = await import(baseline.moduleUrl(source.replace(/\/(?:\(site\)|\(legacy\))/, "")));
     for (const locale of locales) {
       fixtureDb.locale = locale;
       fixtureDb.rows = [page("public-app", { title: "My app" })];
@@ -130,6 +135,10 @@ for (const [route, source] of [
       // F5 changes these labels only; keep all markup and attributes exact.
       const categories = getDirectoryCopy(locale).categories;
       main = main.replace(/>Websites</g, `>${categories.websites}<`).replace(/>Tools</g, `>${categories.tools}<`).replace(/>Apps</g, `>${categories.apps}<`);
+      main = main.replace("/apps?kind=apps", "/apps/native");
+      if (locale !== "en" && ["/apps", "/tools", "/websites"].includes(route)) {
+        main = main.replace('href="/login?', `href="/${locale}/login?`);
+      }
       assert.equal(current, main, `${route}, ${locale}`);
       if (route === "/login") assert.equal(current, "", "main's login has no header");
       else assert.ok(current, `${route} must retain its header`);
