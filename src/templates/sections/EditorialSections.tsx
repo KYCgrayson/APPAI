@@ -93,8 +93,10 @@ export function ProfileHeaderSection(props: (Props<Base & {
     </div>
   </Shell>;
 }
-function CardLink({ link, children }: { link: ReturnType<typeof editorialLink>; children: ReactNode }) {
-  return link ? <a href={link.href} target={link.external ? "_blank" : undefined} rel={link.external ? "noreferrer" : undefined}>{children}</a> : <>{children}</>;
+type CardLinkTarget = NonNullable<ReturnType<typeof editorialLink>> & { projectCardSeek?: boolean };
+
+function CardLink({ link, children }: { link: CardLinkTarget | undefined; children: ReactNode }) {
+  return link ? <a href={link.href} target={link.external ? "_blank" : undefined} rel={link.external ? "noreferrer" : undefined} data-project-card-seek={link.projectCardSeek}>{children}</a> : <>{children}</>;
 }
 
 function ProjectCardsNav({ pagination, locale }: { pagination: ProjectCardsControls; locale?: string }) {
@@ -128,10 +130,10 @@ export function ProjectCardsSection(props: (Props<Base & { layout?: "grid" | "fe
 }[] }>) & { typographyActive?: boolean; pagination?: ProjectCardsControls; locale?: string; seekQuery?: string }) {
   const raw = record(props.data);
   const nav = props.pagination && <ProjectCardsNav pagination={props.pagination} locale={props.locale} />;
-  const cardLink = (href: unknown) => {
+  const cardLink = (href: unknown): CardLinkTarget | undefined => {
     const link = editorialLink(typeof href === "string" ? href : undefined, process.env.NEXTAUTH_URL || PLATFORM_ORIGIN, "project-card");
-    if (!link || !props.seekQuery) return link;
-    return { ...link, href: projectCardSeekHref(link.href, props.seekQuery) };
+    if (!link || !props.seekQuery || !link.href.startsWith("?t=")) return link;
+    return { ...link, href: projectCardSeekHref(link.href, props.seekQuery), projectCardSeek: true };
   };
   const data = { ...base(raw), items: projectCardsItems(raw, props.pagination).map((value) => {
     const item = record(value);
@@ -163,7 +165,7 @@ export function ProjectCardsSection(props: (Props<Base & { layout?: "grid" | "fe
           {media.length > 0 && <div className={styles.feedMedia} data-count={media.length}>{media.map((tile, tileIndex) => {
             const link = cardLink(tile.href);
             const Tag = link ? "a" : "figure";
-            return <Tag key={tileIndex} className={styles.feedTile} href={link?.href} target={link?.external ? "_blank" : undefined} rel={link?.external ? "noreferrer" : undefined}
+            return <Tag key={tileIndex} className={styles.feedTile} href={link?.href} target={link?.external ? "_blank" : undefined} rel={link?.external ? "noreferrer" : undefined} data-project-card-seek={link?.projectCardSeek}
               aria-label={link && !tile.alt.trim() && !tile.label?.trim() ? item.name : undefined}
               style={{ aspectRatio: (tile.aspect || "16:9").replace(":", " / ") }}>
               <img src={tile.url} alt={tile.alt} loading={i === 0 ? "eager" : "lazy"} decoding="async" />

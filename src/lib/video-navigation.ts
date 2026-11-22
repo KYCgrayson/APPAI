@@ -1,7 +1,7 @@
 import { parseVideoTime } from "./video-data.ts";
 
-/** Match navigation within this document, never another origin/path/query. */
-export function samePageVideoTime(href: string, current: string): { t: number; id: string; url: URL } | null {
+/** Match navigation within this document, including generated card seek links. */
+export function samePageVideoTime(href: string, current: string, projectCardSeek = false): { t: number; id: string; url: URL } | null {
   try {
     if (!href.includes("?")) return null;
     const base = new URL(current);
@@ -11,8 +11,8 @@ export function samePageVideoTime(href: string, current: string): { t: number; i
       const params = new URLSearchParams(input.search);
       params.delete("t"); params.sort(); return params.toString();
     };
-    // A bare ?t= link intentionally replaces the query; populated queries must match.
-    if (other(url) && other(url) !== other(base)) return null;
+    // A bare ?t= link replaces the query. Generated card seek links retain the current pagination and can remove other parameters.
+    if (!(projectCardSeek && href.startsWith("?")) && other(url) && other(url) !== other(base)) return null;
     const t = parseVideoTime(url.searchParams.get("t"));
     if (t === null) return null;
     return { t, id: decodeURIComponent(url.hash.slice(1)), url };
@@ -38,7 +38,9 @@ export function registerVideoNavigation(entry: Entry): () => void {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const anchor = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[href]") : null;
       if (!anchor || anchor.download || (anchor.target && anchor.target !== "_self")) return;
-      const parsed = samePageVideoTime(anchor.getAttribute("href") || anchor.href, window.location.href);
+      const href = anchor.getAttribute("href") || anchor.href;
+      const projectCardSeek = anchor.getAttribute("data-project-card-seek") === "true";
+      const parsed = samePageVideoTime(href, window.location.href, projectCardSeek);
       const video = parsed && target(parsed.id);
       if (!parsed || !video) return;
       event.preventDefault();

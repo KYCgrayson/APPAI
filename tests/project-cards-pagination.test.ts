@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { locales } from "../src/i18n/routing.ts";
+import { hostedNavigationCopy } from "../src/lib/hosted-navigation-copy.ts";
 import { projectCardsItems, resolveProjectCardsPagination } from "../src/lib/project-cards.ts";
 import { createPageSchema, updatePageSchema } from "../src/lib/validations/page.ts";
 import { fixtureDb, fixtureSitemapCache, registerHostedHeaders, registerHostedRenderLoader, registerSitemapFixtures } from "./helpers/hosted-render-loader.mjs";
@@ -73,6 +75,19 @@ test("pagination supports both defaults, falls back on invalid sizes, and gives 
   assert.equal(resolveProjectCardsPagination(empty, { page: "2" }), null);
 });
 
+test("all supported locales have pagination copy in their own language", () => {
+  const english = hostedNavigationCopy("en").pagination;
+  for (const locale of locales) {
+    const copy = hostedNavigationCopy(locale).pagination;
+    for (const key of ["label", "previous", "next", "page", "size", "perPage"] as const) {
+      assert.ok(copy[key].trim(), `${locale}.${key} must not be empty`);
+      if (locale !== "en") assert.notEqual(copy[key], english[key], `${locale}.${key} must not fall back to English`);
+    }
+    assert.ok(copy.page.includes("{number}"), `${locale}.page must include the page number`);
+    assert.ok(copy.size.includes("{number}"), `${locale}.size must include the card count`);
+  }
+});
+
 const hooks = [registerHostedRenderLoader(), registerHostedHeaders(), registerSitemapFixtures()];
 test.after(() => hooks.reverse().forEach(hook => hook.deregister()));
 const { default: HostedPage, generateMetadata } = await import("../src/app/(legacy)/p/[...segments]/page.tsx");
@@ -107,8 +122,8 @@ test("hosted route slices the archive after cache read and keeps links, SEO and 
       assert.ok(html.includes(`href="${path}?page=3" rel="next"`));
       assert.ok(html.includes(`href="${path}?page=2" aria-label="Page 2" aria-current="page"`));
       assert.ok(html.includes(`href="${path}?size=20"`));
-      assert.ok(html.includes('href="?page=2&amp;size=bogus&amp;t=90#video"'));
-      assert.ok(html.includes('href="?page=2&amp;size=bogus&amp;t=92#video"'));
+      assert.ok(html.includes('href="?page=2&amp;t=90#video"'));
+      assert.ok(html.includes('href="?page=2&amp;t=92#video"'));
       assert.equal(graph[2].itemListElement[0].url, `https://appai.info${path}?page=2&t=90#video`);
     }
   }
@@ -119,6 +134,24 @@ test("hosted route slices the archive after cache read and keeps links, SEO and 
     const props = { params, searchParams: Promise.resolve(query) };
     await assert.rejects(() => HostedPage(props), /NEXT_HTTP_ERROR_FALLBACK;404/);
     await assert.rejects(() => generateMetadata(props), /NEXT_HTTP_ERROR_FALLBACK;404/);
+  }
+});
+
+test("card time links preserve only valid pagination parameters and use the card's timestamp", async () => {
+  fixtureDb.rows = [page("pagination-fixture", { content: { sections } })];
+  const params = Promise.resolve({ segments: ["pagination-fixture"] });
+  const unrelated = { t: "5", utm_source: "newsletter", utm_campaign: "weekly", fbclid: "tracking", foo: "bar" };
+  for (const { query, expected } of [
+    { query: { page: "2", size: "20" }, expected: "page=2&amp;size=20&amp;" },
+    { query: { page: "1", size: "10" }, expected: "page=1&amp;size=10&amp;" },
+    { query: { page: "2", size: "bogus" }, expected: "page=2&amp;" },
+    { query: { size: ["10", "20"] }, expected: "" },
+    { query: {}, expected: "" },
+  ]) {
+    const searchParams = Promise.resolve({ ...unrelated, ...query });
+    const html = await renderHtml(await HostedPage({ params, searchParams }));
+    const href = html.match(/<a href="([^"]*)"[^>]*>Weekly digest<\/a>/)?.[1];
+    assert.equal(href, `?${expected}t=92#video`);
   }
 });
 

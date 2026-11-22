@@ -297,6 +297,10 @@ export default async function HostedPage({ params, searchParams }: Props) {
   const videoPageUrl = pagination && hostedUrl
     ? projectCardsPageHref(hostedUrl, pagination.page, pagination.size === pagination.defaultSize ? undefined : pagination.size)
     : hostedUrl || pageUrl;
+  const cardSeekQuery = pagination ? serializeSearchParams({
+    page: query.page === String(pagination.page) ? query.page : undefined,
+    size: query.size === String(pagination.size) ? query.size : undefined,
+  }).toString() : undefined;
   const legal = subpage ? hostedLegalCopy(page.locale, subpage, page.title) : null;
 
   const trail = await hostedBreadcrumbs(rootPage, roots, page.locale, childSlug || subpage ? {
@@ -398,7 +402,7 @@ export default async function HostedPage({ params, searchParams }: Props) {
       {page.customCss && <style>{page.customCss}</style>}
       <PageRenderer page={{ ...page, content: childSlug ? inheritHeadingColor(page.content, rootPage.content) : page.content, videoPageUrl }}
         cardPagination={pagination ? { ...pagination, path: buildPagePath(slug, explicitLocale || page.locale, childSlug, !explicitLocale) } : undefined}
-        cardSeekQuery={pagination ? serializeSearchParams({ ...query, t: undefined }).toString() : undefined}
+        cardSeekQuery={cardSeekQuery}
         isLoggedIn={isLoggedIn} isAdmin={isAdmin} userId={userId} />
     </>
   );
