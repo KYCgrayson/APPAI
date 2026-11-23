@@ -24,6 +24,8 @@
         "src/components/ui/**",
         "src/lib/public-directory.ts",
         "src/lib/directory-copy.ts",
+        "src/lib/directory-filter.ts",
+        "src/lib/directory-taxonomy.ts",
         "src/lib/directory-kind.ts",
         "src/lib/publisher-label.ts",
         "src/lib/db.ts",
