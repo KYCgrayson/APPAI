@@ -319,8 +319,8 @@ test("PERSON trails link to the exact personal directory and its localized filte
       page("contact", { locale, parentSlug: "person-site", title: "Contact" }),
       page("person-site", { id: "draft", locale: "pt-BR", isDefault: false, isPublished: false, template: "GAME" })];
     fixtureDb.apps = [app("person-app", "person-site")];
-    const { default: FilteredDirectory } = await import("../src/app/(site)/[locale]/directory-filtered/[section]/page.tsx");
-    const directory = await renderHtml(await FilteredDirectory({ params: Promise.resolve({ locale: fixtureDb.locale, section: "websites" }), searchParams: Promise.resolve({ type: "personal" }) }));
+    const { default: FilteredDirectory } = await import("../src/app/(site)/[locale]/directory-filtered/[section]/[filter]/page.tsx");
+    const directory = await renderHtml(await FilteredDirectory({ params: Promise.resolve({ locale: fixtureDb.locale, section: "websites", filter: "personal" }) }));
     assert.ok(directory.includes(`>${category}</h1>`));
     assert.match(directory, /href="\/p\/person-site"/);
     assert.doesNotMatch(await renderHtml(await Websites({ params: Promise.resolve({ locale: fixtureDb.locale }) })), /href="\/p\/person-site"/);

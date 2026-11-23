@@ -1,34 +1,11 @@
 import { z } from "zod";
 
+export { UNIVERSAL_APP_CATEGORIES } from "../directory-taxonomy.ts";
+
 export const UNIVERSAL_APP_CAPABILITIES = [
   "identity",
   "database",
   "private-assets",
-] as const;
-
-// These are the categories AppAI presents to publishers and in the public
-// directory. The release contract deliberately remains compatible with any
-// valid uppercase category value so existing integrations are not narrowed.
-export const UNIVERSAL_APP_CATEGORIES = [
-  "WRITING",
-  "CODING",
-  "DESIGN",
-  "AUTOMATION",
-  "PRODUCTIVITY",
-  "SOCIAL",
-  "FINANCE",
-  "DATABASE",
-  "HEALTH",
-  "EDUCATION",
-  "FOOD",
-  "TRAVEL",
-  "ENTERTAINMENT",
-  "GAMES",
-  "MEDIA",
-  "UTILITIES",
-  "COMMERCE",
-  "INVENTORY",
-  "OTHER",
 ] as const;
 
 const reservedAppHosts = new Set(["www", "api", "admin", "auth", "login", "dashboard", "mail"]);

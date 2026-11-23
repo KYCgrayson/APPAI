@@ -17,6 +17,10 @@ const { revalidateSeoIndexes } = await import("../src/lib/revalidate-seo.ts");
 const admin = await import("../src/app/api/admin/apps/route.ts");
 const adminUsers = await import("../src/app/api/admin/users/route.ts");
 const { PlatformDirectory } = await import("../src/components/PlatformDirectory.tsx");
+const { DIRECTORY_KINDS } = await import("../src/lib/directory-kind.ts");
+const { middleware } = await import("../src/middleware.ts");
+const { platformMetadata } = await import("../src/lib/platform-metadata.ts");
+const filtered = await import("../src/app/(site)/[locale]/directory-filtered/[section]/[filter]/page.tsx");
 const { default: home } = await import("../src/app/(site)/[locale]/page.tsx");
 const detail = await import("../src/app/(legacy)/[locale]/apps/[id]/page.tsx");
 function reset() {
@@ -84,6 +88,89 @@ test("directory batch keys include pagination and preserve all listings without 
   assert.equal(state.writes.length, writes);
 });
 
+test("filtered ISR renders the legacy directory results and SEO metadata", async () => {
+  reset();
+  fixtureDb.rows = [
+    page("site"),
+    page("tool", { content: { sections: [{ type: "tool" }] } }),
+    page("native"),
+    page("person", { template: "PERSON" }),
+  ];
+  fixtureDb.apps = [
+    app("site", "site", { category: "WRITING" }),
+    app("tool", "tool", { category: "CODING", iosUrl: null, androidUrl: null }),
+    app("native", "native", { category: "DESIGN", appType: "fixture-native" }),
+    app("person", "person", { category: "SOCIAL" }),
+    app("extra", null, { category: "CODING" }),
+  ];
+  const cases = [
+    ["websites", { category: "WRITING" }, "site"],
+    ["tools", { category: "CODING" }, "tool"],
+    ["apps", { category: "DESIGN", kind: "apps" }, "native"],
+    ["apps", { category: "SOCIAL" }, "person"],
+    ["tools", { category: "HEALTH" }, null],
+    ["apps", { category: "CODING", kind: "tools" }, "tool"],
+    ["apps", { kind: "websites" }, "site"],
+    ["websites", { category: "HEALTH", type: "personal" }, "person"],
+  ] as const;
+  for (const [section, legacyQuery, expectedSlug] of cases) {
+    const query: { kind?: string; category?: string; type?: string } = legacyQuery;
+    const search = new URLSearchParams(legacyQuery);
+    const response = middleware(new NextRequest(`https://appai.info/${section}?${search}`));
+    const [, locale, , routeSection, filter] = new URL(response.headers.get("x-middleware-rewrite")!).pathname.split("/");
+    const params = Promise.resolve({ locale, section: routeSection, filter });
+    // Keep the selection rules from the former searchParams-based page here.
+    const legacyKind = section === "apps" ? DIRECTORY_KINDS.find(kind => kind === query.kind) : section;
+    const legacy = await PlatformDirectory({
+      locale, kind: legacyKind, category: query.category, personalOnly: section === "websites" && query.type === "personal",
+    });
+    const html = await renderHtml(await filtered.default({ params }));
+    assert.equal(html, await renderHtml(legacy), `${section}?${search}`);
+    assert.deepEqual(await filtered.generateMetadata({ params }), await platformMetadata(Promise.resolve({ locale }), section));
+    if (expectedSlug) assert.ok(html.includes(`href="/p/${expectedSlug}"`));
+    else assert.doesNotMatch(html, /href="\/(?:p\/|apps\/extra")/);
+  }
+});
+
+test("filtered data warms once and expires when listings are added, edited or unlisted", async () => {
+  reset();
+  const render = (category: string) => filtered.default({
+    params: Promise.resolve({ locale: "en", section: "apps", filter: category }),
+  }).then(renderHtml);
+
+  const before = await render("CODING");
+  const writes = state.writes.length;
+  fixtureDb.apps.push(app("new", null, { category: "CODING", name: "New directory listing" }));
+  assert.equal(await render("CODING"), before);
+  assert.equal(state.writes.length, writes);
+  assert.equal(revalidateSeoIndexes(), true);
+  assert.match(await render("CODING"), /New directory listing/);
+  assert.doesNotMatch(await render("DESIGN"), /New directory listing/);
+
+  Object.assign(fixtureDb.apps[1], { category: "DESIGN", name: "Edited directory listing" });
+  assert.equal(revalidateSeoIndexes(), true);
+  assert.doesNotMatch(await render("CODING"), /directory listing/);
+  assert.match(await render("DESIGN"), /Edited directory listing/);
+
+  fixtureDb.apps[1].isApproved = false;
+  assert.equal(revalidateSeoIndexes(), true);
+  assert.doesNotMatch(await render("DESIGN"), /Edited directory listing/);
+  for (const write of state.writes) assert.equal(write.keys[0], "public-directory-batch-v3");
+});
+
+test("invalid internal filter params are rejected before rendering or reading the directory", async () => {
+  reset();
+  for (const [section, filter] of [
+    ["tools", "unknown"], ["tools", "apps-GAMES"], ["apps", "apps-ALL"],
+    ["apps", "tools-GAMES-extra"], ["apps", "personal"], ["unknown", "GAMES"],
+  ]) {
+    const params = Promise.resolve({ locale: "en", section, filter });
+    await assert.rejects(() => filtered.default({ params }), /404/);
+    await assert.rejects(() => filtered.generateMetadata({ params }), /404/);
+  }
+  assert.equal(state.writes.length, 0);
+});
+
 test("20 repeated page renders perform directory database reads on the first request only", async t => {
   reset();
   for (const [name, render] of [["home", () => home({ params: Promise.resolve({ locale: fixtureDb.locale }) })], ["apps", () => PlatformDirectory({ locale: fixtureDb.locale })],
@@ -121,6 +208,8 @@ test("all four admin actions invalidate after successful write; unapprove remove
       reset();
       const initial = await renderHtml(await home({ params: Promise.resolve({ locale: fixtureDb.locale }) })); assert.match(initial, /English fixture/);
       assert.match(await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale })), /English fixture/);
+      const filteredProps = { params: Promise.resolve({ locale: fixtureDb.locale, section: "apps", filter: "OTHER" }) };
+      assert.match(await renderHtml(await filtered.default(filteredProps)), /English fixture/);
       assert.ok(await loadPublicAppDetail("cached", "en"));
       const response = await admin.PATCH(request(action));
       assert.equal(response.status, 200);
@@ -128,6 +217,7 @@ test("all four admin actions invalidate after successful write; unapprove remove
       if (action === "unapprove") {
         assert.doesNotMatch(await renderHtml(await home({ params: Promise.resolve({ locale: fixtureDb.locale }) })), /English fixture/);
         assert.doesNotMatch(await renderHtml(await PlatformDirectory({ locale: fixtureDb.locale })), /English fixture/);
+        assert.doesNotMatch(await renderHtml(await filtered.default(filteredProps)), /English fixture/);
         assert.equal(await loadPublicAppDetail("cached", "en"), null);
         const props = { params: Promise.resolve({ id: "cached", locale: "en" }) };
         assert.deepEqual((await detail.generateMetadata(props)).robots, { index: false });
@@ -185,6 +275,7 @@ test("visibility mutations invalidate after transaction commit, including existi
   assert.match(read("lib/page-write-guard.ts"), /if \(!blocked && response.ok\) revalidateSeoIndexes/);
   assert.match(read("app/api/dashboard/pages/actions/route.ts"), /input.dryRun \? true : revalidateSeoIndexes\("all"\)/);
   assert.match(read("app/api/v1/apps/route.ts"), /return withPageWrite/);
+  assert.match(read("app/api/v1/apps/[id]/route.ts"), /export async function PUT[^\n]*\n\s*return withPageWrite/);
   assert.match(read("app/api/v1/apps/[id]/route.ts"), /await db.app.delete[\s\S]*revalidateSeoIndexes\(\)/);
   assert.match(read("app/api/v1/apps/[id]/releases/route.ts"), /await db.\$transaction[\s\S]*\}\);\s*revalidateSeoIndexes\(\)/);
   assert.match(read("lib/universal-apps/activation.ts"), /const result = await db.\$transaction[\s\S]*\}\);[\s\S]*revalidateSeoIndexes\(\);\s*return result/);

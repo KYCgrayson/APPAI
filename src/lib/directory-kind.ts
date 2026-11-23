@@ -1,8 +1,7 @@
 import { normalizeHostedContent } from "./hosted-content.ts";
+import type { DirectoryKind } from "./directory-taxonomy.ts";
 
-export const DIRECTORY_KINDS = ["websites", "tools", "apps"] as const;
-
-export type DirectoryKind = (typeof DIRECTORY_KINDS)[number];
+export { DIRECTORY_KINDS, type DirectoryKind } from "./directory-taxonomy.ts";
 
 const EXPLICIT_KIND_TAG = /^appai:kind:(website|tool|app)$/;
 const TOOL_SECTIONS = new Set([

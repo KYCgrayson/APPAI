@@ -4,6 +4,7 @@ import { localeCookie, routing } from "@/i18n/routing";
 import { isStaticGamePath } from "@/lib/games-catalog";
 import { gamePlayServerRedirect } from "@/lib/game-play-compat";
 import { corsHeaders, roomRateBucket, leaderboardRateBucket, roomOriginAllowed } from "@/lib/rooms-cors";
+import { directoryKind, directoryRewritePath } from "@/lib/directory-filter";
 
 // ---------------------------------------------------------------------------
 // next-intl middleware for locale detection + redirect
@@ -228,15 +229,20 @@ export function middleware(request: NextRequest) {
   if (!routing.locales.some(value => value === locale)) return response;
 
   const path = destination.pathname.slice(locale.length + 1).replace(/\/$/, "");
-  if (path.startsWith("/directory-filtered/")) return new NextResponse(null, { status: 404 });
+  if (path === "/directory-filtered" || path.startsWith("/directory-filtered/")) {
+    return new NextResponse(null, { status: 404 });
+  }
 
-  const isDirectory = path === "/apps" || path === "/tools" || path === "/websites";
-  if (isDirectory && destination.search) {
-    destination.pathname = `/${locale}/directory-filtered${path}`;
+  const section = directoryKind(path.slice(1));
+  if ((section || path === "/apps/native") && destination.search) {
+    destination.pathname = `/${locale}${section ? directoryRewritePath(section, destination.searchParams) : path}`;
+    destination.search = "";
     // Keep next-intl's request header overrides and alternate links.
     response.headers.delete("x-middleware-next");
     response.headers.set("x-middleware-rewrite", destination.toString());
-  } else if (!destination.search && (!path || isDirectory || path === "/apps/native")
+    response.headers.delete("set-cookie");
+    response.headers.delete("x-middleware-set-cookie");
+  } else if (!destination.search && (!path || section || path === "/apps/native")
     && !request.cookies.has(localeCookie.name)) {
     // A first visit to a prefixed URL can trigger next-intl's locale cookie.
     // The language switcher can remember the locale after hydration.
