@@ -97,8 +97,9 @@ async function patchPage(
 
   // Merge + sanitize
   const merged = { ...sections[idx].data, ...patchData };
-  const candidate = { ...content, sections: sections.map((section, i) => i === idx ? { ...section, data: merged } : {}) };
-  const issues = [...diagramContentIssues(candidate), ...galleryContentIssues(candidate), ...projectCardsContentIssues(candidate), ...gameContentIssues(candidate), ...normalizeVideoContent(candidate, false, page.content).issues];
+  const mergedSections = sections.map((section, i) => i === idx ? { ...section, data: merged } : section);
+  const candidate = { ...content, sections: mergedSections.map((section, i) => i === idx ? section : {}) };
+  const issues = [...diagramContentIssues(candidate), ...galleryContentIssues(candidate), ...projectCardsContentIssues(candidate, { sections: mergedSections }), ...gameContentIssues(candidate), ...normalizeVideoContent(candidate, false, page.content).issues];
   if (issues.length) return NextResponse.json({ error: "Validation failed", details: issues }, { status: 400 });
   const warnings: SanitizeWarning[] = [];
   const savedContent = sanitizePageContent(candidate, undefined, warnings, page.content);

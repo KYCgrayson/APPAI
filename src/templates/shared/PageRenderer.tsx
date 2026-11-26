@@ -45,6 +45,7 @@ import { proseThemeVariables } from "@/lib/prose-theme";
 import { LoginGate } from "./LoginGate";
 import { issueIframeToolSession } from "@/lib/iframe-tool-session";
 import { decideSectionAccess, sectionWantsIdentity } from "@/lib/iframe-tool-session-contract";
+import { projectCardsDefaultSize, type ProjectCardsControls } from "@/lib/project-cards";
 
 interface PageSectionData extends Record<string, unknown> {
   access?: string;
@@ -153,6 +154,8 @@ function renderSection(
   page: PageData,
   viewer: PageViewer,
   videoPriority: boolean,
+  cardPagination?: ProjectCardsControls,
+  cardSeekQuery?: string,
 ) {
   const renderVersion = asPageContent(page.content).renderVersion;
   const modern = typeof renderVersion === "number" && renderVersion >= 2;
@@ -183,7 +186,7 @@ function renderSection(
       content = <ProfileHeaderSection {...props} />;
       break;
     case "project-cards":
-      content = <ProjectCardsSection {...props} />;
+      content = <ProjectCardsSection {...props} pagination={cardPagination} locale={page.locale} seekQuery={cardSeekQuery} />;
       break;
     case "entries":
       content = <EntriesSection {...props} />;
@@ -346,12 +349,14 @@ function renderSection(
 
 // /p is dynamically rendered via auth(): errored RSC chunks reach the client
 // boundary. This catch only covers synchronous section setup (e.g. identity).
-function SafeSection({ section, index, themeColor, themeColorSecondary, darkMode, page, viewer, videoPriority }: {
+function SafeSection({ section, index, themeColor, themeColorSecondary, darkMode, page, viewer, videoPriority, cardPagination, cardSeekQuery }: {
   section: PageSection; index: number; themeColor: string; themeColorSecondary: string;
   darkMode: boolean; page: PageData; viewer: PageViewer; videoPriority: boolean;
+  cardPagination?: ProjectCardsControls;
+  cardSeekQuery?: string;
 }) {
   try {
-    return renderSection(section, index, themeColor, themeColorSecondary, darkMode, page, viewer, videoPriority);
+    return renderSection(section, index, themeColor, themeColorSecondary, darkMode, page, viewer, videoPriority, cardPagination, cardSeekQuery);
   } catch {
     console.error("Hosted section failed:", section.type);
     return null;
@@ -366,11 +371,15 @@ export function PageRenderer({
   isLoggedIn = false,
   isAdmin = false,
   userId = null,
+  cardPagination,
+  cardSeekQuery,
 }: {
   page: PageData;
   isLoggedIn?: boolean;
   isAdmin?: boolean;
   userId?: string | null;
+  cardPagination?: ProjectCardsControls;
+  cardSeekQuery?: string;
 }) {
   const viewer: PageViewer = { isLoggedIn, isAdmin, userId };
   const themeColor = page.themeColor || "#000000";
@@ -379,6 +388,8 @@ export function PageRenderer({
   const fontFamily = page.fontFamily || undefined;
   const pageContent = asPageContent(page.content);
   const sortedSections: PageSection[] = orderedHostedSections(page.content);
+  const paginatedIndex = cardPagination ? sortedSections.findIndex(section =>
+    section.type === "project-cards" && section.data && projectCardsDefaultSize(section.data)) : -1;
   const firstFacade = sortedSections.findIndex(section => {
     if (section.type !== "video" || decideSectionAccess(section.data?.access, viewer) !== "render") return false;
     const { data, issues } = normalizeVideoData(section.data);
@@ -444,7 +455,7 @@ export function PageRenderer({
         }
         return <SectionErrorBoundary key={index} sectionType={section.type}>
           <Suspense fallback={null}>
-            <SafeSection section={section} index={index} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} page={page} viewer={viewer} videoPriority={index === firstFacade} />
+            <SafeSection section={section} index={index} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} page={page} viewer={viewer} videoPriority={index === firstFacade} cardPagination={index === paginatedIndex ? cardPagination : undefined} cardSeekQuery={cardSeekQuery} />
           </Suspense>
         </SectionErrorBoundary>;
       })}

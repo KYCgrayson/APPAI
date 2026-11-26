@@ -78,6 +78,29 @@ Anchors start with an ASCII letter and contain letters, digits, `_` or `-`. Time
 
 Feed is centered at max-width 680px with hairline dividers. Normal two-tile rows stay side by side at mobile/tablet/desktop widths; one tile fills the row. First-card images load eagerly; later cards' images are lazy. Title, description and tile links are separate anchors, so cards never nest interactive links. Existing ItemList JSON-LD and `llms.txt` use `href` when present; feed media can supply the OG/list image.
 
+#### Date sorting and pagination (optional)
+
+Both grid and feed support these fields independently. Set them in the section's `data`.
+
+| Field | Contract |
+|---|---|
+| `items[].date` | Optional valid calendar date in `YYYY-MM-DD` form. Use `meta` to display a date. |
+| `items[].publishedAt` | Optional ISO datetime with seconds and a timezone, e.g. `2026-11-22T09:00:00+08:00` or `2026-11-22T01:00:00Z`. Fractional seconds are allowed. |
+| `sort` | `"date-desc"` places newer dates first and undated items last. Within each date (including the undated group), newer `publishedAt` instants come first, then missing timestamps. Remaining ties keep their original array order. Omit `sort` to keep the full array order. |
+| `pagination` | `{"defaultSize":10}` or `{"defaultSize":20}`. Enable it on at most one `project-cards` section per hosted page. Sorting runs before slicing. Other card sections keep their full lists. The paginated feed applies its featured styling on page 1 only. |
+
+For example, keep a weekly issue section intact and add this separately for an archive:
+
+```json
+{"type":"project-cards","order":1,"data":{"id":"archive","layout":"feed","sort":"date-desc","pagination":{"defaultSize":10},"items":[{"name":"Older episode","date":"2026-11-20"},{"name":"Newer episode","date":"2026-11-22","publishedAt":"2026-11-22T09:00:00+08:00","featured":true},{"name":"Undated episode"}]}}
+```
+
+`"date":"2026-02-30"`, `"publishedAt":"2026-11-22"`, `"sort":"date-asc"`, `"pagination":{"defaultSize":15}`, and a second paginated card section all cause a validation error. The example above has one page. With at least 21 cards, `?page=2` shows cards 11–20 and `?page=2&size=20` starts at card 21.
+
+Use `?page=N&size=10|20` on the existing hosted page URL. Omit `page` or pass `page=1` for the first page. A malformed, repeated or out-of-range page returns HTTP 404. An absent, unsupported or repeated size uses `defaultSize`. Changing size through the native links starts at page 1.
+
+The first page's canonical is the hosted path or the publisher-supplied `canonicalUrl` with its query and fragment removed. Later default-size pages use the hosted path with `?page=N`. Explicit `size=20` and other non-default sizes use `noindex,follow` and point to the default-size page containing the variant's first card. For example, with a default size of 10, `?page=2&size=20` points to `?page=3`. Breadcrumbs and page JSON-LD use the canonical URL. The sitemap lists only the hosted URLs normally eligible for inclusion.
+
 Fictional preview body — POST to `/api/v1/pages/preview` (same shape as page creation; this does not publish):
 ```json
 {

@@ -98,7 +98,8 @@
         "prisma/hosted-page-removal-migration.sql",
         "prisma/hosted-page-removal-down.sql",
         "scripts/check-hosted-page-removal-schema.mjs"
-      ]
+      ],
+      "docs": ["docs/spec/sections.md"]
     },
     {
       "id": "hosted-pages",
@@ -156,6 +157,7 @@
         "tests/hosted-content.test.ts",
         "tests/hosted-editorial-links.test.ts",
         "tests/hosted-render.test.ts",
+        "tests/project-cards-pagination.test.ts",
         "tests/dark-style.test.ts",
         "src/lib/heading-color.ts",
         "src/lib/hero-media.ts",
@@ -243,6 +245,7 @@
         "src/app/sitemaps/**",
         "tests/hosted-jsonld.test.ts",
         "tests/hosted-page-seo.test.ts",
+        "tests/project-cards-pagination.test.ts",
         "tests/hosted-page-urls.test.ts",
         "tests/json-ld.test.ts",
         "tests/platform-metadata.test.ts",

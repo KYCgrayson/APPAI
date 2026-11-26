@@ -38,9 +38,16 @@ export function editorialLink(href: string | undefined, origin: string, policy: 
   }
 }
 
+export function projectCardSeekHref(href: string, query: string) {
+  return query && href.startsWith("?t=") ? `?${query}&${href.slice(1)}` : href;
+}
+
 /** Resolve card links for non-DOM consumers, including same-page seek/anchor URLs. */
-export function projectCardUrl(value: unknown, pageUrl: string): string | undefined {
+export function projectCardUrl(value: unknown, pageUrl: string, keepPageQuery = false): string | undefined {
   const link = editorialLink(typeof value === "string" ? value : undefined, pageUrl, "project-card");
   if (!link) return undefined;
-  try { return new URL(link.href, pageUrl).href; } catch { return undefined; }
+  try {
+    const href = keepPageQuery ? projectCardSeekHref(link.href, new URL(pageUrl).search.slice(1)) : link.href;
+    return new URL(href, pageUrl).href;
+  } catch { return undefined; }
 }

@@ -4,6 +4,7 @@ import { DAYS, isBusinessHours, type BusinessHours } from "./business-hours.ts";
 import { decideSectionAccess } from "./iframe-tool-session-contract.ts";
 import { normalizeHostedContent, orderedHostedSections } from "./hosted-content.ts";
 import { PLATFORM_ORIGIN } from "./platform-identity.ts";
+import { projectCardsDefaultSize, projectCardsItems, projectCardsPageHref, type ProjectCardsPagination } from "./project-cards.ts";
 /* Publisher JSON is intentionally open; all SEO URLs pass the shared sanitizer. */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { sanitizeUrl } from "./sanitize.ts";
@@ -75,11 +76,23 @@ export function hostedOgImage(page: any): string | undefined {
     typeof screenshot === "string" ? screenshot : screenshot?.url, game?.cover?.url].map(value => safeHttpUrl(value)).find(Boolean);
 }
 
+export function projectCardsCanonical(hostedUrl: string, pagination: ProjectCardsPagination, publisherCanonical?: string | null) {
+  if (pagination.canonicalPage === 1 && publisherCanonical) {
+    const url = safeHttpUrl(publisherCanonical);
+    if (url) {
+      const { origin, pathname } = new URL(url);
+      return origin + pathname;
+    }
+  }
+  return projectCardsPageHref(hostedUrl, pagination.canonicalPage);
+}
+
 export function buildJsonLd(
   page: any,
   url: string,
   baseUrl: string,
   breadcrumb: Record<string, unknown> | null,
+  pagination?: ProjectCardsPagination,
 ) {
   const content = normalizeHostedContent(page.content) as any;
   const games = content.sections.filter((s: any) => s.type === "game").flatMap((s: any) => { const parsed = gameSectionSchema.safeParse(s.data); return parsed.success ? [parsed.data] : []; });
@@ -145,9 +158,11 @@ export function buildJsonLd(
     })),
   });
   if (breadcrumb) graph.push(breadcrumb);
-  for (const section of (content?.sections || []).filter((s: any) => s.type === "project-cards").slice(0, 20)) {
-    const items = (Array.isArray(section.data?.items) ? section.data.items : []).slice(0, 100).flatMap((item: any) => {
-      const itemUrl = projectCardUrl(item?.href, url) || safeHttpUrl(item?.links?.[0]?.url, baseUrl);
+  const cardSections = (content.sections as ReturnType<typeof normalizeHostedContent>["sections"]).filter(s => s.type === "project-cards");
+  const paginated = pagination && cardSections.find(s => projectCardsDefaultSize(s.data));
+  for (const section of cardSections.slice(0, 20)) {
+    const items = projectCardsItems(section.data, section === paginated ? pagination : undefined).slice(0, 100).flatMap((item: any) => {
+      const itemUrl = projectCardUrl(item?.href, url, !!pagination) || safeHttpUrl(item?.links?.[0]?.url, baseUrl);
       if (!itemUrl || !clean(item?.name)) return [];
       const mediaImage = section.data?.layout === "feed" && Array.isArray(item.media) ? item.media.find((tile: any) => editorialImageUrl(tile?.url))?.url : undefined;
       const image = mediaImage || safeHttpUrl(item.icon?.url) || safeHttpUrl(item.screenshot?.url);

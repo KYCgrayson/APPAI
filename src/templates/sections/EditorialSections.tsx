@@ -1,7 +1,8 @@
 /* eslint-disable @next/next/no-img-element -- Publisher images use arbitrary HTTPS hosts. */
 import { Fragment, type CSSProperties, type ReactNode } from "react";
-import { editorialImageUrl, editorialLink } from "@/lib/hosted-editorial-links";
-import { projectCardMediaSchema, type ProjectCardMedia } from "@/lib/project-cards";
+import { editorialImageUrl, editorialLink, projectCardSeekHref } from "@/lib/hosted-editorial-links";
+import { PROJECT_CARD_PAGE_SIZES, projectCardMediaSchema, projectCardsItems, projectCardsPageHref, type ProjectCardMedia, type ProjectCardsControls } from "@/lib/project-cards";
+import { hostedNavigationCopy } from "@/lib/hosted-navigation-copy";
 import { PLATFORM_ORIGIN } from "@/lib/platform-identity";
 import { Prose } from "../shared/Prose";
 import { ScreenshotFrame } from "./ScreenshotFrame";
@@ -92,29 +93,62 @@ export function ProfileHeaderSection(props: (Props<Base & {
     </div>
   </Shell>;
 }
-function CardLink({ link, children }: { link: ReturnType<typeof editorialLink>; children: ReactNode }) {
-  return link ? <a href={link.href} target={link.external ? "_blank" : undefined} rel={link.external ? "noreferrer" : undefined}>{children}</a> : <>{children}</>;
+type CardLinkTarget = NonNullable<ReturnType<typeof editorialLink>> & { projectCardSeek?: boolean };
+
+function CardLink({ link, children }: { link: CardLinkTarget | undefined; children: ReactNode }) {
+  return link ? <a href={link.href} target={link.external ? "_blank" : undefined} rel={link.external ? "noreferrer" : undefined} data-project-card-seek={link.projectCardSeek}>{children}</a> : <>{children}</>;
 }
+
+function ProjectCardsNav({ pagination, locale }: { pagination: ProjectCardsControls; locale?: string }) {
+  const { path, page, pageCount, size, defaultSize } = pagination;
+  const { pagination: copy } = hostedNavigationCopy(locale || "en");
+  const href = (number: number, pageSize = size) => projectCardsPageHref(path, number, pageSize === defaultSize ? undefined : pageSize);
+  const numbers = [...new Set([1, page - 2, page - 1, page, page + 1, page + 2, pageCount])]
+    .filter(number => number >= 1 && number <= pageCount).sort((a, b) => a - b);
+  return <nav className={styles.pagination} aria-label={copy.label}>
+    {pageCount > 1 && <div>
+      {page > 1 && <a href={href(page - 1)} rel="prev">{copy.previous}</a>}
+      {numbers.map((number, i) => <Fragment key={number}>
+        {i > 0 && number - numbers[i - 1] > 1 && <span aria-hidden="true">…</span>}
+        <a href={href(number)} aria-label={copy.page.replace("{number}", String(number))} aria-current={number === page ? "page" : undefined}>{number}</a>
+      </Fragment>)}
+      {page < pageCount && <a href={href(page + 1)} rel="next">{copy.next}</a>}
+    </div>}
+    <div>
+      <span>{copy.perPage}</span>
+      {PROJECT_CARD_PAGE_SIZES.map(pageSize => pageSize === size
+        ? <span key={pageSize} aria-current="true">{pageSize}</span>
+        : <a key={pageSize} href={href(1, pageSize)} aria-label={copy.size.replace("{number}", String(pageSize))}>{pageSize}</a>)}
+    </div>
+  </nav>;
+}
+
 export function ProjectCardsSection(props: (Props<Base & { layout?: "grid" | "feed"; items?: {
   name: string; category?: string; description?: string; icon?: Image; monogram?: string;
   href?: string; meta?: string[]; media?: ProjectCardMedia[]; featured?: boolean;
   screenshot?: Image & { kind: "phone" | "web"; width?: number; height?: number }; links?: Link[];
-}[] }>) & { typographyActive?: boolean }) {
+}[] }>) & { typographyActive?: boolean; pagination?: ProjectCardsControls; locale?: string; seekQuery?: string }) {
   const raw = record(props.data);
-  const data = { ...base(raw), items: Array.isArray(raw.items) ? raw.items.map((value) => {
+  const nav = props.pagination && <ProjectCardsNav pagination={props.pagination} locale={props.locale} />;
+  const cardLink = (href: unknown): CardLinkTarget | undefined => {
+    const link = editorialLink(typeof href === "string" ? href : undefined, process.env.NEXTAUTH_URL || PLATFORM_ORIGIN, "project-card");
+    if (!link || !props.seekQuery || !link.href.startsWith("?t=")) return link;
+    return { ...link, href: projectCardSeekHref(link.href, props.seekQuery), projectCardSeek: true };
+  };
+  const data = { ...base(raw), items: projectCardsItems(raw, props.pagination).map((value) => {
     const item = record(value);
     const screenshot = record(item.screenshot);
     return { name: text(item.name), category: text(item.category), description: text(item.description),
-      href: editorialLink(typeof item.href === "string" ? item.href : undefined, process.env.NEXTAUTH_URL || PLATFORM_ORIGIN, "project-card"),
+      href: cardLink(item.href),
       meta: Array.isArray(item.meta) ? item.meta.filter((v): v is string => typeof v === "string").map(v => v.trim()).filter(Boolean).slice(0, 3) : undefined,
       featured: item.featured === true,
       media: Array.isArray(item.media) ? item.media.slice(0, 2).flatMap(value => { const parsed = projectCardMediaSchema.safeParse(value); return parsed.success ? [parsed.data] : []; }) : undefined,
       icon: image(item.icon), monogram: text(item.monogram), links: links(item.links),
       screenshot: { ...image(screenshot), kind: screenshot.kind === "phone" ? "phone" : "web",
         width: dimension(screenshot.width), height: dimension(screenshot.height) } };
-  }).filter((item) => !!item.name) : [] };
+  }).filter((item) => !!item.name) };
   if (raw.layout === "feed") {
-    const featured = data.items.findIndex(item => item.featured);
+    const featured = (props.pagination?.page ?? 1) === 1 ? data.items.findIndex(item => item.featured) : -1;
     const Title = data.heading ? "h3" : "h2";
     return <Shell {...props} data={data}><div className={styles.feed}>
       <Heading typographyActive={props.typographyActive} data={data} />
@@ -129,9 +163,9 @@ export function ProjectCardsSection(props: (Props<Base & { layout?: "grid" | "fe
           <Title className={styles.feedTitle} data-typography-role={props.typographyActive ? "heading" : undefined}><CardLink link={item.href}>{item.name}</CardLink></Title>
           {item.description && <p className={styles.feedDescription} data-typography-role={props.typographyActive ? "card" : undefined}><CardLink link={item.href}>{item.description}</CardLink></p>}
           {media.length > 0 && <div className={styles.feedMedia} data-count={media.length}>{media.map((tile, tileIndex) => {
-            const link = editorialLink(tile.href, process.env.NEXTAUTH_URL || PLATFORM_ORIGIN, "project-card");
+            const link = cardLink(tile.href);
             const Tag = link ? "a" : "figure";
-            return <Tag key={tileIndex} className={styles.feedTile} href={link?.href} target={link?.external ? "_blank" : undefined} rel={link?.external ? "noreferrer" : undefined}
+            return <Tag key={tileIndex} className={styles.feedTile} href={link?.href} target={link?.external ? "_blank" : undefined} rel={link?.external ? "noreferrer" : undefined} data-project-card-seek={link?.projectCardSeek}
               aria-label={link && !tile.alt.trim() && !tile.label?.trim() ? item.name : undefined}
               style={{ aspectRatio: (tile.aspect || "16:9").replace(":", " / ") }}>
               <img src={tile.url} alt={tile.alt} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
@@ -141,6 +175,7 @@ export function ProjectCardsSection(props: (Props<Base & { layout?: "grid" | "fe
           <Links items={item.links} inline />
         </article>;
       })}
+      {nav}
     </div></Shell>;
   }
   return <Shell {...props} data={data}><Heading typographyActive={props.typographyActive} data={data} />{!!data.items?.length && <ProjectReveal>{data.items.map((item, i) => <article key={i} className={styles.card}>
@@ -150,7 +185,7 @@ export function ProjectCardsSection(props: (Props<Base & { layout?: "grid" | "fe
     {item.description && <p data-typography-role={props.typographyActive ? "card" : undefined} className={styles.description}><CardLink link={item.href}>{item.description}</CardLink></p>}
     {item.screenshot?.url && <ScreenshotFrame image={item.screenshot} />}
     <Links items={item.links} />
-  </article>)}</ProjectReveal>}</Shell>;
+  </article>)}</ProjectReveal>}{nav}</Shell>;
 }
 export function EntriesSection(props: (Props<Base & { items?: { title: string; description?: string }[]; links?: Link[] }>) & { typographyActive?: boolean }) {
   const raw = record(props.data);

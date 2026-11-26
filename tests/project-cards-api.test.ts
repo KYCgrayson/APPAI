@@ -14,7 +14,10 @@ const definitions = await import("../src/app/api/v1/sections/route.ts");
 const params = { params: Promise.resolve({ slug: "fictional-feed" }) };
 const sectionParams = { params: Promise.resolve({ slug: "fictional-feed", order: "8" }) };
 const request = (body: unknown, method = "POST", query = "") => new NextRequest(`https://appai.info/api/v1/pages${query}`, { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-const data = { layout: "feed", items: [{ name: "Episode", href: "?t=1:30#video", meta: ["Episode 1"], media: [{ url: "https://example.com/frame.png", alt: "", href: "?t=90#video", label: "6 key moments" }] }] };
+const data = { layout: "feed", sort: "date-desc", pagination: { defaultSize: 10 }, items: [{
+  name: "Episode", date: "2026-11-22", publishedAt: "2026-11-22T00:00:00Z", href: "?t=1:30#video", meta: ["Episode 1"],
+  media: [{ url: "https://example.com/frame.png", alt: "", href: "?t=90#video", label: "6 key moments" }],
+}] };
 const content = (value: unknown) => ({ sections: [{ type: "about", order: 0, data: { text: "Fictional" } }, { type: "project-cards", order: 8, data: value }] });
 const page = { slug: "fictional-feed", title: "Fictional feed", content: content(data) };
 const calls = (value: unknown) => [
@@ -40,6 +43,7 @@ test("all real write routes and preview share card validation, indexed paths, an
   const before = gameApiFixture.writes;
   const badValues = [
     [{ ...data, layout: "wrong" }, "layout"],
+    [{ ...data, items: [{ ...data.items[0], date: "2026-11-31" }] }, "items[0].date"],
     [{ ...data, items: [{ name: "Episode", href: "http://example.com" }] }, "items[0].href"],
     [{ ...data, items: [{ name: "Episode", meta: [" "] }] }, "items[0].meta[0]"],
     [{ ...data, items: [{ name: "Episode", media: [] }] }, "items[0].media"],
@@ -60,7 +64,16 @@ test("JSON Schema exposes layout, scalar meta constraints and nested media contr
   const response = await definitions.GET(new NextRequest("https://appai.info/api/v1/sections?format=jsonschema&type=project-cards"));
   const schema = (await response.json()).sections["project-cards"];
   assert.deepEqual(schema.properties.layout.enum, ["grid", "feed"]);
+  assert.deepEqual(schema.properties.sort.enum, ["date-desc"]);
+  assert.deepEqual(schema.properties.pagination.required, ["defaultSize"]);
+  assert.equal(schema.properties.pagination.additionalProperties, false);
+  assert.deepEqual(schema.properties.pagination.properties.defaultSize.enum, [10, 20]);
   const fields = schema.properties.items.items.properties;
+  assert.equal(fields.date.format, "date");
+  assert.equal(fields.publishedAt.format, "date-time");
+  assert.equal(new RegExp(fields.date.pattern).test("2026-02-30"), false);
+  assert.equal(new RegExp(fields.publishedAt.pattern).test("2026-11-22T00:00Z"), false);
+  assert.equal(new RegExp(fields.publishedAt.pattern).test("2026-11-22T08:00:00.123+08:00"), true);
   assert.equal(fields.href.maxLength, 2048);
   for (const bad of ["https://:", "https://[", "https://example.com:abc", "https://example.com:65536"]) {
     assert.equal(new RegExp(fields.href.pattern).test(bad), false);
@@ -77,6 +90,23 @@ test("JSON Schema exposes layout, scalar meta constraints and nested media contr
   assert.deepEqual(fields.media.items.properties.aspect.enum, ["16:9", "1:1", "4:5"]);
   assert.equal(fields.featured.type, "boolean");
   assert.deepEqual(schema.properties.items.items.required, ["name"]);
+});
+
+test("page and section PATCH reject pagination when an untouched section already uses it", async () => {
+  gameApiFixture.page = null; gameApiFixture.apps = [];
+  const weekly = { type: "project-cards", order: 10, data: { items: [{ name: "Weekly issue" }] } };
+  const seed = await collection.POST(request({ ...page, content: { sections: [...page.content.sections, weekly] } }));
+  assert.equal(seed.status, 201);
+  const before = gameApiFixture.writes;
+  const pagination = { defaultSize: 20 };
+  for (const response of [
+    await pageRoute.PATCH(request({ content: { sections: [{ order: 10, data: { pagination } }] } }, "PATCH"), params),
+    await section.PATCH(request({ data: { pagination } }, "PATCH"), { params: Promise.resolve({ slug: "fictional-feed", order: "10" }) }),
+  ]) {
+    assert.equal(response.status, 400);
+    assert.match(JSON.stringify(await response.json()), /sections\[2\]\.data\.pagination: only one/);
+  }
+  assert.equal(gameApiFixture.writes, before);
 });
 
 test("every path also rejects metadata emptied by the plain-text sanitizer", async () => {

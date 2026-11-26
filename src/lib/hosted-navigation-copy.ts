@@ -45,6 +45,18 @@ const rows = Object.entries(HOME_LABELS).map(([locale, home]) => ({
   ...COPY[0], ...COPY.find(copy => copy.locale === locale), locale, home, isDefault: locale === "en",
 }));
 
+const paginationCopy: Record<string, { label: string; previous: string; next: string; page: string; size: string; perPage: string }> = {
+  en: { label: "Card pagination", previous: "Previous", next: "Next", page: "Page {number}", size: "{number} cards per page", perPage: "Cards per page" },
+  "zh-TW": { label: "卡片分頁", previous: "上一頁", next: "下一頁", page: "第 {number} 頁", size: "每頁 {number} 張", perPage: "每頁張數" },
+  "zh-CN": { label: "卡片分页", previous: "上一页", next: "下一页", page: "第 {number} 页", size: "每页 {number} 条", perPage: "每页条数" },
+  ja: { label: "カード一覧のページ", previous: "前へ", next: "次へ", page: "{number} ページ", size: "1ページに {number} 件", perPage: "表示件数" },
+  ko: { label: "카드 페이지", previous: "이전", next: "다음", page: "{number} 페이지", size: "페이지당 {number}개", perPage: "페이지당 카드 수" },
+  de: { label: "Seitennavigation der Kartenliste", previous: "Zurück", next: "Weiter", page: "Seite {number}", size: "{number} Karten pro Seite", perPage: "Karten pro Seite" },
+  fr: { label: "Pagination des cartes", previous: "Précédente", next: "Suivante", page: "Aller à la page {number}", size: "{number} cartes par page", perPage: "Cartes par page" },
+  es: { label: "Paginación de tarjetas", previous: "Anterior", next: "Siguiente", page: "Página {number}", size: "{number} tarjetas por página", perPage: "Tarjetas por página" },
+  hi: { label: "कार्ड सूची के पेज", previous: "पिछला", next: "अगला", page: "पेज {number}", size: "हर पेज पर {number} कार्ड", perPage: "हर पेज पर कार्ड" },
+};
+
 export function hostedNavigationCopy(locale: string) {
   // pickByLocale's same-language fallback takes the first Chinese row (TW).
   // Normalize Chinese UI copy here; leave publisher-content matching alone.
@@ -54,7 +66,8 @@ export function hostedNavigationCopy(locale: string) {
       || (!subtags.includes("hans") && subtags.some(tag => ["tw", "hk", "mo"].includes(tag)));
     locale = traditional ? "zh-TW" : "zh-CN";
   }
-  return pickByLocale(rows, locale)!;
+  const copy = pickByLocale(rows, locale)!;
+  return { ...copy, pagination: paginationCopy[copy.locale] ?? paginationCopy.en };
 }
 
 // Neutral colours keep navigation readable independently of publisher themes.

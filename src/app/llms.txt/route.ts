@@ -1,4 +1,5 @@
 import { projectCardUrl } from "@/lib/hosted-editorial-links";
+import { projectCardsItems } from "@/lib/project-cards";
 import { normalizeHostedContent, isRecord } from "@/lib/hosted-content";
 import { buildPagePath } from "@/lib/parse-page-segments";
 import { publicPageWhere } from "@/lib/hosted-page-visibility";
@@ -53,7 +54,7 @@ export async function GET() {
   for (const page of pages) {
     const pageUrl = `${baseUrl}${buildPagePath(page.slug, page.locale, null, page.isDefault)}`;
     const plain = (value: unknown) => typeof value === "string" ? value.replace(/[\r\n\t]+/g, " ").trim() : "";
-    const feedItems = normalizeHostedContent(page.content).sections.filter(section => section.type === "project-cards" && section.data.layout === "feed").flatMap(section => Array.isArray(section.data.items) ? section.data.items : []).slice(0, 20).flatMap(item => {
+    const feedItems = normalizeHostedContent(page.content).sections.filter(section => section.type === "project-cards" && section.data.layout === "feed").flatMap(section => projectCardsItems(section.data)).slice(0, 20).flatMap(item => {
       if (!isRecord(item) || !plain(item.name)) return [];
       const links = Array.isArray(item.links) ? item.links : [];
       const url = projectCardUrl(item.href, pageUrl) || projectCardUrl(links[0]?.url, pageUrl);
@@ -264,6 +265,7 @@ Copyable payload: ${baseUrl}/spec/examples/guess-duel.example.json.
 ## What you can build
 
 - 30 section types: profile-header, project-cards, entries, hero, features, pricing, faq, download, testimonials, gallery, team, video, screenshots, stats, contact, cta, links, about, schedule, sponsors, action, form, media-downloader, video-subtitle, tool, pdf-viewer, embed (TikTok/Loom/X/YouTube/Vimeo/Spotify/CodePen/Figma), simple-order, iframe-tool, game
+- Project cards support item date (YYYY-MM-DD), publishedAt (ISO datetime), sort "date-desc", and pagination {defaultSize: 10} or {defaultSize: 20} on one section per page. Hosted URLs accept ?page=N&size=10|20. See ${baseUrl}/spec/sections#project-cards for validation, SEO, and examples.
 - Multi-page sites with automatic header navigation (root page + child pages like /p/my-app/my-app-faq, /p/my-app/my-app-contact, /p/my-app/my-app-delete-account; prefix child slugs with the root slug because (slug, locale) is globally unique; privacy/terms use privacyPolicy/termsOfService fields)
 - Contact and account-deletion forms that work on any device
 - Markdown-formatted long text (bold, italic, links, lists)

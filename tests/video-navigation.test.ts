@@ -15,11 +15,15 @@ class FakeElement {
 }
 class FakeAnchor extends FakeElement {
   href: string;
+  projectCardSeek: boolean;
   download = "";
   target = "";
-  constructor(href: string) { super(0); this.href = href; }
+  constructor(href: string, projectCardSeek: boolean) { super(0); this.href = href; this.projectCardSeek = projectCardSeek; }
   closest() { return this; }
-  getAttribute() { return this.href; }
+  getAttribute(name: string) {
+    if (name === "href") return this.href;
+    return name === "data-project-card-seek" && this.projectCardSeek ? "true" : null;
+  }
 }
 
 test("delegated same-page links, initial/unknown hashes and back/forward target the correct video", async () => {
@@ -30,8 +34,8 @@ test("delegated same-page links, initial/unknown hashes and back/forward target 
   const calls: [string, number, boolean][] = [];
   const first = new FakeElement(1), second = new FakeElement(2);
   const cleanup: (() => void)[] = [];
-  const click = (href: string, modifiers = {}, target = "") => {
-    const anchor = new FakeAnchor(href); anchor.target = target;
+  const click = (href: string, modifiers = {}, target = "", projectCardSeek = false) => {
+    const anchor = new FakeAnchor(href, projectCardSeek); anchor.target = target;
     const event = new Event("click", { cancelable: true });
     Object.assign(event, { button: 0, ...modifiers });
     Object.defineProperty(event, "target", { value: anchor });
@@ -69,6 +73,27 @@ test("delegated same-page links, initial/unknown hashes and back/forward target 
       assert.equal(click(href).defaultPrevented, true);
       assert.deepEqual(calls.at(-1), ["second", 104, true]);
       assert.equal(window.location.href, "https://appai.info/p/fictional?t=104#second");
+
+      const { ProjectCardsSection } = await import("../src/templates/sections/EditorialSections.tsx");
+      for (const [query, seekQuery] of [["page=2&size=20", "page=2&size=20"], ["page=2&size=bogus", "page=2"]]) {
+        const cards = await renderHtml(createElement(ProjectCardsSection, {
+          themeColor: "#2563eb", seekQuery, data: { layout: "feed", items: [{
+            name: "Episode", href: "?t=92#second", media: [{ url: "https://example.com/frame.png", alt: "Episode frame", href: "?t=104#second" }],
+          }] },
+        }));
+        const anchors = [...cards.matchAll(/<a\b[^>]*href="([^"]+)"[^>]*data-project-card-seek="true"[^>]*>/g)];
+        assert.equal(anchors.length, 2);
+        for (const [index, [, href]] of anchors.entries()) {
+          const current = `https://appai.info/p/fictional?${query}&utm_source=newsletter&t=5#second`;
+          window.location.href = current;
+          const cleanHref = href.replaceAll("&amp;", "&");
+          assert.equal(click(cleanHref).defaultPrevented, false);
+          assert.equal(click(cleanHref, {}, "", true).defaultPrevented, true);
+          const time = index === 0 ? 92 : 104;
+          assert.deepEqual(calls.at(-1), ["second", time, true]);
+          assert.equal(window.location.href, `https://appai.info/p/fictional?${seekQuery}&t=${time}#second`);
+        }
+      }
     } finally { loader.deregister(); }
     const count = calls.length;
     for (const event of [click("https://evil.test/p/fictional?t=90"), click("?t=90", { ctrlKey: true }), click("?t=90", {}, "_blank"), click("/p/other?t=90"), click("#first")]) assert.equal(event.defaultPrevented, false);
