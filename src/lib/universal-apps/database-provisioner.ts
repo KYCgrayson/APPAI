@@ -100,10 +100,24 @@ export function databaseNamesForDeployment(appIdInput: string, deploymentId: str
 export function databaseUrlForRole(adminDatabaseUrl: string, role: string, password: string, schema: string) {
   const url = new URL(adminDatabaseUrl);
   if (url.protocol !== "postgres:" && url.protocol !== "postgresql:") throw new Error("Database administrator URL must use PostgreSQL.");
-  url.username = role;
+  url.username = role + supavisorTenantSuffix(url);
   url.password = password;
   url.searchParams.set("schema", schema);
   return url.toString();
+}
+
+/**
+ * Supabase's Supavisor pooler routes by username: it expects `role.projectref`
+ * instead of a bare role. When the administrator URL goes through the pooler
+ * (`postgres.abcd@aws-0-<region>.pooler.supabase.com`), carry the same
+ * `.projectref` suffix onto per-app roles so their URLs reach the same project.
+ * Direct connections and other hosts (Neon, local Postgres) are unchanged.
+ */
+export function supavisorTenantSuffix(url: URL) {
+  if (!url.hostname.endsWith(".pooler.supabase.com")) return "";
+  const username = decodeURIComponent(url.username);
+  const dot = username.indexOf(".");
+  return dot > 0 ? username.slice(dot) : "";
 }
 
 export function databaseMigrationExecutorRoleGrantSql(names: AppDatabaseNames) {
