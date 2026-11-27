@@ -19,6 +19,7 @@ set -euo pipefail
 
 STEP="${1:-}"
 WORKDIR="${WORKDIR:-$(pwd)/db-move-work}"
+mkdir -p "$WORKDIR"; WORKDIR="$(cd "$WORKDIR" && pwd)"   # absolute, so Docker mounts a folder, not a named volume
 DUMP="$WORKDIR/appai-public.dump"
 IMAGE="${PG_DOCKER_IMAGE:-postgres:17}"
 
@@ -54,6 +55,8 @@ case "$STEP" in
     echo "   extensions:";     q "$SOURCE_DATABASE_URL" "SELECT extname FROM pg_extension WHERE extname <> 'plpgsql' ORDER BY 1;"
     echo "   non-public schemas (NOT moved by this script; Universal App data lives here):"
     q "$SOURCE_DATABASE_URL" "SELECT nspname FROM pg_namespace WHERE nspname NOT IN ('public','information_schema') AND nspname NOT LIKE 'pg\_%' AND nspname NOT LIKE 'neon%' ORDER BY 1;"
+    echo "   Universal App deployments with saved database credentials (these point at Neon; see checklist):"
+    q "$SOURCE_DATABASE_URL" "SELECT count(*) FROM public.\"AppManagedRuntime\" WHERE \"databaseProvision\" IS NOT NULL;"
     echo "== target (Supabase)"; q "$TARGET_DATABASE_URL" "SHOW server_version;"
     echo "   public tables (should be 0 before restore):"
     q "$TARGET_DATABASE_URL" "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';"
@@ -66,6 +69,8 @@ case "$STEP" in
     # reading; publishing/login writes fail until the switch. Undo with `unfreeze`.
     need_src
     q "$SOURCE_DATABASE_URL" "DO \$\$ BEGIN EXECUTE format('ALTER DATABASE %I SET default_transaction_read_only = on', current_database()); END \$\$;"
+    # Only our own role's sessions can be ended here. Other roles' open sessions (Universal App
+    # runtimes) may still write; `verify` catches it for public tables, not for app_* schemas.
     q "$SOURCE_DATABASE_URL" "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid() AND usename = current_user;" >/dev/null || true
     echo "Neon is now read-only for new sessions. Wait ~1 minute for open connections to recycle, then run: dump"
     ;;

@@ -2,8 +2,9 @@
 -- Supabase exposes the `public` schema to the `anon` and `authenticated` roles with a
 -- key that ships to browsers. AppAI never uses that API: it reaches Postgres only
 -- through Prisma as the table owner, which RLS does not restrict. So: enable RLS with
--- no policies (deny all through the API) and drop the API roles' grants, including
--- for tables that `prisma db push` creates later. Safe to run more than once.
+-- no policies (deny all through the API) and drop the API roles' grants. This covers
+-- tables that exist now; re-run it after every `prisma db push`. Turning the Data API
+-- off in the Supabase dashboard is the primary protection. Safe to run more than once.
 DO $$
 DECLARE t record;
 BEGIN
