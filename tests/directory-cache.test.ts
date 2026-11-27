@@ -34,11 +34,11 @@ const request = (action: string) => new NextRequest("https://example.test/api/ad
   method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ appId: "cached", action }),
 });
 
-test("all public loaders use tagged one-hour data cache, with complete arguments and compact JSON DTOs", async () => {
+test("all public loaders use tagged one-day (on-demand) data cache, with complete arguments and compact JSON DTOs", async () => {
   reset();
   const registrations = state.registrations.filter(r => r.options.tags.includes("public-directory"));
   assert.equal(registrations.length, 3);
-  for (const registration of registrations) assert.deepEqual(registration.options, { revalidate: 3600, tags: ["public-directory"] });
+  for (const registration of registrations) assert.deepEqual(registration.options, { revalidate: 86400, tags: ["public-directory"] });
   const calls = [() => loadPublicHome("en"), () => loadPublicDirectory("en"), () => loadPublicAppDetail("cached", "en")];
   for (const call of calls) {
     const first = await call();

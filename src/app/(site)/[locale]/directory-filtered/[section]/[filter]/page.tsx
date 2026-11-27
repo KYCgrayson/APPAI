@@ -15,7 +15,9 @@ export async function generateMetadata({ params }: Props) {
   return platformMetadata(Promise.resolve({ locale }), section);
 }
 
-export const revalidate = 3600;
+// #92-E: publish/edit/unpublish refresh this via revalidateSeoIndexes();
+// the one-day timer is only a safety net, so crawlers never re-query hourly.
+export const revalidate = 86400;
 
 // Middleware and directoryFilter bound the paths that can generate on demand.
 export function generateStaticParams() {

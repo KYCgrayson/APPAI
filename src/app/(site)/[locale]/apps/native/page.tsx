@@ -8,7 +8,9 @@ export function generateMetadata({ params }: Props) {
   return platformMetadata(params, "apps");
 }
 
-export const revalidate = 3600;
+// #92-E: publish/edit/unpublish refresh this via revalidateSeoIndexes();
+// the one-day timer is only a safety net, so crawlers never re-query hourly.
+export const revalidate = 86400;
 
 export default async function NativeAppsPage({ params }: Props) {
   const { locale } = await params;
