@@ -70,6 +70,6 @@ test("runtime sitemap index and new shard IDs stay reachable after the directory
   assert.ok(writes.some((write: { keys: string[]; args: string[] }) => write.keys[0] === "seo-sitemap-shard" && write.args[0] === "1"));
   for (const write of writes) {
     assert.ok(write.bytes <= SITEMAP_CACHE_BYTE_LIMIT, JSON.stringify(write));
-    assert.deepEqual(write.options, { revalidate: 3600, tags: ["seo-sitemap"] });
+    assert.deepEqual(write.options, { revalidate: 86400, tags: ["seo-sitemap"] });
   }
 });

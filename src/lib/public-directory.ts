@@ -9,7 +9,9 @@ import { groupByKey, pickByLocale } from "@/lib/locale-match";
 import { canLaunchUniversalApp, getUniversalAppLaunchPath } from "@/lib/universal-apps/directory";
 import { appDirectoryKind, isPersonalDirectoryProfile, type DirectoryKind } from "@/lib/directory-kind";
 
-const cacheOptions = { revalidate: 3600, tags: ["public-directory"] };
+// Refreshed on every write via the "public-directory" tag (revalidateSeoIndexes);
+// one day is only a safety net, so crawlers never re-query hourly (#92-E).
+const cacheOptions = { revalidate: 86400, tags: ["public-directory"] };
 // Bound entries independently of catalog size. Content is used for classification
 // on misses only; neither content nor raw Date-bearing Prisma rows enter the cache.
 const DIRECTORY_BATCH_SIZE = 50;

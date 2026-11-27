@@ -254,9 +254,9 @@ export default async function AnalyticsPage() {
       {/* Row 1: headline metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <StatCard
-          label="Active Sessions"
+          label="Legacy DB Sessions"
           value={activeSessions}
-          detail={`${activeUserIds.length} unique user${activeUserIds.length === 1 ? "" : "s"}`}
+          detail={`${activeUserIds.length} unique user${activeUserIds.length === 1 ? "" : "s"} · JWT sign-ins (#92-E) are not stored`}
         />
         <StatCard
           label="New Signups (7d)"

@@ -5,7 +5,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return platformMetadata(params, "home");
 }
 
-export const revalidate = 3600;
+// #92-E: publish/edit/unpublish refresh this via revalidateSeoIndexes();
+// the one-day timer is only a safety net, so crawlers never re-query hourly.
+export const revalidate = 86400;
 
 import { serializeJsonLd } from "@/lib/json-ld";
 import { getTranslations, setRequestLocale } from "next-intl/server";

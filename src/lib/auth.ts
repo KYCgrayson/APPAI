@@ -4,6 +4,9 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "./db";
 import { isAdminEmail } from "./admin";
 import { publicSession } from "./auth-session";
+import { refreshAccessToken, tokenAccess, type AccessMemo, type AccessStore } from "./auth-token";
+
+const accessDeps = { store: db as unknown as AccessStore, isAdminEmail, memo: new Map() as AccessMemo };
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(db),
@@ -13,28 +16,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
+  // #92-E: JWT sessions. A database session made every signed-in request
+  // read (and often write) the Session table; the cookie now carries the
+  // session, so auth() and /api/auth/session never touch the database for
+  // visitors without a cookie and only refresh access claims for signed-in
+  // users every ACCESS_REFRESH_SECONDS. The adapter still stores users and
+  // OAuth accounts at sign-in.
+  session: { strategy: "jwt" },
   callbacks: {
-    async session({ session, user }) {
-      const dbUser = await db.user.findUnique({
-        where: { id: user.id },
-        select: { organizationId: true, role: true },
-      });
-      return publicSession(session, user, dbUser);
+    async jwt({ token, user }) {
+      return refreshAccessToken(token, user, accessDeps);
+    },
+    async session({ session, token }) {
+      return publicSession(
+        session,
+        { id: token.sub ?? "", name: token.name, email: token.email, image: token.picture },
+        tokenAccess(token),
+      );
     },
   },
   events: {
-    // Promotion has to run on every sign-in, not only at createUser. An
-    // account that already existed when ADMIN_EMAILS was configured would
-    // otherwise stay USER forever — silently losing the admin exemptions
-    // (uncapped clip length, no daily quota) it is supposed to have.
-    async signIn({ user }) {
-      if (user.id && user.email && isAdminEmail(user.email)) {
-        await db.user.updateMany({
-          where: { id: user.id, role: { not: "ADMIN" } },
-          data: { role: "ADMIN" },
-        });
-      }
-    },
     async createUser({ user }) {
       if (user.id && user.email) {
         const userId = user.id;

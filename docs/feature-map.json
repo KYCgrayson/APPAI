@@ -29,6 +29,7 @@
         "src/lib/directory-kind.ts",
         "src/lib/publisher-label.ts",
         "src/lib/db.ts",
+        "src/lib/db-query-log.ts",
         "src/lib/utils.ts",
         "prisma/schema.prisma",
         "public/ishift/**",
@@ -38,6 +39,7 @@
         "scripts/qa-public-directory-cache.cjs",
         "scripts/qa-seed-personal-site.cjs",
         "tests/account-directory-contract.test.ts",
+        "tests/public-db-free.test.ts",
         "tests/directory-*.test.ts",
         "tests/helpers/public-directory-cache.mjs",
         "tests/helpers/public-directory-production.cjs",
@@ -181,6 +183,7 @@
       "paths": [
         "src/lib/auth.ts",
         "src/lib/auth-session.ts",
+        "src/lib/auth-token.ts",
         "src/lib/api-auth.ts",
         "src/lib/device-auth.ts",
         "src/lib/device-approval.ts",

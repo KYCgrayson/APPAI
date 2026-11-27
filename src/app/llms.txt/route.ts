@@ -6,9 +6,9 @@ import { publicPageWhere } from "@/lib/hosted-page-visibility";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
-// ISR: regenerate at most once per hour. Create/update API routes should call
-// revalidatePath('/llms.txt') on publish for instant refresh.
-export const revalidate = 3600;
+// ISR refreshed on demand: every page write calls revalidateSeoIndexes(), which
+// revalidates /llms.txt. The one-day timer is only a safety net (#92-E).
+export const revalidate = 86400;
 
 // llms.txt — A standard for providing LLM-readable site information
 // See: https://llmstxt.org/

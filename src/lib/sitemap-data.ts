@@ -35,7 +35,8 @@ async function loadSitemapEntries() {
   }
 }
 
-const cacheOptions = { revalidate: 3600, tags: ["seo-sitemap"] };
+// Refreshed on publish via the "seo-sitemap" tag; one day is a safety net (#92-E).
+const cacheOptions = { revalidate: 86400, tags: ["seo-sitemap"] };
 
 export const loadSitemapIds = unstable_cache(async () => {
   return splitSitemapEntries(await loadSitemapEntries()).map((_, id) => ({ id }));
