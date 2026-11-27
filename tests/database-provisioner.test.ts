@@ -211,3 +211,15 @@ test("a second deployment shares schema but creates effective independent creden
   assert.match(commands.join("\n"), /first-secret/);
   assert.match(commands.join("\n"), /second-secret/);
 });
+
+test("per-app URLs keep the Supabase pooler tenant suffix and leave other hosts alone", () => {
+  const pooled = new URL(databaseUrlForRole(
+    "postgresql://postgres.abcdref:admin@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres?sslmode=require",
+    "app_inventory_r", "pw", "app_inventory",
+  ));
+  assert.equal(pooled.username, "app_inventory_r.abcdref");
+  assert.equal(pooled.hostname, "aws-0-ap-northeast-1.pooler.supabase.com");
+  assert.equal(pooled.searchParams.get("schema"), "app_inventory");
+  assert.equal(new URL(databaseUrlForRole("postgresql://postgres:admin@db.abcdref.supabase.co:5432/postgres", "role", "pw", "s")).username, "role");
+  assert.equal(new URL(databaseUrlForRole("postgresql://neondb_owner:pw@ep-x.neon.tech/neondb", "role", "pw", "s")).username, "role");
+});

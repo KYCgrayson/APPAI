@@ -59,3 +59,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 !/docs/games/
+
+# Local database move work (dumps contain user data, #92-F)
+db-move-work/
+*.dump

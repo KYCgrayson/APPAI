@@ -33,6 +33,7 @@
         "prisma/schema.prisma",
         "public/ishift/**",
         "scripts/dev-frontend.sh",
+        "scripts/db-move/**",
         "scripts/qa-header-harness.cjs",
         "scripts/qa-platform-directory.cjs",
         "scripts/qa-public-directory-cache.cjs",
