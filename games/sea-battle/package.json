@@ -1,0 +1,10 @@
+{
+  "name": "sea-battle",
+  "private": true,
+  "type": "module",
+  "description": "A small, offline paper-and-pencil fleet game. No build or dependencies.",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "dev": "python3 -m http.server 5185"
+  }
+}
