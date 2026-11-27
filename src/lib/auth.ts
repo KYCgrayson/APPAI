@@ -4,9 +4,9 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "./db";
 import { isAdminEmail } from "./admin";
 import { publicSession } from "./auth-session";
-import { refreshAccessToken, tokenAccess, type AccessStore } from "./auth-token";
+import { refreshAccessToken, tokenAccess, type AccessMemo, type AccessStore } from "./auth-token";
 
-const accessDeps = { store: db as unknown as AccessStore, isAdminEmail };
+const accessDeps = { store: db as unknown as AccessStore, isAdminEmail, memo: new Map() as AccessMemo };
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(db),

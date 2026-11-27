@@ -22,6 +22,15 @@ export type AccessStore = {
   };
 };
 
+type MemoEntry = { organizationId: string | null; role: string; checkedAt: number };
+/**
+ * Server Components can't rewrite the session cookie, so a stale cookie would
+ * otherwise re-query on every server-side auth() until /api/auth/session
+ * refreshes it. A warm instance shares the last read through this memo.
+ */
+export type AccessMemo = Map<string, MemoEntry>;
+const MEMO_MAX_ENTRIES = 1000;
+
 /** Session-facing view of the claims; missing claims fall back like a missing DB user did. */
 export function tokenAccess(token: AccessClaims) {
   return typeof token.role === "string"
@@ -37,7 +46,7 @@ export function tokenAccess(token: AccessClaims) {
 export async function refreshAccessToken<T extends AccessClaims>(
   token: T,
   user: { id?: string | null; email?: string | null } | null | undefined,
-  deps: { store: AccessStore; isAdminEmail(email: string): boolean },
+  deps: { store: AccessStore; isAdminEmail(email: string): boolean; memo?: AccessMemo },
   now = Math.floor(Date.now() / 1000),
 ): Promise<T | null> {
   const signingIn = !!user?.id;
@@ -47,6 +56,13 @@ export async function refreshAccessToken<T extends AccessClaims>(
   const fresh = typeof token.accessCheckedAt === "number"
     && now - token.accessCheckedAt >= 0 && now - token.accessCheckedAt < ACCESS_REFRESH_SECONDS;
   if (!signingIn && fresh) return token;
+  const memo = deps.memo?.get(userId);
+  if (!signingIn && memo && now - memo.checkedAt >= 0 && now - memo.checkedAt < ACCESS_REFRESH_SECONDS) {
+    token.organizationId = memo.organizationId;
+    token.role = memo.role;
+    token.accessCheckedAt = memo.checkedAt;
+    return token;
+  }
 
   try {
     // Promotion has to run on every sign-in, not only at createUser. An
@@ -57,7 +73,11 @@ export async function refreshAccessToken<T extends AccessClaims>(
       await deps.store.user.updateMany({ where: { id: userId, role: { not: "ADMIN" } }, data: { role: "ADMIN" } });
     }
     const row = await deps.store.user.findUnique({ where: { id: userId }, select: { organizationId: true, role: true } });
-    if (!row) return null; // deleted user: drop the cookie
+    if (!row) { deps.memo?.delete(userId); return null; } // deleted user: drop the cookie
+    if (deps.memo) {
+      if (deps.memo.size >= MEMO_MAX_ENTRIES) deps.memo.clear();
+      deps.memo.set(userId, { organizationId: row.organizationId, role: row.role, checkedAt: now });
+    }
     token.organizationId = row.organizationId;
     token.role = row.role;
     token.accessCheckedAt = now;

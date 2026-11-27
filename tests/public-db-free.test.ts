@@ -67,6 +67,18 @@ test("a stale token re-reads claims once; a deleted user is signed out", async (
   assert.equal(await refreshAccessToken({}, undefined, fakeStore(null), 1000), null, "a token without a subject is not a session");
 });
 
+test("a warm instance shares one claims read across stale cookies", async () => {
+  const store = fakeStore({ organizationId: "org-2", role: "ADMIN" });
+  const deps = { ...store, memo: new Map() };
+  const stale = () => ({ sub: "user-1", organizationId: "org-1", role: "USER", accessCheckedAt: 0 });
+  const t = 10_000;
+  assert.equal((await refreshAccessToken(stale(), undefined, deps, t))?.role, "ADMIN");
+  assert.equal((await refreshAccessToken(stale(), undefined, deps, t + 60))?.role, "ADMIN");
+  assert.deepEqual(store.calls, ["findUnique"], "second server-side auth() reuses the memo");
+  await refreshAccessToken(stale(), undefined, deps, t + ACCESS_REFRESH_SECONDS);
+  assert.deepEqual(store.calls, ["findUnique", "findUnique"], "the memo expires with the same window");
+});
+
 test("a database outage keeps an existing session but fails a new sign-in", async () => {
   const stale = { sub: "user-1", organizationId: "org-1", role: "USER", accessCheckedAt: 0 };
   const originalError = console.error;
