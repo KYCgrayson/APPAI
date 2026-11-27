@@ -1,0 +1,10 @@
+import en from './en.js';
+import es from './es.js';
+import tw from './zh-TW.js';
+import cn from './zh-CN.js';
+import ja from './ja.js';
+import ko from './ko.js';
+import de from './de.js';
+import fr from './fr.js';
+import hi from './hi.js';
+export const WORDS = { en, es, 'zh-TW': tw, 'zh-CN': cn, ja, ko, de, fr, hi };
