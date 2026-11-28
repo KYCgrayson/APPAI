@@ -1,10 +1,12 @@
 import { pickByLocale } from "../../lib/locale-match.ts";
 
 // Hosted-page UI only; publisher copy (heading, intro, placeholder,
-// disclaimer) stays in section data. Locales per D41: en, zh-TW, zh-CN, es.
+// disclaimer) stays in section data. Locales: en, zh-TW, zh-CN, es (D41) + ja
+// (owner 11-28). `intro` is only the generic default when a section has none.
 const rows = [
   {
     locale: "en", isDefault: true,
+    intro: "Ask in your own words — we'll find the guide videos that cover it.",
     launcher: "Ask", title: "Ask about the videos", close: "Close", collapse: "Collapse",
     placeholder: "Ask a question…", ask: "Ask", asking: "Searching…",
     stats: "{total} videos, {indexed} indexed", browse: "Browse by topic", back: "Back",
@@ -18,6 +20,7 @@ const rows = [
   },
   {
     locale: "zh-TW",
+    intro: "用你自己的話提問，我們會找出講到這件事的攻略影片。",
     launcher: "提問", title: "問影片", close: "關閉", collapse: "收合",
     placeholder: "輸入你的問題…", ask: "提問", asking: "搜尋中…",
     stats: "共 {total} 支影片，已索引 {indexed} 支", browse: "依主題瀏覽", back: "返回",
@@ -31,6 +34,7 @@ const rows = [
   },
   {
     locale: "zh-CN",
+    intro: "用你自己的话提问，我们会找出讲到这件事的攻略视频。",
     launcher: "提问", title: "问视频", close: "关闭", collapse: "收起",
     placeholder: "输入你的问题…", ask: "提问", asking: "搜索中…",
     stats: "共 {total} 个视频，已索引 {indexed} 个", browse: "按主题浏览", back: "返回",
@@ -44,6 +48,7 @@ const rows = [
   },
   {
     locale: "es",
+    intro: "Pregunta con tus propias palabras: encontraremos los vídeos guía que lo explican.",
     launcher: "Preguntar", title: "Pregunta sobre los vídeos", close: "Cerrar", collapse: "Contraer",
     placeholder: "Escribe tu pregunta…", ask: "Preguntar", asking: "Buscando…",
     stats: "{total} vídeos, {indexed} indexados", browse: "Explorar por tema", back: "Volver",
@@ -54,6 +59,20 @@ const rows = [
     whereToAsk: "Dónde preguntar", defaultBackend: "Índice de vídeos de esta página", addBackend: "Añadir URL de backend",
     addBackendHint: "Dirección https:// de un backend con el formato video-ask. Solo se guarda en este navegador.",
     add: "Añadir", remove: "Quitar", invalidUrl: "Introduce una URL https:// válida.",
+  },
+  {
+    locale: "ja",
+    intro: "自分の言葉で質問してください。その内容を扱った攻略動画を探します。",
+    launcher: "質問", title: "動画に質問", close: "閉じる", collapse: "折りたたむ",
+    placeholder: "質問を入力…", ask: "質問", asking: "検索中…",
+    stats: "動画 {total} 本、うち {indexed} 本をインデックス済み", browse: "トピックから探す", back: "戻る",
+    results: "関連する動画", noResults: "関連する動画はまだありません。別の言葉で試してください。",
+    watch: "YouTube で見る", play: "再生：{title}", notEmbeddable: "この動画は YouTube でのみ視聴できます。",
+    loadMore: "さらに読み込む", loading: "読み込み中…",
+    paused: "現在検索を一時停止しています。しばらくしてからお試しください。", retry: "再試行",
+    whereToAsk: "質問先", defaultBackend: "このページの動画インデックス", addBackend: "バックエンド URL を追加",
+    addBackendHint: "video-ask 形式に対応した https:// のバックエンド。このブラウザにのみ保存されます。",
+    add: "追加", remove: "削除", invalidUrl: "有効な https:// URL を入力してください。",
   },
 ] as const;
 

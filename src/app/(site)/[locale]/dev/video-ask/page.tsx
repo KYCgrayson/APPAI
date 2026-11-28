@@ -8,7 +8,8 @@ import { VideoAskSection } from "@/templates/sections/VideoAskSection";
  *
  *   /dev/video-ask?mode=floating|inline&backend=ok|down|nostats|malformed|local&dark=1&custom=1
  *   backend=local → /api/dev/video-ask-local → my-tools services/video-ask/serve.py on this machine
- *   /zh-TW/dev/video-ask?...  (any platform locale)
+ *   /zh-TW/dev/video-ask?...  (any platform locale; ja/es/zh-CN/zh-TW/en have video-ask UI strings)
+ *   &intro=custom             page-specific intro instead of the generic localized default
  */
 
 export const dynamic = "force-dynamic";
@@ -41,7 +42,9 @@ export default async function VideoAskPreview({ params, searchParams }: Props) {
       <VideoAskSection
         data={{
           heading: "Ask the GTA 6 video index",
-          intro: "Ask anything about the trailers, map or release. Answers are videos from creators.",
+          // Page-specific copy is section data; omit it (default) to see the
+          // component's generic localized intro. ?intro=custom shows a GTA one.
+          ...(one("intro") === "custom" ? { intro: "Ask anything about the trailers, map or release. Answers are videos from creators." } : {}),
           mode,
           // Same-origin mock; published pages must use connector or an https backendUrl.
           backendUrl: one("backend") === "local" ? "/api/dev/video-ask-local" : `/api/dev/video-ask-mock${backend}`,

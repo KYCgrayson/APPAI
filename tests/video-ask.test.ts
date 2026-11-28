@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  answerLang,
+  detectQuestionScript,
+  normalizeUiLang,
+  pickSummary,
+  pickUiLang,
   backendEndpoint,
   categoryLabel,
   configuredBackendBase,
@@ -203,11 +208,73 @@ test("embeds use youtube-nocookie from the start; UI strings exist for D41 local
   assert.match(url, /^https:\/\/www\.youtube-nocookie\.com\/embed\/M7lc1UVf-VE\?/);
   assert.doesNotMatch(url, /[?&](start|t)=/);
   const en = videoAskStrings("en");
-  for (const locale of ["zh-TW", "zh-CN", "es"]) {
+  for (const locale of ["zh-TW", "zh-CN", "es", "ja"]) {
     const s = videoAskStrings(locale);
     assert.notEqual(s.paused, en.paused, locale);
     const keys = (o: object) => Object.keys(o).filter(k => k !== "locale" && k !== "isDefault").sort();
     assert.deepEqual(keys(s), keys(en), locale);
   }
   assert.equal(videoAskStrings("fr").paused, en.paused);
+});
+
+test("UI language: page locale if supported, else browser (zh variants), else en fallback", () => {
+  assert.deepEqual(pickUiLang("ja"), { lang: "ja", fallback: false });
+  assert.deepEqual(pickUiLang("es-MX", ["zh-TW"]), { lang: "es", fallback: false });
+  assert.deepEqual(pickUiLang("en", ["ja-JP"]), { lang: "en", fallback: false });
+  assert.deepEqual(pickUiLang("fr", ["fr-FR", "ja-JP", "en"]), { lang: "ja", fallback: false });
+  assert.deepEqual(pickUiLang("de", ["de"]), { lang: "en", fallback: true });
+  assert.deepEqual(pickUiLang(undefined, []), { lang: "en", fallback: true });
+  for (const [tag, want] of [["zh-TW", "zh-TW"], ["zh-HK", "zh-TW"], ["zh-Hant", "zh-TW"], ["zh-Hant-HK", "zh-TW"], ["zh_MO", "zh-TW"],
+    ["zh", "zh-CN"], ["zh-CN", "zh-CN"], ["zh-Hans", "zh-CN"], ["zh-SG", "zh-CN"], ["ja-JP", "ja"], ["es-419", "es"], ["en-GB", "en"], ["ko", null], ["", null]] as const) {
+    assert.equal(normalizeUiLang(tag), want, tag);
+  }
+});
+
+test("question script picks the answer language; Latin keeps the UI language", () => {
+  assert.equal(detectQuestionScript("マップの広さは？"), "ja");
+  assert.equal(detectQuestionScript("地図はどれくらい広い"), "ja"); // kanji + kana → ja
+  assert.equal(detectQuestionScript("地圖有多大"), "zh");
+  assert.equal(detectQuestionScript("지도는 얼마나 커요"), "ko");
+  assert.equal(detectQuestionScript("¿qué tan grande es el mapa?"), "latin");
+  assert.equal(detectQuestionScript("123 ?!"), null);
+  assert.equal(answerLang("zh-TW", "マップの広さ"), "ja");
+  assert.equal(answerLang("zh-CN", "地图多大"), "zh-CN");
+  assert.equal(answerLang("zh-TW", "地圖多大"), "zh-TW");
+  assert.equal(answerLang("en", "地圖多大", ["zh-CN"]), "zh-CN");
+  assert.equal(answerLang("ja", "地圖多大", ["ja"]), "zh-TW");
+  assert.equal(answerLang("es", "지도"), "en");
+  assert.equal(answerLang("es", "how big is the map"), "es");
+  assert.equal(answerLang("ja", "GTA 6"), "ja");
+});
+
+test("summaries: parsed defensively and picked lang → other zh → bare → original (same language) → English", () => {
+  const parsed = parseSearchResponse({ results: [{ ...item, language: "es", summary: "EN", summaryOriginal: "ES orig",
+    summaries: { "zh-TW": "繁", ja: "日", "bad key!": "x", es: 5, en: "  " } }] })!.results[0];
+  assert.deepEqual(parsed.summaries, { "zh-TW": "繁", ja: "日" });
+  assert.equal(parsed.summaryOriginal, "ES orig");
+  assert.equal(pickSummary(parsed, "ja"), "日");
+  assert.equal(pickSummary(parsed, "zh-TW"), "繁");
+  assert.equal(pickSummary(parsed, "zh-CN"), "繁");
+  assert.equal(pickSummary(parsed, "es"), "ES orig");
+  assert.equal(pickSummary(parsed, "en"), "EN");
+  assert.equal(pickSummary({ ...parsed, summaries: { "zh-CN": "简" } }, "zh-TW"), "简");
+  assert.equal(pickSummary({ ...parsed, summaries: { zh: "中" } }, "zh-TW"), "中");
+  assert.equal(pickSummary({ ...parsed, language: "zh-Hant", summaryOriginal: "原文", summaries: {} }, "zh-TW"), "原文");
+  assert.equal(pickSummary({ ...parsed, language: "en", summary: "", summaries: {} }, "ja"), "ES orig");
+  for (const junk of [null, "x", [1], 5]) {
+    assert.deepEqual(parseSearchResponse({ results: [{ ...item, summaries: junk, summaryOriginal: junk }] })!.results[0].summaries, {});
+  }
+  // Object category labels follow the answer language like stats labels.
+  const localized = parseSearchResponse({ results: [{ ...item, category: { code: "map", label: { en: "Map", ja: "マップ" } } }] })!.results[0];
+  assert.equal(categoryLabel(localized.category!.label, "ja"), "マップ");
+  assert.equal(categoryLabel(localized.category!.label, "es"), "Map");
+});
+
+test("generic default intro is localized and has no game-specific wording", () => {
+  for (const locale of ["en", "zh-TW", "zh-CN", "es", "ja"]) {
+    const intro = videoAskStrings(locale).intro;
+    assert.ok(intro.length > 10, locale);
+    assert.doesNotMatch(intro, /GTA|trailer|預告|预告|tráiler/i, locale);
+  }
+  assert.notEqual(videoAskStrings("ja").intro, videoAskStrings("en").intro);
 });

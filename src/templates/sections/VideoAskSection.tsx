@@ -1,9 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import {
   CUSTOM_BACKENDS_KEY,
   VIDEO_ASK_ALLOW_DIRECT_BACKENDS,
+  answerLang,
+  pickSummary,
+  pickUiLang,
   MAX_CUSTOM_BACKENDS,
   categoryLabel,
   configuredBackendBase,
@@ -17,6 +20,7 @@ import {
   type VideoAskItem,
   type VideoAskMode,
   type VideoAskStats,
+  type VideoAskUiLang,
 } from "@/lib/video-ask";
 import { fill, videoAskStrings, type VideoAskStrings } from "./video-ask-strings";
 
@@ -41,8 +45,15 @@ interface Props {
 type StatsState = { status: "loading" } | { status: "ok"; data: VideoAskStats } | { status: "absent" } | { status: "error" };
 type View =
   | { kind: "home" }
-  | { kind: "results"; query: string; items: VideoAskItem[] }
+  | { kind: "results"; query: string; items: VideoAskItem[]; lang: VideoAskUiLang }
   | { kind: "category"; code: string; label: string; items: VideoAskItem[]; page: number; hasMore: boolean };
+
+const noopSubscribe = () => () => {};
+
+function browserLanguages(): string[] {
+  if (typeof navigator === "undefined") return [];
+  return navigator.languages?.length ? [...navigator.languages] : navigator.language ? [navigator.language] : [];
+}
 
 function readStorage(key: string, session = false): string | null {
   try {
@@ -61,7 +72,14 @@ function writeStorage(key: string, value: string, session = false) {
 }
 
 export function VideoAskSection({ data, themeColor, darkMode = false, locale = "en", typographyActive = false }: Props) {
-  const t = videoAskStrings(locale);
+  // UI language: page locale if supported, else the browser's (client only, so
+  // the first render matches the server), else en as a switchable fallback.
+  const browserLangs = useSyncExternalStore(noopSubscribe, () => browserLanguages().join(","), () => "");
+  const picked = pickUiLang(locale, browserLangs ? browserLangs.split(",") : []);
+  // A question in another script may switch the UI only while it is on the en fallback.
+  const [answerOverride, setAnswerOverride] = useState<VideoAskUiLang | null>(null);
+  const ui = picked.fallback && answerOverride ? { lang: answerOverride, fallback: true } : picked;
+  const t = videoAskStrings(ui.lang);
   const mode: VideoAskMode = data.mode === "inline" ? "inline" : "floating";
   const [open, setOpen] = useState(mode === "inline");
   const panelId = useId();
@@ -83,7 +101,8 @@ export function VideoAskSection({ data, themeColor, darkMode = false, locale = "
     <AskPanel
       data={data}
       t={t}
-      locale={locale}
+      uiLang={ui.lang}
+      onAnswerLang={lang => { if (picked.fallback) setAnswerOverride(lang); }}
       themeColor={themeColor}
       darkMode={darkMode}
       typographyActive={typographyActive}
@@ -158,10 +177,11 @@ export function VideoAskSection({ data, themeColor, darkMode = false, locale = "
   );
 }
 
-function AskPanel({ data, t, locale, themeColor, darkMode, typographyActive, active, floating }: {
+function AskPanel({ data, t, uiLang, onAnswerLang, themeColor, darkMode, typographyActive, active, floating }: {
   data: Props["data"];
   t: VideoAskStrings;
-  locale: string;
+  uiLang: VideoAskUiLang;
+  onAnswerLang: (lang: VideoAskUiLang) => void;
   themeColor: string;
   darkMode: boolean;
   typographyActive: boolean;
@@ -253,10 +273,14 @@ function AskPanel({ data, t, locale, themeColor, darkMode, typographyActive, act
     const q = query.trim().slice(0, 300);
     if (!q || busy) return;
     void run(async (target, signal) => {
-      const result = await fetchSearch(target, q, locale, fetch, signal);
+      // The question's script picks the answer language (kana → ja, Han → zh,
+      // Hangul → en for now, Latin → UI language); the backend ranks by it.
+      const lang = answerLang(uiLang, q, browserLanguages());
+      const result = await fetchSearch(target, q, lang, fetch, signal);
       if (signal.aborted) return;
       setPlaying(null);
-      setView({ kind: "results", query: q, items: result.results });
+      setView({ kind: "results", query: q, items: result.results, lang });
+      onAnswerLang(lang);
     });
   };
 
@@ -309,8 +333,9 @@ function AskPanel({ data, t, locale, themeColor, darkMode, typographyActive, act
 
   return (
     <div className="p-4 space-y-4">
-      {!floating && data.intro && <p data-typography-role={typographyActive ? "body" : undefined} className={`text-sm ${muted}`}>{data.intro}</p>}
-      {floating && data.intro && view.kind === "home" && <p data-typography-role={typographyActive ? "body" : undefined} className={`text-sm ${muted}`}>{data.intro}</p>}
+      {(!floating || view.kind === "home") && (
+        <p data-typography-role={typographyActive ? "body" : undefined} className={`text-sm ${muted}`}>{data.intro || t.intro}</p>
+      )}
 
       {customAllowed && (
         <details className={`rounded-lg border text-sm ${darkMode ? "border-gray-700" : "border-gray-200"}`}>
@@ -392,8 +417,8 @@ function AskPanel({ data, t, locale, themeColor, darkMode, typographyActive, act
             {(stats.data.totalVideos !== null || stats.data.indexedVideos !== null) && (
               <p className={`text-sm ${muted}`}>
                 {fill(t.stats, {
-                  total: (stats.data.totalVideos ?? stats.data.indexedVideos ?? 0).toLocaleString(locale),
-                  indexed: (stats.data.indexedVideos ?? stats.data.totalVideos ?? 0).toLocaleString(locale),
+                  total: (stats.data.totalVideos ?? stats.data.indexedVideos ?? 0).toLocaleString(uiLang),
+                  indexed: (stats.data.indexedVideos ?? stats.data.totalVideos ?? 0).toLocaleString(uiLang),
                 })}
               </p>
             )}
@@ -402,7 +427,7 @@ function AskPanel({ data, t, locale, themeColor, darkMode, typographyActive, act
                 <p className="text-xs font-semibold uppercase tracking-wide mb-2">{t.browse}</p>
                 <div className="flex flex-wrap gap-2">
                   {stats.data.categories.map(category => {
-                    const text = categoryLabel(category.label, locale);
+                    const text = categoryLabel(category.label, uiLang);
                     return (
                       <button
                         key={category.code}
@@ -437,7 +462,7 @@ function AskPanel({ data, t, locale, themeColor, darkMode, typographyActive, act
                   key={item.videoId}
                   item={item}
                   t={t}
-                  locale={locale}
+                  lang={view.kind === "results" ? view.lang : uiLang}
                   darkMode={darkMode}
                   playing={playing === item.videoId}
                   onPlay={() => setPlaying(item.videoId)}
@@ -463,16 +488,19 @@ function AskPanel({ data, t, locale, themeColor, darkMode, typographyActive, act
   );
 }
 
-function VideoCard({ item, t, locale, darkMode, playing, onPlay }: {
+function VideoCard({ item, t, lang, darkMode, playing, onPlay }: {
   item: VideoAskItem;
   t: VideoAskStrings;
-  locale: string;
+  /** Language for this answer's summary and category label. */
+  lang: VideoAskUiLang;
   darkMode: boolean;
   playing: boolean;
   onPlay: () => void;
 }) {
   const muted = darkMode ? "text-gray-400" : "text-gray-600";
   const canPlay = item.embeddable;
+  const summary = pickSummary(item, lang);
+  const summaryLang = summary === item.summary ? "en" : summary === item.summaryOriginal ? item.language || undefined : lang;
   return (
     <li className={`rounded-xl border overflow-hidden ${darkMode ? "border-gray-700 bg-gray-800/60" : "border-gray-200 bg-white"}`}>
       {playing && canPlay ? (
@@ -513,9 +541,9 @@ function VideoCard({ item, t, locale, darkMode, playing, onPlay }: {
             <p className="font-semibold text-sm leading-snug line-clamp-2">{item.title}</p>
           )}
           <p className={`mt-0.5 text-xs truncate ${muted}`}>
-            {[item.author, item.category ? categoryLabel(item.category.label, locale) : ""].filter(Boolean).join(" · ")}
+            {[item.author, item.category ? categoryLabel(item.category.label, lang) : ""].filter(Boolean).join(" · ")}
           </p>
-          {item.summary && <p className={`mt-1 text-xs line-clamp-2 ${muted}`}>{item.summary}</p>}
+          {summary && <p lang={summaryLang} className={`mt-1 text-xs line-clamp-2 ${muted}`}>{summary}</p>}
           {!canPlay && <p className={`mt-1 text-xs ${muted}`}>{t.notEmbeddable}</p>}
           <a href={youtubeWatchUrl(item.videoId)} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-xs font-medium underline">{t.watch}</a>
         </div>

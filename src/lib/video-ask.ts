@@ -125,7 +125,12 @@ export interface VideoAskItem {
   title: string;
   author: string;
   language: string;
+  /** English summary (legacy / fallback). */
   summary: string;
+  /** Summary in the video's own language, when the backend has it. */
+  summaryOriginal: string;
+  /** Per-locale summaries, e.g. { "zh-TW": "…", ja: "…" }. */
+  summaries: Record<string, string>;
   category: VideoAskCategory | null;
   embeddable: boolean;
   thumbnail: string;
@@ -168,6 +173,17 @@ function label(value: unknown): LocalizedLabel | null {
   return entries.length ? Object.fromEntries(entries) : null;
 }
 
+function summaries(value: unknown): Record<string, string> {
+  if (!isObject(value)) return {};
+  const out: Record<string, string> = {};
+  for (const [key, raw] of Object.entries(value).slice(0, 20)) {
+    if (!/^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(key)) continue;
+    const t = text(raw);
+    if (t) out[key] = t;
+  }
+  return out;
+}
+
 function category(value: unknown): VideoAskCategory | null {
   if (!isObject(value)) return null;
   const code = text(value.code, 64);
@@ -199,6 +215,8 @@ export function parseVideoItem(value: unknown): VideoAskItem | null {
     author: text(value.author, 120),
     language: text(value.language, 20),
     summary: text(value.summary),
+    summaryOriginal: text(value.summaryOriginal),
+    summaries: summaries(value.summaries),
     category: category(value.category),
     // Only an explicit true plays inline; anything else falls back to the link.
     embeddable: value.embeddable === true,
@@ -345,4 +363,101 @@ export function parseStoredBackends(raw: string | null): string[] {
 export function normalizeCustomBackend(input: string): string | null {
   const value = input.trim().replace(/\/+$/, "");
   return isHttpsBackendUrl(value) ? value : null;
+}
+
+// ---------------------------------------------------------------------------
+// Visitor language (owner 11-28: the visitor's language decides what they see)
+// ---------------------------------------------------------------------------
+
+export const VIDEO_ASK_UI_LANGS = ["en", "zh-TW", "zh-CN", "es", "ja"] as const;
+export type VideoAskUiLang = (typeof VIDEO_ASK_UI_LANGS)[number];
+
+/** Map any BCP 47 tag to a supported UI language, or null. */
+export function normalizeUiLang(tag: string | null | undefined): VideoAskUiLang | null {
+  if (!tag || typeof tag !== "string") return null;
+  const lower = tag.trim().toLowerCase().replace(/_/g, "-");
+  const [primary, ...rest] = lower.split("-");
+  if (primary === "zh") {
+    if (rest.some(part => part === "hant" || part === "tw" || part === "hk" || part === "mo")) return "zh-TW";
+    return "zh-CN";
+  }
+  if (primary === "en") return "en";
+  if (primary === "es") return "es";
+  if (primary === "ja") return "ja";
+  return null;
+}
+
+/**
+ * UI language: the hosted page's locale when supported, else the browser's
+ * first supported language, else en (`fallback: true`, so a question in
+ * another script may still switch the UI).
+ */
+export function pickUiLang(pageLocale: string | null | undefined, browserLanguages: readonly string[] = []): { lang: VideoAskUiLang; fallback: boolean } {
+  const page = normalizeUiLang(pageLocale);
+  if (page) return { lang: page, fallback: false };
+  for (const tag of browserLanguages) {
+    const lang = normalizeUiLang(tag);
+    if (lang) return { lang, fallback: false };
+  }
+  return { lang: "en", fallback: true };
+}
+
+export type QuestionScript = "ja" | "zh" | "ko" | "latin" | null;
+
+/** Script of a typed question: kana → ja; Han without kana → zh; Hangul → ko; Latin letters → latin. */
+export function detectQuestionScript(q: string): QuestionScript {
+  if (/[\u3040-\u30ff\u31f0-\u31ff\uff66-\uff9f]/.test(q)) return "ja";
+  if (/\p{Script=Han}/u.test(q)) return "zh";
+  if (/\p{Script=Hangul}/u.test(q)) return "ko";
+  if (/\p{Script=Latin}/u.test(q)) return "latin";
+  return null;
+}
+
+/**
+ * Language for one answer (results + summaries, and the `lang` sent to the
+ * backend). Korean has no UI strings yet, so it falls back to en. A Han
+ * question keeps the current zh variant, else the browser's, else zh-TW.
+ */
+export function answerLang(uiLang: VideoAskUiLang, q: string, browserLanguages: readonly string[] = []): VideoAskUiLang {
+  switch (detectQuestionScript(q)) {
+    case "ja": return "ja";
+    case "ko": return "en";
+    case "zh": {
+      if (uiLang === "zh-TW" || uiLang === "zh-CN") return uiLang;
+      const browserZh = browserLanguages.map(normalizeUiLang).find(lang => lang === "zh-TW" || lang === "zh-CN");
+      return browserZh ?? "zh-TW";
+    }
+    default: return uiLang;
+  }
+}
+
+function sameLanguage(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  const na = normalizeUiLang(a) ?? a.toLowerCase().split("-")[0];
+  const nb = normalizeUiLang(b) ?? b.toLowerCase().split("-")[0];
+  if (na === nb) return true;
+  return na.split("-")[0] === nb.split("-")[0];
+}
+
+function summaryFor(map: Record<string, string>, lang: string): string {
+  const key = Object.keys(map).find(k => k.toLowerCase() === lang.toLowerCase());
+  return key ? map[key] : "";
+}
+
+/**
+ * summaries[lang] → the other Chinese variant (zh-CN ↔ zh-TW) → summaries[bare
+ * language] → summaryOriginal when the video is in that language → summary
+ * (English) → summaryOriginal as a last resort rather than nothing.
+ */
+export function pickSummary(item: Pick<VideoAskItem, "summary" | "summaryOriginal" | "summaries" | "language">, lang: string): string {
+  const direct = summaryFor(item.summaries, lang);
+  if (direct) return direct;
+  if (lang === "zh-CN" || lang === "zh-TW") {
+    const other = summaryFor(item.summaries, lang === "zh-CN" ? "zh-TW" : "zh-CN");
+    if (other) return other;
+  }
+  const bare = summaryFor(item.summaries, lang.split("-")[0]);
+  if (bare) return bare;
+  if (item.summaryOriginal && sameLanguage(item.language, lang)) return item.summaryOriginal;
+  return item.summary || item.summaryOriginal;
 }
