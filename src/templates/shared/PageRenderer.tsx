@@ -34,6 +34,7 @@ import {
   IframeToolSection,
   VideoSubtitleSection,
   SimpleOrderSection,
+  VideoAskSection,
 } from "./section-components";
 import { Suspense } from "react";
 import { SectionErrorBoundary } from "./SectionErrorBoundary";
@@ -262,6 +263,9 @@ function renderSection(
       break;
     case "video-subtitle":
       content = <VideoSubtitleSection typographyActive={props.typographyActive} data={data as never} themeColor={themeColor} themeColorSecondary={themeColorSecondary} darkMode={darkMode} isAdmin={viewer.isAdmin} />;
+      break;
+    case "video-ask":
+      content = <VideoAskSection typographyActive={props.typographyActive} data={data as never} themeColor={themeColor} darkMode={darkMode} locale={page.locale ?? "en"} />;
       break;
     case "tool":
       content = <ToolSection {...props} />;

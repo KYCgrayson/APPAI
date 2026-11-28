@@ -78,6 +78,18 @@ const CONNECTORS: Record<string, Connector> = {
       return null; // don't log polls / downloads / cancels
     },
   },
+  // Video Q&A index for the GTA 6 video-ask page (backlog #146). Public: any
+  // visitor may search, 30 searches per IP per hour. stats/videos are free.
+  "video-ask-gta6": {
+    name: "video-ask-gta6",
+    baseUrlEnv: "VIDEO_ASK_GTA6_URL",
+    auth: "server-token",
+    secretEnv: "VIDEO_ASK_GTA6_TOKEN",
+    allowPaths: /^(search|stats|videos)$/,
+    gating: "public",
+    quota: { per: "ip", limit: 30, window: "1h", countActions: ["search"] },
+    usageAction: (method, path) => (method === "POST" && path === "search" ? "search" : null),
+  },
 };
 
 export function getConnector(name: string): Connector | null {

@@ -135,6 +135,8 @@ test("section schemas outside diagram and project-cards retain every byte and ke
     // #116 extends the card schema, covered by project-cards-api.test.ts.
     delete current.sections["project-cards"];
     delete previous.sections["project-cards"];
+    // #146 adds the video-ask section, covered by video-ask.test.ts.
+    delete current.sections["video-ask"];
     assert.equal(JSON.stringify(current), JSON.stringify(previous));
   } finally { baseline.deregister(); }
 });

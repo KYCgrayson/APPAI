@@ -791,6 +791,22 @@ export const SECTION_DEFS: SectionDef[] = [
     ],
   },
   {
+    type: "video-ask",
+    name: "Video Ask",
+    description: "Ask-a-question box that answers with matching YouTube videos from a video-index backend. 'floating' adds an Ask button at the bottom-right that opens a panel (a bottom sheet on phones); 'inline' renders the panel where the section sits. Before a question it shows index stats and topic chips when the backend offers /stats. Results play inline through the official youtube-nocookie embed. The backend is either an owner-registered connector (connector) or a third-party https backend (backendUrl) called directly from the visitor's browser; both speak the same format: POST {base}/search {q, lang?} → {results:[{videoId,title,author,language,summary,category:{code,label},embeddable,thumbnail?}], answer:null}; optional GET {base}/stats and GET {base}/videos?category=CODE&page=N.",
+    fields: [
+      { name: "heading", type: "string", required: false, minLength: 1, maxLength: 120, description: "Panel / section heading." },
+      { name: "subheading", type: "string", required: false, minLength: 1, maxLength: 200, description: "Optional section subheading (inline mode)." },
+      { name: "intro", type: "string", required: false, minLength: 1, maxLength: 500, description: "Short text shown above the search box." },
+      { name: "mode", type: "string", required: false, enum: ["floating", "inline"], description: "'floating' (default): Ask launcher bottom-right, slide-out panel, collapsible. 'inline': panel rendered open at the section's position (put it first for top of page)." },
+      { name: "connector", type: "string", required: false, maxLength: 64, description: "Name of an owner-registered connector, called via /api/connect/{connector}/search|stats|videos. Set exactly one of connector or backendUrl." },
+      { name: "backendUrl", type: "url", required: false, maxLength: 2048, description: "https:// base URL of a third-party backend called directly from the visitor's browser (must allow CORS). Set exactly one of connector or backendUrl." },
+      { name: "allowCustomBackend", type: "boolean", required: false, description: "Show a 'Where to ask' selector where visitors may add their own https backend URL. Stored only in the visitor's browser." },
+      { name: "placeholder", type: "string", required: false, minLength: 1, maxLength: 120, description: "Search box placeholder." },
+      { name: "disclaimer", type: "string", required: false, minLength: 1, maxLength: 500, description: "Small print shown under the panel." },
+    ],
+  },
+  {
     type: "tool",
     name: "Tool",
     description: "Universal interactive tool section. Supports text inputs, file uploads (single/multiple with drag & drop), toggle/select options, and displays results as file downloads, image previews, or text. Connect any backend API. Use this for PDF tools, image processing, file conversion, or any custom tool.",

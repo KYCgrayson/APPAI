@@ -3,6 +3,7 @@ import { galleryContentIssues } from "../gallery.ts";
 import { projectCardsContentIssues } from "../project-cards.ts";
 import { normalizeVideoContent } from "../video-data.ts";
 import { gameContentIssues, gameSlugReserved } from "../game-section.ts";
+import { videoAskContentIssues } from "../video-ask.ts";
 import { isBusinessHours } from "../business-hours.ts";
 import { z } from "zod";
 
@@ -34,6 +35,7 @@ const makeContentSchema = (partial = false, existingContent?: unknown) => z.obje
   for (const issue of galleryContentIssues(content)) ctx.addIssue(issue);
   for (const issue of projectCardsContentIssues(content)) ctx.addIssue(issue);
   for (const issue of gameContentIssues(content, partial)) ctx.addIssue(issue);
+  for (const issue of videoAskContentIssues(content)) ctx.addIssue(issue);
   if (!Array.isArray(content.sections)) return;
   content.sections.forEach((section, index) => {
     if (section?.type === "features" && Array.isArray(section.data?.items)) {

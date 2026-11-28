@@ -309,7 +309,13 @@
         "src/templates/sections/PdfViewerSection.tsx",
         "next.config.ts",
         "tests/iframe-*.test.ts",
-        "tests/helpers/iframe-session-hook-fixture.mjs"
+        "tests/helpers/iframe-session-hook-fixture.mjs",
+        "src/lib/video-ask.ts",
+        "src/templates/sections/VideoAskSection.tsx",
+        "src/templates/sections/video-ask-strings.ts",
+        "src/app/api/dev/video-ask-mock/**",
+        "src/app/(site)/[locale]/dev/video-ask/**",
+        "tests/video-ask.test.ts"
       ]
     },
     {

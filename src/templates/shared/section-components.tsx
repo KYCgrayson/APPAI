@@ -25,3 +25,4 @@ export { EmbedSection } from "../sections/EmbedSection";
 export { IframeToolSection } from "../sections/IframeToolSection";
 export { VideoSubtitleSection } from "../sections/VideoSubtitleSection";
 export { SimpleOrderSection } from "../sections/SimpleOrderSection";
+export { VideoAskSection } from "../sections/VideoAskSection";

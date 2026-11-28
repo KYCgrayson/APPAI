@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { connectorBaseUrl, getConnector } from "@/lib/connectors/registry";
+import { quotaSubject, quotaWhere } from "@/lib/connectors/quota";
 
 /**
  * Generic connector proxy. One route for every interactive tool backend.
@@ -69,17 +70,15 @@ async function proxy(
   // limit of 1/day rejected the render of the job it had just admitted.
   const countActions = connector.quota?.countActions;
   const billable = !countActions || (action !== null && countActions.includes(action));
+  // Per-IP quotas are scoped by a hashed IP kept in UsageEvent.meta.ip;
+  // before this every IP shared one global counter.
+  const ipSubject = connector.quota?.per === "ip"
+    ? quotaSubject("ip", null, req.headers.get("x-forwarded-for")) : null;
   if (connector.quota && !isAdmin && action && billable) {
-    const who =
-      connector.quota.per === "user" ? userId : ipHash(req);
+    const who = connector.quota.per === "user" ? userId : ipSubject;
     if (who) {
       const used = await db.usageEvent.count({
-        where: {
-          connector: name,
-          userId: connector.quota.per === "user" ? who : undefined,
-          ...(countActions ? { action: { in: countActions } } : {}),
-          createdAt: { gte: windowStart(connector.quota.window) },
-        },
+        where: quotaWhere(name, connector.quota, who, windowStart(connector.quota.window)),
       });
       if (used >= connector.quota.limit) {
         return problem(
@@ -124,7 +123,7 @@ async function proxy(
           connector: name,
           userId,
           action,
-          meta: metaFor(parsedBody, text),
+          meta: { ...(metaFor(parsedBody, text) as Record<string, string>), ...(ipSubject ? { ip: ipSubject } : {}) },
         },
       });
     } catch {
@@ -153,10 +152,6 @@ function safeJson(s: string): unknown {
   } catch {
     return null;
   }
-}
-
-function ipHash(req: NextRequest): string {
-  return (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
 }
 
 function metaFor(reqBody: unknown, respText: string): Prisma.InputJsonValue {
