@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   CUSTOM_BACKENDS_KEY,
+  VIDEO_ASK_ALLOW_DIRECT_BACKENDS,
   MAX_CUSTOM_BACKENDS,
   categoryLabel,
   configuredBackendBase,
@@ -37,7 +38,7 @@ interface Props {
   typographyActive?: boolean;
 }
 
-type StatsState = { status: "loading" } | { status: "ok"; data: VideoAskStats } | { status: "absent" };
+type StatsState = { status: "loading" } | { status: "ok"; data: VideoAskStats } | { status: "absent" } | { status: "error" };
 type View =
   | { kind: "home" }
   | { kind: "results"; query: string; items: VideoAskItem[] }
@@ -169,6 +170,8 @@ function AskPanel({ data, t, locale, themeColor, darkMode, typographyActive, act
   onClose?: () => void;
 }) {
   const configured = configuredBackendBase(data);
+  // Visitor-added backends are browser-direct: off unless the owner enables them.
+  const customAllowed = VIDEO_ASK_ALLOW_DIRECT_BACKENDS && data.allowCustomBackend === true;
   const sessionKey = `appai.videoAsk.selected:${configured ?? ""}`;
   const [customBackends, setCustomBackends] = useState<string[]>([]);
   const [base, setBase] = useState<string | null>(configured);
@@ -188,12 +191,12 @@ function AskPanel({ data, t, locale, themeColor, darkMode, typographyActive, act
 
   // Visitor-added backends come from this browser only.
   useEffect(() => {
-    if (!data.allowCustomBackend) return;
+    if (!customAllowed) return;
     const stored = parseStoredBackends(readStorage(CUSTOM_BACKENDS_KEY));
     setCustomBackends(stored);
     const selected = readStorage(sessionKey, true);
     if (selected && stored.includes(selected)) setBase(selected);
-  }, [data.allowCustomBackend, sessionKey]);
+  }, [customAllowed, sessionKey]);
 
   const loadStats = useCallback(async (target: string | null) => {
     abort.current?.abort();
@@ -206,9 +209,11 @@ function AskPanel({ data, t, locale, themeColor, darkMode, typographyActive, act
     setStats({ status: "loading" });
     try {
       const result = await fetchStats(target, fetch, controller.signal);
-      if (!controller.signal.aborted) setStats({ status: "ok", data: result });
+      if (!controller.signal.aborted) setStats(result ? { status: "ok", data: result } : { status: "absent" });
     } catch {
-      if (!controller.signal.aborted) setStats({ status: "absent" });
+      // Dead/unhealthy backend (network, 5xx, timeout, malformed): say so up
+      // front instead of opening a blank panel. A 404 is "no stats" above.
+      if (!controller.signal.aborted) setStats({ status: "error" });
     }
   }, []);
 
@@ -307,7 +312,7 @@ function AskPanel({ data, t, locale, themeColor, darkMode, typographyActive, act
       {!floating && data.intro && <p data-typography-role={typographyActive ? "body" : undefined} className={`text-sm ${muted}`}>{data.intro}</p>}
       {floating && data.intro && view.kind === "home" && <p data-typography-role={typographyActive ? "body" : undefined} className={`text-sm ${muted}`}>{data.intro}</p>}
 
-      {data.allowCustomBackend && (
+      {customAllowed && (
         <details className={`rounded-lg border text-sm ${darkMode ? "border-gray-700" : "border-gray-200"}`}>
           <summary className="cursor-pointer select-none px-3 py-2 font-medium">
             {t.whereToAsk}: <span className={muted}>{base === configured ? t.defaultBackend : safeHost(base)}</span>
@@ -375,7 +380,7 @@ function AskPanel({ data, t, locale, themeColor, darkMode, typographyActive, act
       </form>
 
       <div aria-live="polite" className="space-y-4">
-        {paused && (
+        {(paused || (view.kind === "home" && stats.status === "error")) && (
           <div role="status" className={`rounded-xl border px-4 py-3 text-sm ${darkMode ? "border-amber-800 bg-amber-950/40 text-amber-200" : "border-amber-200 bg-amber-50 text-amber-900"}`}>
             <p>{t.paused}</p>
             <button type="button" onClick={() => { setPaused(false); void loadStats(base); }} className="mt-1 underline font-medium">{t.retry}</button>

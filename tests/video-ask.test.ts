@@ -13,17 +13,21 @@ import {
   parseStatsResponse,
   parseStoredBackends,
   parseVideosResponse,
+  VIDEO_ASK_ALLOW_DIRECT_BACKENDS,
   videoAskContentIssues,
   youtubeEmbedUrl,
 } from "../src/lib/video-ask.ts";
 import { getConnector } from "../src/lib/connectors/registry.ts";
-import { quotaSubject, quotaWhere } from "../src/lib/connectors/quota.ts";
+import { ipSalt, quotaSubject, quotaWhere } from "../src/lib/connectors/quota.ts";
 import { createPageSchema } from "../src/lib/validations/page.ts";
 import { getSectionDef } from "../src/lib/template-registry.ts";
 import { videoAskStrings } from "../src/templates/sections/video-ask-strings.ts";
 
 const content = (data: unknown) => ({ sections: [{ type: "about", data: { text: "x" } }, { type: "video-ask", data }] });
-const issues = (data: unknown) => videoAskContentIssues(content(data));
+// Browser-direct backends are behind an owner flag (default off); most
+// contract tests exercise the enabled path explicitly.
+const issues = (data: unknown) => videoAskContentIssues(content(data), true);
+const issuesDefault = (data: unknown) => videoAskContentIssues(content(data));
 
 test("video-ask section: valid configurations pass", () => {
   for (const data of [
@@ -55,11 +59,22 @@ test("video-ask section: rejects bad backends, modes and missing config with sec
   }
 });
 
+test("video-ask section: browser-direct backends are off by default", () => {
+  assert.equal(VIDEO_ASK_ALLOW_DIRECT_BACKENDS, false);
+  assert.deepEqual(issuesDefault({ connector: "video-ask-gta6", allowCustomBackend: true }), []);
+  assert.match(issuesDefault({ backendUrl: "https://videos.example.com" })[0].message, /data\.backendUrl: backendUrl is not enabled/);
+  assert.match(issuesDefault({})[0].message, /set connector \(an owner-registered connector name\)$/);
+  assert.equal(configuredBackendBase({ backendUrl: "https://x.test/api" }), null);
+  assert.equal(configuredBackendBase({ connector: "video-ask-gta6" }), "/api/connect/video-ask-gta6");
+});
+
 test("video-ask section: page validator wires the section issues in", () => {
   const ok = createPageSchema.safeParse({ slug: "gta-ask", title: "GTA", content: content({ connector: "video-ask-gta6" }) });
   assert.equal(ok.success, true);
-  const bad = createPageSchema.safeParse({ slug: "gta-ask", title: "GTA", content: content({ backendUrl: "http://insecure.test" }) });
-  assert.equal(bad.success, false);
+  for (const data of [{ backendUrl: "http://insecure.test" }, { backendUrl: "https://videos.example.com" }]) {
+    const bad = createPageSchema.safeParse({ slug: "gta-ask", title: "GTA", content: content(data) });
+    assert.equal(bad.success, false, JSON.stringify(data));
+  }
   assert.ok(getSectionDef("video-ask"), "registered in SECTION_DEFS");
 });
 
@@ -83,6 +98,13 @@ test("connector quota: per-IP quotas are scoped to a hashed IP, not global", () 
   const b = quotaSubject("ip", null, "198.51.100.7");
   assert.notEqual(a, b);
   assert.equal(a, quotaSubject("ip", "user-1", "203.0.113.5"));
+  // Keyed by a server secret, so a public constant cannot reverse IPv4 hashes.
+  assert.notEqual(quotaSubject("ip", null, "203.0.113.5", "salt-one"), quotaSubject("ip", null, "203.0.113.5", "salt-two"));
+  assert.equal(ipSalt({ CONNECTOR_IP_SALT: "c", AUTH_SECRET: "a" }), "c");
+  assert.equal(ipSalt({ AUTH_SECRET: "a" }), "a");
+  const random = ipSalt({});
+  assert.ok(random.length >= 32);
+  assert.equal(ipSalt({}), random, "stable per process");
   assert.ok(!a!.includes("203.0.113.5"));
   assert.equal(quotaSubject("user", "user-1", "203.0.113.5"), "user-1");
   const since = new Date(0);
@@ -150,6 +172,11 @@ test("fetch helpers: errors and malformed bodies reject (UI shows paused), good 
   await assert.rejects(fetchSearch("https://v.example", "q", undefined, respond({ error: "x" }, 503)));
   await assert.rejects(fetchSearch("https://v.example", "q", undefined, respond("<html>not json")));
   await assert.rejects(fetchStats("https://v.example", respond(["x"])));
+  // /stats: 404 = not offered (search box only); 5xx/network/timeout/malformed = paused.
+  assert.equal(await fetchStats("https://v.example", respond({ title: "Not Found" }, 404)), null);
+  await assert.rejects(fetchStats("https://v.example", respond({}, 503)));
+  await assert.rejects(fetchStats("https://v.example", respond("<html>")));
+  await assert.rejects(fetchStats("https://v.example", async () => { throw new TypeError("network"); }));
   await assert.rejects(fetchSearch("https://v.example", "q", undefined, async () => { throw new TypeError("network"); }));
   await fetchVideos("/api/connect/video-ask-gta6", "map & more", 2, respond({ results: [], page: 2, hasMore: false }));
   assert.equal(calls.at(-1)!.url, "/api/connect/video-ask-gta6/videos?category=map+%26+more&page=2");
@@ -157,9 +184,9 @@ test("fetch helpers: errors and malformed bodies reject (UI shows paused), good 
 
 test("backend base + visitor-added backends: https only, stored list sanitised", () => {
   assert.equal(configuredBackendBase({ connector: "video-ask-gta6" }), "/api/connect/video-ask-gta6");
-  assert.equal(configuredBackendBase({ backendUrl: "https://x.test/api" }), "https://x.test/api");
-  assert.equal(configuredBackendBase({ backendUrl: "http://x.test" }), null);
-  assert.equal(configuredBackendBase({ backendUrl: "//evil.test" }), null);
+  assert.equal(configuredBackendBase({ backendUrl: "https://x.test/api" }, true), "https://x.test/api");
+  assert.equal(configuredBackendBase({ backendUrl: "http://x.test" }, true), null);
+  assert.equal(configuredBackendBase({ backendUrl: "//evil.test" }, true), null);
   assert.equal(backendEndpoint("https://x.test/api//", "stats"), "https://x.test/api/stats");
   for (const bad of ["", "http://x.test", "ftp://x.test", "javascript:alert(1)", "https://", "https://u:p@x.test", "https://x .test", "x.test"]) {
     assert.equal(isHttpsBackendUrl(bad), false, bad);

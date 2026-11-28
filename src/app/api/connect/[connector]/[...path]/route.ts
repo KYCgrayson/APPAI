@@ -74,6 +74,8 @@ async function proxy(
   // before this every IP shared one global counter.
   const ipSubject = connector.quota?.per === "ip"
     ? quotaSubject("ip", null, req.headers.get("x-forwarded-for")) : null;
+  // Count-then-insert without locking: a burst of parallel requests can
+  // overshoot the limit slightly. Accepted for now (#146 review).
   if (connector.quota && !isAdmin && action && billable) {
     const who = connector.quota.per === "user" ? userId : ipSubject;
     if (who) {

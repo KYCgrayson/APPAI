@@ -16,20 +16,21 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+// The 13 category codes and zh-TW labels used by the real GTA indexer.
 const CATEGORIES = [
-  { code: "story", label: { en: "Story & characters", "zh-TW": "劇情與角色", "zh-CN": "剧情与角色", es: "Historia y personajes" } },
-  { code: "map", label: { en: "Map & locations", "zh-TW": "地圖與地點", "zh-CN": "地图与地点", es: "Mapa y lugares" } },
+  { code: "main-story", label: { en: "Main story", "zh-TW": "主線任務", "zh-CN": "主线任务", es: "Historia principal" } },
+  { code: "side-missions", label: { en: "Side & stranger missions", "zh-TW": "支線／陌生人任務", "zh-CN": "支线／陌生人任务", es: "Misiones secundarias" } },
+  { code: "heists", label: { en: "Heists", "zh-TW": "搶劫", "zh-CN": "抢劫", es: "Golpes" } },
+  { code: "money", label: { en: "Making money", "zh-TW": "賺錢", "zh-CN": "赚钱", es: "Ganar dinero" } },
   { code: "vehicles", label: { en: "Vehicles", "zh-TW": "載具", "zh-CN": "载具", es: "Vehículos" } },
-  { code: "weapons", label: { en: "Weapons", "zh-TW": "武器", "zh-CN": "武器", es: "Armas" } },
-  { code: "missions", label: { en: "Missions", "zh-TW": "任務", "zh-CN": "任务", es: "Misiones" } },
+  { code: "weapons", label: { en: "Weapons & combat", "zh-TW": "武器與戰鬥", "zh-CN": "武器与战斗", es: "Armas y combate" } },
+  { code: "collectibles-secrets", label: { en: "Collectibles, secrets & easter eggs", "zh-TW": "收集品・隱藏要素・彩蛋", "zh-CN": "收集品・隐藏要素・彩蛋", es: "Coleccionables y secretos" } },
+  { code: "map-locations", label: { en: "Map & locations", "zh-TW": "地圖與地點", "zh-CN": "地图与地点", es: "Mapa y lugares" } },
+  { code: "skills-progression", label: { en: "Skills & progression", "zh-TW": "角色能力與成長", "zh-CN": "角色能力与成长", es: "Habilidades y progreso" } },
+  { code: "beginner-tips", label: { en: "Beginner tips & settings", "zh-TW": "新手技巧・設定", "zh-CN": "新手技巧・设置", es: "Consejos y ajustes" } },
   { code: "online", label: { en: "Online mode", "zh-TW": "線上模式", "zh-CN": "线上模式", es: "Modo online" } },
-  { code: "money", label: { en: "Money & economy", "zh-TW": "金錢與經濟", "zh-CN": "金钱与经济", es: "Dinero y economía" } },
-  { code: "trailers", label: { en: "Trailer breakdowns", "zh-TW": "預告解析", "zh-CN": "预告解析", es: "Análisis de tráilers" } },
-  { code: "release", label: { en: "Release & editions", "zh-TW": "發售與版本", "zh-CN": "发售与版本", es: "Lanzamiento y ediciones" } },
-  { code: "pc", label: { en: "PC & performance", "zh-TW": "PC 與效能", "zh-CN": "PC 与性能", es: "PC y rendimiento" } },
-  { code: "secrets", label: { en: "Secrets & easter eggs", "zh-TW": "彩蛋與秘密", "zh-CN": "彩蛋与秘密", es: "Secretos" } },
-  { code: "tips", label: { en: "Beginner tips", "zh-TW": "新手技巧", "zh-CN": "新手技巧", es: "Consejos" } },
-  { code: "music", label: { en: "Music & radio", "zh-TW": "音樂與電台", "zh-CN": "音乐与电台", es: "Música y radio" } },
+  { code: "achievements", label: { en: "Achievements & trophies", "zh-TW": "成就／獎盃", "zh-CN": "成就／奖杯", es: "Logros y trofeos" } },
+  { code: "other", label: { en: "Other", "zh-TW": "其他", "zh-CN": "其他", es: "Otros" } },
 ];
 
 const cat = (code: string) => {
@@ -39,18 +40,18 @@ const cat = (code: string) => {
 
 // Placeholder IDs (not GTA content) — see header comment.
 const VIDEOS = [
-  { videoId: "M7lc1UVf-VE", title: "[FAKE] Every story detail from the second trailer", author: "Placeholder Channel A", language: "en", summary: "Fake summary: walks through the two leads and how their story begins.", category: cat("story"), embeddable: true },
-  { videoId: "aqz-KE-bpKQ", title: "[FAKE] Full map size compared to the last game", author: "Placeholder Channel B", language: "en", summary: "Fake summary: overlays the leaked map outline on the previous city.", category: cat("map"), embeddable: true },
+  { videoId: "M7lc1UVf-VE", title: "[FAKE] Every story detail from the second trailer", author: "Placeholder Channel A", language: "en", summary: "Fake summary: walks through the two leads and how their story begins.", category: cat("main-story"), embeddable: true },
+  { videoId: "aqz-KE-bpKQ", title: "[FAKE] Full map size compared to the last game", author: "Placeholder Channel B", language: "en", summary: "Fake summary: overlays the leaked map outline on the previous city.", category: cat("map-locations"), embeddable: true },
   { videoId: "jNQXAC9IVRw", title: "[FAKE] Ten vehicles spotted in the trailers", author: "Placeholder Channel C", language: "en", summary: "Fake summary: boats, bikes and a swamp airboat, frame by frame.", category: cat("vehicles"), embeddable: true },
   { videoId: "eRsGyueVLvQ", title: "[FAKE] Weapon wheel changes explained", author: "Placeholder Channel D", language: "en", summary: "Fake summary: why the new carry limit matters for missions.", category: cat("weapons"), embeddable: true },
-  { videoId: "R6MlUcmOul8", title: "[FAKE] Heist missions: what we know so far", author: "Placeholder Channel E", language: "en", summary: "Fake summary: rumoured heist structure and co-op roles.", category: cat("missions"), embeddable: true },
+  { videoId: "R6MlUcmOul8", title: "[FAKE] Heist missions: what we know so far", author: "Placeholder Channel E", language: "en", summary: "Fake summary: rumoured heist structure and co-op roles.", category: cat("heists"), embeddable: true },
   { videoId: "YE7VzlLtp-4", title: "[FAKE] Will online launch on day one?", author: "Placeholder Channel F", language: "en", summary: "Fake summary: past launch patterns and what they suggest.", category: cat("online"), embeddable: true },
   { videoId: "dQw4w9WgXcQ", title: "[FAKE] How money works in the new economy", author: "Placeholder Channel G", language: "en", summary: "Fake summary: businesses, cash stashes and laundering rumours.", category: cat("money"), embeddable: false },
-  { videoId: "9bZkp7q19f0", title: "[FAKE] 假影片：預告片逐格解析", author: "假頻道 H", language: "zh-TW", summary: "假摘要：逐格找出預告片裡的地標與角色。", category: cat("trailers"), embeddable: true },
-  { videoId: "kJQP7kiw5Fk", title: "[FAKE] Release date and editions roundup", author: "Placeholder Channel I", language: "en", summary: "Fake summary: standard vs special editions and pre-order bonuses.", category: cat("release"), embeddable: true },
-  { videoId: "OPf0YbXqDm0", title: "[FAKE] Will it come to PC? Performance guesses", author: "Placeholder Channel J", language: "en", summary: "Fake summary: console-first history and expected PC timing.", category: cat("pc"), embeddable: true },
-  { videoId: "fJ9rUzIMcZQ", title: "[FAKE] Five easter eggs hidden in the trailer", author: "Placeholder Channel K", language: "es", summary: "Fake summary: references to older games in background signs.", category: cat("secrets"), embeddable: true },
-  { videoId: "hT_nvWreIhg", title: "[FAKE] Beginner tips for your first hour", author: "Placeholder Channel L", language: "en", summary: "Fake summary: controls, saving and early money tips.", category: cat("tips"), embeddable: true },
+  { videoId: "9bZkp7q19f0", title: "[FAKE] 假影片：預告片逐格解析", author: "假頻道 H", language: "zh-TW", summary: "假摘要：逐格找出預告片裡的地標與角色。", category: cat("side-missions"), embeddable: true },
+  { videoId: "kJQP7kiw5Fk", title: "[FAKE] Release date and editions roundup", author: "Placeholder Channel I", language: "en", summary: "Fake summary: standard vs special editions and pre-order bonuses.", category: cat("other"), embeddable: true },
+  { videoId: "OPf0YbXqDm0", title: "[FAKE] Will it come to PC? Performance guesses", author: "Placeholder Channel J", language: "en", summary: "Fake summary: console-first history and expected PC timing.", category: cat("skills-progression"), embeddable: true },
+  { videoId: "fJ9rUzIMcZQ", title: "[FAKE] Five easter eggs hidden in the trailer", author: "Placeholder Channel K", language: "es", summary: "Fake summary: references to older games in background signs.", category: cat("collectibles-secrets"), embeddable: true },
+  { videoId: "hT_nvWreIhg", title: "[FAKE] Beginner tips for your first hour", author: "Placeholder Channel L", language: "en", summary: "Fake summary: controls, saving and early money tips.", category: cat("beginner-tips"), embeddable: true },
 ];
 
 function json(body: unknown, status = 200) {

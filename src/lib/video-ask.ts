@@ -16,6 +16,15 @@ import { videoFieldPath } from "./video-data.ts";
  * "search paused" state, it never throws into the page.
  */
 
+/**
+ * Browser-direct backends (`backendUrl`, and the visitor's "Where to ask"
+ * custom backend) let published content reach infrastructure that is not an
+ * owner-registered connector, which conflicts with the CLAUDE.md product
+ * boundary. Kept behind this flag, OFF, until the owner decides (#146).
+ * With it off, validation rejects `backendUrl` and the selector is hidden.
+ */
+export const VIDEO_ASK_ALLOW_DIRECT_BACKENDS = false;
+
 export const VIDEO_ASK_MODES = ["floating", "inline"] as const;
 export type VideoAskMode = (typeof VIDEO_ASK_MODES)[number];
 
@@ -34,7 +43,7 @@ export function isHttpsBackendUrl(value: unknown): value is string {
   return url.protocol === "https:" && !!url.hostname && !url.username && !url.password;
 }
 
-export const videoAskSectionSchema = z.object({
+export const videoAskSectionSchemaFor = (allowDirect: boolean) => z.object({
   heading: z.string().min(1).max(120).optional(),
   subheading: z.string().min(1).max(200).optional(),
   intro: z.string().min(1).max(500).optional(),
@@ -45,27 +54,35 @@ export const videoAskSectionSchema = z.object({
   placeholder: z.string().min(1).max(120).optional(),
   disclaimer: z.string().min(1).max(500).optional(),
 }).superRefine((data, ctx) => {
+  if (data.backendUrl && !allowDirect) {
+    ctx.addIssue({ code: "custom", path: ["backendUrl"], message: "backendUrl is not enabled on AppAI; use connector (an owner-registered connector name)" });
+  }
   if (data.connector && data.backendUrl) {
     ctx.addIssue({ code: "custom", path: ["backendUrl"], message: "set either connector or backendUrl, not both" });
   } else if (!data.connector && !data.backendUrl) {
-    ctx.addIssue({ code: "custom", path: ["connector"], message: "set connector (an owner-registered connector name) or backendUrl (https)" });
+    ctx.addIssue({ code: "custom", path: ["connector"], message: allowDirect
+      ? "set connector (an owner-registered connector name) or backendUrl (https)"
+      : "set connector (an owner-registered connector name)" });
   }
   if (data.connector && !getConnector(data.connector)) {
     ctx.addIssue({ code: "custom", path: ["connector"], message: `unknown connector "${data.connector}"` });
   }
 });
 
+export const videoAskSectionSchema = videoAskSectionSchemaFor(VIDEO_ASK_ALLOW_DIRECT_BACKENDS);
+
 export type VideoAskSectionData = z.infer<typeof videoAskSectionSchema>;
 
 /** Page-content issues for every video-ask section, in the validator's shape. */
-export function videoAskContentIssues(content: unknown) {
+export function videoAskContentIssues(content: unknown, allowDirect = VIDEO_ASK_ALLOW_DIRECT_BACKENDS) {
+  const schema = allowDirect === VIDEO_ASK_ALLOW_DIRECT_BACKENDS ? videoAskSectionSchema : videoAskSectionSchemaFor(allowDirect);
   const issues: { code: "custom"; path: (string | number)[]; message: string }[] = [];
   const sections = (content as { sections?: unknown[] } | null)?.sections;
   if (!Array.isArray(sections)) return issues;
   sections.forEach((value, index) => {
     const section = value as { type?: string; data?: unknown } | null;
     if (section?.type !== "video-ask") return;
-    const parsed = videoAskSectionSchema.safeParse(section.data ?? {});
+    const parsed = schema.safeParse(section.data ?? {});
     if (!parsed.success) for (const issue of parsed.error.issues) {
       const path = ["sections", index, "data", ...issue.path] as (string | number)[];
       issues.push({ code: "custom", path, message: `${videoFieldPath(path)}: ${issue.message}` });
@@ -75,13 +92,13 @@ export function videoAskContentIssues(content: unknown) {
 }
 
 /** The section's configured backend base, or null when nothing usable is configured. */
-export function configuredBackendBase(data: { connector?: unknown; backendUrl?: unknown }): string | null {
+export function configuredBackendBase(data: { connector?: unknown; backendUrl?: unknown }, allowDirect = VIDEO_ASK_ALLOW_DIRECT_BACKENDS): string | null {
   if (typeof data.connector === "string" && /^[a-z0-9][a-z0-9-]{0,63}$/.test(data.connector)) {
     return `/api/connect/${data.connector}`;
   }
   // Same-origin paths are only reachable from trusted (non-agent) callers such
   // as the dev preview; published data is validated to https above.
-  if (typeof data.backendUrl === "string" && (isHttpsBackendUrl(data.backendUrl) || /^\/(?![\/\\])/.test(data.backendUrl))) {
+  if (typeof data.backendUrl === "string" && ((allowDirect && isHttpsBackendUrl(data.backendUrl)) || /^\/(?![\/\\])/.test(data.backendUrl))) {
     return data.backendUrl;
   }
   return null;
@@ -251,6 +268,14 @@ export function categoryLabel(value: LocalizedLabel, locale: string): string {
 
 export const VIDEO_ASK_TIMEOUT_MS = 12_000;
 
+export class VideoAskBackendError extends Error {
+  status: number;
+  constructor(status: number) {
+    super(`backend ${status}`);
+    this.status = status;
+  }
+}
+
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
 async function getJson(fetchImpl: FetchLike, url: string, init: RequestInit, signal?: AbortSignal): Promise<unknown> {
@@ -260,7 +285,7 @@ async function getJson(fetchImpl: FetchLike, url: string, init: RequestInit, sig
   signal?.addEventListener("abort", onAbort);
   try {
     const res = await fetchImpl(url, { ...init, signal: controller.signal, credentials: "omit", cache: "no-store" });
-    if (!res.ok) throw new Error(`backend ${res.status}`);
+    if (!res.ok) throw new VideoAskBackendError(res.status);
     return await res.json();
   } finally {
     clearTimeout(timer);
@@ -277,8 +302,19 @@ export async function fetchSearch(base: string, q: string, lang: string | undefi
   return parsed;
 }
 
-export async function fetchStats(base: string, fetchImpl: FetchLike = fetch, signal?: AbortSignal) {
-  const parsed = parseStatsResponse(await getJson(fetchImpl, backendEndpoint(base, "stats"), { method: "GET" }, signal));
+/**
+ * null = the backend does not offer /stats (404): show just the search box.
+ * Network errors, 5xx, timeouts and malformed bodies reject: "search paused".
+ */
+export async function fetchStats(base: string, fetchImpl: FetchLike = fetch, signal?: AbortSignal): Promise<VideoAskStats | null> {
+  let body: unknown;
+  try {
+    body = await getJson(fetchImpl, backendEndpoint(base, "stats"), { method: "GET" }, signal);
+  } catch (error) {
+    if (error instanceof VideoAskBackendError && error.status === 404) return null;
+    throw error;
+  }
+  const parsed = parseStatsResponse(body);
   if (!parsed) throw new Error("malformed stats response");
   return parsed;
 }
