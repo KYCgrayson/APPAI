@@ -314,6 +314,7 @@
         "src/templates/sections/VideoAskSection.tsx",
         "src/templates/sections/video-ask-strings.ts",
         "src/app/api/dev/video-ask-mock/**",
+        "src/app/api/dev/video-ask-local/**",
         "src/app/(site)/[locale]/dev/video-ask/**",
         "tests/video-ask.test.ts"
       ]

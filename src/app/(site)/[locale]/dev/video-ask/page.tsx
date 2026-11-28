@@ -6,7 +6,8 @@ import { VideoAskSection } from "@/templates/sections/VideoAskSection";
  * DEV ONLY preview of the video-ask section against the mock backend at
  * /api/dev/video-ask-mock. No database needed. 404s in production builds.
  *
- *   /dev/video-ask?mode=floating|inline&backend=ok|down|nostats|malformed&dark=1&custom=1
+ *   /dev/video-ask?mode=floating|inline&backend=ok|down|nostats|malformed|local&dark=1&custom=1
+ *   backend=local → /api/dev/video-ask-local → my-tools services/video-ask/serve.py on this machine
  *   /zh-TW/dev/video-ask?...  (any platform locale)
  */
 
@@ -33,7 +34,7 @@ export default async function VideoAskPreview({ params, searchParams }: Props) {
   return (
     <main className={`min-h-screen ${dark ? "bg-gray-950 text-gray-100" : "bg-gray-50 text-gray-900"}`}>
       <div className="mx-auto max-w-3xl px-4 py-10 space-y-4">
-        <p className="text-xs font-mono uppercase tracking-wide opacity-60">Dev preview · video-ask · mock backend{backend || "/ok"}</p>
+        <p className="text-xs font-mono uppercase tracking-wide opacity-60">Dev preview · video-ask · {one("backend") === "local" ? "LOCAL REAL INDEX" : `mock backend${backend || "/ok"}`}</p>
         <h1 className="text-3xl font-bold">GTA 6 fan guide (fake demo page)</h1>
         <p className="opacity-80">This stands in for a hosted page. The rest of the page keeps working whatever the video backend does.</p>
       </div>
@@ -43,7 +44,7 @@ export default async function VideoAskPreview({ params, searchParams }: Props) {
           intro: "Ask anything about the trailers, map or release. Answers are videos from creators.",
           mode,
           // Same-origin mock; published pages must use connector or an https backendUrl.
-          backendUrl: `/api/dev/video-ask-mock${backend}`,
+          backendUrl: one("backend") === "local" ? "/api/dev/video-ask-local" : `/api/dev/video-ask-mock${backend}`,
           allowCustomBackend: one("custom") !== "0",
           disclaimer: "Videos belong to their creators. Fan project, not affiliated with Rockstar Games.",
         }}
